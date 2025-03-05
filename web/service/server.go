@@ -481,7 +481,7 @@ func (s *ServerService) UpdatePanel(version string) {
 	// Get latest version if not provided
 	if version == "" {
 		logger.Info("Fetching latest version...")
-		out, err := exec.Command("curl", "-Ls", "https://api.github.com/repos/AghayeCoder/tx-ui/releases/latest").Output()
+		out, err := exec.Command("curl", "-Ls", "https://api.github.com/repos/Incognito-Coder/tx-ui/releases/latest").Output()
 		if err != nil {
 			logger.Error("Failed to fetch latest version:", err)
 			return
@@ -496,7 +496,7 @@ func (s *ServerService) UpdatePanel(version string) {
 	}
 
 	// Download x-ui
-	url := fmt.Sprintf("https://github.com/AghayeCoder/tx-ui/releases/download/%s/x-ui-linux-%s.tar.gz", version, arch)
+	url := fmt.Sprintf("https://github.com/Incognito-Coder/tx-ui/releases/download/%s/x-ui-linux-%s.tar.gz", version, arch)
 	filePath := fmt.Sprintf("/usr/local/x-ui-linux-%s.tar.gz", arch)
 	logger.Info("Downloading:", url)
 	err = exec.Command("wget", "-N", "--no-check-certificate", "-O", filePath, url).Run()
@@ -515,7 +515,7 @@ func (s *ServerService) UpdatePanel(version string) {
 	xrayLinux := fmt.Sprintf("/usr/local/x-ui/bin/xray-linux-%s", arch)
 	exec.Command("chmod", "+x", "/usr/local/x-ui/x-ui", xrayLinux).Run()
 	exec.Command("cp", "-f", "/usr/local/x-ui/x-ui.service", "/etc/systemd/system/").Run()
-	exec.Command("wget", "--no-check-certificate", "-O", "/usr/bin/x-ui", "https://raw.githubusercontent.com/AghayeCoder/tx-ui/main/x-ui.sh").Run()
+	exec.Command("wget", "--no-check-certificate", "-O", "/usr/bin/x-ui", "https://raw.githubusercontent.com/Incognito-Coder/tx-ui/main/x-ui.sh").Run()
 	exec.Command("chmod", "+x", "/usr/bin/x-ui").Run()
 	exec.Command("systemctl", "daemon-reload").Run()
 	exec.Command("systemctl", "enable", "x-ui").Run()

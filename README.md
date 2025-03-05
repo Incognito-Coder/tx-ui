@@ -23,7 +23,7 @@
 ## Install & Upgrade
 
 ```
-bash <(curl -Ls https://raw.githubusercontent.com/AghayeCoder/tx-ui/master/install.sh)
+bash <(curl -Ls https://raw.githubusercontent.com/Incognito-Coder/tx-ui/master/install.sh)
 ```
 
 ## SSL Certificate
@@ -102,7 +102,7 @@ case "${ARCH}" in
 esac
 
 
-wget https://github.com/AghayeCoder/tx-ui/releases/latest/download/x-ui-linux-${XUI_ARCH}.tar.gz
+wget https://github.com/Incognito-Coder/tx-ui/releases/latest/download/x-ui-linux-${XUI_ARCH}.tar.gz
 ```
 
 2. Once the compressed package is downloaded, execute the following commands to install or upgrade x-ui:
@@ -150,7 +150,7 @@ systemctl restart x-ui
 2. **Clone the Project Repository:**
 
    ```sh
-   git clone https://github.com/AghayeCoder/tx-ui.git
+   git clone https://github.com/Incognito-Coder/tx-ui.git
    cd tx-ui
    ```
 
