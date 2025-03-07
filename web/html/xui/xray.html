@@ -1413,8 +1413,7 @@
                         }
                         newTemplateSettings.routing.balancers.push(tmpBalancer);
                         this.templateSettings = newTemplateSettings;
-                        if (balancer.strategy == 'leastPing' || balancer.strategy == 'leastLoad')
-                            this.updateObservatorySelectors();
+                        this.updateObservatorySelectors();
                         balancerModal.close();
                         this.changeObsCode();
                     },
@@ -1462,8 +1461,7 @@
                             });
                         }
                         this.templateSettings = newTemplateSettings;
-                        if (balancer.strategy == 'leastPing' || balancer.strategy == 'leastLoad')
-                            this.updateObservatorySelectors();
+                        this.updateObservatorySelectors();
                         balancerModal.close();
                         this.changeObsCode();
                     },
@@ -1473,7 +1471,11 @@
             updateObservatorySelectors(){
                 newTemplateSettings = this.templateSettings;
                 const leastPings = this.balancersData.filter((b) => b.strategy == 'leastPing');
-                const leastLoads = this.balancersData.filter((b) => b.strategy == 'leastLoad');
+                const leastLoads = this.balancersData.filter((b) =>
+                    b.strategy === 'leastLoad' ||
+                    b.strategy === 'roundRobin' ||
+                    b.strategy === 'random'
+                );
                 if (leastPings.length>0){
                     if (!newTemplateSettings.observatory)
                         newTemplateSettings.observatory = this.defaultObservatory;
