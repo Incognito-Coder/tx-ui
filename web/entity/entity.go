@@ -49,6 +49,7 @@ type AllSetting struct {
 	SubKeyFile       string `json:"subKeyFile" form:"subKeyFile"`
 	SubUpdates       int    `json:"subUpdates" form:"subUpdates"`
 	SubEncrypt       bool   `json:"subEncrypt" form:"subEncrypt"`
+	SubCustomUI	     bool   `json:"subCustomUI" form:"subCustomUI"`
 	SubShowInfo      bool   `json:"subShowInfo" form:"subShowInfo"`
 	SubURI           string `json:"subURI" form:"subURI"`
 	SubJsonPath      string `json:"subJsonPath" form:"subJsonPath"`

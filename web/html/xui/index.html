@@ -367,7 +367,7 @@
         get color() {
             const percent = this.percent;
             if (percent < 80) {
-                return '#008771'; // Green
+                return '#1890ff'; // Green
             } else if (percent < 90) {
                 return "#f37b24"; // Orange
             } else {
@@ -459,7 +459,7 @@
         formatLogs(logs) {
             let formattedLogs = '';
             const levels = ["DEBUG","INFO","NOTICE","WARNING","ERROR"];
-            const levelColors = ["#3c89e8","#008771","#008771","#f37b24","#e04141","#bcbcbc"];
+            const levelColors = ["#3c89e8","#1890ff","#1890ff","#f37b24","#e04141","#bcbcbc"];
 
             logs.forEach((log, index) => {
                 let [data, message] = log.split(" - ",2);

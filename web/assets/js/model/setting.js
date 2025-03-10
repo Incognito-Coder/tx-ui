@@ -35,6 +35,7 @@ class AllSetting {
         this.subKeyFile = "";
         this.subUpdates = 12;
         this.subEncrypt = true;
+        this.subCustomUI = false;
         this.subShowInfo = true;
         this.subURI = "";
         this.subJsonURI = "";

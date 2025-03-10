@@ -59,6 +59,7 @@ var defaultValueMap = map[string]string{
 	"subKeyFile":         "",
 	"subUpdates":         "12",
 	"subEncrypt":         "true",
+	"subCustomUI":        "false",
 	"subShowInfo":        "true",
 	"subURI":             "",
 	"subJsonPath":        "/json/",
@@ -459,6 +460,10 @@ func (s *SettingService) GetSubUpdates() (string, error) {
 
 func (s *SettingService) GetSubEncrypt() (bool, error) {
 	return s.getBool("subEncrypt")
+}
+
+func (s *SettingService) GetSubCustomUI() (bool, error) {
+	return s.getBool("subCustomUI")
 }
 
 func (s *SettingService) GetSubShowInfo() (bool, error) {

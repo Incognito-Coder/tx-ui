@@ -44,10 +44,10 @@ func NewServer() *Server {
 	}
 }
 
-func (s *Server) getHtmlFiles() ([]string, error) {
+func (s *Server) getHtmlFiles(customFolder string) ([]string, error) {
 	files := make([]string, 0)
 	dir, _ := os.Getwd()
-	err := fs.WalkDir(os.DirFS(dir), "sub/html", func(path string, d fs.DirEntry, err error) error {
+	err := fs.WalkDir(os.DirFS(dir), customFolder, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -63,15 +63,15 @@ func (s *Server) getHtmlFiles() ([]string, error) {
 	return files, nil
 }
 
-func (s *Server) getHtmlTemplate(funcMap template.FuncMap) (*template.Template, error) {
+func (s *Server) getHtmlTemplate(funcMap template.FuncMap, customFolder string) (*template.Template, error) {
 	t := template.New("").Funcs(funcMap)
-	err := fs.WalkDir(htmlFS, "html", func(path string, d fs.DirEntry, err error) error {
+	err := fs.WalkDir(os.DirFS(customFolder), ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 
 		if d.IsDir() {
-			newT, err := t.ParseFS(htmlFS, path+"/*.html")
+			newT, err := t.ParseFS(os.DirFS(customFolder), path+"/*.html")
 			if err != nil {
 				// ignore
 				return nil
@@ -108,16 +108,31 @@ func (s *Server) initRouter() (*gin.Engine, error) {
 	})
 
 	// set static files and template
+	CustomUI, err := s.settingService.GetSubCustomUI()
+	if err != nil {
+		return nil, err
+	}
+
+	customFolder := "sub/html"
+	if CustomUI {
+		customFolder = "/etc/x-ui/html"
+		// Create the custom folder if it does not exist
+		if _, err := os.Stat(customFolder); os.IsNotExist(err) {
+			err := os.MkdirAll(customFolder, os.ModePerm)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
 	if config.IsDebug() {
-		// for development
-		files, err := s.getHtmlFiles()
+		files, err := s.getHtmlFiles(customFolder)
 		if err != nil {
 			return nil, err
 		}
 		engine.LoadHTMLFiles(files...)
 	} else {
-		// for production
-		template, err := s.getHtmlTemplate(engine.FuncMap)
+		template, err := s.getHtmlTemplate(engine.FuncMap, customFolder)
 		if err != nil {
 			return nil, err
 		}

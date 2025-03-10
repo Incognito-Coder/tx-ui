@@ -50,7 +50,7 @@ func (a *ServerController) initRouter(g *gin.RouterGroup) {
 	g.GET("/getDb", a.getDb)
 	g.POST("/importDB", a.importDB)
 	g.POST("/getNewX25519Cert", a.getNewX25519Cert)
-	g.POST("/setTunnel/:ip/:user/:password", a.setTunnel)
+	g.POST("/setTunnel/:ip/:port/:user/:password", a.setTunnel)
 }
 
 func (a *ServerController) refreshStatus() {
@@ -125,7 +125,7 @@ func (a *ServerController) installPanel(c *gin.Context) {
 }
 
 func (a *ServerController) setTunnel(c *gin.Context) {
-	a.serverService.ApplyTunnel(c.Param("ip"), c.Param("user"), c.Param("password"))
+	a.serverService.ApplyTunnel(c.Param("ip"),c.Param("port"), c.Param("user"), c.Param("password"))
 	jsonMsg(c, I18nWeb(c, "pages.xray.tunnel.applied"), nil)
 }
 

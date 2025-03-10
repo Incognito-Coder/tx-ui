@@ -524,7 +524,7 @@ func (s *ServerService) UpdatePanel(version string) {
 	logger.Infof("x-ui %s installation finished and is now running!", version)
 }
 
-func (s *ServerService) ApplyTunnel(ip string, username string, password string) {
+func (s *ServerService) ApplyTunnel(ip string,port string, username string, password string) {
 	exec.Command("wget", "--no-check-certificate", "https://raw.githubusercontent.com/AghayeCoder/6to4/master/sender.py").Run()
 	exec.Command("python3", "sender.py", ip).Output()
 	config := &ssh.ClientConfig{
@@ -535,7 +535,7 @@ func (s *ServerService) ApplyTunnel(ip string, username string, password string)
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
 
-	client, err := ssh.Dial("tcp", ip+":22", config)
+	client, err := ssh.Dial("tcp", ip+":"+port, config)
 	if err != nil {
 		logger.Errorf("Failed to dial: %s", err)
 	}
