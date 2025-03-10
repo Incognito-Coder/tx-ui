@@ -120,6 +120,7 @@ func (s *Server) initRouter() (*gin.Engine, error) {
 		if _, err := os.Stat(customFolder); os.IsNotExist(err) {
 			err := os.MkdirAll(customFolder, os.ModePerm)
 			if err != nil {
+				logger.Error("Failed to create custom folder:", err)
 				return nil, err
 			}
 		}
@@ -128,15 +129,24 @@ func (s *Server) initRouter() (*gin.Engine, error) {
 	if config.IsDebug() {
 		files, err := s.getHtmlFiles(customFolder)
 		if err != nil {
+			logger.Error("Failed to get HTML files:", err)
 			return nil, err
 		}
 		engine.LoadHTMLFiles(files...)
 	} else {
-		template, err := s.getHtmlTemplate(engine.FuncMap, customFolder)
-		if err != nil {
-			return nil, err
+		// Check if custom folder exists and is not empty
+		if _, err := os.Stat(customFolder); err == nil {
+			template, err := s.getHtmlTemplate(engine.FuncMap, customFolder)
+			if err != nil {
+				logger.Error("Failed to get HTML template from custom folder:", err)
+				return nil, err
+			}
+			engine.SetHTMLTemplate(template)
+		} else {
+			// Fallback to embedded HTML files
+			tmpl := template.Must(template.New("").ParseFS(htmlFS, "html/*.html"))
+			engine.SetHTMLTemplate(tmpl)
 		}
-		engine.SetHTMLTemplate(template)
 	}
 
 	subDomain, err := s.settingService.GetSubDomain()
