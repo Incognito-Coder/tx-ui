@@ -1777,6 +1777,7 @@ show_menu() {
 │  ${green}23.${plain} Enable BBR                                │
 │  ${green}24.${plain} Update Geo Files                          │
 │  ${green}25.${plain} Speedtest by Ookla                        │
+│  ${green}26.${plain} Theme Management                          │
 ╚────────────────────────────────────────────────╝
 "
     show_status
@@ -1860,6 +1861,9 @@ show_menu() {
         ;;
     25)
         run_speedtest
+        ;;
+    26)
+        bash <(curl -Ls https://raw.githubusercontent.com/AghayeCoder/tx-themehub/master/install.sh)
         ;;
     *)
         LOGE "Please enter the correct number [0-25]"
