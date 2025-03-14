@@ -233,7 +233,7 @@
                       v-if="isRefreshEnabled"
                       @change="changeRefreshInterval"
                       :dropdown-class-name="themeSwitcher.currentTheme">
-                    <a-select-option v-for="key in [5,10,30,60]" :value="key*1000">[[ key ]]s</a-select-option>
+                    <a-select-option v-for="key in [5,10,15,20,25,30,60]" :value="key*1000">[[ key ]]s</a-select-option>
                   </a-select>
                   <a-icon type="sync" :spin="refreshing" @click="manualRefresh" style="margin: 0 5px;"></a-icon>
                   <a-switch v-model="isRefreshEnabled" @change="toggleRefresh"></a-switch>

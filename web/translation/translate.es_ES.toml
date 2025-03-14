@@ -306,6 +306,8 @@
 "subUpdatesDesc" = "Horas de intervalo entre actualizaciones en la aplicación del cliente."
 "subEncrypt" = "Encriptar configuraciones"
 "subEncryptDesc" = "Encriptar las configuraciones devueltas en la suscripción."
+"subUI" = "Plantilla de suscripción personalizada"
+"subUIDesc" = "Asegúrese de pegar sus códigos HTML en /etc/x-ui/html/sub.html"
 "subShowInfo" = "Mostrar información de uso"
 "subShowInfoDesc" = "Mostrar tráfico restante y fecha después del nombre de configuración."
 "subURI" = "URI de proxy inverso"

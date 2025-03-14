@@ -826,18 +826,26 @@
       confAlerts: {
         get: function () {
           if (!this.allSetting) return [];
-          var alerts = []
+          var alerts = [];
           if (window.location.protocol !== "https:") alerts.push('{{ i18n "secAlertSSL" }}');
           if (this.allSetting.webPort == 54321) alerts.push('{{ i18n "secAlertPanelPort" }}');
-          panelPath = window.location.pathname.split('/').length < 4
+          panelPath = window.location.pathname.split('/').length < 4;
           if (panelPath && this.allSetting.webBasePath == '/') alerts.push('{{ i18n "secAlertPanelURI" }}');
           if (this.allSetting.subEnable) {
-            subPath = this.allSetting.subURI.length > 0 ? new URL(this.allSetting.subURI).pathname : this.allSetting.subPath;
-            if (subPath == '/sub/') alerts.push('{{ i18n "secAlertSubURI" }}');
-            subJsonPath = this.allSetting.subJsonURI.length > 0 ? new URL(this.allSetting.subJsonURI).pathname : this.allSetting.subJsonPath;
-            if (subJsonPath == '/json/') alerts.push('{{ i18n "secAlertSubJsonURI" }}');
+            try {
+              subPath = this.allSetting.subURI.length > 0 ? new URL(this.allSetting.subURI).pathname : this.allSetting.subPath;
+              if (subPath == '/sub/') alerts.push('{{ i18n "secAlertSubURI" }}');
+            } catch (e) {
+              alerts.push(e);
+            }
+            try {
+              subJsonPath = this.allSetting.subJsonURI.length > 0 ? new URL(this.allSetting.subJsonURI).pathname : this.allSetting.subJsonPath;
+              if (subJsonPath == '/json/') alerts.push('{{ i18n "secAlertSubJsonURI" }}');
+            } catch (e) {
+              alerts.push(e);
+            }
           }
-          return alerts
+          return alerts;
         }
       }
     },
