@@ -115,6 +115,7 @@
 "upgrade" = "ОНОВИТИ"
 "upgradeAvail" = "Доступне нове оновлення панелі"
 "installingPanel" = "Панель розпочато встановлення"
+"systemHost" = "Hostname"
 
 [pages.inbounds]
 "title" = "Вхідні"

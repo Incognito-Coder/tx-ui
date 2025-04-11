@@ -138,15 +138,23 @@
               </a-col>
               <a-col :sm="24" :lg="12">
                 <a-card hoverable>
-                  <b>{{ i18n "pages.index.systemLoad" }}:</b>
-                  <a-tag color="green">
-                    <a-tooltip>
-                          [[ status.loads[0] ]] | [[ status.loads[1] ]] | [[ status.loads[2] ]]
-                      <template slot="title">
-                        {{ i18n "pages.index.systemLoadDesc" }}
-                      </template>
-                    </a-tooltip>
-                  </a-tag>
+                  <a-row>
+                    <a-col :span="12">
+                      <b>{{ i18n "pages.index.systemLoad" }}:</b>
+                      <a-tag color="green">
+                        <a-tooltip>
+                              [[ status.loads[0] ]] | [[ status.loads[1] ]] | [[ status.loads[2] ]]
+                          <template slot="title">
+                            {{ i18n "pages.index.systemLoadDesc" }}
+                          </template>
+                        </a-tooltip>
+                      </a-tag>
+                    </a-col>
+                    <a-col :span="12">
+                      <b>{{ i18n "pages.index.systemHost" }}:</b>
+                      <a-tag color="green">[[ status.hostName ]]</a-tag>
+                    </a-col>
+                  </a-row>
                 </a-card>
               </a-col>
               <a-col :sm="24" :lg="12">
@@ -162,7 +170,7 @@
                     <a-col :span="12">
                       <a-tag>
                         <a-tooltip>
-                          <a-icon type="global"></a-icon> IPv4
+                          <a-icon type="global"></a-icon> IPv4: [[ status.publicIP.ipv4 ]]
                           <template slot="title">
                             [[ status.publicIP.ipv4 ]]
                           </template>
@@ -172,7 +180,7 @@
                     <a-col :span="12">
                       <a-tag>
                         <a-tooltip>
-                          <a-icon type="global"></a-icon> IPv6
+                          <a-icon type="global"></a-icon> IPv6: [[ status.publicIP.ipv6 ]]
                           <template slot="title">
                             [[ status.publicIP.ipv6 ]]
                           </template>
@@ -388,6 +396,7 @@
             this.netIO = { up: 0, down: 0 };
             this.netTraffic = { sent: 0, recv: 0 };
             this.publicIP = { ipv4: 0, ipv6: 0 };
+            this.hostname = 0;
             this.swap = new CurTotal(0, 0);
             this.tcpCount = 0;
             this.udpCount = 0;
@@ -409,6 +418,7 @@
             this.netIO = data.netIO;
             this.netTraffic = data.netTraffic;
             this.publicIP = data.publicIP;
+            this.hostName = data.hostname;
             this.swap = new CurTotal(data.swap.current, data.swap.total);
             this.tcpCount = data.tcpCount;
             this.udpCount = data.udpCount;

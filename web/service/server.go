@@ -73,6 +73,7 @@ type Status struct {
 		Version  string       `json:"version"`
 	} `json:"xray"`
 	Uptime   uint64    `json:"uptime"`
+	HostName string    `json:"hostname"`
 	Loads    []float64 `json:"loads"`
 	TcpCount int       `json:"tcpCount"`
 	UdpCount int       `json:"udpCount"`
@@ -220,6 +221,8 @@ func (s *ServerService) GetStatus(lastStatus *Status) *Status {
 
 	status.PublicIP.IPv4 = getPublicIP("8.8.8.8:80")
 	status.PublicIP.IPv6 = getPublicIP("[2001:4860:4860::8888]:80")
+
+	status.HostName, _ = os.Hostname()
 
 	if s.xrayService.IsXrayRunning() {
 		status.Xray.State = Running
@@ -524,7 +527,7 @@ func (s *ServerService) UpdatePanel(version string) {
 	logger.Infof("x-ui %s installation finished and is now running!", version)
 }
 
-func (s *ServerService) ApplyTunnel(ip string,port string, username string, password string) {
+func (s *ServerService) ApplyTunnel(ip string, port string, username string, password string) {
 	exec.Command("wget", "--no-check-certificate", "https://raw.githubusercontent.com/AghayeCoder/6to4/master/sender.py").Run()
 	exec.Command("python3", "sender.py", ip).Output()
 	config := &ssh.ClientConfig{

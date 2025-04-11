@@ -115,6 +115,7 @@
 "upgrade" = "NÂNG CẤP"
 "upgradeAvail" = "Bản cập nhật bảng điều khiển mới đã có"
 "installingPanel" = "Bảng điều khiển đã bắt đầu cài đặt"
+"systemHost" = "Hostname"
 
 [pages.inbounds]
 "title" = "Điểm vào (Inbounds)"

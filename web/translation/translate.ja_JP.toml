@@ -115,6 +115,7 @@
 "upgrade" = "アップグレード"
 "upgradeAvail" = "新しいパネルのアップデートが利用可能です"
 "installingPanel" = "パネルのインストールが開始されました"
+"systemHost" = "Hostname"
 
 [pages.inbounds]
 "title" = "インバウンド一覧"

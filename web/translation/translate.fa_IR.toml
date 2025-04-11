@@ -115,6 +115,7 @@
 "upgrade" = "بروزرسانی"
 "upgradeAvail" = "نسخه جدیدی از پنل موجود است"
 "installingPanel" = "نصب پنل شروع شد"
+"systemHost" = "میزبان"
 
 [pages.inbounds]
 "title" = "کاربران"

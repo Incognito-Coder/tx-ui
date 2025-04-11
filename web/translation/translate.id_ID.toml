@@ -115,6 +115,7 @@
 "upgrade" = "UPGRADE"
 "upgradeAvail" = "Pembaruan panel baru tersedia"
 "installingPanel" = "Panel mulai diinstal"
+"systemHost" = "Hostname"
 
 [pages.inbounds]
 "title" = "Masuk"

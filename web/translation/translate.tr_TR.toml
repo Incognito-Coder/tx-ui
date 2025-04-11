@@ -115,6 +115,7 @@
 "upgrade" = "UPGRADE"
 "upgradeAvail" = "Yeni panel güncellemesi mevcut"
 "installingPanel" = "Panel kurulumu başladı"
+"systemHost" = "Hostname"
 
 [pages.inbounds]
 "title" = "Gelenler"

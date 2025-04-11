@@ -115,6 +115,7 @@
 "upgrade" = "升级"
 "upgradeAvail" = "新面板更新可用"
 "installingPanel" = "面板已开始安装"
+"systemHost" = "Hostname"
 
 [pages.inbounds]
 "title" = "入站列表"

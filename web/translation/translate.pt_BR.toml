@@ -115,6 +115,7 @@
 "upgrade" = "ATUALIZAÇÃO"
 "upgradeAvail" = "Nova atualização do painel disponível"
 "installingPanel" = "Painel começou a instalar"
+"systemHost" = "Hostname"
 
 [pages.inbounds]
 "title" = "Inbounds"
