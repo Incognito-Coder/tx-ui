@@ -20,7 +20,8 @@ jobs:
           - 386
           - armv5
           - s390x
-    runs-on: ubuntu-22.04
+          - windows-amd64   # Added Windows support
+    runs-on: ${{ matrix.platform == 'windows-amd64' && 'windows-latest' || 'ubuntu-22.04' }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -32,6 +33,7 @@ jobs:
           check-latest: true
 
       - name: Install dependencies
+        if: matrix.platform != 'windows-amd64'
         run: |
           sudo apt-get update
           if [ "${{ matrix.platform }}" == "arm64" ]; then
@@ -48,7 +50,8 @@ jobs:
             sudo apt install gcc-s390x-linux-gnu
           fi
 
-      - name: Build x-ui
+      - name: Build x-ui (Linux)
+        if: matrix.platform != 'windows-amd64'
         run: |
           export CGO_ENABLED=1
           export GOOS=linux
@@ -126,20 +129,56 @@ jobs:
           mv xray xray-linux-${{ matrix.platform }}
           cd ../..
 
+      - name: Build x-ui (Windows)
+        if: matrix.platform == 'windows-amd64'
+        shell: pwsh
+        run: |
+          $env:CGO_ENABLED="1"
+          $env:GOOS="windows"
+          $env:GOARCH="amd64"
+          go build -ldflags "-w -s" -o xui-release.exe -v main.go
+          
+          mkdir x-ui
+          Copy-Item xui-release.exe x-ui\
+          # Windows-specific files (if any) can be copied here
+          mkdir x-ui\bin
+          cd x-ui\bin
+          
+          # Download Xray for Windows
+          $Xray_URL = "https://github.com/XTLS/Xray-core/releases/download/v25.6.8/"
+          Invoke-WebRequest -Uri "${Xray_URL}Xray-windows-64.zip" -OutFile "Xray-windows-64.zip"
+          Expand-Archive -Path "Xray-windows-64.zip" -DestinationPath .
+          Remove-Item "Xray-windows-64.zip"
+          Remove-Item geoip.dat, geosite.dat -ErrorAction SilentlyContinue
+          Invoke-WebRequest -Uri "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat" -OutFile "geoip.dat"
+          Invoke-WebRequest -Uri "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat" -OutFile "geosite.dat"
+          Invoke-WebRequest -Uri "https://github.com/chocolate4u/Iran-v2ray-rules/releases/latest/download/geoip.dat" -OutFile "geoip_IR.dat"
+          Invoke-WebRequest -Uri "https://github.com/chocolate4u/Iran-v2ray-rules/releases/latest/download/geosite.dat" -OutFile "geosite_IR.dat"
+          Invoke-WebRequest -Uri "https://github.com/runetfreedom/russia-v2ray-rules-dat/releases/latest/download/geoip.dat" -OutFile "geoip_RU.dat"
+          Invoke-WebRequest -Uri "https://github.com/runetfreedom/russia-v2ray-rules-dat/releases/latest/download/geosite.dat" -OutFile "geosite_RU.dat"
+          Rename-Item xray.exe xray-windows-amd64.exe
+          cd ../..
+
       - name: Package
-        run: tar -zcvf x-ui-linux-${{ matrix.platform }}.tar.gz x-ui
+        run: |
+          if [ "${{ matrix.platform }}" == "windows-amd64" ]; then
+            7z a x-ui-windows-amd64.zip x-ui
+          else
+            tar -zcvf x-ui-linux-${{ matrix.platform }}.tar.gz x-ui
+          fi
 
       - name: Upload files to Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: x-ui-linux-${{ matrix.platform }}
-          path: ./x-ui-linux-${{ matrix.platform }}.tar.gz
+          name: x-ui-${{ matrix.platform }}
+          path: |
+            ${{ matrix.platform == 'windows-amd64' && './x-ui-windows-amd64.zip' || format('./x-ui-linux-{}.tar.gz', matrix.platform) }}
 
       - name: Upload files to GH release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref }}
-          file: x-ui-linux-${{ matrix.platform }}.tar.gz
-          asset_name: x-ui-linux-${{ matrix.platform }}.tar.gz
+          file: ${{ matrix.platform == 'windows-amd64' && 'x-ui-windows-amd64.zip' || format('x-ui-linux-{}.tar.gz', matrix.platform) }}
+          asset_name: ${{ matrix.platform == 'windows-amd64' && 'x-ui-windows-amd64.zip' || format('x-ui-linux-{}.tar.gz', matrix.platform) }}
           prerelease: true
