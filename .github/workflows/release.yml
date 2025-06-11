@@ -159,26 +159,47 @@ jobs:
           Rename-Item xray.exe xray-windows-amd64.exe
           cd ../..
 
-      - name: Package
+      - name: Package (Windows)
+        if: matrix.platform == 'windows-amd64'
+        shell: pwsh
         run: |
-          if [ "${{ matrix.platform }}" == "windows-amd64" ]; then
-            7z a x-ui-windows-amd64.zip x-ui
-          else
-            tar -zcvf x-ui-linux-${{ matrix.platform }}.tar.gz x-ui
-          fi
+          Compress-Archive -Path x-ui -DestinationPath x-ui-windows-amd64.zip
 
-      - name: Upload files to Artifacts
+      - name: Package (Linux)
+        if: matrix.platform != 'windows-amd64'
+        run: |
+          tar -zcvf x-ui-linux-${{ matrix.platform }}.tar.gz x-ui
+
+      - name: Upload files to Artifacts (Windows)
+        if: matrix.platform == 'windows-amd64'
+        uses: actions/upload-artifact@v4
+        with:
+          name: x-ui-windows-amd64
+          path: ./x-ui-windows-amd64.zip
+
+      - name: Upload files to Artifacts (Linux)
+        if: matrix.platform != 'windows-amd64'
         uses: actions/upload-artifact@v4
         with:
           name: x-ui-${{ matrix.platform }}
-          path: |
-            ${{ matrix.platform == 'windows-amd64' && './x-ui-windows-amd64.zip' || format('./x-ui-linux-{}.tar.gz', matrix.platform) }}
+          path: ./x-ui-linux-${{ matrix.platform }}.tar.gz
 
-      - name: Upload files to GH release
+      - name: Upload files to GH release (Windows)
+        if: matrix.platform == 'windows-amd64'
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref }}
-          file: ${{ matrix.platform == 'windows-amd64' && 'x-ui-windows-amd64.zip' || format('x-ui-linux-{}.tar.gz', matrix.platform) }}
-          asset_name: ${{ matrix.platform == 'windows-amd64' && 'x-ui-windows-amd64.zip' || format('x-ui-linux-{}.tar.gz', matrix.platform) }}
+          file: x-ui-windows-amd64.zip
+          asset_name: x-ui-windows-amd64.zip
+          prerelease: true
+
+      - name: Upload files to GH release (Linux)
+        if: matrix.platform != 'windows-amd64'
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ github.ref }}
+          file: x-ui-linux-${{ matrix.platform }}.tar.gz
+          asset_name: x-ui-linux-${{ matrix.platform }}.tar.gz
           prerelease: true
