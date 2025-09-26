@@ -462,17 +462,21 @@
                   </template>
                   <template slot="info" slot-scope="text, rule, index">
                     <a-popover placement="bottomRight"
-                        v-if="(rule.source+rule.sourcePort+rule.network+rule.protocol+rule.attrs+rule.ip+rule.domain+rule.port).length>0"
+                        v-if="(rule.sourceIP+rule.sourcePort+rule.vlessRoute+rule.network+rule.protocol+rule.attrs+rule.ip+rule.domain+rule.port).length>0"
                         :overlay-class-name="themeSwitcher.currentTheme" trigger="click">
                       <template slot="content">
                         <table cellpadding="2" style="max-width: 300px;">
-                          <tr v-if="rule.source">
+                          <tr v-if="rule.sourceIP">
                             <td>Source</td>
-                            <td><a-tag color="blue" v-for="r in rule.source.split(',')">[[ r ]]</a-tag></td>
+                            <td><a-tag color="blue" v-for="r in rule.sourceIP.split(',')">[[ r ]]</a-tag></td>
                           </tr>
                           <tr v-if="rule.sourcePort">
                             <td>Source Port</td>
                             <td><a-tag color="green" v-for="r in rule.sourcePort.split(',')">[[ r ]]</a-tag></td>
+                          </tr>
+                          <tr v-if="rule.vlessRoute">
+                            <td>VLESS Route</td>
+                            <td><a-tag color="blue" v-for="r in rule.vlessRoute.split(',')">[[ r ]]</a-tag></td>
                           </tr>
                           <tr v-if="rule.network">
                             <td>Network</td>
@@ -797,8 +801,9 @@
         const rulesColumns = [
         { title: "#", align: 'center', width: 15, scopedSlots: { customRender: 'action' } },
         { title: '{{ i18n "pages.xray.rules.source"}}', children: [
-            { title: 'IP', dataIndex: "source", align: 'center', width: 20, ellipsis: true },
-            { title: 'Port', dataIndex: 'sourcePort', align: 'center', width: 10, ellipsis: true } ]},
+            { title: 'IP', dataIndex: "sourceIP", align: 'center', width: 20, ellipsis: true },
+            { title: 'Port', dataIndex: 'sourcePort', align: 'center', width: 10, ellipsis: true },
+            { title: 'VLESS Route', dataIndex: 'vlessRoute', align: 'center', width: 15, ellipsis: true }]},
         { title: '{{ i18n "pages.inbounds.network"}}', children: [
             { title: 'L4', dataIndex: 'network', align: 'center', width: 10 },
             { title: 'Protocol', dataIndex: 'protocol', align: 'center', width: 10, ellipsis: true },
