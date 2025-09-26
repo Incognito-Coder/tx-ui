@@ -828,6 +828,21 @@ func (s *InboundService) UpdateInboundClient(data *model.Inbound, clientId strin
 								err = tx.Save(inbound).Error
 								if err != nil {
 									logger.Warningf("failed to save inbound settings for subId %s: %v", clients[0].SubID, err)
+								} else {
+									// After saving the changes, add or remove the user from xray
+									s.xrayApi.Init(p.GetAPIPort())
+									for _, subClient := range subClients {
+										clientMap := subClient.(map[string]interface{})
+										if cSubId, ok := clientMap["subId"].(string); ok && cSubId == clients[0].SubID {
+											email, _ := clientMap["email"].(string)
+											if clients[0].Enable {
+												s.xrayApi.AddUser(string(inbound.Protocol), inbound.Tag, clientMap)
+											} else {
+												s.xrayApi.RemoveUser(inbound.Tag, email)
+											}
+										}
+									}
+									s.xrayApi.Close()
 								}
 							}
 						}
