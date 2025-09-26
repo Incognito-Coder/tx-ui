@@ -1029,78 +1029,96 @@ func (s *InboundService) addClientTraffic(tx *gorm.DB, traffics []*xray.ClientTr
 	settingService := &SettingService{}
 	syncClients, err := settingService.GetSyncClients()
 	if err == nil && syncClients {
-		subIdMap := make(map[string][]string)   // subId -> emails
-		emailToSubId := make(map[string]string) // email -> subId
+		subIdMap := make(map[string][]string) // subId -> emails
 
 		inbounds, err := s.GetAllInbounds()
-		if err == nil {
+		if err != nil {
+			logger.Warningf("failed to get inbounds: %v", err)
+		} else {
 			for _, inbound := range inbounds {
 				clients, err := s.GetClients(inbound)
 				if err == nil {
 					for _, client := range clients {
 						if client.SubID != "" {
 							subIdMap[client.SubID] = append(subIdMap[client.SubID], client.Email)
-							emailToSubId[client.Email] = client.SubID
 						}
 					}
 				}
 			}
 		}
 
-		for _, dbClientTraffic := range dbClientTraffics {
-			subId, ok := emailToSubId[dbClientTraffic.Email]
-			if !ok || subId == "" {
+		for subId, emailsInGroup := range subIdMap {
+			if len(emailsInGroup) <= 1 {
 				continue
 			}
 
-			emailsToSync := subIdMap[subId]
-			if len(emailsToSync) > 1 {
-				// Update client_traffics table
-				err = tx.Model(&xray.ClientTraffic{}).
-					Where("email IN (?)", emailsToSync).
-					Updates(map[string]interface{}{
-						"up":          dbClientTraffic.Up,
-						"down":        dbClientTraffic.Down,
-						"expiry_time": dbClientTraffic.ExpiryTime,
-					}).Error
+			var groupTraffics []*xray.ClientTraffic
+			err := tx.Model(&xray.ClientTraffic{}).Where("email IN (?)", emailsInGroup).Find(&groupTraffics).Error
+			if err != nil {
+				logger.Warningf("failed to get traffic for clients with subId %s: %v", subId, err)
+				continue
+			}
+
+			if len(groupTraffics) == 0 {
+				continue
+			}
+
+			maxTrafficClient := groupTraffics[0]
+			maxTotal := maxTrafficClient.Up + maxTrafficClient.Down
+
+			for _, traffic := range groupTraffics[1:] {
+				total := traffic.Up + traffic.Down
+				if total > maxTotal {
+					maxTotal = total
+					maxTrafficClient = traffic
+				}
+			}
+
+			// Sync traffic to all clients in the group
+			err = tx.Model(&xray.ClientTraffic{}).
+				Where("email IN (?)", emailsInGroup).
+				Updates(map[string]interface{}{
+					"up":          maxTrafficClient.Up,
+					"down":        maxTrafficClient.Down,
+					"expiry_time": maxTrafficClient.ExpiryTime,
+				}).Error
+			if err != nil {
+				logger.Warningf("failed to sync traffic for clients with subId %s: %v", subId, err)
+			}
+
+			// Update inbounds settings (expiryTime)
+			for _, inbound := range inbounds {
+				needsUpdate := false
+				clientsSettings := make(map[string]interface{})
+				err = json.Unmarshal([]byte(inbound.Settings), &clientsSettings)
 				if err != nil {
-					logger.Warningf("failed to sync traffic for clients with subId %s: %v", subId, err)
+					continue
 				}
 
-				// Update inbounds settings
-				for _, inbound := range inbounds {
-					needsUpdate := false
-					clientsSettings := make(map[string]interface{})
-					err = json.Unmarshal([]byte(inbound.Settings), &clientsSettings)
+				clientsInInbound, ok := clientsSettings["clients"].([]interface{})
+				if !ok {
+					continue
+				}
+
+				for i, c := range clientsInInbound {
+					clientMap := c.(map[string]interface{})
+					if cSubId, ok := clientMap["subId"].(string); ok && cSubId == subId {
+						clientMap["expiryTime"] = float64(maxTrafficClient.ExpiryTime)
+						clientsInInbound[i] = clientMap
+						needsUpdate = true
+					}
+				}
+
+				if needsUpdate {
+					clientsSettings["clients"] = clientsInInbound
+					newSettings, err := json.Marshal(clientsSettings)
 					if err != nil {
 						continue
 					}
-
-					clientsInInbound, ok := clientsSettings["clients"].([]interface{})
-					if !ok {
-						continue
-					}
-
-					for i, c := range clientsInInbound {
-						clientMap := c.(map[string]interface{})
-						if cSubId, ok := clientMap["subId"].(string); ok && cSubId == subId {
-							clientMap["expiryTime"] = float64(dbClientTraffic.ExpiryTime)
-							clientsInInbound[i] = clientMap
-							needsUpdate = true
-						}
-					}
-
-					if needsUpdate {
-						clientsSettings["clients"] = clientsInInbound
-						newSettings, err := json.Marshal(clientsSettings)
-						if err != nil {
-							continue
-						}
-						inbound.Settings = string(newSettings)
-						err = tx.Save(inbound).Error
-						if err != nil {
-							logger.Warningf("failed to save inbound settings for subId %s: %v", subId, err)
-						}
+					inbound.Settings = string(newSettings)
+					err = tx.Save(inbound).Error
+					if err != nil {
+						logger.Warningf("failed to save inbound settings for subId %s: %v", subId, err)
 					}
 				}
 			}
