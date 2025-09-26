@@ -782,68 +782,6 @@ func (s *InboundService) UpdateInboundClient(data *model.Inbound, clientId strin
 				}
 			}
 
-			// Sync enable status for clients with same subId
-			syncClientsEnable, err := settingService.GetSyncClients()
-			if err == nil && syncClientsEnable {
-				if clients[0].SubID != "" {
-					inbounds, err := s.GetAllInbounds()
-					if err == nil {
-						var emailsToSync []string
-						for _, inbound := range inbounds {
-							if inbound.Id == oldInbound.Id {
-								continue
-							}
-
-							needsUpdate := false
-							clientsSettings := make(map[string]interface{})
-							err = json.Unmarshal([]byte(inbound.Settings), &clientsSettings)
-							if err != nil {
-								continue
-							}
-
-							subClients, ok := clientsSettings["clients"].([]interface{})
-							if !ok {
-								continue
-							}
-
-							for i, subClient := range subClients {
-								clientMap := subClient.(map[string]interface{})
-								if cSubId, ok := clientMap["subId"].(string); ok && cSubId == clients[0].SubID {
-									clientMap["enable"] = clients[0].Enable
-									subClients[i] = clientMap
-									needsUpdate = true
-									if email, ok := clientMap["email"].(string); ok {
-										emailsToSync = append(emailsToSync, email)
-									}
-								}
-							}
-
-							if needsUpdate {
-								clientsSettings["clients"] = subClients
-								newSettings, err := json.Marshal(clientsSettings)
-								if err != nil {
-									continue
-								}
-								inbound.Settings = string(newSettings)
-								err = tx.Save(inbound).Error
-								if err != nil {
-									logger.Warningf("failed to save inbound settings for subId %s: %v", clients[0].SubID, err)
-								}
-							}
-						}
-
-						if len(emailsToSync) > 0 {
-							err = tx.Model(&xray.ClientTraffic{}).
-								Where("email IN (?)", emailsToSync).
-								Update("enable", clients[0].Enable).Error
-							if err != nil {
-								logger.Warningf("failed to sync enable status for clients with subId %s: %v", clients[0].SubID, err)
-							}
-						}
-					}
-				}
-			}
-
 			err = s.UpdateClientIPs(tx, oldEmail, clients[0].Email)
 			if err != nil {
 				return false, err
