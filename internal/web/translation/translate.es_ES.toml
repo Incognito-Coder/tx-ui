@@ -318,6 +318,8 @@
 "subUIDesc" = "Asegúrese de pegar sus códigos HTML en /etc/x-ui/html/sub.html"
 "subShowInfo" = "Mostrar información de uso"
 "subShowInfoDesc" = "Mostrar tráfico restante y fecha después del nombre de configuración."
+"clientSynchronization" = "Sincronización de clientes"
+"clientSynchronizationDesc" = "Activar/desactivar la sincronización del cliente para subId"
 "subURI" = "URI de proxy inverso"
 "subURIDesc" = "Cambiar el URI base de la URL de suscripción para usar detrás de los servidores proxy"
 "fragment" = "Fragmentación"

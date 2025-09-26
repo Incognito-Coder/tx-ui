@@ -304,6 +304,8 @@
 "subEncryptDesc" = "サブスクリプションサービスが返す内容をBase64エンコードする"
 "subShowInfo" = "利用情報を表示"
 "subShowInfoDesc" = "クライアントアプリで残りのトラフィックと日付情報を表示する"
+"clientSynchronization" = "クライアント同期"
+"clientSynchronizationDesc" = "subId のクライアント同期を有効/無効にする"
 "subURI" = "リバースプロキシURI"
 "subURIDesc" = "プロキシ後ろのサブスクリプションURLのURIパスに使用する"
 "fragment" = "フラグメント"

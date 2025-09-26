@@ -316,6 +316,8 @@
 "subEncryptDesc" = "Abonelik hizmetinin döndürülen içeriği Base64 ile şifrelenir."
 "subShowInfo" = "Kullanım Bilgisini Göster"
 "subShowInfoDesc" = "Kalan trafik ve tarih müşteri uygulamalarında görüntülenir."
+"clientSynchronization" = "İstemci Senkronizasyonu"
+"clientSynchronizationDesc" = "subId için istemci senkronizasyonunu etkinleştirin/devre dışı bırakın"
 "subURI" = "Ters Proxy URI"
 "subURIDesc" = "Proxy arkasında kullanılacak abonelik URL'sinin URI yolu."
 "fragment" = "Parçalama"

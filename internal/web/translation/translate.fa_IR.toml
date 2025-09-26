@@ -319,6 +319,8 @@
 "subUIDesc" = "کد خود را در مسیر قرار دهید /etc/x-ui/html/sub.html"
 "subShowInfo" = "نمایش اطلاعات مصرف"
 "subShowInfoDesc" = "ترافیک و زمان باقی‌مانده را در برنامه‌های کاربری نمایش می‌دهد"
+"clientSynchronization" = "همگام سازی کلاینت"
+"clientSynchronizationDesc" = "فعال/غیرفعال کردن همگام سازی کلاینت برای subId"
 "subURI" = "پروکسی معکوس URI مسیر"
 "subURIDesc" = "سابسکریپشن را برای استفاده در پشت پراکسی‌ها تغییر می‌دهد URI مسیر"
 "fragment" = "فرگمنت"

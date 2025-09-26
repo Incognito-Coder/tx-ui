@@ -316,6 +316,8 @@
 "subEncryptDesc" = "O conteúdo retornado pelo serviço de assinatura será codificado em Base64."
 "subShowInfo" = "Mostrar Informações de Uso"
 "subShowInfoDesc" = "O tráfego restante e a data serão exibidos nos aplicativos de cliente."
+"clientSynchronization" = "Sincronização de Clientes"
+"clientSynchronizationDesc" = "Ativar/desativar a sincronização do cliente para subId"
 "subURI" = "URI de Proxy Reverso"
 "subURIDesc" = "O caminho URI da URL de assinatura para uso por trás de proxies."
 "fragment" = "Fragmentação"

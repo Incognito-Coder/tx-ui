@@ -328,6 +328,8 @@
 "subUIDesc" = "تأكد من لصق أكواد HTML في /etc/x-ui/html/sub.html"
 "subShowInfo" = "اظهر معلومات الاستخدام"
 "subShowInfoDesc" = "هيظهر الترافيك المتبقي والتاريخ في تطبيقات العملاء."
+"clientSynchronization" = "مزامنة العميل"
+"clientSynchronizationDesc" = "تمكين/تعطيل مزامنة العميل لـ subId"
 "subURI" = "مسار البروكسي العكسي"
 "subURIDesc" = "مسار URI لرابط الاشتراك عشان تستخدمه ورا البروكسي."
 "externalTrafficInformEnable" = "تنبيه الترافيك الخارجي"

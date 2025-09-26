@@ -318,6 +318,8 @@
 "subUIDesc" = "Pastikan untuk menempelkan kode html Anda ke /etc/x-ui/html/sub.html"
 "subShowInfo" = "Tampilkan Info Penggunaan"
 "subShowInfoDesc" = "Sisa traffic dan tanggal akan ditampilkan di aplikasi klien."
+"clientSynchronization" = "Sinkronisasi Klien"
+"clientSynchronizationDesc" = "Aktifkan/nonaktifkan sinkronisasi klien untuk subId"
 "subURI" = "URI Proxy Terbalik"
 "subURIDesc" = "URI path URL langganan untuk penggunaan di belakang proxy."
 "fragment" = "Fragmentasi"
