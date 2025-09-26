@@ -2190,6 +2190,9 @@ func (s *InboundService) MigrationRequirements() {
 	defer func() {
 		if err == nil {
 			tx.Commit()
+			if dbErr := db.Exec(`VACUUM "main"`).Error; dbErr != nil {
+				logger.Warningf("VACUUM failed: %v", dbErr)
+			}
 		} else {
 			tx.Rollback()
 		}
