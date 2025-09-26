@@ -54,6 +54,7 @@ type AllSetting struct {
 	SubEncrypt       bool   `json:"subEncrypt" form:"subEncrypt"`
 	SubCustomUI      bool   `json:"subCustomUI" form:"subCustomUI"`
 	SubShowInfo      bool   `json:"subShowInfo" form:"subShowInfo"`
+	SyncClients      bool   `json:"syncClients" form:"syncClients"`
 	SubURI           string `json:"subURI" form:"subURI"`
 	SubJsonPath      string `json:"subJsonPath" form:"subJsonPath"`
 	SubJsonURI       string `json:"subJsonURI" form:"subJsonURI"`

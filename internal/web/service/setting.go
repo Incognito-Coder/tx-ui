@@ -62,6 +62,7 @@ var defaultValueMap = map[string]string{
 	"subEncrypt":         "true",
 	"subCustomUI":        "false",
 	"subShowInfo":        "true",
+	"syncClients":        "false",
 	"subURI":             "",
 	"subJsonPath":        "/json/",
 	"subJsonURI":         "",
@@ -474,6 +475,10 @@ func (s *SettingService) GetSubCustomUI() (bool, error) {
 
 func (s *SettingService) GetSubShowInfo() (bool, error) {
 	return s.getBool("subShowInfo")
+}
+
+func (s *SettingService) GetSyncClients() (bool, error) {
+	return s.getBool("syncClients")
 }
 
 func (s *SettingService) GetPageSize() (int, error) {

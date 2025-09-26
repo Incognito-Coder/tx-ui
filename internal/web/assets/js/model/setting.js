@@ -38,6 +38,7 @@ class AllSetting {
         this.subEncrypt = false;
         this.subCustomUI = false;
         this.subShowInfo = true;
+        this.syncClients = false;
         this.subURI = "";
         this.subJsonURI = "";
         this.subJsonFragment = "";
