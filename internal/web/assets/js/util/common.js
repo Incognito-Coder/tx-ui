@@ -175,7 +175,7 @@ function doAllItemsExist(array1, array2) {
     return true;
 }
 
-function buildURL({ host, port, isTLS, base, path }) {
+function buildURL({host, port, isTLS, base, path}) {
     if (!host || host.length === 0) host = window.location.hostname;
     if (!port || port.length === 0) port = window.location.port;
 

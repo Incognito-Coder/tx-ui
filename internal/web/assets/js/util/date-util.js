@@ -63,7 +63,7 @@ Date.prototype.plusMinutes = function (minutes) {
  *
  * @param millis to reduce the milliseconds
  */
-Date.prototype.minusMillis = function(millis) {
+Date.prototype.minusMillis = function (millis) {
     let time = this.getTime() - millis;
     let newDate = new Date();
     newDate.setTime(time);
@@ -75,7 +75,7 @@ Date.prototype.minusMillis = function(millis) {
  *
  * @param millis to increase the milliseconds to increase
  */
-Date.prototype.plusMillis = function(millis) {
+Date.prototype.plusMillis = function (millis) {
     let time = this.getTime() + millis;
     let newDate = new Date();
     newDate.setTime(time);

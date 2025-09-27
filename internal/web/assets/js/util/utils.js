@@ -19,7 +19,7 @@ class HttpUtil {
         if (!resp || !resp.data) {
             return new Msg(false, 'No response data');
         }
-        const { data } = resp;
+        const {data} = resp;
         if (data == null) {
             return new Msg(true);
         }
@@ -31,7 +31,7 @@ class HttpUtil {
 
     static async get(url, params, options = {}) {
         try {
-            const resp = await axios.get(url, { params, ...options });
+            const resp = await axios.get(url, {params, ...options});
             const msg = this._respToMsg(resp);
             this._handleMsg(msg);
             return msg;
@@ -487,8 +487,9 @@ class Wireguard {
         };
     }
 }
+
 class FileManager {
-    static downloadTextFile(content, filename = 'file.txt', options = { type: "text/plain" }) {
+    static downloadTextFile(content, filename = 'file.txt', options = {type: "text/plain"}) {
         let link = window.document.createElement('a');
 
         link.download = filename;
