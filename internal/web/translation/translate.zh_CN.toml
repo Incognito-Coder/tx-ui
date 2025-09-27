@@ -192,7 +192,7 @@
 "same" = "相同"
 "inboundData" = "入站数据"
 "exportInbound" = "导出入站规则"
-"import"="导入"
+"import" = "导入"
 "importInbound" = "导入入站规则"
 
 [pages.client]

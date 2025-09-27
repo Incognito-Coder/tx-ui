@@ -518,7 +518,7 @@ func (s *SettingService) GetWarp() (string, error) {
 }
 
 func (s *SettingService) GetAutoDeleteDay() (int, error) {
-    return s.getInt("autoDeleteDay")
+	return s.getInt("autoDeleteDay")
 }
 
 func (s *SettingService) SetWarp(data string) error {

@@ -3,8 +3,8 @@ package service
 import (
 	"context"
 	"crypto/rand"
-	"encoding/base64"
 	"embed"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"net"
@@ -34,12 +34,12 @@ import (
 )
 
 var (
-	bot         *telego.Bot
-	botHandler  *th.BotHandler
-	adminIds    []int64
-	isRunning   bool
-	hostname    string
-	hashStorage *global.HashStorage
+	bot              *telego.Bot
+	botHandler       *th.BotHandler
+	adminIds         []int64
+	isRunning        bool
+	hostname         string
+	hashStorage      *global.HashStorage
 	pendingAddClient = make(map[int64]int)
 )
 
@@ -906,13 +906,12 @@ func (t *Tgbot) answerCallback(callbackQuery *telego.CallbackQuery, isAdmin bool
 					t.sendCallbackAnswerTgBot(callbackQuery.ID, err.Error())
 					return
 				}
-									t.SendMsgToTgbot(chatId, t.I18nBot("tgbot.answers.chooseClient", "Inbound=="+inbound.Remark), clients)
+				t.SendMsgToTgbot(chatId, t.I18nBot("tgbot.answers.chooseClient", "Inbound=="+inbound.Remark), clients)
 			case "add_client":
 				inboundId, _ := strconv.Atoi(dataArray[1])
 				t.sendCallbackAnswerTgBot(callbackQuery.ID, t.I18nBot("tgbot.answers.addClient"))
 				t.SendMsgToTgbot(chatId, t.I18nBot("tgbot.messages.enterClientInfo"))
 				pendingAddClient[chatId] = inboundId
-
 
 			}
 			return
