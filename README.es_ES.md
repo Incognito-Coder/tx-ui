@@ -6,7 +6,7 @@
   </picture>
 </p>
 
-**Un Panel Web Avanzado • Construido sobre Xray Core** \ 
+**Un Panel Web Avanzado • Construido sobre Xray Core** \
 **Este proyecto es una bifurcación del panel 3x-ui.**
 
 [![](https://img.shields.io/github/v/release/AghayeCoder/tx-ui.svg)](https://github.com/AghayeCoder/tx-ui/releases)
@@ -485,8 +485,8 @@ administradores del bot. (Puedes ingresar más de uno, solo sepáralos con ,)
 | `POST` | `"/clientIps/:email"`              | Dirección IP del Cliente                                                             |
 | `POST` | `"/clearClientIps/:email"`         | Borrar Dirección IP del Cliente                                                      |
 | `POST` | `"/addClient"`                     | Agregar Cliente a la Entrada                                                         |
-| `POST` | `"/:id/delClient/:clientId"`       | Eliminar Cliente por clientId*                                                      |
-| `POST` | `"/updateClient/:clientId"`        | Actualizar Cliente por clientId*                                                    |
+| `POST` | `"/:id/delClient/:clientId"`       | Eliminar Cliente por clientId*                                                       |
+| `POST` | `"/updateClient/:clientId"`        | Actualizar Cliente por clientId*                                                     |
 | `POST` | `"/updateClientTraffic/:email"`    | Actualizar el tráfico del cliente por correo electrónico, los valores están en bytes |
 | `POST` | `"/:id/resetClientTraffic/:email"` | Restablecer Tráfico del Cliente                                                      |
 | `POST` | `"/resetAllTraffics"`              | Restablecer tráfico de todos las Entradas                                            |
@@ -504,9 +504,9 @@ administradores del bot. (Puedes ingresar más de uno, solo sepáralos con ,)
 
 `/panel/api/server` base para las siguientes acciones:
 
-| Método | Ruta             | Acción                         |
-|:------:|------------------|--------------------------------|
-| `GET`  | `"/status"`      | Obtener el estado del servidor |
+| Método | Ruta                    | Acción                         |
+|:------:|-------------------------|--------------------------------|
+| `GET`  | `"/status"`             | Obtener el estado del servidor |
 | `GET`  | `"/restartXrayService"` | Reanudar xray-core             |
 
 [<img src="https://run.pstmn.io/button.svg" alt="Run In Postman" style="width: 128px; height: 32px;">](https://app.getpostman.com/run-collection/5146551-dda3cab3-0e33-485f-96f9-d4262f437ac5?action=collection%2Ffork&source=rip_markdown&collection-url=entityId%3D5146551-dda3cab3-0e33-485f-96f9-d4262f437ac5%26entityType%3Dcollection%26workspaceId%3Dd64f609f-485a-4951-9b8f-876b3f917124)
@@ -519,13 +519,13 @@ administradores del bot. (Puedes ingresar más de uno, solo sepáralos con ,)
 
 #### Uso
 
-| Variable       |                      Tipo                      | Predeterminado |
-|----------------|:----------------------------------------------:|:---------------|
-| XUI_LOG_LEVEL  | "debug" | "info" | "warn" | "error" |
-| XUI_DEBUG      |                   `boolean`                    | `false`        |
-| XUI_BIN_FOLDER |                    `string`                    | "bin"        |
-| XUI_DB_FOLDER  |                    `string`                    | "/etc/x-ui"  |
-| XUI_LOG_FOLDER |                    `string`                    | "/var/log"   |
+| Variable       |   Tipo    | Predeterminado |
+|----------------|:---------:|:---------------|
+| XUI_LOG_LEVEL  |  "debug"  | "info"         | "warn" | "error" |
+| XUI_DEBUG      | `boolean` | `false`        |
+| XUI_BIN_FOLDER | `string`  | "bin"          |
+| XUI_DB_FOLDER  | `string`  | "/etc/x-ui"    |
+| XUI_LOG_FOLDER | `string`  | "/var/log"     |
 
 Ejemplo:
 

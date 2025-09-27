@@ -6,7 +6,7 @@
   </picture>
 </p>
 
-**An Advanced Web Panel • Built on Xray Core** 
+**An Advanced Web Panel • Built on Xray Core**
 **This project is a fork of 3x-ui panel.**
 
 [![](https://img.shields.io/github/v/release/AghayeCoder/tx-ui.svg)](https://github.com/AghayeCoder/tx-ui/releases)
@@ -487,8 +487,8 @@ than one, Just separate them with ,)
 | `POST` | `"/clientIps/:email"`              | Client Ip address                                  |
 | `POST` | `"/clearClientIps/:email"`         | Clear Client Ip address                            |
 | `POST` | `"/addClient"`                     | Add Client to inbound                              |
-| `POST` | `"/:id/delClient/:clientId"`       | Delete Client by clientId*                        |
-| `POST` | `"/updateClient/:clientId"`        | Update Client by clientId*                        |
+| `POST` | `"/:id/delClient/:clientId"`       | Delete Client by clientId*                         |
+| `POST` | `"/updateClient/:clientId"`        | Update Client by clientId*                         |
 | `POST` | `"/updateClientTraffic/:email"`    | Update Client traffic by email,values are in bytes |
 | `POST` | `"/:id/resetClientTraffic/:email"` | Reset Client's Traffic                             |
 | `POST` | `"/resetAllTraffics"`              | Reset traffics of all inbounds                     |
@@ -506,9 +506,9 @@ than one, Just separate them with ,)
 
 `/panel/api/server` base for following actions:
 
-| Method | Path             | Action            |
-|:------:|------------------|-------------------|
-| `GET`  | `"/status"`      | Get server status |
+| Method | Path                    | Action            |
+|:------:|-------------------------|-------------------|
+| `GET`  | `"/status"`             | Get server status |
 | `GET`  | `"/restartXrayService"` | Restart xray-core |
 
 [<img src="https://run.pstmn.io/button.svg" alt="Run In Postman" style="width: 128px; height: 32px;">](https://app.getpostman.com/run-collection/5146551-dda3cab3-0e33-485f-96f9-d4262f437ac5?action=collection%2Ffork&source=rip_markdown&collection-url=entityId%3D5146551-dda3cab3-0e33-485f-96f9-d4262f437ac5%26entityType%3Dcollection%26workspaceId%3Dd64f609f-485a-4951-9b8f-876b3f917124)
@@ -522,13 +522,13 @@ than one, Just separate them with ,)
 
 #### Usage
 
-| Variable       |                      Type                      | Default       |
-|----------------|:----------------------------------------------:|:--------------|
-| XUI_LOG_LEVEL  | "debug" | "info" | "warn" | "error" |
-| XUI_DEBUG      |                   `boolean`                    | `false`       |
-| XUI_BIN_FOLDER |                    `string`                    | "bin"       |
-| XUI_DB_FOLDER  |                    `string`                    | "/etc/x-ui" |
-| XUI_LOG_FOLDER |                    `string`                    | "/var/log"  |
+| Variable       |   Type    | Default     |
+|----------------|:---------:|:------------|
+| XUI_LOG_LEVEL  |  "debug"  | "info"      | "warn" | "error" |
+| XUI_DEBUG      | `boolean` | `false`     |
+| XUI_BIN_FOLDER | `string`  | "bin"       |
+| XUI_DB_FOLDER  | `string`  | "/etc/x-ui" |
+| XUI_LOG_FOLDER | `string`  | "/var/log"  |
 
 Example:
 
