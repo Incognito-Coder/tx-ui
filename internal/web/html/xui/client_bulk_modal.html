@@ -1,11 +1,12 @@
 {{define "clientsBulkModal"}}
 <a-modal id="client-bulk-modal" v-model="clientsBulkModal.visible" :title="clientsBulkModal.title"
-    @ok="clientsBulkModal.ok" :confirm-loading="clientsBulkModal.confirmLoading" :closable="true" :mask-closable="false"
-    :ok-text="clientsBulkModal.okText" cancel-text='{{ i18n "close" }}' :class="themeSwitcher.currentTheme">
+         @ok="clientsBulkModal.ok" :confirm-loading="clientsBulkModal.confirmLoading" :closable="true"
+         :mask-closable="false"
+         :ok-text="clientsBulkModal.okText" cancel-text='{{ i18n "close" }}' :class="themeSwitcher.currentTheme">
     <a-form :colon="false" :label-col="{ md: {span:8} }" :wrapper-col="{ md: {span:14} }">
         <a-form-item label='{{ i18n "pages.client.method" }}'>
             <a-select v-model="clientsBulkModal.emailMethod" buttonStyle="solid"
-                :dropdown-class-name="themeSwitcher.currentTheme">
+                      :dropdown-class-name="themeSwitcher.currentTheme">
                 <a-select-option :value="0">Random</a-select-option>
                 <a-select-option :value="1">Random+Prefix</a-select-option>
                 <a-select-option :value="2">Random+Prefix+Num</a-select-option>
@@ -104,10 +105,10 @@
                 </a-tooltip>
             </template>
             <a-date-picker v-if="datepicker == 'gregorian'" :show-time="{ format: 'HH:mm:ss' }"
-                format="YYYY-MM-DD HH:mm:ss" :dropdown-class-name="themeSwitcher.currentTheme"
-                v-model="clientsBulkModal.expiryTime"></a-date-picker>
+                           format="YYYY-MM-DD HH:mm:ss" :dropdown-class-name="themeSwitcher.currentTheme"
+                           v-model="clientsBulkModal.expiryTime"></a-date-picker>
             <persian-datepicker v-else placeholder='{{ i18n "pages.settings.datepickerPlaceholder" }}'
-                value="clientsBulkModal.expiryTime" v-model="clientsBulkModal.expiryTime">
+                                value="clientsBulkModal.expiryTime" v-model="clientsBulkModal.expiryTime">
             </persian-datepicker>
         </a-form-item>
         <a-form-item v-if="clientsBulkModal.expiryTime != 0">
@@ -181,11 +182,12 @@
             ObjectUtil.execute(clientsBulkModal.confirm, clients, clientsBulkModal.dbInbound.id);
         },
         show({
-            title = '',
-            okText = '{{ i18n "sure" }}',
-            dbInbound = null,
-            confirm = (inbound, dbInbound) => { }
-        }) {
+                 title = '',
+                 okText = '{{ i18n "sure" }}',
+                 dbInbound = null,
+                 confirm = (inbound, dbInbound) => {
+                 }
+             }) {
             this.visible = true;
             this.title = title;
             this.okText = okText;
@@ -210,11 +212,16 @@
         },
         newClient(protocol) {
             switch (protocol) {
-                case Protocols.VMESS: return new Inbound.VmessSettings.VMESS();
-                case Protocols.VLESS: return new Inbound.VLESSSettings.VLESS();
-                case Protocols.TROJAN: return new Inbound.TrojanSettings.Trojan();
-                case Protocols.SHADOWSOCKS: return new Inbound.ShadowsocksSettings.Shadowsocks(clientsBulkModal.inbound.settings.shadowsockses[0].method);
-                default: return null;
+                case Protocols.VMESS:
+                    return new Inbound.VmessSettings.VMESS();
+                case Protocols.VLESS:
+                    return new Inbound.VLESSSettings.VLESS();
+                case Protocols.TROJAN:
+                    return new Inbound.TrojanSettings.Trojan();
+                case Protocols.SHADOWSOCKS:
+                    return new Inbound.ShadowsocksSettings.Shadowsocks(clientsBulkModal.inbound.settings.shadowsockses[0].method);
+                default:
+                    return null;
             }
         },
         close() {

@@ -1,7 +1,8 @@
 {{define "form/streamKCP"}}
 <a-form :colon="false" :label-col="{ md: {span:8} }" :wrapper-col="{ md: {span:14} }">
     <a-form-item label='{{ i18n "camouflage" }}'>
-        <a-select v-model="inbound.stream.kcp.type" style="width: 50%" :dropdown-class-name="themeSwitcher.currentTheme">
+        <a-select v-model="inbound.stream.kcp.type" style="width: 50%"
+                  :dropdown-class-name="themeSwitcher.currentTheme">
             <a-select-option value="none">None</a-select-option>
             <a-select-option value="srtp">SRTP</a-select-option>
             <a-select-option value="utp">uTP</a-select-option>
@@ -17,7 +18,7 @@
                     <span>{{ i18n "reset" }}</span>
                 </template>
                 {{ i18n "password" }}
-                <a-icon @click="inbound.stream.kcp.seed = RandomUtil.randomSeq(10)"type="sync"> </a-icon>
+                <a-icon @click="inbound.stream.kcp.seed = RandomUtil.randomSeq(10)" type="sync"></a-icon>
             </a-tooltip>
         </template>
         <a-input v-model.trim="inbound.stream.kcp.seed"></a-input>
@@ -30,7 +31,7 @@
     </a-form-item>
     <a-form-item label='Uplink (MB/s)'>
         <a-input-number v-model.number="inbound.stream.kcp.upCap" :min="0"></a-input-number>
-    </a-form-item> 
+    </a-form-item>
     <a-form-item label='Downlink (MB/s)'>
         <a-input-number v-model.number="inbound.stream.kcp.downCap" :min="0"></a-input-number>
     </a-form-item>

@@ -4,7 +4,10 @@
          :class="themeSwitcher.currentTheme"
          :ok-text="clientModal.okText" cancel-text='{{ i18n "close" }}'>
     <template v-if="isEdit">
-        <a-tag v-if="isExpiry || isTrafficExhausted" color="red" style="margin-bottom: 10px;display: block;text-align: center;">Account is (Expired|Traffic Ended) And Disabled</a-tag>
+        <a-tag v-if="isExpiry || isTrafficExhausted" color="red"
+               style="margin-bottom: 10px;display: block;text-align: center;">Account is (Expired|Traffic Ended) And
+            Disabled
+        </a-tag>
     </template>
     {{template "form/client"}}
 </a-modal>
@@ -32,7 +35,10 @@
                 ObjectUtil.execute(clientModal.confirm, clientModalApp.client, clientModal.dbInbound.id);
             }
         },
-        show({ title = '', okText = '{{ i18n "sure" }}', client = null, dbInbound = null, confirm = () => { }, isEdit = false }) {
+        show({
+                 title = '', okText = '{{ i18n "sure" }}', client = null, dbInbound = null, confirm = () => {
+            }, isEdit = false
+             }) {
             this.visible = true;
             this.title = title;
             this.okText = okText;
@@ -52,12 +58,15 @@
             }
             this.clientStats = this.dbInbound.clientStats.find(row => row.email === this.client.email);
             this.confirm = confirm;
-        },  
+        },
         getClientId(protocol, client) {
             switch (protocol) {
-                case Protocols.TROJAN: return client.password;
-                case Protocols.SHADOWSOCKS: return client.email;
-                default: return client.id;
+                case Protocols.TROJAN:
+                    return client.password;
+                case Protocols.SHADOWSOCKS:
+                    return client.email;
+                default:
+                    return client.id;
             }
         },
         addClient(protocol, clients) {
@@ -87,7 +96,7 @@
             clientModal.visible = false;
             clientModal.loading(false);
         },
-        loading(loading=true) {
+        loading(loading = true) {
             clientModal.confirmLoading = loading;
         },
     };
@@ -119,7 +128,7 @@
                 return true
             },
             get isExpiry() {
-                return this.clientModal.isEdit && this.client.expiryTime >0 ? (this.client.expiryTime < new Date().getTime()) : false;
+                return this.clientModal.isEdit && this.client.expiryTime > 0 ? (this.client.expiryTime < new Date().getTime()) : false;
             },
             get delayedStart() {
                 return this.clientModal.delayedStart;

@@ -3,7 +3,8 @@
          :confirm-loading="warpModal.confirmLoading" :closable="true" :mask-closable="true"
          :footer="null" :class="themeSwitcher.currentTheme">
     <template v-if="ObjectUtil.isEmpty(warpModal.warpData)">
-        <a-button icon="api" @click="register" :loading="warpModal.confirmLoading">{{ i18n "pages.inbounds.create" }}</a-button>
+        <a-button icon="api" @click="register" :loading="warpModal.confirmLoading">{{ i18n "pages.inbounds.create" }}
+        </a-button>
     </template>
     <template v-else>
         <table style="margin: 5px 0; width: 100%;">
@@ -32,14 +33,16 @@
                     <a-form-item label="Key">
                         <a-input v-model="warpPlus"></a-input>
                         <a-button @click="updateLicense(warpPlus)" :disabled="warpPlus.length<26"
-                            :loading="warpModal.confirmLoading">{{ i18n "pages.inbounds.update" }}</a-button>
+                                  :loading="warpModal.confirmLoading">{{ i18n "pages.inbounds.update" }}
+                        </a-button>
                     </a-form-item>
                 </a-form>
             </a-collapse-panel>
         </a-collapse>
         <a-divider style="margin: 0;">{{ i18n "pages.xray.outbound.accountInfo" }}</a-divider>
         <a-button icon="sync" @click="getConfig" style="margin-top: 5px; margin-bottom: 10px;"
-            :loading="warpModal.confirmLoading" type="primary">{{ i18n "info" }}</a-button>
+                  :loading="warpModal.confirmLoading" type="primary">{{ i18n "info" }}
+        </a-button>
         <template v-if="!ObjectUtil.isEmpty(warpModal.warpConfig)">
             <table style="width: 100%">
                 <tr class="client-table-odd-row">
@@ -81,11 +84,15 @@
             <a-form :label-col="{ md: {span:8} }" :wrapper-col="{ md: {span:14} }">
                 <template v-if="warpOutboundIndex>=0">
                     <a-tag color="green" style="line-height: 31px;">{{ i18n "enabled" }}</a-tag>
-                    <a-button @click="resetOutbound" :loading="warpModal.confirmLoading" type="danger">{{ i18n "reset" }}</a-button>
+                    <a-button @click="resetOutbound" :loading="warpModal.confirmLoading" type="danger">{{ i18n "reset"
+                        }}
+                    </a-button>
                 </template>
                 <template v-else>
                     <a-tag color="orange" style="line-height: 31px;">{{ i18n "disabled" }}</a-tag>
-                    <a-button @click="addOutbound" :loading="warpModal.confirmLoading" type="primary">{{ i18n "pages.xray.outbound.addOutbound" }}</a-button>
+                    <a-button @click="addOutbound" :loading="warpModal.confirmLoading" type="primary">{{ i18n
+                        "pages.xray.outbound.addOutbound" }}
+                    </a-button>
                 </template>
                 </a-form-item>
             </a-form>
@@ -188,7 +195,7 @@
             },
             async updateLicense(l) {
                 warpModal.loading(true);
-                const msg = await HttpUtil.post('/panel/xray/warp/license', { license: l });
+                const msg = await HttpUtil.post('/panel/xray/warp/license', {license: l});
                 if (msg.success) {
                     warpModal.warpData = JSON.parse(msg.obj);
                     warpModal.warpConfig = null;

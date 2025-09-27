@@ -18,7 +18,15 @@
         ok() {
             ObjectUtil.execute(inModal.confirm, inModal.inbound, inModal.dbInbound);
         },
-        show({ title = '', okText = '{{ i18n "sure" }}', inbound = null, dbInbound = null, confirm = (inbound, dbInbound) => {}, isEdit = false }) {
+        show({
+                 title = '',
+                 okText = '{{ i18n "sure" }}',
+                 inbound = null,
+                 dbInbound = null,
+                 confirm = (inbound, dbInbound) => {
+                 },
+                 isEdit = false
+             }) {
             this.title = title;
             this.okText = okText;
             if (inbound) {
@@ -39,7 +47,7 @@
             inModal.visible = false;
             inModal.loading(false);
         },
-        loading(loading=true) {
+        loading(loading = true) {
             inModal.confirmLoading = loading;
         },
     };
@@ -103,7 +111,7 @@
             },
             SSMethodChange() {
                 if (this.inModal.inbound.isSSMultiUser) {
-                    if (this.inModal.inbound.settings.shadowsockses.length ==0){
+                    if (this.inModal.inbound.settings.shadowsockses.length == 0) {
                         this.inModal.inbound.settings.shadowsockses = [new Inbound.ShadowsocksSettings.Shadowsocks()];
                     }
                     if (!this.inModal.inbound.isSS2022) {
@@ -116,7 +124,7 @@
                         })
                     }
                 } else {
-                    if (this.inModal.inbound.settings.shadowsockses.length > 0){
+                    if (this.inModal.inbound.settings.shadowsockses.length > 0) {
                         this.inModal.inbound.settings.shadowsockses = [];
                     }
                 }

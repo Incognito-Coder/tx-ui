@@ -34,14 +34,16 @@
         ok() {
             promptModal.confirm(promptModal.value);
         },
-        confirm() {},
+        confirm() {
+        },
         open({
-            title = '',
-            type = 'text',
-            value = '',
-            okText = '{{ i18n "sure"}}',
-            confirm = () => {},
-        }) {
+                 title = '',
+                 type = 'text',
+                 value = '',
+                 okText = '{{ i18n "sure"}}',
+                 confirm = () => {
+                 },
+             }) {
             this.title = title;
             this.type = type;
             this.value = value;
@@ -55,7 +57,7 @@
         close() {
             this.visible = false;
         },
-        loading(loading=true) {
+        loading(loading = true) {
             this.confirmLoading = loading;
         },
     };

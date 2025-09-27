@@ -3,7 +3,8 @@
     <a-row v-if="type === 'textarea'">
         <a-col>
             <a-list-item-meta :title="title" :description="desc"/>
-            <a-textarea class="ant-setting-textarea" :value="value" @input="$emit('input', $event.target.value)" :auto-size="{ minRows: 10 }"></a-textarea>
+            <a-textarea class="ant-setting-textarea" :value="value" @input="$emit('input', $event.target.value)"
+                        :auto-size="{ minRows: 10 }"></a-textarea>
             <!--a-textarea :value="value" @input="$emit('input', $event.target.value)" :auto-size="{ minRows: 10, maxRows: 30 }"></a-textarea-->
         </a-col>
     </a-row>
@@ -13,10 +14,12 @@
         </a-col>
         <a-col :lg="24" :xl="12">
             <template v-if="type === 'text'">
-                <a-input :value="value" @input="$emit('input', $event.target.value)" :placeholder="placeholder"></a-input>
+                <a-input :value="value" @input="$emit('input', $event.target.value)"
+                         :placeholder="placeholder"></a-input>
             </template>
             <template v-else-if="type === 'number'">
-                <a-input-number :value="value" :step="step" @change="value => $emit('input', value)" :min="min" :max="max" style="width: 100%;"></a-input-number>
+                <a-input-number :value="value" :step="step" @change="value => $emit('input', value)" :min="min"
+                                :max="max" style="width: 100%;"></a-input-number>
             </template>
             <template v-else-if="type === 'switch'">
                 <a-switch :checked="value" @change="value => $emit('input', value)"></a-switch>
@@ -29,7 +32,7 @@
 {{define "component/setting"}}
 <script>
     Vue.component('setting-list-item', {
-        props: ["type", "title", "desc", "value", "min", "max" , "step", "placeholder"],
+        props: ["type", "title", "desc", "value", "min", "max", "step", "placeholder"],
         template: `{{template "component/settingListItem"}}`,
     });
 </script>
