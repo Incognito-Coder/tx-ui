@@ -1797,11 +1797,59 @@ func (s *InboundService) ResetClientTraffic(id int, clientEmail string) (bool, e
 		}
 	}
 
+	// Attempt to sync reset across clients with same subId when client sync is enabled
+	db := database.GetDB()
+	settingService := &SettingService{}
+	syncClients, serr := settingService.GetSyncClients()
+	if serr == nil && syncClients {
+		// find subId for this client
+		subId := ""
+		// try to get inbound by provided id (if possible)
+		if inbound, err := s.GetInbound(id); err == nil {
+			if clients, err := s.GetClients(inbound); err == nil {
+				for _, c := range clients {
+					if c.Email == clientEmail {
+						subId = c.SubID
+						break
+					}
+				}
+			}
+		}
+
+		if subId != "" {
+			// collect all emails that share this subId across all inbounds
+			inbounds, err := s.GetAllInbounds()
+			if err == nil {
+				emails := make([]string, 0)
+				for _, ib := range inbounds {
+					if clients, err := s.GetClients(ib); err == nil {
+						for _, c := range clients {
+							if c.SubID == subId && c.Email != "" {
+								emails = append(emails, c.Email)
+							}
+						}
+					}
+				}
+				if len(emails) > 0 {
+					res := db.Model(xray.ClientTraffic{}).
+						Where("email IN (?)", emails).
+						Updates(map[string]interface{}{"enable": true, "up": 0, "down": 0})
+					if res.Error != nil {
+						logger.Warningf("failed to reset traffic for clients with subId %s: %v", subId, res.Error)
+					} else {
+						// done, return with current needRestart state
+						return needRestart, nil
+					}
+				}
+			}
+		}
+	}
+
+	// Fallback: reset single client traffic
 	traffic.Up = 0
 	traffic.Down = 0
 	traffic.Enable = true
 
-	db := database.GetDB()
 	err = db.Save(traffic).Error
 	if err != nil {
 		return false, err
