@@ -34,19 +34,21 @@ func NewSubService(showInfo bool, remarkModel string) *SubService {
 	}
 }
 
-func (s *SubService) GetSubs(subId string, host string) ([]string, string, error) {
+func (s *SubService) GetSubs(subId string, host string) ([]string, string, []string, error) {
 	s.address = host
 	var result []string
 	var header string
 	var traffic xray.ClientTraffic
 	var clientTraffics []xray.ClientTraffic
+	var emails []string
+
 	inbounds, err := s.getInboundsBySubId(subId)
 	if err != nil {
-		return nil, "", err
+		return nil, "", nil, err
 	}
 
 	if len(inbounds) == 0 {
-		return nil, "", common.NewError("No inbounds found with ", subId)
+		return nil, "", nil, common.NewError("No inbounds found with ", subId)
 	}
 
 	s.datepicker, err = s.settingService.GetDatepicker()
@@ -74,6 +76,7 @@ func (s *SubService) GetSubs(subId string, host string) ([]string, string, error
 				link := s.getLink(inbound, client.Email)
 				result = append(result, link)
 				clientTraffics = append(clientTraffics, s.getClientTraffics(inbound.ClientStats, client.Email))
+				emails = append(emails, client.Email)
 			}
 		}
 	}
@@ -101,7 +104,7 @@ func (s *SubService) GetSubs(subId string, host string) ([]string, string, error
 		}
 	}
 	header = fmt.Sprintf("upload=%d; download=%d; total=%d; expire=%d", traffic.Up, traffic.Down, traffic.Total, traffic.ExpiryTime/1000)
-	return result, header, nil
+	return result, header, emails, nil
 }
 
 func (s *SubService) getInboundsBySubId(subId string) ([]*model.Inbound, error) {

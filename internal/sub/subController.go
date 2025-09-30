@@ -56,6 +56,7 @@ func (a *SUBController) initRouter(g *gin.RouterGroup) {
 	gJson := g.Group(a.subJsonPath)
 
 	gLink.GET(":subid", a.subs)
+	gLink.GET(":subid/json", a.subsJson) // New JSON endpoint
 
 	gJson.GET(":subid", a.subJsons)
 }
@@ -76,7 +77,7 @@ func (a *SUBController) subs(c *gin.Context) {
 			host = c.Request.Host
 		}
 	}
-	subs, header, err := a.subService.GetSubs(subId, host)
+	subs, header, emails, err := a.subService.GetSubs(subId, host)
 	if err != nil || len(subs) == 0 {
 		c.String(400, "Error!")
 	} else {
@@ -85,6 +86,12 @@ func (a *SUBController) subs(c *gin.Context) {
 			result += sub + "\n"
 		}
 		resultSlice := strings.Split(strings.TrimSpace(result), "\n")
+
+		clientEmails := ""
+		for _, email := range emails {
+			clientEmails += email + "\n"
+		}
+		ResultsEmails := strings.Split(strings.TrimSpace(clientEmails), "\n")
 
 		// Add headers
 		c.Writer.Header().Set("Subscription-Userinfo", header)
@@ -114,6 +121,7 @@ func (a *SUBController) subs(c *gin.Context) {
 					"uploadByte":   headerMap["upload"],
 					"downloadByte": headerMap["download"],
 					"sId":          subId,
+					"emails":       ResultsEmails,
 					"subUrl":       currentURL,
 					"jsonUrl":      subJsonUrl,
 				})
@@ -156,6 +164,59 @@ func (a *SUBController) subJsons(c *gin.Context) {
 
 		c.String(200, jsonSub)
 	}
+}
+
+// New handler for JSON response
+func (a *SUBController) subsJson(c *gin.Context) {
+	subId := c.Param("subid")
+	var host string
+	if h, err := getHostFromXFH(c.GetHeader("X-Forwarded-Host")); err == nil {
+		host = h
+	}
+	if host == "" {
+		host = c.GetHeader("X-Real-IP")
+	}
+	if host == "" {
+		var err error
+		host, _, err = net.SplitHostPort(c.Request.Host)
+		if err != nil {
+			host = c.Request.Host
+		}
+	}
+	subs, header, emails, err := a.subService.GetSubs(subId, host)
+	if err != nil || len(subs) == 0 {
+		c.JSON(400, gin.H{"error": "Error!"})
+		return
+	}
+
+	resultSlice := strings.Split(strings.TrimSpace(strings.Join(subs, "\n")), "\n")
+
+	headerMap := parseHeaderString(header)
+	expireValue := headerMap["expire"]
+	upValue := formatBytes(headerMap["upload"], 2)
+	downValue := formatBytes(headerMap["download"], 2)
+	totalValue := formatBytes(headerMap["total"], 2)
+	subJsonUrl := "https://" + c.Request.Host + a.subJsonPath + subId
+	currentURL := "https://" + c.Request.Host + a.subPath + subId
+
+	c.Writer.Header().Set("Subscription-Userinfo", header)
+	c.Writer.Header().Set("Profile-Update-Interval", a.updateInterval)
+	c.Writer.Header().Set("Profile-Title", "base64:"+base64.StdEncoding.EncodeToString([]byte(a.subTitle)))
+
+	c.JSON(200, gin.H{
+		"result":       resultSlice,
+		"total":        totalValue,
+		"expire":       expireValue,
+		"upload":       upValue,
+		"download":     downValue,
+		"totalByte":    headerMap["total"],
+		"uploadByte":   headerMap["upload"],
+		"downloadByte": headerMap["download"],
+		"sId":          subId,
+		"emails":       emails,
+		"subUrl":       currentURL,
+		"jsonUrl":      subJsonUrl,
+	})
 }
 
 func getHostFromXFH(s string) (string, error) {
