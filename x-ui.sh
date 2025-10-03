@@ -487,19 +487,34 @@ enable_bbr() {
     # Check the OS and install necessary packages
     case "${release}" in
     ubuntu | debian | armbian)
-        apt-get update && apt-get install -yqq --no-install-recommends ca-certificates
+        apt-get update && apt-get install -y ca-certificates
         ;;
     centos | rhel | almalinux | rocky | ol)
-        yum -y update && yum -y install ca-certificates
+        yum -y update && yum install -y ca-certificates
         ;;
     fedora | amzn)
-        dnf -y update && dnf -y install ca-certificates
+        dnf -y update && dnf install -y ca-certificates
         ;;
     arch | manjaro | parch)
         pacman -Sy --noconfirm ca-certificates
         ;;
+    opensuse* | suse)
+        zypper refresh && zypper install -y ca-certificates
+        ;;
+    alpine)
+        apk update && apk add ca-certificates
+        ;;
+    gentoo)
+        emerge --sync && emerge --ask --quiet ca-certificates
+        ;;
+    void)
+        xbps-install -S && xbps-install -y ca-certificates
+        ;;
+    solus)
+        eopkg update && eopkg install -y ca-certificates
+        ;;
     *)
-        echo -e "${red}Unsupported operating system. Please check the script and install the necessary packages manually.${plain}\n"
+        echo -e "${red}Unsupported operating system. Please install ca-certificates manually.${plain}\n"
         exit 1
         ;;
     esac
@@ -1008,22 +1023,37 @@ ssl_cert_issue() {
 
     # install socat second
     case "${release}" in
-    ubuntu | debian | armbian)
-        apt update && apt install socat -y
-        ;;
-    centos | rhel | almalinux | rocky | ol)
-        yum -y update && yum -y install socat
-        ;;
-    fedora | amzn)
-        dnf -y update && dnf -y install socat
-        ;;
-    arch | manjaro | parch)
-        pacman -Sy --noconfirm socat
-        ;;
-    *)
-        echo -e "${red}Unsupported operating system. Please check the script and install the necessary packages manually.${plain}\n"
-        exit 1
-        ;;
+        ubuntu | debian | armbian)
+            apt update && apt install -y socat
+            ;;
+        centos | rhel | almalinux | rocky | ol)
+            yum -y update && yum install -y socat
+            ;;
+        fedora | amzn)
+            dnf -y update && dnf install -y socat
+            ;;
+        arch | manjaro | parch)
+            pacman -Sy --noconfirm socat
+            ;;
+        opensuse* | suse)
+            zypper refresh && zypper install -y socat
+            ;;
+        alpine)
+            apk update && apk add socat
+            ;;
+        gentoo)
+            emerge --sync && emerge --ask --quiet socat
+            ;;
+        void)
+            xbps-install -S && xbps-install -y socat
+            ;;
+        solus)
+            eopkg update && eopkg install -y socat
+            ;;
+        *)
+            echo -e "${red}Unsupported operating system. Please install socat manually.${plain}\n"
+            exit 1
+            ;;
     esac
     if [ $? -ne 0 ]; then
         LOGE "install socat failed, please check logs"
@@ -1465,40 +1495,44 @@ iplimit_main() {
 install_iplimit() {
     if ! command -v fail2ban-client &>/dev/null; then
         echo -e "${green}Fail2ban is not installed. Installing now...!${plain}\n"
-
-        # Check the OS and install necessary packages
         case "${release}" in
-        ubuntu)
-            if [[ "${os_version}" -ge 24 ]]; then
-                apt update && apt install python3-pip -y
-                python3 -m pip install pyasynchat --break-system-packages
-            fi
-            apt update && apt install fail2ban -y
-            ;;
-        debian | armbian)
-            apt update && apt install fail2ban -y
-            ;;
-        centos | rhel |almalinux | rocky | ol)
-            yum update -y && yum install epel-release -y
-            yum -y install fail2ban
-            ;;
-        fedora | amzn)
-            dnf -y update && dnf -y install fail2ban
-            ;;
-        arch | manjaro | parch)
-            pacman -Syu --noconfirm fail2ban
-            ;;
-        *)
-            echo -e "${red}Unsupported operating system. Please check the script and install the necessary packages manually.${plain}\n"
-            exit 1
-            ;;
+            ubuntu | debian | armbian)
+                apt update && apt install -y fail2ban
+                ;;
+            centos | rhel | almalinux | rocky | ol)
+                yum update -y && yum install epel-release -y
+                yum install -y fail2ban
+                ;;
+            fedora | amzn)
+                dnf -y update && dnf install -y fail2ban
+                ;;
+            arch | manjaro | parch)
+                pacman -Syu --noconfirm fail2ban
+                ;;
+            opensuse* | suse)
+                zypper refresh && zypper install -y fail2ban
+                ;;
+            alpine)
+                apk update && apk add fail2ban
+                ;;
+            gentoo)
+                emerge --sync && emerge --ask --quiet fail2ban
+                ;;
+            void)
+                xbps-install -S && xbps-install -y fail2ban
+                ;;
+            solus)
+                eopkg update && eopkg install -y fail2ban
+                ;;
+            *)
+                echo -e "${red}Unsupported operating system. Please install fail2ban manually.${plain}\n"
+                exit 1
+                ;;
         esac
-
         if ! command -v fail2ban-client &>/dev/null; then
             echo -e "${red}Fail2ban installation failed.${plain}\n"
             exit 1
         fi
-
         echo -e "${green}Fail2ban installed successfully!${plain}\n"
     else
         echo -e "${yellow}Fail2ban is already installed.${plain}\n"
@@ -1542,49 +1576,64 @@ remove_iplimit() {
     echo -e "${green}\t0.${plain} Back to Main Menu"
     read -p "Choose an option: " num
     case "$num" in
-    1)
-        rm -f /etc/fail2ban/filter.d/3x-ipl.conf
-        rm -f /etc/fail2ban/action.d/3x-ipl.conf
-        rm -f /etc/fail2ban/jail.d/3x-ipl.conf
-        systemctl restart fail2ban
-        echo -e "${green}IP Limit removed successfully!${plain}\n"
-        before_show_menu
-        ;;
-    2)
-        rm -rf /etc/fail2ban
-        systemctl stop fail2ban
-        case "${release}" in
-        ubuntu | debian | armbian)
-            apt-get remove -y fail2ban
-            apt-get purge -y fail2ban -y
-            apt-get autoremove -y
+        1)
+            rm -f /etc/fail2ban/filter.d/3x-ipl.conf
+            rm -f /etc/fail2ban/action.d/3x-ipl.conf
+            rm -f /etc/fail2ban/jail.d/3x-ipl.conf
+            systemctl restart fail2ban
+            echo -e "${green}IP Limit removed successfully!${plain}\n"
+            before_show_menu
             ;;
-        centos | rhel | almalinux | rocky | ol)
-            yum remove fail2ban -y
-            yum autoremove -y
+        2)
+            rm -rf /etc/fail2ban
+            systemctl stop fail2ban
+            case "${release}" in
+                ubuntu | debian | armbian)
+                    apt-get remove -y fail2ban
+                    apt-get purge -y fail2ban
+                    apt-get autoremove -y
+                    ;;
+                centos | rhel | almalinux | rocky | ol)
+                    yum remove -y fail2ban
+                    yum autoremove -y
+                    ;;
+                fedora | amzn)
+                    dnf remove -y fail2ban
+                    dnf autoremove -y
+                    ;;
+                arch | manjaro | parch)
+                    pacman -Rns --noconfirm fail2ban
+                    ;;
+                opensuse* | suse)
+                    zypper remove -y fail2ban
+                    ;;
+                alpine)
+                    apk del fail2ban
+                    ;;
+                gentoo)
+                    emerge --deselect fail2ban
+                    ;;
+                void)
+                    xbps-remove -y fail2ban
+                    ;;
+                solus)
+                    eopkg remove -y fail2ban
+                    ;;
+                *)
+                    echo -e "${red}Unsupported operating system. Please uninstall Fail2ban manually.${plain}\n"
+                    exit 1
+                    ;;
+            esac
+            echo -e "${green}Fail2ban and IP Limit removed successfully!${plain}\n"
+            before_show_menu
             ;;
-        fedora | amzn)
-            dnf remove fail2ban -y
-            dnf autoremove -y
-            ;;
-        arch | manjaro | parch)
-            pacman -Rns --noconfirm fail2ban
+        0)
+            show_menu
             ;;
         *)
-            echo -e "${red}Unsupported operating system. Please uninstall Fail2ban manually.${plain}\n"
-            exit 1
+            echo -e "${red}Invalid option. Please select a valid number.${plain}\n"
+            remove_iplimit
             ;;
-        esac
-        echo -e "${green}Fail2ban and IP Limit removed successfully!${plain}\n"
-        before_show_menu
-        ;;
-    0)
-        show_menu
-        ;;
-    *)
-        echo -e "${red}Invalid option. Please select a valid number.${plain}\n"
-        remove_iplimit
-        ;;
     esac
 }
 

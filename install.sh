@@ -81,8 +81,23 @@ install_base() {
         arch | manjaro | parch)
             pacman -Syu && pacman -Syu --noconfirm wget curl tar tzdata socat
             ;;
-        opensuse-tumbleweed)
+        opensuse-tumbleweed | opensuse)
             zypper refresh && zypper -q install -y wget curl tar timezone socat
+            ;;
+        alpine)
+            apk update && apk add wget curl tar tzdata socat
+            ;;
+        gentoo)
+            emerge --sync && emerge --ask --quiet wget curl tar tzdata socat
+            ;;
+        clearlinux)
+            swupd update && swupd bundle-add wget curl tar tzdata socat
+            ;;
+        void)
+            xbps-install -S && xbps-install -y wget curl tar tzdata socat
+            ;;
+        solus)
+            eopkg update && eopkg install -y wget curl tar tzdata socat
             ;;
         *)
             apt-get update && apt install -y -q wget curl tar tzdata socat
