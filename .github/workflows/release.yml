@@ -172,14 +172,14 @@ jobs:
 
       - name: Upload files to Artifacts (Windows)
         if: matrix.platform == 'windows-amd64'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: x-ui-windows-amd64
           path: ./x-ui-windows-amd64.zip
 
       - name: Upload files to Artifacts (Linux)
         if: matrix.platform != 'windows-amd64'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: x-ui-${{ matrix.platform }}
           path: ./x-ui-linux-${{ matrix.platform }}.tar.gz
