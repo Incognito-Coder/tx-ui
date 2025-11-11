@@ -20,6 +20,8 @@
 
 **إذا كان هذا المشروع مفيدًا لك، يمكنك دعمه بنجمة**:star2:
 
+**USDT(TON):** ```UQDnwbvFLTm1cUWeUn3FFAKgC35wTno9-zOa_ib6STUVSgYf```
+
 ## التثبيت والترقية
 
 ```bash

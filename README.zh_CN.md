@@ -19,6 +19,8 @@
 
 **如果此项目对你有用，请给一个**:star2:
 
+**USDT(TON):** ```UQDnwbvFLTm1cUWeUn3FFAKgC35wTno9-zOa_ib6STUVSgYf```
+
 ## 安装 & 升级
 
 ```

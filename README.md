@@ -20,6 +20,8 @@
 
 **If this project is helpful to you, you may wish to give it a**:star2:
 
+**USDT(TON):** ```UQDnwbvFLTm1cUWeUn3FFAKgC35wTno9-zOa_ib6STUVSgYf```
+
 ## Install & Upgrade
 
 ```
