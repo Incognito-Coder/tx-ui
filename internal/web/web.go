@@ -364,7 +364,7 @@ func (s *Server) Start() (err error) {
 	if err != nil {
 		return err
 	}
-	if certFile != "" || keyFile != "" {
+	if certFile != "" && keyFile != "" {
 		cert, err := tls.LoadX509KeyPair(certFile, keyFile)
 		if err == nil {
 			c := &tls.Config{
@@ -375,9 +375,17 @@ func (s *Server) Start() (err error) {
 			logger.Info("Web server running HTTPS on", listener.Addr())
 		} else {
 			logger.Error("Error loading certificates:", err)
+			// Even if certs are provided, if they are invalid, fallback to http only on localhost
+			if listen != "127.0.0.1" && listen != "localhost" {
+				return fmt.Errorf("failed to load SSL cert and key. HTTPS is required when listening on %s", listen)
+			}
 			logger.Info("Web server running HTTP on", listener.Addr())
 		}
 	} else {
+		// Fallback to http only on localhost
+		if listen != "127.0.0.1" && listen != "localhost" {
+			return fmt.Errorf("SSL cert and key not found. HTTPS is required when listening on %s", listen)
+		}
 		logger.Info("Web server running HTTP on", listener.Addr())
 	}
 	s.listener = listener
