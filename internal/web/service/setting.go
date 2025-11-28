@@ -25,7 +25,7 @@ var xrayTemplateConfig string
 
 var defaultValueMap = map[string]string{
 	"xrayTemplateConfig": xrayTemplateConfig,
-	"webListen":          "",
+	"webListen":          "127.0.0.1",
 	"webDomain":          "",
 	"webPort":            "2053",
 	"webCertFile":        "",
@@ -52,7 +52,7 @@ var defaultValueMap = map[string]string{
 	"secretEnable":       "false",
 	"subEnable":          "false",
 	"subTitle":           "",
-	"subListen":          "",
+	"subListen":          "127.0.0.1",
 	"subPort":            "2096",
 	"subPath":            "/sub/",
 	"subDomain":          "",
