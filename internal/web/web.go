@@ -166,6 +166,12 @@ func (s *Server) initRouter() (*gin.Engine, error) {
 
 	if webDomain != "" {
 		engine.Use(middleware.DomainValidatorMiddleware(webDomain))
+		engine.Use(func(c *gin.Context) {
+			if c.Request.TLS != nil {
+				c.Header("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+			}
+			c.Next()
+		})
 	}
 
 	secret, err := s.settingService.GetSecret()
