@@ -360,33 +360,40 @@ func (s *Server) Start() (err error) {
 		return err
 	}
 	listenAddr := net.JoinHostPort(listen, strconv.Itoa(port))
-	listener, err := net.Listen("tcp", listenAddr)
-	if err != nil {
-		return err
-	}
+	var listener net.Listener
 	if certFile != "" && keyFile != "" {
 		cert, err := tls.LoadX509KeyPair(certFile, keyFile)
-		if err == nil {
-			c := &tls.Config{
-				Certificates: []tls.Certificate{cert},
-			}
-			listener = network.NewAutoHttpsListener(listener)
-			listener = tls.NewListener(listener, c)
-			logger.Info("Web server running HTTPS on", listener.Addr())
-		} else {
+		if err != nil {
 			logger.Error("Error loading certificates:", err)
-			// Even if certs are provided, if they are invalid, fallback to http only on localhost
-			if listen != "127.0.0.1" && listen != "localhost" {
-				return fmt.Errorf("failed to load SSL cert and key. HTTPS is required when listening on %s", listen)
-			}
-			logger.Info("Web server running HTTP on", listener.Addr())
+			return err
 		}
+		l, err := net.Listen("tcp", listenAddr)
+		if err != nil {
+			return err
+		}
+		c := &tls.Config{
+			Certificates: []tls.Certificate{cert},
+		}
+		listener = tls.NewListener(network.NewAutoHttpsListener(l), c)
+		logger.Info("Web server running HTTPS on", listener.Addr())
 	} else {
-		// Fallback to http only on localhost
-		if listen != "127.0.0.1" && listen != "localhost" {
-			return fmt.Errorf("SSL cert and key not found. HTTPS is required when listening on %s", listen)
+		isLoopback := false
+		if listen == "localhost" || listen == "127.0.0.1" || listen == "::1" || listen == "" {
+			isLoopback = true
 		}
-		logger.Info("Web server running HTTP on", listener.Addr())
+
+		if isLoopback {
+			l, err := net.Listen("tcp", listenAddr)
+			if err != nil {
+				return err
+			}
+			listener = l
+			logger.Info("Web server running HTTP on", listener.Addr())
+		} else {
+			err := fmt.Errorf("certificates not provided, and listening address is not loopback; cannot start insecure server on %s", listenAddr)
+			logger.Error(err)
+			return err
+		}
 	}
 	s.listener = listener
 
