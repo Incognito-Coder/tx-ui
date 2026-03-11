@@ -19,6 +19,41 @@ function LOGI() {
     echo -e "${green}[INF] $* ${plain}"
 }
 
+is_ipv4_address() {
+    local ip=$1
+    [[ $ip =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]] || return 1
+
+    local octet
+    IFS='.' read -r -a octets <<<"$ip"
+    for octet in "${octets[@]}"; do
+        if ((octet < 0 || octet > 255)); then
+            return 1
+        fi
+    done
+
+    return 0
+}
+
+is_ipv6_address() {
+    local ip=$1
+    [[ $ip == *:* ]] || return 1
+    [[ $ip =~ ^[0-9A-Fa-f:]+$ ]]
+}
+
+is_ip_address() {
+    local host=$1
+    is_ipv4_address "$host" || is_ipv6_address "$host"
+}
+
+format_host_for_url() {
+    local host=$1
+    if is_ipv6_address "$host"; then
+        printf '[%s]' "$host"
+    else
+        printf '%s' "$host"
+    fi
+}
+
 # check root
 [[ $EUID -ne 0 ]] && LOGE "ERROR: You must be root to run this script! \n" && exit 1
 
@@ -259,10 +294,11 @@ check_config() {
     local server_ip=$(curl -s https://api.ipify.org)
 
     if [[ -n "$existing_cert" ]]; then
-        local domain=$(basename "$(dirname "$existing_cert")")
+        local cert_host=$(basename "$(dirname "$existing_cert")")
+        local formatted_cert_host=$(format_host_for_url "$cert_host")
 
-        if [[ "$domain" =~ ^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]; then
-            echo -e "${green}Access URL: https://${domain}:${existing_port}${existing_webBasePath}${plain}"
+        if [[ -n "$cert_host" ]]; then
+            echo -e "${green}Access URL: https://${formatted_cert_host}:${existing_port}${existing_webBasePath}${plain}"
         else
             echo -e "${green}Access URL: https://${server_ip}:${existing_port}${existing_webBasePath}${plain}"
         fi
@@ -1062,20 +1098,28 @@ ssl_cert_issue() {
         LOGI "install socat succeed..."
     fi
 
-    # get the domain here, and we need to verify it
+    # get the certificate target here, and we need to verify it
     local domain=""
-    read -p "Please enter your domain name: " domain
-    LOGD "Your domain is: ${domain}, checking it..."
+    read -p "Please enter your domain name or IP address: " domain
+    if [[ -z "$domain" ]]; then
+        LOGE "Domain/IP cannot be empty."
+        exit 1
+    fi
+    local target_type="domain"
+    if is_ip_address "$domain"; then
+        target_type="ip"
+    fi
+    LOGD "Your certificate target is: ${domain}, checking it as an ${target_type}..."
 
     # check if there already exists a certificate
-    local currentCert=$(~/.acme.sh/acme.sh --list | tail -1 | awk '{print $1}')
-    if [ "${currentCert}" == "${domain}" ]; then
+    local currentCert=$(~/.acme.sh/acme.sh --list | awk 'NR > 1 {print $1}' | grep -Fx -- "${domain}")
+    if [[ -n "${currentCert}" ]]; then
         local certInfo=$(~/.acme.sh/acme.sh --list)
-        LOGE "System already has certificates for this domain. Cannot issue again. Current certificate details:"
+        LOGE "System already has a certificate for this domain/IP. Cannot issue again. Current certificate details:"
         LOGI "$certInfo"
         exit 1
     else
-        LOGI "Your domain is ready for issuing certificates now..."
+        LOGI "Your domain/IP is ready for issuing certificates now..."
     fi
 
     # create a directory for the certificate
@@ -1098,7 +1142,13 @@ ssl_cert_issue() {
 
     # issue the certificate
     ~/.acme.sh/acme.sh --set-default-ca --server letsencrypt
-    ~/.acme.sh/acme.sh --issue -d ${domain} --listen-v6 --standalone --httpport ${WebPort}
+    if is_ip_address "$domain"; then
+        LOGI "Issuing an IP certificate with acme.sh short-lived profile..."
+        ~/.acme.sh/acme.sh --issue -d ${domain} --standalone --server letsencrypt --certificate-profile shortlived --days 6 --httpport ${WebPort} --force
+    else
+        LOGI "Issuing a domain certificate with acme.sh standalone mode..."
+        ~/.acme.sh/acme.sh --issue -d ${domain} --listen-v6 --standalone --httpport ${WebPort}
+    fi
     if [ $? -ne 0 ]; then
         LOGE "Issuing certificate failed, please check logs."
         rm -rf ~/.acme.sh/${domain}
@@ -1141,13 +1191,14 @@ ssl_cert_issue() {
 
         if [[ -f "$webCertFile" && -f "$webKeyFile" ]]; then
             /usr/local/x-ui/x-ui cert -webCert "$webCertFile" -webCertKey "$webKeyFile"
-            LOGI "Panel paths set for domain: $domain"
+            LOGI "Panel paths set for domain/IP: $domain"
             LOGI "  - Certificate File: $webCertFile"
             LOGI "  - Private Key File: $webKeyFile"
-            echo -e "${green}Access URL: https://${domain}:${existing_port}${existing_webBasePath}${plain}"
+            local formatted_domain=$(format_host_for_url "$domain")
+            echo -e "${green}Access URL: https://${formatted_domain}:${existing_port}${existing_webBasePath}${plain}"
             restart
         else
-            LOGE "Error: Certificate or private key file not found for domain: $domain."
+            LOGE "Error: Certificate or private key file not found for domain/IP: $domain."
         fi
     else
         LOGI "Skipping panel path setting."
