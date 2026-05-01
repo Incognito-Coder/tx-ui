@@ -35,6 +35,13 @@ jobs:
           go-version-file: go.mod
           check-latest: true
 
+      - name: Setup Java 17
+        if: startsWith(matrix.platform, 'android')
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
       - name: Setup Android NDK
         if: startsWith(matrix.platform, 'android')
         uses: android-actions/setup-android@v3
