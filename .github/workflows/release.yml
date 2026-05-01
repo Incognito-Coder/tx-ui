@@ -35,6 +35,13 @@ jobs:
           go-version-file: go.mod
           check-latest: true
 
+      - name: Setup Android NDK
+        if: startsWith(matrix.platform, 'android')
+        uses: android-actions/setup-android@v3
+        with:
+          api-level: 21
+          ndk-version: 25.2.9519653
+
       - name: Install dependencies
         if: matrix.platform != 'windows-amd64'
         run: |
@@ -83,12 +90,16 @@ jobs:
           elif [ "${{ matrix.platform }}" == "android-arm64" ]; then
             export GOOS=android
             export GOARCH=arm64
-            export CGO_ENABLED=0
+            export CC=$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang
+            export CXX=$CC
+            export CGO_ENABLED=1
           elif [ "${{ matrix.platform }}" == "android-armv7" ]; then
             export GOOS=android
             export GOARCH=arm
             export GOARM=7
-            export CGO_ENABLED=0
+            export CC=$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/armv7a-linux-androideabi21-clang
+            export CXX=$CC
+            export CGO_ENABLED=1
           fi
           go build -ldflags "-w -s" -o xui-release -v main.go
 
