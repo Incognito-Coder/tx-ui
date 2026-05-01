@@ -39,8 +39,7 @@ jobs:
         if: startsWith(matrix.platform, 'android')
         uses: android-actions/setup-android@v3
         with:
-          api-level: 21
-          ndk-version: 25.2.9519653
+          packages: 'ndk;25.2.9519653 platforms;android-21'
 
       - name: Install dependencies
         if: matrix.platform != 'windows-amd64'
