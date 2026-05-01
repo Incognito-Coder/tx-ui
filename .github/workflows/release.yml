@@ -40,6 +40,7 @@ jobs:
         uses: android-actions/setup-android@v3
         env:
           FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+          SKIP_JDK_VERSION_CHECK: true
         with:
           packages: "ndk;25.2.9519653 platforms;android-21"
 
