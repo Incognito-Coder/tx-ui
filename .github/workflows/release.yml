@@ -15,13 +15,16 @@ jobs:
         platform:
           - amd64
           - arm64
-          - armv7
+          - armv7l
           - armv6
           - 386
           - armv5
           - s390x
-          - windows-amd64   # Added Windows support
-    runs-on: ${{ matrix.platform == 'windows-amd64' && 'windows-latest' || 'ubuntu-22.04' }}
+          - android-arm64
+          - android-armv7
+          - windows-amd64 # Added Windows support
+    runs-on: ${{ matrix.platform == 'windows-amd64' && 'windows-latest' ||
+      'ubuntu-22.04' }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -38,7 +41,7 @@ jobs:
           sudo apt-get update
           if [ "${{ matrix.platform }}" == "arm64" ]; then
             sudo apt install gcc-aarch64-linux-gnu
-          elif [ "${{ matrix.platform }}" == "armv7" ]; then
+          elif [ "${{ matrix.platform }}" == "armv7l" ]; then
             sudo apt install gcc-arm-linux-gnueabihf
           elif [ "${{ matrix.platform }}" == "armv6" ]; then
             sudo apt install gcc-arm-linux-gnueabihf
@@ -59,7 +62,7 @@ jobs:
           if [ "${{ matrix.platform }}" == "arm64" ]; then
             export GOARCH=arm64
             export CC=aarch64-linux-gnu-gcc
-          elif [ "${{ matrix.platform }}" == "armv7" ]; then
+          elif [ "${{ matrix.platform }}" == "armv7l" ]; then
             export GOARCH=arm
             export GOARM=7
             export CC=arm-linux-gnueabihf-gcc
@@ -77,9 +80,18 @@ jobs:
           elif [ "${{ matrix.platform }}" == "s390x" ]; then
             export GOARCH=s390x
             export CC=s390x-linux-gnu-gcc
+          elif [ "${{ matrix.platform }}" == "android-arm64" ]; then
+            export GOOS=android
+            export GOARCH=arm64
+            export CGO_ENABLED=0
+          elif [ "${{ matrix.platform }}" == "android-armv7" ]; then
+            export GOOS=android
+            export GOARCH=arm
+            export GOARM=7
+            export CGO_ENABLED=0
           fi
           go build -ldflags "-w -s" -o xui-release -v main.go
-          
+
           mkdir x-ui
           cp xui-release x-ui/
           cp x-ui.service x-ui/
@@ -87,7 +99,7 @@ jobs:
           mv x-ui/xui-release x-ui/x-ui
           mkdir x-ui/bin
           cd x-ui/bin
-          
+
           # Download dependencies
           Xray_URL="https://github.com/XTLS/Xray-core/releases/download/v26.2.6/"
           if [ "${{ matrix.platform }}" == "amd64" ]; then
@@ -98,7 +110,7 @@ jobs:
             wget -q ${Xray_URL}Xray-linux-arm64-v8a.zip
             unzip Xray-linux-arm64-v8a.zip
             rm -f Xray-linux-arm64-v8a.zip
-          elif [ "${{ matrix.platform }}" == "armv7" ]; then
+          elif [ "${{ matrix.platform }}" == "armv7l" ]; then
             wget -q ${Xray_URL}Xray-linux-arm32-v7a.zip
             unzip Xray-linux-arm32-v7a.zip
             rm -f Xray-linux-arm32-v7a.zip
@@ -118,6 +130,14 @@ jobs:
             wget -q ${Xray_URL}Xray-linux-s390x.zip
             unzip Xray-linux-s390x.zip
             rm -f Xray-linux-s390x.zip
+          elif [ "${{ matrix.platform }}" == "android-arm64" ]; then
+            wget -q ${Xray_URL}Xray-android-arm64-v8a.zip
+            unzip Xray-android-arm64-v8a.zip
+            rm -f Xray-android-arm64-v8a.zip
+          elif [ "${{ matrix.platform }}" == "android-armv7" ]; then
+            wget -q ${Xray_URL}Xray-android-arm32-v7a.zip
+            unzip Xray-android-arm32-v7a.zip
+            rm -f Xray-android-arm32-v7a.zip
           fi
           rm -f geoip.dat geosite.dat
           wget -q https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat
@@ -126,7 +146,7 @@ jobs:
           wget -q -O geosite_IR.dat https://github.com/chocolate4u/Iran-v2ray-rules/releases/latest/download/geosite.dat
           wget -q -O geoip_RU.dat https://github.com/runetfreedom/russia-v2ray-rules-dat/releases/latest/download/geoip.dat
           wget -q -O geosite_RU.dat https://github.com/runetfreedom/russia-v2ray-rules-dat/releases/latest/download/geosite.dat
-          mv xray xray-linux-${{ matrix.platform }}
+          mv xray xray-${{ matrix.platform }}
           cd ../..
 
       - name: Build x-ui (Windows)
@@ -137,13 +157,13 @@ jobs:
           $env:GOOS="windows"
           $env:GOARCH="amd64"
           go build -ldflags "-w -s" -o xui-release.exe -v main.go
-          
+
           mkdir x-ui
           Copy-Item xui-release.exe x-ui\
           # Windows-specific files (if any) can be copied here
           mkdir x-ui\bin
           cd x-ui\bin
-          
+
           # Download Xray for Windows
           $Xray_URL = "https://github.com/XTLS/Xray-core/releases/download/v26.2.6/"
           Invoke-WebRequest -Uri "${Xray_URL}Xray-windows-64.zip" -OutFile "Xray-windows-64.zip"
