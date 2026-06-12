@@ -1247,27 +1247,42 @@ class Sniffing extends XrayCommonClass {
         enabled = false,
         destOverride = ['http', 'tls', 'quic', 'fakedns'],
         metadataOnly = false,
-        routeOnly = false) {
+        routeOnly = false,
+        ipsExcluded = [],
+        domainsExcluded = []) {
         super();
         this.enabled = enabled;
-        this.destOverride = destOverride;
+        this.destOverride = Array.isArray(destOverride) && destOverride.length > 0 ? destOverride : ['http', 'tls', 'quic', 'fakedns'];
         this.metadataOnly = metadataOnly;
         this.routeOnly = routeOnly;
+        this.ipsExcluded = Array.isArray(ipsExcluded) ? ipsExcluded : [];
+        this.domainsExcluded = Array.isArray(domainsExcluded) ? domainsExcluded : [];
     }
 
     static fromJson(json = {}) {
         let destOverride = ObjectUtil.clone(json.destOverride);
-        if (!ObjectUtil.isEmpty(destOverride) && !ObjectUtil.isArrEmpty(destOverride)) {
-            if (ObjectUtil.isEmpty(destOverride[0])) {
-                destOverride = ['http', 'tls', 'quic', 'fakedns'];
-            }
+        if (ObjectUtil.isEmpty(destOverride) || ObjectUtil.isArrEmpty(destOverride) || ObjectUtil.isEmpty(destOverride[0])) {
+            destOverride = ['http', 'tls', 'quic', 'fakedns'];
         }
         return new Sniffing(
             !!json.enabled,
             destOverride,
             json.metadataOnly,
             json.routeOnly,
+            json.ipsExcluded || [],
+            json.domainsExcluded || [],
         );
+    }
+
+    toJson() {
+        return {
+            enabled: this.enabled,
+            destOverride: this.destOverride,
+            metadataOnly: this.metadataOnly,
+            routeOnly: this.routeOnly,
+            ipsExcluded: this.ipsExcluded.length > 0 ? this.ipsExcluded : undefined,
+            domainsExcluded: this.domainsExcluded.length > 0 ? this.domainsExcluded : undefined,
+        };
     }
 }
 

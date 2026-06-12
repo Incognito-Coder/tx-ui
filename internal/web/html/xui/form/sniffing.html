@@ -24,6 +24,24 @@
         <a-form-item label='Route Only'>
             <a-switch v-model="inbound.sniffing.routeOnly"></a-switch>
         </a-form-item>
+        <a-form-item label="IPs Excluded">
+            <a-select
+                    mode="tags"
+                    v-model="inbound.sniffing.ipsExcluded"
+                    :style="{ width: '100%' }"
+                    :token-separators="[',']"
+                    placeholder="IP/CIDR/geoip:*/ext:*"
+            ></a-select>
+        </a-form-item>
+        <a-form-item label="Domains Excluded">
+            <a-select
+                    mode="tags"
+                    v-model="inbound.sniffing.domainsExcluded"
+                    :style="{ width: '100%' }"
+                    :token-separators="[',']"
+                    placeholder="domain:*/ext:*"
+            ></a-select>
+        </a-form-item>
     </template>
 </a-form>
 {{end}}
