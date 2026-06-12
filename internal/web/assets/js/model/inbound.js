@@ -1074,8 +1074,9 @@ class UdpMask extends XrayCommonClass {
             case 'mkcp-aes128gcm':
                 return {password: settings.password || ''};
             case 'header-dns':
-            case 'xdns':
                 return {domain: settings.domain || ''};
+            case 'xdns':
+                return { domains: Array.isArray(settings.domains) ? settings.domains : [] };
             case 'xicmp':
                 return {ip: settings.ip || '', id: settings.id ?? 0};
             case 'mkcp-original':

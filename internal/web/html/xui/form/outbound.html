@@ -565,9 +565,20 @@
                             <a-input placeholder="Obfuscation password" v-model.trim="mask.settings.password"></a-input>
                         </a-form-item>
                         <!-- Settings for domain-based masks -->
-                        <a-form-item label='Domain' v-if="['header-dns', 'xdns'].includes(mask.type)">
+                        <a-form-item label="Domain" v-if="mask.type === 'header-dns'">
                             <a-input placeholder="e.g., www.example.com" v-model.trim="mask.settings.domain"></a-input>
                         </a-form-item>
+                        <template v-if="mask.type === 'xdns'">
+                            <a-form-item label="Resolvers">
+                                <a-select
+                                        mode="tags"
+                                        v-model="mask.settings.resolvers"
+                                        :style="{ width: '100%' }"
+                                        :token-separators="[',']"
+                                        placeholder="e.g., xxx+udp://8.8.8.8:53"
+                                ></a-select>
+                            </a-form-item>
+                        </template>
                     </a-form>
                 </template>
             </template>

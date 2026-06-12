@@ -72,11 +72,20 @@
                          v-model.trim="mask.settings.password"></a-input>
             </a-form-item>
             <!-- Settings for domain-based masks -->
-            <a-form-item label='Domain'
-                         v-if="['header-dns', 'xdns'].includes(mask.type)">
-                <a-input placeholder="e.g., www.example.com"
-                         v-model.trim="mask.settings.domain"></a-input>
+            <a-form-item label="Domain" v-if="mask.type === 'header-dns'">
+                <a-input placeholder="e.g., www.example.com" v-model.trim="mask.settings.domain"></a-input>
             </a-form-item>
+            <template v-if="mask.type === 'xdns'">
+                <a-form-item label="Domains">
+                    <a-select
+                            mode="tags"
+                            v-model="mask.settings.domains"
+                            :style="{ width: '100%' }"
+                            :token-separators="[',']"
+                            placeholder="e.g., www.example.com"
+                    ></a-select>
+                </a-form-item>
+            </template>
             <!-- Settings for xICMP -->
             <a-form-item label='IP'
                          v-if="mask.type === 'xicmp'">
