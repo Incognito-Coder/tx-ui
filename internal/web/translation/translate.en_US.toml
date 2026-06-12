@@ -383,6 +383,8 @@
 "FreedomStrategyDesc" = "Set the output strategy for the network in the Freedom Protocol."
 "RoutingStrategy" = "Overall Routing Strategy"
 "RoutingStrategyDesc" = "Set the overall traffic routing strategy for resolving all requests."
+"outboundTestUrl" = "Outbound Test URL"
+"outboundTestUrlDesc" = "URL used when testing outbound connectivity."
 "Torrent" = "Block BitTorrent Protocol"
 "TorrentDesc" = "Blocks BitTorrent protocol."
 "Family" = "Family Protection"
@@ -441,6 +443,12 @@
 "accountInfo" = "Account Information"
 "outboundStatus" = "Outbound Status"
 "sendThrough" = "Send Through"
+"test" = "Test"
+"testResult" = "Test Result"
+"testing" = "Testing connection..."
+"testSuccess" = "Test successful"
+"testFailed" = "Test failed"
+"testError" = "Failed to test outbound"
 
 [pages.xray.balancer]
 "addBalancer" = "Add Balancer"

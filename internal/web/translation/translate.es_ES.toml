@@ -382,6 +382,8 @@
 "FreedomStrategyDesc" = "Establece la estrategia de salida de la red en el Protocolo Freedom."
 "RoutingStrategy" = "Configurar Estrategia de Enrutamiento de Dominios"
 "RoutingStrategyDesc" = "Establece la estrategia general de enrutamiento para la resolución de DNS."
+"outboundTestUrl" = "URL de prueba de outbound"
+"outboundTestUrlDesc" = "URL usada al probar la conectividad del outbound"
 "Torrent" = "Prohibir Uso de BitTorrent"
 "TorrentDesc" = "Cambia la plantilla de configuración para evitar el uso de BitTorrent por parte de los usuarios."
 "Family" = "Bloquee malware y contenido para adultos"
@@ -440,6 +442,12 @@
 "accountInfo" = "Información de la Cuenta"
 "outboundStatus" = "Estado de Salida"
 "sendThrough" = "Enviar a través de"
+"test" = "Probar"
+"testResult" = "Resultado de la prueba"
+"testing" = "Probando conexión..."
+"testSuccess" = "Prueba exitosa"
+"testFailed" = "Prueba fallida"
+"testError" = "Error al probar la salida"
 
 [pages.xray.balancer]
 "addBalancer" = "Agregar equilibrador"

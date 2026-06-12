@@ -405,6 +405,8 @@
 "FreedomStrategyDesc" = "اختار استراتيجية المخرجات للشبكة في بروتوكول الحرية."
 "RoutingStrategy" = "استراتيجية التوجيه العامة"
 "RoutingStrategyDesc" = "حدد استراتيجية التوجيه الإجمالية لحل كل الطلبات."
+"outboundTestUrl" = "رابط اختبار المخرج"
+"outboundTestUrlDesc" = "الرابط المستخدم عند اختبار اتصال المخرج"
 "Torrent" = "حظر بروتوكول التورنت"
 "TorrentDesc" = "بيحجب بروتوكول التورنت."
 "Family" = "حماية العيلة"
@@ -473,6 +475,12 @@
 "accountInfo" = "معلومات الحساب"
 "outboundStatus" = "حالة المخرج"
 "sendThrough" = "أرسل من خلال"
+"test" = "اختبار"
+"testResult" = "نتيجة الاختبار"
+"testing" = "جاري اختبار الاتصال..."
+"testSuccess" = "الاختبار ناجح"
+"testFailed" = "فشل الاختبار"
+"testError" = "فشل اختبار المخرج"
 
 [pages.xray.balancer]
 "addBalancer" = "أضف موازن تحميل"

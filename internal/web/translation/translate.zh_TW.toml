@@ -380,6 +380,8 @@
 "FreedomStrategyDesc" = "設定 Freedom 協議中網路的輸出策略"
 "RoutingStrategy" = "配置路由域策略"
 "RoutingStrategyDesc" = "設定 DNS 解析的整體路由策略"
+"outboundTestUrl" = "出站測試 URL"
+"outboundTestUrlDesc" = "測試出站連線時使用的 URL"
 "Torrent" = "遮蔽 BitTorrent 協議"
 "TorrentDesc" = "禁止使用 BitTorrent"
 "Family" = "家庭保護"
@@ -438,6 +440,12 @@
 "accountInfo" = "帳戶資訊"
 "outboundStatus" = "出站狀態"
 "sendThrough" = "傳送通過"
+"test" = "測試"
+"testResult" = "測試結果"
+"testing" = "正在測試連接..."
+"testSuccess" = "測試成功"
+"testFailed" = "測試失敗"
+"testError" = "測試出站失敗"
 
 [pages.xray.balancer]
 "addBalancer" = "新增負載均衡"

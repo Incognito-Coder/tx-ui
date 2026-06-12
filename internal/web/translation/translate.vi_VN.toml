@@ -380,6 +380,8 @@
 "FreedomStrategyDesc" = "Đặt chiến lược đầu ra của mạng trong Giao thức Freedom."
 "RoutingStrategy" = "Cấu hình Chiến lược Định tuyến Tên miền"
 "RoutingStrategyDesc" = "Đặt chiến lược định tuyến tổng thể cho việc giải quyết DNS."
+"outboundTestUrl" = "URL kiểm tra outbound"
+"outboundTestUrlDesc" = "URL dùng khi kiểm tra kết nối outbound"
 "Torrent" = "Cấu hình sử dụng BitTorrent"
 "TorrentDesc" = "Thay đổi mẫu cấu hình để tránh việc người dùng sử dụng BitTorrent."
 "Family" = "Chặn phần mềm độc hại và nội dung người lớn"
@@ -438,6 +440,12 @@
 "accountInfo" = "Thông tin tài khoản"
 "outboundStatus" = "Trạng thái đầu ra"
 "sendThrough" = "Gửi qua"
+"test" = "Kiểm tra"
+"testResult" = "Kết quả kiểm tra"
+"testing" = "Đang kiểm tra kết nối..."
+"testSuccess" = "Kiểm tra thành công"
+"testFailed" = "Kiểm tra thất bại"
+"testError" = "Không thể kiểm tra đầu ra"
 
 [pages.xray.balancer]
 "addBalancer" = "Thêm cân bằng"

@@ -380,6 +380,8 @@
 "FreedomStrategyDesc" = "Definir a estratégia de saída para a rede no Protocolo Freedom."
 "RoutingStrategy" = "Estratégia Geral de Roteamento"
 "RoutingStrategyDesc" = "Definir a estratégia geral de roteamento de tráfego para resolver todas as solicitações."
+"outboundTestUrl" = "URL de teste de outbound"
+"outboundTestUrlDesc" = "URL usada ao testar conectividade do outbound"
 "Torrent" = "Bloquear Protocolo BitTorrent"
 "TorrentDesc" = "Bloqueia o protocolo BitTorrent."
 "Family" = "Proteção Familiar"
@@ -438,6 +440,12 @@
 "accountInfo" = "Informações da Conta"
 "outboundStatus" = "Status de Saída"
 "sendThrough" = "Enviar Através de"
+"test" = "Testar"
+"testResult" = "Resultado do teste"
+"testing" = "Testando conexão..."
+"testSuccess" = "Teste bem-sucedido"
+"testFailed" = "Teste falhou"
+"testError" = "Falha ao testar saída"
 
 [pages.xray.balancer]
 "addBalancer" = "Adicionar Balanceador"

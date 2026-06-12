@@ -96,6 +96,15 @@ func NewProcess(xrayConfig *Config) *Process {
 	return p
 }
 
+// NewTestProcess creates a new Xray process that uses a specific config file path.
+// Used for test runs (e.g. outbound test) so the main config.json is not overwritten.
+// The config file at configPath is removed when the process is stopped.
+func NewTestProcess(xrayConfig *Config, configPath string) *Process {
+	p := &Process{newTestProcess(xrayConfig, configPath)}
+	runtime.SetFinalizer(p, stopProcess)
+	return p
+}
+
 type process struct {
 	cmd *exec.Cmd
 
@@ -104,10 +113,11 @@ type process struct {
 
 	onlineClients []string
 
-	config    *Config
-	logWriter *LogWriter
-	exitErr   error
-	startTime time.Time
+	config     *Config
+	configPath string
+	logWriter  *LogWriter
+	exitErr    error
+	startTime  time.Time
 }
 
 func newProcess(config *Config) *process {
@@ -117,6 +127,13 @@ func newProcess(config *Config) *process {
 		logWriter: NewLogWriter(),
 		startTime: time.Now(),
 	}
+}
+
+// newTestProcess creates a process that writes and runs with a specific config path.
+func newTestProcess(config *Config, configPath string) *process {
+	p := newProcess(config)
+	p.configPath = configPath
+	return p
 }
 
 func (p *process) IsRunning() bool {
@@ -220,6 +237,9 @@ func (p *process) Start() (err error) {
 	}
 
 	configPath := GetConfigPath()
+	if p.configPath != "" {
+		configPath = p.configPath
+	}
 	err = os.WriteFile(configPath, data, fs.ModePerm)
 	if err != nil {
 		return common.NewErrorf("Failed to write configuration file: %v", err)
@@ -249,7 +269,14 @@ func (p *process) Stop() error {
 	if !p.IsRunning() {
 		return errors.New("xray is not running")
 	}
-
+	if p.configPath != "" {
+		if p.configPath != GetConfigPath() {
+			// Check if file exists before removing
+			if _, err := os.Stat(p.configPath); err == nil {
+				_ = os.Remove(p.configPath)
+			}
+		}
+	}
 	if runtime.GOOS == "windows" {
 		return p.cmd.Process.Kill()
 	} else {

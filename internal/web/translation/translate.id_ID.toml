@@ -382,6 +382,8 @@
 "FreedomStrategyDesc" = "Atur strategi output untuk jaringan dalam Protokol Freedom."
 "RoutingStrategy" = "Strategi Pengalihan Keseluruhan"
 "RoutingStrategyDesc" = "Atur strategi pengalihan lalu lintas keseluruhan untuk menyelesaikan semua permintaan."
+"outboundTestUrl" = "URL tes outbound"
+"outboundTestUrlDesc" = "URL yang digunakan saat menguji konektivitas outbound"
 "Torrent" = "Blokir Protokol BitTorrent"
 "TorrentDesc" = "Memblokir protokol BitTorrent."
 "Family" = "Proteksi Keluarga"
@@ -440,6 +442,12 @@
 "accountInfo" = "Informasi Akun"
 "outboundStatus" = "Status Keluar"
 "sendThrough" = "Kirim Melalui"
+"test" = "Tes"
+"testResult" = "Hasil Tes"
+"testing" = "Menguji koneksi..."
+"testSuccess" = "Tes berhasil"
+"testFailed" = "Tes gagal"
+"testError" = "Gagal menguji outbound"
 
 [pages.xray.balancer]
 "addBalancer" = "Tambahkan Penyeimbang"

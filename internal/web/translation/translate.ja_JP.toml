@@ -368,6 +368,8 @@
 "FreedomStrategyDesc" = "Freedomプロトコル内のネットワークの出力戦略を設定する"
 "RoutingStrategy" = "ルーティングドメイン戦略設定"
 "RoutingStrategyDesc" = "DNS解決の全体的なルーティング戦略を設定する"
+"outboundTestUrl" = "アウトバウンドテスト URL"
+"outboundTestUrlDesc" = "アウトバウンド接続テストに使用する URL。既定値"
 "Torrent" = "BitTorrent プロトコルをブロック"
 "TorrentDesc" = "BitTorrentの使用を禁止する"
 "Family" = "ファミリー保護"
@@ -426,6 +428,12 @@
 "accountInfo" = "アカウント情報"
 "outboundStatus" = "アウトバウンドステータス"
 "sendThrough" = "送信経路"
+"test" = "テスト"
+"testResult" = "テスト結果"
+"testing" = "接続をテスト中..."
+"testSuccess" = "テスト成功"
+"testFailed" = "テスト失敗"
+"testError" = "アウトバウンドのテストに失敗しました"
 
 [pages.xray.balancer]
 "addBalancer" = "負荷分散追加"

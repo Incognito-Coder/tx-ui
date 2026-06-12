@@ -380,6 +380,8 @@
 "FreedomStrategyDesc" = "Freedom Protokolünde ağın çıkış stratejisini ayarlayın."
 "RoutingStrategy" = "Genel Yönlendirme Stratejisi"
 "RoutingStrategyDesc" = "Tüm istekleri çözmek için genel trafik yönlendirme stratejisini ayarlayın."
+"outboundTestUrl" = "Outbound test URL"
+"outboundTestUrlDesc" = "Outbound bağlantı testinde kullanılan URL"
 "Torrent" = "BitTorrent Protokolünü Engelle"
 "TorrentDesc" = "BitTorrent protokolünü engeller."
 "Family" = "Aile Koruması"
@@ -438,6 +440,12 @@
 "accountInfo" = "Hesap Bilgileri"
 "outboundStatus" = "Giden Durumu"
 "sendThrough" = "Üzerinden Gönder"
+"test" = "Test"
+"testResult" = "Test Sonucu"
+"testing" = "Bağlantı test ediliyor..."
+"testSuccess" = "Test başarılı"
+"testFailed" = "Test başarısız"
+"testError" = "Giden test edilemedi"
 
 [pages.xray.balancer]
 "addBalancer" = "Dengeleyici Ekle"

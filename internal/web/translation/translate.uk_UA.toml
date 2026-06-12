@@ -380,6 +380,8 @@
 "FreedomStrategyDesc" = "Установити стратегію виведення для мережі в протоколі свободи."
 "RoutingStrategy" = "Загальна стратегія маршрутизації"
 "RoutingStrategyDesc" = "Установити загальну стратегію маршрутизації трафіку для вирішення всіх запитів."
+"outboundTestUrl" = "URL тесту outbound"
+"outboundTestUrlDesc" = "URL для перевірки з'єднання outbound"
 "Torrent" = "Блокувати протокол BitTorrent"
 "TorrentDesc" = "Блокує протокол BitTorrent."
 "Family" = "Захист сім'ї"
@@ -438,6 +440,12 @@
 "accountInfo" = "Інформація про обліковий запис"
 "outboundStatus" = "Статус виходу"
 "sendThrough" = "Надіслати через"
+"test" = "Тест"
+"testResult" = "Результат тесту"
+"testing" = "Тестування з'єднання..."
+"testSuccess" = "Тест успішний"
+"testFailed" = "Тест не пройдено"
+"testError" = "Не вдалося протестувати вихідне з'єднання"
 
 [pages.xray.balancer]
 "addBalancer" = "Додати балансир"

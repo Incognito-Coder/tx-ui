@@ -383,6 +383,8 @@
 "FreedomStrategyDesc" = "تعیین می‌کند Freedom استراتژی خروجی شبکه را برای پروتکل"
 "RoutingStrategy" = "استراتژی کلی مسیریابی"
 "RoutingStrategyDesc" = "استراتژی کلی مسیریابی برای حل تمام درخواست‌ها را تعیین می‌کند"
+"outboundTestUrl" = "آدرس تست خروجی"
+"outboundTestUrlDesc" = "آدرسی که برای تست اتصال خروجی استفاده می‌شود."
 "Torrent" = "مسدودسازی پروتکل بیت‌تورنت"
 "TorrentDesc" = "پروتکل بیت تورنت را مسدود می‌کند"
 "Family" = "محافظت خانواده"
@@ -441,6 +443,12 @@
 "accountInfo" = "اطلاعات حساب"
 "outboundStatus" = "وضعیت خروجی"
 "sendThrough" = "ارسال با"
+"test" = "تست"
+"testResult" = "نتیجه تست"
+"testing" = "در حال تست اتصال..."
+"testSuccess" = "تست موفقیت‌آمیز"
+"testFailed" = "تست ناموفق"
+"testError" = "خطا در تست خروجی"
 
 [pages.xray.balancer]
 "addBalancer" = "افزودن بالانسر"

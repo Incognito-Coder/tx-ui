@@ -134,8 +134,9 @@
                                     <a-list-item>
                                         <a-row style="padding: 10px 20px">
                                             <a-col :lg="24" :xl="12">
-                                                <a-list-item-meta description='{{ i18n "pages.xray.FreedomStrategyDesc" }}'
-                                                                  title='{{ i18n "pages.xray.FreedomStrategy" }}'>
+                                                <a-list-item-meta
+                                                        description='{{ i18n "pages.xray.FreedomStrategyDesc" }}'
+                                                        title='{{ i18n "pages.xray.FreedomStrategy" }}'>
                                                 </a-list-item-meta>
                                             </a-col>
                                             <a-col :lg="24" :xl="12">
@@ -152,8 +153,9 @@
                                         </a-row>
                                         <a-row style="padding: 10px 20px">
                                             <a-col :lg="24" :xl="12">
-                                                <a-list-item-meta description='{{ i18n "pages.xray.RoutingStrategyDesc" }}'
-                                                                  title='{{ i18n "pages.xray.RoutingStrategy" }}'>
+                                                <a-list-item-meta
+                                                        description='{{ i18n "pages.xray.RoutingStrategyDesc" }}'
+                                                        title='{{ i18n "pages.xray.RoutingStrategy" }}'>
                                                 </a-list-item-meta>
                                             </a-col>
                                             <a-col :lg="24" :xl="12">
@@ -166,7 +168,12 @@
                                                 </a-select>
                                             </a-col>
                                         </a-row>
-                                        <setting-list-item desc='{{ i18n "pages.xray.outBoundTrafficDesc"}}' title='{{ i18n "pages.xray.outBoundTraffic"}}'
+                                        <setting-list-item desc='{{ i18n "pages.xray.outboundTestUrlDesc"}}' placeholder="https://www.google.com/generate_204"
+                                                           title='{{ i18n "pages.xray.outboundTestUrl"}}'
+                                                           type="text"
+                                                           v-model="outboundTestUrl"></setting-list-item>
+                                        <setting-list-item desc='{{ i18n "pages.xray.outBoundTrafficDesc"}}'
+                                                           title='{{ i18n "pages.xray.outBoundTraffic"}}'
                                                            type="switch"
                                                            v-model="outboundTraffic"></setting-list-item>
                                     </a-list-item>
@@ -254,7 +261,8 @@
                                                 </template>
                                             </a-col>
                                         </a-row>
-                                        <setting-list-item desc='{{ i18n "pages.xray.dnsLogDesc"}}' title='{{ i18n "pages.xray.dnsLog"}}'
+                                        <setting-list-item desc='{{ i18n "pages.xray.dnsLogDesc"}}'
+                                                           title='{{ i18n "pages.xray.dnsLog"}}'
                                                            type="switch"
                                                            v-model="dnslog"></setting-list-item>
                                     </a-list-item>
@@ -270,10 +278,12 @@
                                         </a-alert>
                                     </a-row>
                                     <a-list-item>
-                                        <setting-list-item desc='{{ i18n "pages.xray.TorrentDesc"}}' title='{{ i18n "pages.xray.Torrent"}}'
+                                        <setting-list-item desc='{{ i18n "pages.xray.TorrentDesc"}}'
+                                                           title='{{ i18n "pages.xray.Torrent"}}'
                                                            type="switch"
                                                            v-model="torrentSettings"></setting-list-item>
-                                        <setting-list-item desc='{{ i18n "pages.xray.FamilyDesc"}}' title='{{ i18n "pages.xray.Family"}}'
+                                        <setting-list-item desc='{{ i18n "pages.xray.FamilyDesc"}}'
+                                                           title='{{ i18n "pages.xray.Family"}}'
                                                            type="switch"
                                                            v-model="familyProtectSettings"></setting-list-item>
                                     </a-list-item>
@@ -296,7 +306,8 @@
                                             </a-col>
                                             <a-col :lg="24" :xl="12">
                                                 <template>
-                                                    <a-select :dropdown-class-name="themeSwitcher.currentTheme" mode="tags" style="width: 100%"
+                                                    <a-select :dropdown-class-name="themeSwitcher.currentTheme"
+                                                              mode="tags" style="width: 100%"
                                                               v-model="blockedIPs">
                                                         <a-select-option :label="p.label" :value="p.value"
                                                                          v-for="p in settingsData.IPsOptions"> [[
@@ -315,7 +326,8 @@
                                             </a-col>
                                             <a-col :lg="24" :xl="12">
                                                 <template>
-                                                    <a-select :dropdown-class-name="themeSwitcher.currentTheme" mode="tags"
+                                                    <a-select :dropdown-class-name="themeSwitcher.currentTheme"
+                                                              mode="tags"
                                                               style="width: 100%"
                                                               v-model="blockedDomains">
                                                         <a-select-option :label="p.label" :value="p.value"
@@ -344,7 +356,8 @@
                                             </a-col>
                                             <a-col :lg="24" :xl="12">
                                                 <template>
-                                                    <a-select :dropdown-class-name="themeSwitcher.currentTheme" mode="tags"
+                                                    <a-select :dropdown-class-name="themeSwitcher.currentTheme"
+                                                              mode="tags"
                                                               style="width: 100%"
                                                               v-model="directIPs">
                                                         <a-select-option :label="p.label" :value="p.value"
@@ -364,7 +377,8 @@
                                             </a-col>
                                             <a-col :lg="24" :xl="12">
                                                 <template>
-                                                    <a-select :dropdown-class-name="themeSwitcher.currentTheme" mode="tags"
+                                                    <a-select :dropdown-class-name="themeSwitcher.currentTheme"
+                                                              mode="tags"
                                                               style="width: 100%"
                                                               v-model="directDomains">
                                                         <a-select-option :label="p.label" :value="p.value"
@@ -393,7 +407,8 @@
                                             </a-col>
                                             <a-col :lg="24" :xl="12">
                                                 <template>
-                                                    <a-select :dropdown-class-name="themeSwitcher.currentTheme" mode="tags"
+                                                    <a-select :dropdown-class-name="themeSwitcher.currentTheme"
+                                                              mode="tags"
                                                               style="width: 100%"
                                                               v-model="ipv4Domains">
                                                         <a-select-option :label="p.label" :value="p.value"
@@ -424,7 +439,8 @@
                                                     </a-col>
                                                     <a-col :lg="24" :xl="12">
                                                         <template>
-                                                            <a-select :dropdown-class-name="themeSwitcher.currentTheme" mode="tags"
+                                                            <a-select :dropdown-class-name="themeSwitcher.currentTheme"
+                                                                      mode="tags"
                                                                       style="width: 100%"
                                                                       v-model="warpDomains">
                                                                 <a-select-option :label="p.label" :value="p.value"
@@ -437,7 +453,8 @@
                                                 </a-row>
                                             </a-list-item>
                                         </template>
-                                        <a-button @click="showWarp()" icon="cloud" style="margin-left: 20px;" type="primary"
+                                        <a-button @click="showWarp()" icon="cloud" style="margin-left: 20px;"
+                                                  type="primary"
                                                   v-else>WARP
                                         </a-button>
                                     </a-list-item>
@@ -454,7 +471,8 @@
                         <a-tab-pane key="tpl-routing" style="padding-top: 20px;" tab='{{ i18n "pages.xray.Routings"}}'>
                             <a-button @click="addRule" icon="plus" type="primary">{{ i18n "pages.xray.rules.add" }}
                             </a-button>
-                            <a-table-sortable :columns="isMobile ? rulesMobileColumns : rulesColumns" :data-source="routingRuleData"
+                            <a-table-sortable :columns="isMobile ? rulesMobileColumns : rulesColumns"
+                                              :data-source="routingRuleData"
                                               :indent-size="0"
                                               :pagination="false"
                                               :row-key="r => r.key"
@@ -466,7 +484,8 @@
                                     <table-sort-trigger :item-index="index"></table-sort-trigger>
                                     <span class="ant-table-row-index"> [[ index+1 ]] </span>
                                     <a-dropdown :trigger="['click']">
-                                        <a-icon @click="e => e.preventDefault()" style="font-size: 16px; text-decoration: bold;"
+                                        <a-icon @click="e => e.preventDefault()"
+                                                style="font-size: 16px; text-decoration: bold;"
                                                 type="more"></a-icon>
                                         <a-menu :theme="themeSwitcher.currentTheme" slot="overlay">
                                             <a-menu-item @click="replaceRule(index,0)" v-if="index>0">
@@ -527,7 +546,8 @@
                                 <template slot="info" slot-scope="text, rule, index">
                                     <a-popover :overlay-class-name="themeSwitcher.currentTheme"
                                                placement="bottomRight"
-                                               trigger="click" v-if="(rule.sourceIP+rule.sourcePort+rule.vlessRoute+rule.network+rule.protocol+rule.attrs+rule.ip+rule.domain+rule.port).length>0">
+                                               trigger="click"
+                                               v-if="(rule.sourceIP+rule.sourcePort+rule.vlessRoute+rule.network+rule.protocol+rule.attrs+rule.ip+rule.domain+rule.port).length>0">
                                         <template slot="content">
                                             <table cellpadding="2" style="max-width: 300px;">
                                                 <tr v-if="rule.sourceIP">
@@ -629,12 +649,14 @@
                                 <a-col :lg="12" :sm="12" :xs="12" style="text-align: right;">
                                     <a-icon :spin="refreshing" @click="refreshOutboundTraffic()" style="margin: 0 5px;"
                                             type="sync"></a-icon>
-                                    <a-popconfirm :overlay-class-name="themeSwitcher.currentTheme" @confirm="resetOutboundTraffic(-1)"
+                                    <a-popconfirm :overlay-class-name="themeSwitcher.currentTheme"
+                                                  @confirm="resetOutboundTraffic(-1)"
                                                   cancel-text='{{ i18n "cancel"}}'
                                                   ok-text='{{ i18n "reset"}}'
                                                   placement="topRight"
                                                   title='{{ i18n "pages.inbounds.resetTrafficContent"}}'>
-                                        <a-icon :style="themeSwitcher.isDarkTheme ? 'color: #1890ff' : 'color: #1890ff'" slot="icon"
+                                        <a-icon :style="themeSwitcher.isDarkTheme ? 'color: #1890ff' : 'color: #1890ff'"
+                                                slot="icon"
                                                 type="question-circle-o"></a-icon>
                                         <a-icon style="cursor: pointer;" type="retweet"></a-icon>
                                     </a-popconfirm>
@@ -650,7 +672,8 @@
                                 <template slot="action" slot-scope="text, outbound, index">
                                     [[ index+1 ]]
                                     <a-dropdown :trigger="['click']">
-                                        <a-icon @click="e => e.preventDefault()" style="font-size: 16px; text-decoration: bold;"
+                                        <a-icon @click="e => e.preventDefault()"
+                                                style="font-size: 16px; text-decoration: bold;"
                                                 type="more"></a-icon>
                                         <a-menu :theme="themeSwitcher.currentTheme" slot="overlay">
                                             <a-menu-item @click="setFirstOutbound(index)" v-if="index>0">
@@ -695,6 +718,44 @@
                                 <template slot="traffic" slot-scope="text, outbound, index">
                                     <a-tag color="green">[[ findOutboundTraffic(outbound) ]]</a-tag>
                                 </template>
+                                <template slot="test" slot-scope="text, outbound, index">
+                                    <a-tooltip>
+                                        <template slot="title">{{ i18n "pages.xray.outbound.test"
+                                            }}
+                                        </template>
+                                        <a-button
+                                                :disabled="(outbound.protocol === 'blackhole' || outbound.tag === 'blocked') || (outboundTestStates[index] && outboundTestStates[index].testing)"
+                                                :loading="outboundTestStates[index] && outboundTestStates[index].testing"
+                                                @click="testOutbound(index)"
+                                                icon="thunderbolt"
+                                                shape="circle"
+                                                type="primary">
+                                        </a-button>
+                                    </a-tooltip>
+                                </template>
+                                <template slot="testResult" slot-scope="text, outbound, index">
+                                    <div
+                                            v-if="outboundTestStates[index] && outboundTestStates[index].result">
+                                        <a-tag color="green"
+                                               v-if="outboundTestStates[index].result.success">
+                                            [[ outboundTestStates[index].result.delay ]]ms
+                                            <span v-if="outboundTestStates[index].result.statusCode">
+                        ([[ outboundTestStates[index].result.statusCode
+                        ]])</span>
+                                        </a-tag>
+                                        <a-tooltip :title="outboundTestStates[index].result.error"
+                                                   v-else>
+                                            <a-tag color="red">
+                                                Failed
+                                            </a-tag>
+                                        </a-tooltip>
+                                    </div>
+                                    <span
+                                            v-else-if="outboundTestStates[index] && outboundTestStates[index].testing">
+                <a-icon type="loading"/>
+            </span>
+                                    <span v-else>-</span>
+                                </template>
                             </a-table>
                         </a-tab-pane>
                         <a-tab-pane force-render="true" key="tpl-reverse"
@@ -712,7 +773,8 @@
                                 <template slot="action" slot-scope="text, reverse, index">
                                     [[ index+1 ]]
                                     <a-dropdown :trigger="['click']">
-                                        <a-icon @click="e => e.preventDefault()" style="font-size: 16px; text-decoration: bold;"
+                                        <a-icon @click="e => e.preventDefault()"
+                                                style="font-size: 16px; text-decoration: bold;"
                                                 type="more"></a-icon>
                                         <a-menu :theme="themeSwitcher.currentTheme" slot="overlay">
                                             <a-menu-item @click="editReverse(index)">
@@ -744,7 +806,8 @@
                                 <template slot="action" slot-scope="text, balancer, index">
                                     [[ index+1 ]]
                                     <a-dropdown :trigger="['click']">
-                                        <a-icon @click="e => e.preventDefault()" style="font-size: 16px; text-decoration: bold;"
+                                        <a-icon @click="e => e.preventDefault()"
+                                                style="font-size: 16px; text-decoration: bold;"
                                                 type="more"></a-icon>
                                         <a-menu :theme="themeSwitcher.currentTheme" slot="overlay">
                                             <a-menu-item @click="editBalancer(index)">
@@ -794,7 +857,8 @@
                             <textarea id="obsSetting" style="position:absolute; left: -800px;"></textarea>
                         </a-tab-pane>
                         <a-tab-pane force-render="true" key="tpl-dns" style="padding-top: 20px;" tab='DNS'>
-                            <setting-list-item desc='{{ i18n "pages.xray.dns.enableDesc" }}' title='{{ i18n "pages.xray.dns.enable" }}'
+                            <setting-list-item desc='{{ i18n "pages.xray.dns.enableDesc" }}'
+                                               title='{{ i18n "pages.xray.dns.enable" }}'
                                                type="switch"
                                                v-model="enableDNS"></setting-list-item>
                             <template v-if="enableDNS">
@@ -809,7 +873,8 @@
                                                               title='{{ i18n "pages.xray.dns.strategy" }}'/>
                                         </a-col>
                                         <a-col :lg="24" :xl="12">
-                                            <a-select :dropdown-class-name="themeSwitcher.currentTheme" style="width: 100%"
+                                            <a-select :dropdown-class-name="themeSwitcher.currentTheme"
+                                                      style="width: 100%"
                                                       v-model="dnsStrategy">
                                                 <a-select-option :label="l" :value="l"
                                                                  v-for="l in ['UseSystem', 'UseIP', 'UseIPv4', 'UseIPv6']">
@@ -819,17 +884,20 @@
                                         </a-col>
                                     </a-row>
                                 </a-list-item>
-                                <setting-list-item desc='{{ i18n "pages.xray.dns.disableCacheDesc" }}' title='{{ i18n "pages.xray.dns.disableCache" }}'
+                                <setting-list-item desc='{{ i18n "pages.xray.dns.disableCacheDesc" }}'
+                                                   title='{{ i18n "pages.xray.dns.disableCache" }}'
                                                    type="switch"
                                                    v-model="dnsDisableCache"></setting-list-item>
-                                <setting-list-item desc='{{ i18n "pages.xray.dns.disableFallbackDesc" }}' title='{{ i18n "pages.xray.dns.disableFallback" }}'
+                                <setting-list-item desc='{{ i18n "pages.xray.dns.disableFallbackDesc" }}'
+                                                   title='{{ i18n "pages.xray.dns.disableFallback" }}'
                                                    type="switch"
                                                    v-model="dnsDisableFallback"></setting-list-item>
                                 <setting-list-item desc='{{ i18n "pages.xray.dns.disableFallbackIfMatchDesc" }}'
                                                    title='{{ i18n "pages.xray.dns.disableFallbackIfMatch" }}'
                                                    type="switch"
                                                    v-model="dnsDisableFallbackIfMatch"></setting-list-item>
-                                <setting-list-item desc='{{ i18n "pages.xray.dns.useSystemHostsDesc" }}' title='{{ i18n "pages.xray.dns.useSystemHosts" }}'
+                                <setting-list-item desc='{{ i18n "pages.xray.dns.useSystemHostsDesc" }}'
+                                                   title='{{ i18n "pages.xray.dns.useSystemHosts" }}'
                                                    type="switch"
                                                    v-model="dnsUseSystemHosts"></setting-list-item>
                                 <a-divider>DNS</a-divider>
@@ -837,14 +905,16 @@
                                           type="primary">{{ i18n
                                     "pages.xray.dns.add" }}
                                 </a-button>
-                                <a-table :columns="dnsColumns" :data-source="dnsServers" :indent-size="0" :pagination="false"
+                                <a-table :columns="dnsColumns" :data-source="dnsServers" :indent-size="0"
+                                         :pagination="false"
                                          :row-key="r => r.key" :scroll="isMobile ? {} : { x: 200 }"
                                          :style="isMobile ? 'padding: 5px 0' : 'margin-left: 1px;'" bordered
                                          v-if="dnsServers.length>0">
                                     <template slot="action" slot-scope="text,dns,index">
                                         [[ index+1 ]]
                                         <a-dropdown :trigger="['click']">
-                                            <a-icon @click="e => e.preventDefault()" style="font-size: 16px; text-decoration: bold;"
+                                            <a-icon @click="e => e.preventDefault()"
+                                                    style="font-size: 16px; text-decoration: bold;"
                                                     type="more"></a-icon>
                                             <a-menu :theme="themeSwitcher.currentTheme" slot="overlay">
                                                 <a-menu-item @click="editDNSServer(index)">
@@ -877,13 +947,15 @@
                                 </a-button>
                                 <a-table :columns="fakednsColumns" :data-source="fakeDns" :indent-size="0"
                                          :pagination="false"
-                                         :row-key="r => r.key" :scroll="isMobile ? {} : { x: 200 }" :style="isMobile ? 'padding: 5px 0' : 'margin-left: 1px;'"
+                                         :row-key="r => r.key" :scroll="isMobile ? {} : { x: 200 }"
+                                         :style="isMobile ? 'padding: 5px 0' : 'margin-left: 1px;'"
                                          bordered
                                          v-if="fakeDns && fakeDns.length>0">
                                     <template slot="action" slot-scope="text,fakedns,index">
                                         [[ index+1 ]]
                                         <a-dropdown :trigger="['click']">
-                                            <a-icon @click="e => e.preventDefault()" style="font-size: 16px; text-decoration: bold;"
+                                            <a-icon @click="e => e.preventDefault()"
+                                                    style="font-size: 16px; text-decoration: bold;"
                                                     type="more"></a-icon>
                                             <a-menu :theme="themeSwitcher.currentTheme" slot="overlay">
                                                 <a-menu-item @click="editFakedns(index)">
@@ -902,23 +974,28 @@
                             </template>
                         </a-tab-pane>
                         <a-tab-pane force-render="true" key="tpl-tunnel" style="padding-top: 20px;" tab='Tunnel'>
-                            <setting-list-item desc='{{ i18n "pages.xray.tunnel.enableDesc" }}' title='{{ i18n "pages.xray.tunnel.enable" }}'
+                            <setting-list-item desc='{{ i18n "pages.xray.tunnel.enableDesc" }}'
+                                               title='{{ i18n "pages.xray.tunnel.enable" }}'
                                                type="switch"
                                                v-model="enableTunnel"></setting-list-item>
                             <template v-if="enableTunnel">
-                                <setting-list-item desc='{{ i18n "pages.xray.tunnel.serverIp" }}' style="padding: 10px 20px"
+                                <setting-list-item desc='{{ i18n "pages.xray.tunnel.serverIp" }}'
+                                                   style="padding: 10px 20px"
                                                    title='{{ i18n "pages.xray.tunnel.ip" }}'
                                                    type="text"
                                                    v-model="serverIP"></setting-list-item>
-                                <setting-list-item desc='{{ i18n "pages.xray.tunnel.serverPort" }}' style="padding: 10px 20px"
+                                <setting-list-item desc='{{ i18n "pages.xray.tunnel.serverPort" }}'
+                                                   style="padding: 10px 20px"
                                                    title='{{ i18n "pages.xray.tunnel.port" }}'
                                                    type="text"
                                                    v-model="serverPort"></setting-list-item>
-                                <setting-list-item desc='{{ i18n "pages.xray.tunnel.serverUser" }}' style="padding: 10px 20px"
+                                <setting-list-item desc='{{ i18n "pages.xray.tunnel.serverUser" }}'
+                                                   style="padding: 10px 20px"
                                                    title='{{ i18n "pages.xray.tunnel.user" }}'
                                                    type="text"
                                                    v-model="serverUser"></setting-list-item>
-                                <setting-list-item desc='{{ i18n "pages.xray.tunnel.serverPass" }}' style="padding: 10px 20px"
+                                <setting-list-item desc='{{ i18n "pages.xray.tunnel.serverPass" }}'
+                                                   style="padding: 10px 20px"
                                                    title='{{ i18n "pages.xray.tunnel.password" }}'
                                                    type="text"
                                                    v-model="serverPass"></setting-list-item>
@@ -1025,7 +1102,7 @@
         {
             title: '{{ i18n "pages.xray.outbound.address"}}',
             align: 'center',
-            width: 50,
+            width: 60,
             scopedSlots: {customRender: 'address'}
         },
         {
@@ -1033,6 +1110,18 @@
             align: 'center',
             width: 50,
             scopedSlots: {customRender: 'traffic'}
+        },
+        {
+            title: '{{ i18n "pages.xray.outbound.testResult" }}',
+            align: 'center',
+            width: 100,
+            scopedSlots: {customRender: 'testResult'}
+        },
+        {
+            title: '{{ i18n "pages.xray.outbound.test" }}',
+            align: 'center',
+            width: 40,
+            scopedSlots: {customRender: 'test'}
         },
     ];
 
@@ -1098,8 +1187,11 @@
             spinning: false,
             oldXraySetting: '',
             xraySetting: '',
+            outboundTestUrl: 'https://www.google.com/generate_204',
+            oldOutboundTestUrl: 'https://www.google.com/generate_204',
             inboundTags: [],
             outboundsTraffic: [],
+            outboundTestStates: {},
             saveBtnDisable: true,
             refreshing: false,
             restartResult: '',
@@ -1217,14 +1309,14 @@
             },
             defaultObservatory: {
                 subjectSelector: [],
-                probeURL: "http://www.google.com/gen_204",
+                probeURL: "https://www.google.com/generate_204",
                 probeInterval: "10m",
                 enableConcurrency: true
             },
             defaultBurstObservatory: {
                 subjectSelector: [],
                 pingConfig: {
-                    destination: "http://www.google.com/gen_204",
+                    destination: "https://www.google.com/generate_204",
                     interval: "30m",
                     connectivity: "http://connectivitycheck.platform.hicloud.com/generate_204",
                     timeout: "10s",
@@ -1252,12 +1344,17 @@
                     this.oldXraySetting = xs;
                     this.xraySetting = xs;
                     this.inboundTags = result.inboundTags;
+                    this.outboundTestUrl = result.outboundTestUrl || 'https://www.google.com/generate_204';
+                    this.oldOutboundTestUrl = this.outboundTestUrl;
                     this.saveBtnDisable = true;
                 }
             },
             async updateXraySetting() {
                 this.loading(true);
-                const msg = await HttpUtil.post("/panel/xray/update", {xraySetting: this.xraySetting});
+                const msg = await HttpUtil.post("/panel/xray/update", {
+                    xraySetting: this.xraySetting,
+                    outboundTestUrl: this.outboundTestUrl || 'https://www.google.com/generate_204'
+                });
                 this.loading(false);
                 if (msg.success) {
                     await this.getXraySetting();
@@ -1509,6 +1606,71 @@
                 outbounds = this.templateSettings.outbounds;
                 outbounds.splice(0, 0, outbounds.splice(index, 1)[0]);
                 this.outboundSettings = JSON.stringify(outbounds);
+            },
+            async testOutbound(index) {
+                const outbound = this.templateSettings.outbounds[index];
+                if (!outbound) {
+                    Vue.prototype.$message.error('{{ i18n "pages.xray.outbound.testError" }}');
+                    return;
+                }
+
+                if (outbound.protocol === 'blackhole' || outbound.tag === 'blocked') {
+                    Vue.prototype.$message.warning('{{ i18n "pages.xray.outbound.testError" }}: blocked/blackhole outbound');
+                    return;
+                }
+
+                // Initialize test state for this outbound if not exists
+                if (!this.outboundTestStates[index]) {
+                    this.$set(this.outboundTestStates, index, {
+                        testing: false,
+                        result: null
+                    });
+                }
+
+                // Set testing state
+                this.$set(this.outboundTestStates[index], 'testing', true);
+                this.$set(this.outboundTestStates[index], 'result', null);
+
+                try {
+                    const outboundJSON = JSON.stringify(outbound);
+                    const allOutboundsJSON = JSON.stringify(this.templateSettings.outbounds || []);
+
+                    const msg = await HttpUtil.post("/panel/xray/testOutbound", {
+                        outbound: outboundJSON,
+                        allOutbounds: allOutboundsJSON
+                    });
+
+                    // Update test state
+                    this.$set(this.outboundTestStates[index], 'testing', false);
+
+                    if (msg.success && msg.obj) {
+                        const result = msg.obj;
+                        this.$set(this.outboundTestStates[index], 'result', result);
+
+                        if (result.success) {
+                            Vue.prototype.$message.success(
+                                `{{ i18n "pages.xray.outbound.testSuccess" }}: ${result.delay}ms (${result.statusCode})`
+                            );
+                        } else {
+                            Vue.prototype.$message.error(
+                                `{{ i18n "pages.xray.outbound.testFailed" }}: ${result.error || 'Unknown error'}`
+                            );
+                        }
+                    } else {
+                        this.$set(this.outboundTestStates[index], 'result', {
+                            success: false,
+                            error: msg.msg || '{{ i18n "pages.xray.outbound.testError" }}'
+                        });
+                        Vue.prototype.$message.error(msg.msg || '{{ i18n "pages.xray.outbound.testError" }}');
+                    }
+                } catch (error) {
+                    this.$set(this.outboundTestStates[index], 'testing', false);
+                    this.$set(this.outboundTestStates[index], 'result', {
+                        success: false,
+                        error: error.message || '{{ i18n "pages.xray.outbound.testError" }}'
+                    });
+                    Vue.prototype.$message.error('{{ i18n "pages.xray.outbound.testError" }}: ' + error.message);
+                }
             },
             addReverse() {
                 reverseModal.show({
@@ -1897,7 +2059,7 @@
             await this.getOutboundsTraffic();
             while (true) {
                 await PromiseUtil.sleep(800);
-                this.saveBtnDisable = this.oldXraySetting === this.xraySetting;
+                this.saveBtnDisable = this.oldXraySetting === this.xraySetting && this.oldOutboundTestUrl === this.outboundTestUrl;
             }
         },
         computed: {
