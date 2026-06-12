@@ -108,6 +108,8 @@ func (a *SUBController) subs(c *gin.Context) {
 
 		if a.subTitle != "" {
 			c.Writer.Header().Set("Profile-Title", "base64:"+base64.StdEncoding.EncodeToString([]byte(a.subTitle)))
+		} else if a.subTitle == "" {
+			c.Writer.Header().Set("Profile-Title", ResultsEmails[0])
 		}
 		if a.subSupportUrl != "" {
 			c.Writer.Header().Set("Support-Url", a.subSupportUrl)
@@ -184,6 +186,8 @@ func (a *SUBController) subJsons(c *gin.Context) {
 
 		if a.subTitle != "" {
 			c.Writer.Header().Set("Profile-Title", "base64:"+base64.StdEncoding.EncodeToString([]byte(a.subTitle)))
+		} else if a.subTitle == "" {
+			c.Writer.Header().Set("Profile-Title", subId)
 		}
 		if a.subSupportUrl != "" {
 			c.Writer.Header().Set("Support-Url", a.subSupportUrl)
