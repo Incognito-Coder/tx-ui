@@ -1224,7 +1224,17 @@
                     isEdit: true
                 });
             },
-
+            findIndexOfClient(protocol, clients, client) {
+                if (!clients || !Array.isArray(clients) || !client) {
+                    return -1;
+                }
+                switch (protocol) {
+                    case Protocols.TROJAN:
+                    case Protocols.SHADOWSOCKS:
+                        return clients.findIndex(item => item && item.password === client.password && item.email === client.email);
+                    default: return clients.findIndex(item => item && item.id === client.id && item.email === client.email);
+                }
+            },
             async addClient(clients, dbInboundId, modal) {
                 const data = {
                     id: dbInboundId,
@@ -1317,6 +1327,7 @@
                         return client.password;
                     case Protocols.SHADOWSOCKS:
                         return client.email;
+                    case Protocols.HYSTERIA: return client.auth;
                     default:
                         return client.id;
                 }
@@ -1356,11 +1367,25 @@
                 dbInbound.enable = state;
                 this.submit(`/panel/api/inbounds/update/${dbInbound.id}`, dbInbound);
             },
-            async switchEnableClient(dbInboundId, client) {
-                this.loading()
-                const clientId = this.getClientId(this.dbInbounds.find(row => row.id === dbInboundId).protocol, client);
-                await this.updateClient(client, dbInboundId, clientId);
-                this.loading(false);
+            async switchEnableClient(dbInboundId, client, state) {
+                this.loading();
+                try {
+                    dbInbound = this.dbInbounds.find(row => row.id === dbInboundId);
+                    if (!dbInbound) return;
+
+                    inbound = dbInbound.toInbound();
+                    clients = inbound && inbound.clients ? inbound.clients : null;
+                    if (!clients || !Array.isArray(clients)) return;
+
+                    index = this.findIndexOfClient(dbInbound.protocol, clients, client);
+                    if (index < 0 || !clients[index]) return;
+
+                    clients[index].enable = typeof state === 'boolean' ? state : !!client.enable;
+                    clientId = this.getClientId(dbInbound.protocol, clients[index]);
+                    await this.updateClient(clients[index], dbInboundId, clientId);
+                } finally {
+                    this.loading(false);
+                }
             },
             async submit(url, data, modal) {
                 const msg = await HttpUtil.postWithModal(url, data, modal);

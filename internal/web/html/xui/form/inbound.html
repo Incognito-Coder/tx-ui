@@ -108,6 +108,11 @@
     {{template "form/tun"}}
 </template>
 
+<!-- hysteria -->
+<template v-if="inbound.protocol === Protocols.HYSTERIA">
+    {{template "form/hysteria"}}
+</template>
+
 <!-- stream settings -->
 <template v-if="inbound.canEnableStream()">
     {{template "form/streamSettings"}}

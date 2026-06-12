@@ -115,7 +115,7 @@ func (s *SubService) getInboundsBySubId(subId string) ([]*model.Inbound, error) 
 		FROM inbounds,
 			JSON_EACH(JSON_EXTRACT(inbounds.settings, '$.clients')) AS client 
 		WHERE
-			protocol in ('vmess','vless','trojan','shadowsocks')
+			protocol in ('vmess','vless','trojan','shadowsocks','hysteria')
 			AND JSON_EXTRACT(client.value, '$.subId') = ? AND enable = ?
 	)`, subId, true).Find(&inbounds).Error
 	if err != nil {
@@ -166,8 +166,74 @@ func (s *SubService) getLink(inbound *model.Inbound, email string) string {
 		return s.genTrojanLink(inbound, email)
 	case "shadowsocks":
 		return s.genShadowsocksLink(inbound, email)
+	case "hysteria":
+		return s.genHysteriaLink(inbound, email)
 	}
 	return ""
+}
+
+func (s *SubService) genHysteriaLink(inbound *model.Inbound, email string) string {
+	address := s.address
+	if inbound.Protocol != model.Hysteria {
+		return ""
+	}
+	var stream map[string]interface{}
+	json.Unmarshal([]byte(inbound.StreamSettings), &stream)
+	clients, _ := s.inboundService.GetClients(inbound)
+	clientIndex := -1
+	for i, client := range clients {
+		if client.Email == email {
+			clientIndex = i
+			break
+		}
+	}
+	auth := clients[clientIndex].Auth
+	port := inbound.Port
+	params := make(map[string]string)
+
+	params["security"] = "tls"
+	tlsSetting, _ := stream["tlsSettings"].(map[string]interface{})
+	alpns, _ := tlsSetting["alpn"].([]interface{})
+	var alpn []string
+	for _, a := range alpns {
+		alpn = append(alpn, a.(string))
+	}
+	if len(alpn) > 0 {
+		params["alpn"] = strings.Join(alpn, ",")
+	}
+	if sniValue, ok := searchKey(tlsSetting, "serverName"); ok {
+		params["sni"], _ = sniValue.(string)
+	}
+
+	tlsSettings, _ := searchKey(tlsSetting, "settings")
+	if tlsSetting != nil {
+		if fpValue, ok := searchKey(tlsSettings, "fingerprint"); ok {
+			params["fp"], _ = fpValue.(string)
+		}
+		if insecure, ok := searchKey(tlsSettings, "allowInsecure"); ok {
+			if insecure.(bool) {
+				params["insecure"] = "1"
+			}
+		}
+	}
+
+	var settings map[string]interface{}
+	json.Unmarshal([]byte(inbound.Settings), &settings)
+	version, _ := settings["version"].(float64)
+	protocol := "hysteria2"
+	if int(version) == 1 {
+		protocol = "hysteria"
+	}
+
+	link := fmt.Sprintf("%s://%s@%s:%d", protocol, auth, address, port)
+	url, _ := url.Parse(link)
+	q := url.Query()
+	for k, v := range params {
+		q.Add(k, v)
+	}
+	url.RawQuery = q.Encode()
+	url.Fragment = s.genRemark(inbound, email, "")
+	return url.String()
 }
 
 func (s *SubService) genVmessLink(inbound *model.Inbound, email string) string {

@@ -18,6 +18,7 @@ const (
 	Shadowsocks Protocol = "shadowsocks"
 	Mixed       Protocol = "mixed"
 	WireGuard   Protocol = "wireguard"
+	Hysteria    Protocol = "hysteria"
 )
 
 type User struct {
@@ -94,10 +95,11 @@ type Setting struct {
 }
 
 type Client struct {
-	ID         string `json:"id"`
+	ID         string `json:"id,omitempty"`
 	Security   string `json:"security"`
-	Password   string `json:"password"`
-	Flow       string `json:"flow"`
+	Password   string `json:"password,omitempty"` // Client password
+	Flow       string `json:"flow,omitempty"`     // Flow control (XTLS)
+	Auth       string `json:"auth,omitempty"`     // Auth password (Hysteria)
 	Email      string `json:"email"`
 	LimitIP    int    `json:"limitIp"`
 	TotalGB    int64  `json:"totalGB" form:"totalGB"`

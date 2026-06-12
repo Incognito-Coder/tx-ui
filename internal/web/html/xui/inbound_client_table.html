@@ -42,7 +42,7 @@
     </a-tooltip>
 </template>
 <template slot="enable" slot-scope="text, client, index">
-    <a-switch @change="switchEnableClient(record.id,client)" v-model="client.enable"></a-switch>
+    <a-switch @change="switchEnableClient(record.id,client,$event)" v-model="client.enable"></a-switch>
 </template>
 <template slot="online" slot-scope="text, client, index">
     <template v-if="client.enable && isClientOnline(client.email)">
@@ -181,7 +181,7 @@
                 <span style="color: #FF4D4F"> {{ i18n "delete"}}</span>
             </a-menu-item>
             <a-menu-item>
-                <a-switch @change="switchEnableClient(record.id,client)" size="small"
+                <a-switch @change="switchEnableClient(record.id,client,$event)" size="small"
                           v-model="client.enable"></a-switch>
                 {{ i18n "enable"}}
             </a-menu-item>

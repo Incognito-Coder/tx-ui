@@ -30,14 +30,28 @@
         </template>
         <a-input v-model.trim="client.password"></a-input>
     </a-form-item>
-    <a-form-item v-if="inbound.protocol === Protocols.VMESS || inbound.protocol === Protocols.VLESS">
+    <a-form-item v-if="inbound.protocol === Protocols.HYSTERIA">
         <template slot="label">
             <a-tooltip>
                 <template slot="title">
                     <span>{{ i18n "reset" }}</span>
                 </template>
-                ID
-                <a-icon @click="client.id = RandomUtil.randomUUID()" type="sync"></a-icon>
+                Auth Password
+                <a-icon @click="client.auth = RandomUtil.randomSeq(10)"
+                        type="sync"></a-icon>
+            </a-tooltip>
+        </template>
+        <a-input v-model.trim="client.auth"></a-input>
+    </a-form-item>
+    <a-form-item
+            v-if="inbound.protocol === Protocols.VMESS || inbound.protocol === Protocols.VLESS">
+        <template slot="label">
+            <a-tooltip>
+                <template slot="title">
+                    <span>{{ i18n "reset" }}</span>
+                </template>
+                ID <a-icon @click="client.id = RandomUtil.randomUUID()"
+                           type="sync"></a-icon>
             </a-tooltip>
         </template>
         <a-input v-model.trim="client.id"></a-input>

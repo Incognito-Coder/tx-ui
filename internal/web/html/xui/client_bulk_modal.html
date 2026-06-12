@@ -220,6 +220,8 @@
                     return new Inbound.TrojanSettings.Trojan();
                 case Protocols.SHADOWSOCKS:
                     return new Inbound.ShadowsocksSettings.Shadowsocks(clientsBulkModal.inbound.settings.shadowsockses[0].method);
+                case Protocols.HYSTERIA:
+                    return new Inbound.HysteriaSettings.Hysteria();
                 default:
                     return null;
             }

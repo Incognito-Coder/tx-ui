@@ -65,6 +65,8 @@
                     return client.password;
                 case Protocols.SHADOWSOCKS:
                     return client.email;
+                case Protocols.HYSTERIA:
+                    return client.auth;
                 default:
                     return client.id;
             }
@@ -88,6 +90,8 @@
                     newClient = new Inbound.ShadowsocksSettings.Shadowsocks(clients[0].method);
                     clients.push(newClient);
                     return newClient;
+                case Protocols.HYSTERIA:
+                    return clients.push(new Inbound.HysteriaSettings.Hysteria());
                 default:
                     return null;
             }
