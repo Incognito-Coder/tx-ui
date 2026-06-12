@@ -243,8 +243,9 @@ reset_user() {
 
 gen_random_string() {
     local length="$1"
-    local random_string=$(LC_ALL=C tr -dc 'a-zA-Z0-9' </dev/urandom | fold -w "$length" | head -n 1)
-    echo "$random_string"
+    openssl rand -base64 $(( length * 2 )) \
+            | tr -dc 'a-zA-Z0-9' \
+            | head -c "$length"
 }
 
 reset_webbasepath() {
@@ -523,31 +524,31 @@ enable_bbr() {
     # Check the OS and install necessary packages
     case "${release}" in
     ubuntu | debian | armbian)
-        apt-get update && apt-get install -y ca-certificates
+        apt-get update && apt-get install -y ca-certificates openssl
         ;;
     centos | rhel | almalinux | rocky | ol)
-        yum -y update && yum install -y ca-certificates
+        yum -y update && yum install -y ca-certificates openssl
         ;;
     fedora | amzn)
-        dnf -y update && dnf install -y ca-certificates
+        dnf -y update && dnf install -y ca-certificates openssl
         ;;
     arch | manjaro | parch)
-        pacman -Sy --noconfirm ca-certificates
+        pacman -Sy --noconfirm ca-certificates openssl
         ;;
     opensuse* | suse)
-        zypper refresh && zypper install -y ca-certificates
+        zypper refresh && zypper install -y ca-certificates openssl
         ;;
     alpine)
-        apk update && apk add ca-certificates
+        apk update && apk add ca-certificates openssl
         ;;
     gentoo)
-        emerge --sync && emerge --ask --quiet ca-certificates
+        emerge --sync && emerge --ask --quiet ca-certificates openssl
         ;;
     void)
-        xbps-install -S && xbps-install -y ca-certificates
+        xbps-install -S && xbps-install -y ca-certificates openssl
         ;;
     solus)
-        eopkg update && eopkg install -y ca-certificates
+        eopkg update && eopkg install -y ca-certificates openssl
         ;;
     *)
         echo -e "${red}Unsupported operating system. Please install ca-certificates manually.${plain}\n"

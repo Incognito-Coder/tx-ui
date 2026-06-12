@@ -107,8 +107,9 @@ install_base() {
 
 gen_random_string() {
     local length="$1"
-    local random_string=$(LC_ALL=C tr -dc 'a-zA-Z0-9' </dev/urandom | fold -w "$length" | head -n 1)
-    echo "$random_string"
+    openssl rand -base64 $(( length * 2 )) \
+            | tr -dc 'a-zA-Z0-9' \
+            | head -c "$length"
 }
 
 config_after_install() {
