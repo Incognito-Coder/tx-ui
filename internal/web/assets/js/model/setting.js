@@ -50,6 +50,7 @@ class AllSetting {
         this.subJsonRules = "";
         this.xrayCronJob = 0;
         this.autoDeleteDay = 0;
+        this.showInsecureWarning = false;
 
         this.timeLocation = "Local";
 

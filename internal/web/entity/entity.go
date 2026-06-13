@@ -65,7 +65,8 @@ type AllSetting struct {
 	SubJsonNoises    string `json:"subJsonNoises" form:"subJsonNoises"`
 	SubJsonMux       string `json:"subJsonMux" form:"subJsonMux"`
 	SubJsonRules     string `json:"subJsonRules" form:"subJsonRules"`
-	Datepicker       string `json:"datepicker" form:"datepicker"`
+	Datepicker          string `json:"datepicker" form:"datepicker"`
+	ShowInsecureWarning bool   `json:"showInsecureWarning" form:"showInsecureWarning"`
 }
 
 func (s *AllSetting) CheckValid() error {

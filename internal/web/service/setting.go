@@ -76,6 +76,7 @@ var defaultValueMap = map[string]string{
 	"subJsonRules":        "",
 	"datepicker":          "gregorian",
 	"autoDeleteDay":       "0",
+	"showInsecureWarning": "true",
 	"warp":                "",
 	"xrayOutboundTestUrl": "https://www.google.com/generate_204",
 }
@@ -613,20 +614,21 @@ func extractHostname(host string) string {
 func (s *SettingService) GetDefaultSettings(host string) (interface{}, error) {
 	type settingFunc func() (interface{}, error)
 	settings := map[string]settingFunc{
-		"expireDiff":    func() (interface{}, error) { return s.GetExpireDiff() },
-		"trafficDiff":   func() (interface{}, error) { return s.GetTrafficDiff() },
-		"xrayCronJob":   func() (interface{}, error) { return s.GetXrayRebootTime() },
-		"pageSize":      func() (interface{}, error) { return s.GetPageSize() },
-		"defaultCert":   func() (interface{}, error) { return s.GetCertFile() },
-		"defaultKey":    func() (interface{}, error) { return s.GetKeyFile() },
-		"tgBotEnable":   func() (interface{}, error) { return s.GetTgbotEnabled() },
-		"subEnable":     func() (interface{}, error) { return s.GetSubEnable() },
-		"subTitle":      func() (any, error) { return s.GetSubTitle() },
-		"subURI":        func() (interface{}, error) { return s.GetSubURI() },
-		"subJsonURI":    func() (interface{}, error) { return s.GetSubJsonURI() },
-		"remarkModel":   func() (interface{}, error) { return s.GetRemarkModel() },
-		"datepicker":    func() (interface{}, error) { return s.GetDatepicker() },
-		"ipLimitEnable": func() (interface{}, error) { return s.GetIpLimitEnable() },
+		"expireDiff":          func() (interface{}, error) { return s.GetExpireDiff() },
+		"trafficDiff":         func() (interface{}, error) { return s.GetTrafficDiff() },
+		"xrayCronJob":         func() (interface{}, error) { return s.GetXrayRebootTime() },
+		"pageSize":             func() (interface{}, error) { return s.GetPageSize() },
+		"defaultCert":         func() (interface{}, error) { return s.GetCertFile() },
+		"defaultKey":          func() (interface{}, error) { return s.GetKeyFile() },
+		"tgBotEnable":         func() (interface{}, error) { return s.GetTgbotEnabled() },
+		"subEnable":           func() (interface{}, error) { return s.GetSubEnable() },
+		"subTitle":            func() (any, error) { return s.GetSubTitle() },
+		"subURI":              func() (interface{}, error) { return s.GetSubURI() },
+		"subJsonURI":          func() (interface{}, error) { return s.GetSubJsonURI() },
+		"remarkModel":         func() (interface{}, error) { return s.GetRemarkModel() },
+		"datepicker":          func() (interface{}, error) { return s.GetDatepicker() },
+		"ipLimitEnable":       func() (interface{}, error) { return s.GetIpLimitEnable() },
+		"showInsecureWarning": func() (interface{}, error) { return s.getBool("showInsecureWarning") },
 	}
 
 	result := make(map[string]interface{})

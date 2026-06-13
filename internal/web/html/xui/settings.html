@@ -239,6 +239,9 @@
                                         </a-col>
                                     </a-row>
                                 </a-list-item>
+                                <setting-list-item desc='{{ i18n "pages.settings.showInsecureWarningDesc"}}' title='{{ i18n "pages.settings.showInsecureWarning"}}'
+                                                   type="switch"
+                                                   v-model="allSetting.showInsecureWarning"></setting-list-item>
                             </a-list>
                         </a-tab-pane>
                         <a-tab-pane key="2" style="padding: 20px;" tab='{{ i18n "pages.settings.securitySettings"}}'>
@@ -1089,6 +1092,7 @@
             confAlerts: {
                 get: function () {
                     if (!this.allSetting) return [];
+                    if (!this.allSetting.showInsecureWarning) return [];
                     var alerts = [];
                     if (window.location.protocol !== "https:") alerts.push('{{ i18n "secAlertSSL" }}');
                     if (this.allSetting.webPort == 2053) alerts.push('{{ i18n "secAlertPanelPort" }}');

@@ -350,6 +350,8 @@
 "xrayCronJobDesc" = "Xray-Core 自動重新啟動間隔。(單位：小時 | 0 = 停用)"
 "autoDeleteDay" = "自动删除客户端"
 "autoDeleteDayDesc" = "客户端将在耗尽后自动删除。（单位：天 | 0 = 禁用）"
+"showInsecureWarning" = "安全警告"
+"showInsecureWarningDesc" = "显示不安全配置的安全警告横幅（HTTP 访问、默认端口、默认 URI 路径）。"
 
 [pages.xray]
 "title" = "Xray 配置"

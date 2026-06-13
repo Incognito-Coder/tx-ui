@@ -350,6 +350,8 @@
 "xrayCronJobDesc" = "Xray-Core'un otomatik yeniden başlatma aralıkları. (birim: saat | 0 = devre dışı)"
 "autoDeleteDay" = "İstemciyi Otomatik Olarak Sil"
 "autoDeleteDayDesc" = "İstemci, tükendikten sonra bu kadar gün sonra otomatik olarak silinecektir. (birim: gün | 0 = devre dışı)"
+"showInsecureWarning" = "Güvenlik Uyarıları"
+"showInsecureWarningDesc" = "Güvensiz yapılandırmalar için güvenlik uyarı başlıklarını göster (HTTP erişimi, varsayılan port, varsayılan URI yolları)."
 
 [pages.xray]
 "title" = "Xray Yapılandırmaları"

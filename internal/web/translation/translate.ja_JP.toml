@@ -338,6 +338,8 @@
 "xrayCronJobDesc" = "Xray-Core の自動再起動間隔。(単位: 時間 | 0 = 無効)"
 "autoDeleteDay" = "クライアントの自動削除"
 "autoDeleteDayDesc" = "クライアントは、指定された日数が経過すると自動的に削除されます。(単位: 日 | 0 = 無効)"
+"showInsecureWarning" = "セキュリティ警告"
+"showInsecureWarningDesc" = "安全でない設定（HTTPアクセス、デフォルトポート、デフォルトURIパス）のセキュリティ警告バナーを表示します。"
 
 [pages.xray]
 "title" = "Xray 設定"

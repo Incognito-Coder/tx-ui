@@ -352,6 +352,8 @@
 "xrayCronJobDesc" = "Intervalos de reinicio automático de Xray-Core. (unidad: hora | 0 = deshabilitar)"
 "autoDeleteDay" = "Eliminar cliente automáticamente"
 "autoDeleteDayDesc" = "El cliente se eliminará automáticamente después de esta cantidad de días después de que se agote. (unidad: día | 0 = deshabilitar)"
+"showInsecureWarning" = "Advertencias de seguridad"
+"showInsecureWarningDesc" = "Mostrar banners de advertencia de seguridad para configuraciones inseguras (acceso HTTP, puerto predeterminado, rutas URI predeterminadas)."
 
 [pages.xray]
 "title" = "Xray Configuración"

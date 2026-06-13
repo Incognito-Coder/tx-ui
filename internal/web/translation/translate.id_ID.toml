@@ -352,6 +352,8 @@
 "xrayCronJobDesc" = "Interval restart otomatis Xray-Core. (satuan: jam | 0 = nonaktifkan)"
 "autoDeleteDay" = "Hapus Otomatis Klien"
 "autoDeleteDayDesc" = "Klien akan dihapus otomatis setelah jumlah hari habis. (unit: hari | 0 = nonaktifkan)"
+"showInsecureWarning" = "Peringatan Keamanan"
+"showInsecureWarningDesc" = "Tampilkan banner peringatan keamanan untuk konfigurasi tidak aman (akses HTTP, port default, jalur URI default)."
 
 [pages.xray]
 "title" = "Konfigurasi Xray"

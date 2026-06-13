@@ -896,6 +896,9 @@
                     this.remarkModel = remarkModel;
                     this.datepicker = datepicker;
                     this.ipLimitEnable = ipLimitEnable;
+                    if (showInsecureWarning && window.location.protocol !== "https:") {
+                        this.showAlert = true;
+                    }
                 }
             },
             setInbounds(dbInbounds) {
@@ -1706,9 +1709,6 @@
             const clientSortBy = localStorage.getItem('clientSortBy');
             if (clientSortBy) {
                 this.clientSortBy = clientSortBy;
-            }
-            if (window.location.protocol !== "https:") {
-                this.showAlert = true;
             }
             window.addEventListener('resize', this.onResize);
             this.onResize();

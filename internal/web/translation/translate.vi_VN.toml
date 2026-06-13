@@ -350,6 +350,8 @@
 "xrayCronJobDesc" = "Khoảng thời gian khởi động lại tự động của Xray-Core. (đơn vị: giờ | 0 = vô hiệu hóa)"
 "autoDeleteDay" = "Tự động xóa máy khách"
 "autoDeleteDayDesc" = "Máy khách sẽ tự động bị xóa sau bao nhiêu ngày kể từ khi hết dung lượng. (đơn vị: ngày | 0 = vô hiệu hóa)"
+"showInsecureWarning" = "Cảnh báo bảo mật"
+"showInsecureWarningDesc" = "Hiển thị biểu ngữ cảnh báo bảo mật cho các cấu hình không an toàn (truy cập HTTP, cổng mặc định, đường dẫn URI mặc định)."
 
 [pages.xray]
 "title" = "Cài đặt Xray"

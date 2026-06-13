@@ -940,13 +940,13 @@
         },
         async mounted() {
             window.addEventListener('resize', this.onResize);
-            if (window.location.protocol !== "https:") {
-                this.showAlert = true;
-            }
 
             const msg = await HttpUtil.post('/panel/setting/defaultSettings');
             if (msg.success) {
                 this.ipLimitEnable = msg.obj.ipLimitEnable;
+                if (msg.obj.showInsecureWarning && window.location.protocol !== "https:") {
+                    this.showAlert = true;
+                }
             }
 
             while (true) {

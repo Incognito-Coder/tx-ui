@@ -2051,7 +2051,8 @@
             }
         },
         async mounted() {
-            if (window.location.protocol !== "https:") {
+            const settingsMsg = await HttpUtil.post('/panel/setting/defaultSettings');
+            if (settingsMsg.success && settingsMsg.obj.showInsecureWarning && window.location.protocol !== "https:") {
                 this.showAlert = true;
             }
             await this.getXraySetting();

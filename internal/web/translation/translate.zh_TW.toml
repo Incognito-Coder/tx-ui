@@ -350,6 +350,8 @@
 "xrayCronJobDesc" = "Xray-Core 的自动重启间隔。（单位：小时 | 0 = 禁用）"
 "autoDeleteDay" = "自動刪除客戶端"
 "autoDeleteDayDesc" = "客戶端將在耗盡後自動刪除。（單位：天 | 0 = 停用）"
+"showInsecureWarning" = "安全警告"
+"showInsecureWarningDesc" = "顯示不安全設定的安全警告橫幅（HTTP 存取、預設連接埠、預設 URI 路徑）。"
 
 [pages.xray]
 "title" = "Xray 配置"
