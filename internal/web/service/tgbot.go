@@ -422,6 +422,13 @@ func (t *Tgbot) answerCommand(message *telego.Message, chatId int64, isAdmin boo
 		} else {
 			handleUnknownCommand()
 		}
+	case "backup":
+		onlyMessage = true
+		if isAdmin {
+			t.sendBackup(chatId)
+		} else {
+			handleUnknownCommand()
+		}
 	default:
 		handleUnknownCommand()
 	}
