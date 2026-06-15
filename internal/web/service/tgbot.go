@@ -39,13 +39,14 @@ import (
 )
 
 var (
-	bot              *telego.Bot
-	botHandler       *th.BotHandler
-	adminIds         []int64
-	isRunning        bool
-	hostname         string
-	hashStorage      *global.HashStorage
-	pendingAddClient = make(map[int64]int)
+	bot                  *telego.Bot
+	botHandler           *th.BotHandler
+	adminIds             []int64
+	isRunning            bool
+	hostname             string
+	hashStorage          *global.HashStorage
+	pendingAddClient     = make(map[int64]int)
+	longPollingCtxCancel context.CancelFunc
 )
 
 type LoginStatus byte
@@ -133,6 +134,13 @@ func (t *Tgbot) Start(i18nFS embed.FS) error {
 		return err
 	}
 
+	// Delete any active webhook and drop pending updates to avoid 409 conflicts
+	// when the panel restarts while a previous polling session is still active.
+	dropTrue := true
+	_ = bot.DeleteWebhook(context.Background(), &telego.DeleteWebhookParams{
+		DropPendingUpdates: dropTrue,
+	})
+
 	// Start receiving Telegram bot messages
 	if !isRunning {
 		logger.Info("Telegram bot receiver started")
@@ -197,6 +205,10 @@ func (t *Tgbot) Stop() {
 	if botHandler != nil {
 		botHandler.Stop()
 	}
+	if longPollingCtxCancel != nil {
+		longPollingCtxCancel()
+		longPollingCtxCancel = nil
+	}
 	logger.Info("Stop Telegram receiver ...")
 	isRunning = false
 	adminIds = nil
@@ -229,7 +241,29 @@ func (t *Tgbot) OnReceive() {
 		Timeout: 10,
 	}
 
-	updates, _ := bot.UpdatesViaLongPolling(context.Background(), &params)
+	ctx, cancel := context.WithCancel(context.Background())
+	longPollingCtxCancel = cancel
+
+	var updates <-chan telego.Update
+	var err error
+	for {
+		updates, err = bot.UpdatesViaLongPolling(ctx, &params)
+		if err == nil {
+			break
+		}
+		// Another instance may still be polling — wait for its timeout to expire then retry
+		if strings.Contains(err.Error(), "409") || strings.Contains(err.Error(), "Conflict") || strings.Contains(err.Error(), "terminated") {
+			logger.Warning("Telegram bot conflict detected, retrying in 15 seconds...")
+			select {
+			case <-ctx.Done():
+				return
+			case <-time.After(15 * time.Second):
+			}
+			continue
+		}
+		logger.Error("Failed to start long polling:", err)
+		return
+	}
 
 	botHandler, _ = th.NewBotHandler(bot, updates)
 
@@ -947,6 +981,30 @@ func (t *Tgbot) answerCallback(callbackQuery *telego.CallbackQuery, isAdmin bool
 					return
 				}
 				t.SendMsgToTgbot(chatId, t.I18nBot("tgbot.answers.chooseClient", "Inbound=="+inbound.Remark), clients)
+			case "get_clients_page":
+				if len(dataArray) < 3 {
+					t.sendCallbackAnswerTgBot(callbackQuery.ID, t.I18nBot("tgbot.answers.errorOperation"))
+					return
+				}
+				inboundIdInt, err := strconv.Atoi(dataArray[1])
+				if err != nil {
+					t.sendCallbackAnswerTgBot(callbackQuery.ID, err.Error())
+					return
+				}
+				pageNum, err := strconv.Atoi(dataArray[2])
+				if err != nil {
+					t.sendCallbackAnswerTgBot(callbackQuery.ID, err.Error())
+					return
+				}
+				clients, err := t.getInboundClients(inboundIdInt, pageNum)
+				if err != nil {
+					t.sendCallbackAnswerTgBot(callbackQuery.ID, err.Error())
+					return
+				}
+				t.sendCallbackAnswerTgBot(callbackQuery.ID, t.I18nBot("tgbot.answers.successfulOperation"))
+				t.editMessageCallbackTgBot(chatId, callbackQuery.Message.GetMessageID(), clients)
+			case "noop":
+				t.sendCallbackAnswerTgBot(callbackQuery.ID, "")
 			case "add_client":
 				inboundId, _ := strconv.Atoi(dataArray[1])
 				t.sendCallbackAnswerTgBot(callbackQuery.ID, t.I18nBot("tgbot.answers.addClient"))
@@ -1313,35 +1371,63 @@ func (t *Tgbot) getInbounds() (*telego.InlineKeyboardMarkup, error) {
 	return keyboard, nil
 }
 
-func (t *Tgbot) getInboundClients(id int) (*telego.InlineKeyboardMarkup, error) {
+func (t *Tgbot) getInboundClients(id int, page ...int) (*telego.InlineKeyboardMarkup, error) {
+	const pageSize = 30
+	currentPage := 0
+	if len(page) > 0 {
+		currentPage = page[0]
+	}
+
 	inbound, err := t.inboundService.GetInbound(id)
 	if err != nil {
 		logger.Warning("getIboundClients run failed:", err)
 		return nil, errors.New(t.I18nBot("tgbot.answers.getInboundsFailed"))
 	}
 	clients, err := t.inboundService.GetClients(inbound)
-	var buttons []telego.InlineKeyboardButton
-
 	if err != nil {
 		logger.Warning("GetInboundClients run failed:", err)
 		return nil, errors.New(t.I18nBot("tgbot.answers.getInboundsFailed"))
-	} else {
-		if len(clients) > 0 {
-			for _, client := range clients {
-				buttons = append(buttons, tu.InlineKeyboardButton(client.Email).WithCallbackData(t.encodeQuery("client_get_usage "+client.Email)))
-			}
-
-		}
-		buttons = append(buttons, tu.InlineKeyboardButton(t.I18nBot("tgbot.buttons.addClient")).WithCallbackData(t.encodeQuery("add_client "+strconv.Itoa(id))))
-
 	}
-	cols := 0
+
+	totalClients := len(clients)
+	start := currentPage * pageSize
+	end := start + pageSize
+	if end > totalClients {
+		end = totalClients
+	}
+
+	var buttons []telego.InlineKeyboardButton
+	for _, client := range clients[start:end] {
+		buttons = append(buttons, tu.InlineKeyboardButton(client.Email).WithCallbackData(t.encodeQuery("client_get_usage "+client.Email)))
+	}
+
+	cols := 2
 	if len(buttons) < 6 {
 		cols = 3
-	} else {
-		cols = 2
 	}
 	keyboard := tu.InlineKeyboardGrid(tu.InlineKeyboardCols(cols, buttons...))
+
+	// Add client button
+	keyboard.InlineKeyboard = append(keyboard.InlineKeyboard,
+		[]telego.InlineKeyboardButton{
+			tu.InlineKeyboardButton(t.I18nBot("tgbot.buttons.addClient")).WithCallbackData(t.encodeQuery("add_client " + strconv.Itoa(id))),
+		},
+	)
+
+	// Pagination navigation row (only when needed)
+	if totalClients > pageSize {
+		var navButtons []telego.InlineKeyboardButton
+		if currentPage > 0 {
+			navButtons = append(navButtons, tu.InlineKeyboardButton("⬅️").WithCallbackData(t.encodeQuery(fmt.Sprintf("get_clients_page %d %d", id, currentPage-1))))
+		}
+		navButtons = append(navButtons, tu.InlineKeyboardButton(
+			fmt.Sprintf("%d/%d", currentPage+1, (totalClients+pageSize-1)/pageSize),
+		).WithCallbackData(t.encodeQuery("noop")))
+		if end < totalClients {
+			navButtons = append(navButtons, tu.InlineKeyboardButton("➡️").WithCallbackData(t.encodeQuery(fmt.Sprintf("get_clients_page %d %d", id, currentPage+1))))
+		}
+		keyboard.InlineKeyboard = append(keyboard.InlineKeyboard, navButtons)
+	}
 
 	return keyboard, nil
 }
