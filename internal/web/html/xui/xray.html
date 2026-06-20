@@ -288,6 +288,21 @@
                                                            v-model="familyProtectSettings"></setting-list-item>
                                     </a-list-item>
                                 </a-collapse-panel>
+                                <a-collapse-panel header='{{ i18n "pages.xray.metrics.title"}}'>
+                                    <a-row :xs="24" :sm="24" :lg="12">
+                                        <a-alert type="warning" style="text-align: center;">
+                                            <template slot="message">
+                                                <a-icon type="exclamation-circle" theme="filled" style="color: #FFA031"></a-icon>
+                                                {{ i18n "pages.xray.metrics.desc" }}
+                                            </template>
+                                        </a-alert>
+                                    </a-row>
+                                    <setting-list-item type="switch" title='{{ i18n "enable"}}' desc='{{ i18n "pages.xray.metrics.enableDesc"}}' v-model="metricsEnable"></setting-list-item>
+                                    <template v-if="metricsEnable">
+                                        <setting-list-item type="text" title='{{ i18n "address"}}' desc='{{ i18n "pages.xray.metrics.listenDesc"}}' v-model="metricsListen"></setting-list-item>
+                                        <setting-list-item type="text" title='{{ i18n "pages.xray.metrics.tag"}}' desc='{{ i18n "pages.xray.metrics.tagDesc"}}' v-model="metricsTag"></setting-list-item>
+                                    </template>
+                                </a-collapse-panel>
                                 <a-collapse-panel header='{{ i18n "pages.xray.basicRouting"}}'>
                                     <a-row :lg="12" :sm="24" :xs="24">
                                         <a-alert style="text-align: center;" type="warning">
@@ -2505,6 +2520,34 @@
                     } else {
                         delete newTemplateSettings.fakedns;
                     }
+                    this.templateSettings = newTemplateSettings;
+                }
+            },
+            metricsEnable: {
+                get: function () { return this.templateSettings != null && this.templateSettings.metrics != undefined; },
+                set: function (newValue) {
+                    newTemplateSettings = this.templateSettings;
+                    if (newValue) {
+                        if (!newTemplateSettings.metrics) newTemplateSettings.metrics = { tag: "metrics", listen: "127.0.0.1:11111" };
+                    } else {
+                        delete newTemplateSettings.metrics;
+                    }
+                    this.templateSettings = newTemplateSettings;
+                }
+            },
+            metricsListen: {
+                get: function () { return this.templateSettings && this.templateSettings.metrics ? this.templateSettings.metrics.listen : ""; },
+                set: function (newValue) {
+                    newTemplateSettings = this.templateSettings;
+                    if (newTemplateSettings.metrics) newTemplateSettings.metrics.listen = newValue;
+                    this.templateSettings = newTemplateSettings;
+                }
+            },
+            metricsTag: {
+                get: function () { return this.templateSettings && this.templateSettings.metrics ? this.templateSettings.metrics.tag : ""; },
+                set: function (newValue) {
+                    newTemplateSettings = this.templateSettings;
+                    if (newTemplateSettings.metrics) newTemplateSettings.metrics.tag = newValue;
                     this.templateSettings = newTemplateSettings;
                 }
             },

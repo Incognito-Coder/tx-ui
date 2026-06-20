@@ -495,6 +495,14 @@
 "useSystemHosts" = "Use System Hosts"
 "useSystemHostsDesc" = "Use the hosts file from an installed system"
 
+[pages.xray.metrics]
+"title" = "Metrics"
+"desc" = "Exposes core statistics for Prometheus/Grafana scraping."
+"enableDesc" = "Enables the metrics endpoint."
+"listenDesc" = "Address:port for the metrics endpoint (e.g. 127.0.0.1:11111)."
+"tag" = "Outbound Tag"
+"tagDesc" = "Unique outbound tag for the metrics endpoint."
+
 [pages.xray.fakedns]
 "add" = "Add Fake DNS"
 "edit" = "Edit Fake DNS"
