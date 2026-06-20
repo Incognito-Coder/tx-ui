@@ -4,8 +4,8 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	_ "time/tzdata"
 	_ "unsafe"
-
 	"x-ui/cmd"
 	"x-ui/config"
 )
