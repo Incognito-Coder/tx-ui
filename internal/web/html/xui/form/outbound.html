@@ -663,6 +663,9 @@
                 <a-form-item label="TCP Fast Open">
                     <a-switch v-model="outbound.stream.sockopt.tcpFastOpen"></a-switch>
                 </a-form-item>
+                <a-form-item label="TCP No Delay">
+                    <a-switch v-model.trim="outbound.stream.sockopt.tcpNoDelay"></a-switch>
+                </a-form-item>
                 <a-form-item label="Keep Alive Interval">
                     <a-input-number :min="0"
                                     v-model.number="outbound.stream.sockopt.tcpKeepAliveInterval"></a-input-number>
@@ -673,6 +676,23 @@
                 <a-form-item label="Penetrate">
                     <a-switch v-model="outbound.stream.sockopt.penetrate"></a-switch>
                 </a-form-item>
+                <a-form-item label="Happy Eyeballs">
+                    <a-switch v-model="outbound.stream.sockopt.happyEyeballs.enabled"></a-switch>
+                </a-form-item>
+                <template v-if="outbound.stream.sockopt.happyEyeballs.enabled">
+                    <a-form-item label="Prioritize IPv6">
+                        <a-switch v-model="outbound.stream.sockopt.happyEyeballs.prioritizeIPv6"></a-switch>
+                    </a-form-item>
+                    <a-form-item label="Interleave">
+                        <a-input-number v-model.number="outbound.stream.sockopt.happyEyeballs.interleave" :min="0"></a-input-number>
+                    </a-form-item>
+                    <a-form-item label="Try Delay Ms">
+                        <a-input-number v-model.number="outbound.stream.sockopt.happyEyeballs.tryDelayMs" :min="0"></a-input-number>
+                    </a-form-item>
+                    <a-form-item label="Max Concurrent Try">
+                        <a-input-number v-model.number="outbound.stream.sockopt.happyEyeballs.maxConcurrentTry" :min="0"></a-input-number>
+                    </a-form-item>
+                </template>
                 <a-form-item label="Address Port Strtaegy">
                     <a-select :dropdown-class-name="themeSwitcher.currentTheme" style="width: 60%"
                               v-model="outbound.stream.sockopt.addressPortStrategy">

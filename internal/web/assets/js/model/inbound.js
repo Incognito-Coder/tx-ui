@@ -976,6 +976,7 @@ class SockoptStreamSettings extends XrayCommonClass {
     constructor(
         acceptProxyProtocol = false,
         tcpFastOpen = false,
+        tcpNoDelay =false,
         mark = 0,
         tproxy = "off",
         tcpMptcp = false,
@@ -994,6 +995,7 @@ class SockoptStreamSettings extends XrayCommonClass {
         super();
         this.acceptProxyProtocol = acceptProxyProtocol;
         this.tcpFastOpen = tcpFastOpen;
+        this.tcpNoDelay = tcpNoDelay;
         this.mark = mark;
         this.tproxy = tproxy;
         this.tcpMptcp = tcpMptcp;
@@ -1015,6 +1017,7 @@ class SockoptStreamSettings extends XrayCommonClass {
         return new SockoptStreamSettings(
             json.acceptProxyProtocol,
             json.tcpFastOpen,
+            json.tcpNoDelay,
             json.mark,
             json.tproxy,
             json.tcpMptcp,
@@ -1036,6 +1039,7 @@ class SockoptStreamSettings extends XrayCommonClass {
         return {
             acceptProxyProtocol: this.acceptProxyProtocol,
             tcpFastOpen: this.tcpFastOpen,
+            tcpNoDelay: this.tcpNoDelay,
             mark: this.mark,
             tproxy: this.tproxy,
             tcpMptcp: this.tcpMptcp,
