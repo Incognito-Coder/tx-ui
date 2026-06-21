@@ -9,10 +9,10 @@
 **لوحة ويب متقدمة • مبنية على Xray Core**
 **هذا المشروع هو نسخة معدلة (fork) من لوحة 3x-ui.**
 
-[![](https://img.shields.io/github/v/release/AghayeCoder/tx-ui.svg)](https://github.com/AghayeCoder/tx-ui/releases)
-[![](https://img.shields.io/github/actions/workflow/status/AghayeCoder/tx-ui/release.yml.svg)](#)
-[![GO Version](https://img.shields.io/github/go-mod/go-version/AghayeCoder/tx-ui.svg)](#)
-[![Downloads](https://img.shields.io/github/downloads/AghayeCoder/tx-ui/total.svg)](#)
+[![](https://img.shields.io/github/v/release/Incognito-Coder/tx-ui.svg)](https://github.com/Incognito-Coder/tx-ui/releases)
+[![](https://img.shields.io/github/actions/workflow/status/Incognito-Coder/tx-ui/release.yml.svg)](#)
+[![GO Version](https://img.shields.io/github/go-mod/go-version/Incognito-Coder/tx-ui.svg)](#)
+[![Downloads](https://img.shields.io/github/downloads/Incognito-Coder/tx-ui/total.svg)](#)
 [![License](https://img.shields.io/badge/license-GPL%20V3-blue.svg?longCache=true)](https://www.gnu.org/licenses/gpl-3.0.en.html)
 
 > **إخلاء مسؤولية:** هذا المشروع مخصص للتعلم والتواصل الشخصي فقط، يرجى عدم استخدامه لأغراض غير قانونية، ويرجى عدم
@@ -25,7 +25,7 @@
 ## التثبيت والترقية
 
 ```bash
-< <(curl -Ls https://raw.githubusercontent.com/AghayeCoder/tx-ui/master/install.sh)
+< <(curl -Ls https://raw.githubusercontent.com/Incognito-Coder/tx-ui/master/install.sh)
 ```
 
 ## شهادة SSL
@@ -102,7 +102,7 @@ case "${ARCH}" in
   *) XUI_ARCH="amd64" ;; 
 esac
 
-wget https://github.com/AghayeCoder/tx-ui/releases/latest/download/x-ui-linux-${XUI_ARCH}.tar.gz
+wget https://github.com/Incognito-Coder/tx-ui/releases/latest/download/x-ui-linux-${XUI_ARCH}.tar.gz
 ```
 
 2. بمجرد تنزيل الحزمة المضغوطة، قم بتنفيذ الأوامر التالية لتثبيت أو ترقية x-ui:
@@ -150,7 +150,7 @@ systemctl restart x-ui
 2. **استنساخ مستودع المشروع:**
 
    ```bash
-   git clone https://github.com/AghayeCoder/tx-ui.git
+   git clone https://github.com/Incognito-Coder/tx-ui.git
    cd tx-ui
    ```
 
@@ -173,7 +173,7 @@ systemctl restart x-ui
       --network=host \
       --restart=unless-stopped \
       --name tx-ui \
-      ghcr.io/aghayecoder/tx-ui:latest
+      ghcr.io/incognito-coder/tx-ui:latest
    ```
 
 4. **التحديث إلى أحدث إصدار:**
@@ -469,7 +469,7 @@ location /sub {
 
 #### الاستخدام
 
-- [توثيق API](https://www.postman.com/aghayecoder/tx-ui/collection/q1l5l0u/tx-ui)
+- [توثيق API](https://www.postman.com/incognito-coder/tx-ui/collection/q1l5l0u/tx-ui)
 - `/login` مع بيانات المستخدم `POST`: `{username: '', password: ''}` لتسجيل الدخول
 - `/panel/api/inbounds` أساس للإجراءات التالية:
 
@@ -539,12 +539,7 @@ XUI_BIN_FOLDER="bin" XUI_DB_FOLDER="/etc/x-ui" go build main.go
 ## واجهة المستخدم للاشتراك
 
 يمكنك استخدام هذا المستودع لإنشاء واجهة مستخدم للاشتراك
-للوحتك [TX-UI Theming Hub](https://github.com/AghayeCoder/TX-ThemeHub)
-
-## شكر وتقدير
-
-- [@Incognito-Coder](https://github.com/incognito-coder) لمساهمته في هذا المشروع
-- شكر خاص لجميع المساهمين
+للوحتك [TX-UI Theming Hub](https://github.com/Incognito-Coder/TX-ThemeHub)
 
 ## إقرار
 
@@ -555,4 +550,4 @@ XUI_BIN_FOLDER="bin" XUI_DB_FOLDER="/etc/x-ui" go build main.go
 
 ## عدد النجوم عبر الزمن
 
-[![Stargazers over time](https://starchart.cc/AghayeCoder/tx-ui.svg?variant=adaptive)](https://starchart.cc/AghayeCoder/tx-ui)
+[![Stargazers over time](https://starchart.cc/Incognito-Coder/tx-ui.svg?variant=adaptive)](https://starchart.cc/Incognito-Coder/tx-ui)

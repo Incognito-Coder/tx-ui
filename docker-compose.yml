@@ -1,6 +1,6 @@
 services:
   tx-ui:
-    image: ghcr.io/aghayecoder/tx-ui:latest
+    image: ghcr.io/incognito-coder/tx-ui:latest
     container_name: tx-ui
     hostname: yourhostname
     volumes:

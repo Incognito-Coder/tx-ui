@@ -15,7 +15,7 @@ func NewUpdateCheckerJob() *UpdateCheckerJob {
 }
 
 func (j *UpdateCheckerJob) Run() {
-	_, _, err := j.update_service.CheckForUpdate("AghayeCoder", "tx-ui", config.GetVersion())
+	_, _, err := j.update_service.CheckForUpdate("Incognito-Coder", "tx-ui", config.GetVersion())
 	if err != nil {
 		logger.Error("Error checking for update: ", err)
 	}

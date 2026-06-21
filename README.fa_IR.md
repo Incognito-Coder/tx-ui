@@ -9,10 +9,10 @@
 **یک پنل وب پیشرفته • ساخته شده بر روی هسته Xray**
 **این پروژه یک فورک از پنل 3x-ui است.**
 
-[![](https://img.shields.io/github/v/release/AghayeCoder/tx-ui.svg)](https://github.com/AghayeCoder/tx-ui/releases)
-[![](https://img.shields.io/github/actions/workflow/status/AghayeCoder/tx-ui/release.yml.svg)](#)
-[![GO Version](https://img.shields.io/github/go-mod/go-version/AghayeCoder/tx-ui.svg)](#)
-[![Downloads](https://img.shields.io/github/downloads/AghayeCoder/tx-ui/total.svg)](#)
+[![](https://img.shields.io/github/v/release/Incognito-Coder/tx-ui.svg)](https://github.com/Incognito-Coder/tx-ui/releases)
+[![](https://img.shields.io/github/actions/workflow/status/Incognito-Coder/tx-ui/release.yml.svg)](#)
+[![GO Version](https://img.shields.io/github/go-mod/go-version/Incognito-Coder/tx-ui.svg)](#)
+[![Downloads](https://img.shields.io/github/downloads/Incognito-Coder/tx-ui/total.svg)](#)
 [![License](https://img.shields.io/badge/license-GPL%20V3-blue.svg?longCache=true)](https://www.gnu.org/licenses/gpl-3.0.en.html)
 
 > **سلب مسئولیت:** این پروژه فقط برای یادگیری و ارتباطات شخصی است، لطفاً از آن برای مقاصد غیرقانونی استفاده نکنید، لطفاً
@@ -25,7 +25,7 @@
 ## نصب و ارتقا
 
 ```bash
-< (curl -Ls https://raw.githubusercontent.com/AghayeCoder/tx-ui/master/install.sh)
+< (curl -Ls https://raw.githubusercontent.com/Incognito-Coder/tx-ui/master/install.sh)
 ```
 
 ## گواهی SSL
@@ -104,7 +104,7 @@ case "${ARCH}" in
 esac
 
 
-wget https://github.com/AghayeCoder/tx-ui/releases/latest/download/x-ui-linux-${XUI_ARCH}.tar.gz
+wget https://github.com/Incognito-Coder/tx-ui/releases/latest/download/x-ui-linux-${XUI_ARCH}.tar.gz
 ```
 
 2. پس از دانلود بسته فشرده، دستورات زیر را برای نصب یا ارتقا x-ui اجرا کنید:
@@ -151,7 +151,7 @@ systemctl restart x-ui
 2. **کلون کردن ریپازیتوری پروژه:**
 
    ```sh
-   git clone https://github.com/AghayeCoder/tx-ui.git
+   git clone https://github.com/Incognito-Coder/tx-ui.git
    cd tx-ui
    ```
 
@@ -174,7 +174,7 @@ systemctl restart x-ui
       --network=host \
       --restart=unless-stopped \
       --name tx-ui \
-      ghcr.io/aghayecoder/tx-ui:latest
+      ghcr.io/incognito-coder/tx-ui:latest
    ```
 
 4. **به‌روزرسانی به آخرین نسخه:**
@@ -470,7 +470,7 @@ location /sub {
 
 #### نحوه استفاده
 
-- [مستندات API](https://www.postman.com/aghayecoder/tx-ui/collection/q1l5l0u/tx-ui)
+- [مستندات API](https://www.postman.com/incognito-coder/tx-ui/collection/q1l5l0u/tx-ui)
 - `/login` با داده‌های کاربر `POST`: `{username: '', password: ''}` برای ورود
 - `/panel/api/inbounds` پایه برای اقدامات زیر:
 
@@ -540,12 +540,7 @@ XUI_BIN_FOLDER="bin" XUI_DB_FOLDER="/etc/x-ui" go build main.go
 ## رابط کاربری اشتراک
 
 می‌توانید از این ریپازیتوری برای ایجاد یک رابط کاربری اشتراک برای پنل خود استفاده
-کنید [TX-UI Theming Hub](https://github.com/AghayeCoder/TX-ThemeHub)
-
-## تشکر و قدردانی
-
-- از [@Incognito-Coder](https://github.com/incognito-coder) برای مشارکت او در این پروژه
-- تشکر ویژه از تمام مشارکت‌کنندگان
+کنید [TX-UI Theming Hub](https://github.com/Incognito-Coder/TX-ThemeHub)
 
 ## سپاس‌گزاری
 
@@ -556,4 +551,4 @@ XUI_BIN_FOLDER="bin" XUI_DB_FOLDER="/etc/x-ui" go build main.go
 
 ## ستاره‌دهندگان در طول زمان
 
-[![Stargazers over time](https://starchart.cc/AghayeCoder/tx-ui.svg?variant=adaptive)](https://starchart.cc/AghayeCoder/tx-ui)
+[![Stargazers over time](https://starchart.cc/Incognito-Coder/tx-ui.svg?variant=adaptive)](https://starchart.cc/Incognito-Coder/tx-ui)
