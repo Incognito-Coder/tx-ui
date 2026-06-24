@@ -94,21 +94,27 @@ type Setting struct {
 	Value string `json:"value" form:"value"`
 }
 
+type ClientReverse struct {
+	Tag      string `json:"tag"`
+	Sniffing string `json:"sniffing" omitEmpty:"true"`
+}
+
 type Client struct {
-	ID         string `json:"id,omitempty"`
-	Security   string `json:"security"`
-	Password   string `json:"password,omitempty"` // Client password
-	Flow       string `json:"flow,omitempty"`     // Flow control (XTLS)
-	Auth       string `json:"auth,omitempty"`     // Auth password (Hysteria)
-	Email      string `json:"email"`
-	LimitIP    int    `json:"limitIp"`
-	TotalGB    int64  `json:"totalGB" form:"totalGB"`
-	ExpiryTime int64  `json:"expiryTime" form:"expiryTime"`
-	Enable     bool   `json:"enable" form:"enable"`
-	TgID       int64  `json:"tgId" form:"tgId"`
-	SubID      string `json:"subId" form:"subId"`
-	Comment    string `json:"comment" form:"comment"`
-	Reset      int    `json:"reset" form:"reset"`
+	ID         string         `json:"id,omitempty"`
+	Security   string         `json:"security"`
+	Password   string         `json:"password,omitempty"` // Client password
+	Flow       string         `json:"flow,omitempty"`     // Flow control (XTLS)
+	Auth       string         `json:"auth,omitempty"`     // Auth password (Hysteria)
+	Reverse    *ClientReverse `json:"reverse" omitEmpty:"true"`
+	Email      string         `json:"email"`
+	LimitIP    int            `json:"limitIp"`
+	TotalGB    int64          `json:"totalGB" form:"totalGB"`
+	ExpiryTime int64          `json:"expiryTime" form:"expiryTime"`
+	Enable     bool           `json:"enable" form:"enable"`
+	TgID       int64          `json:"tgId" form:"tgId"`
+	SubID      string         `json:"subId" form:"subId"`
+	Comment    string         `json:"comment" form:"comment"`
+	Reset      int            `json:"reset" form:"reset"`
 }
 
 type VLESSSettings struct {

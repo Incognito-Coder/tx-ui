@@ -2255,17 +2255,20 @@ Inbound.VLESSSettings.VLESS = class extends Inbound.ClientBase {
     constructor(
         id = RandomUtil.randomUUID(),
         flow = '',
+        reverseTag = '',
         email, limitIp, totalGB, expiryTime, enable, tgId, subId, comment, reset,
     ) {
         super(email, limitIp, totalGB, expiryTime, enable, tgId, subId, comment, reset);
         this.id = id;
         this.flow = flow;
+        this.reverseTag = reverseTag;
     }
 
     static fromJson(json = {}) {
         return new Inbound.VLESSSettings.VLESS(
             json.id,
             json.flow,
+            json.reverse?.tag,
             ...Inbound.ClientBase.commonArgsFromJson(json)
         );
     }
@@ -2274,6 +2277,7 @@ Inbound.VLESSSettings.VLESS = class extends Inbound.ClientBase {
         return {
             id: this.id,
             flow: this.flow,
+            reverse: this.reverseTag ? {tag: this.reverseTag,} : undefined,
             ...this._clientBaseToJson(),
         };
     }

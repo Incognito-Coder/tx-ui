@@ -16,7 +16,6 @@ type Config struct {
 	Policy           json_util.RawMessage `json:"policy"`
 	API              json_util.RawMessage `json:"api"`
 	Stats            json_util.RawMessage `json:"stats"`
-	Reverse          json_util.RawMessage `json:"reverse"`
 	FakeDNS          json_util.RawMessage `json:"fakedns"`
 	Observatory      json_util.RawMessage `json:"observatory"`
 	BurstObservatory json_util.RawMessage `json:"burstObservatory"`
@@ -54,9 +53,6 @@ func (c *Config) Equals(other *Config) bool {
 		return false
 	}
 	if !bytes.Equal(c.Stats, other.Stats) {
-		return false
-	}
-	if !bytes.Equal(c.Reverse, other.Reverse) {
 		return false
 	}
 	if !bytes.Equal(c.FakeDNS, other.FakeDNS) {

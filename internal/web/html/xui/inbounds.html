@@ -294,10 +294,12 @@
                             </a-row>
                         </div>
                         <div :style="isMobile ? '' : 'display: flex; align-items: center; justify-content: flex-start;'">
+                            <a-tooltip :title='`{{ i18n "filter" }}`'>
                             <a-switch style="margin-right: .5rem;" v-model="enableFilter">
                                 <a-icon slot="checkedChildren" type="search"></a-icon>
                                 <a-icon slot="unCheckedChildren" type="filter"></a-icon>
                             </a-switch>
+                            </a-tooltip>
                             <a-input :size="isMobile ? 'small' : ''" autofocus placeholder='{{ i18n "search" }}'
                                      style="max-width: 250px" v-if="!enableFilter" v-model.lazy="searchKey"></a-input>
                             <a-radio-group :size="isMobile ? 'small' : ''" @change="filterInbounds" button-style="solid"

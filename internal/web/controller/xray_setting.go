@@ -51,10 +51,15 @@ func (a *XraySettingController) getXraySetting(c *gin.Context) {
 	if outboundTestUrl == "" {
 		outboundTestUrl = "https://www.google.com/generate_204"
 	}
+	clientReverseTags, err := a.InboundService.GetClientReverseTags()
+	if err != nil {
+		clientReverseTags = "[]"
+	}
 	xrayResponse := map[string]interface{}{
-		"xraySetting":     json.RawMessage(xraySetting),
-		"inboundTags":     json.RawMessage(inboundTags),
-		"outboundTestUrl": outboundTestUrl,
+		"xraySetting":       json.RawMessage(xraySetting),
+		"inboundTags":       json.RawMessage(inboundTags),
+		"clientReverseTags": json.RawMessage(clientReverseTags),
+		"outboundTestUrl":   outboundTestUrl,
 	}
 	result, err := json.Marshal(xrayResponse)
 	if err != nil {

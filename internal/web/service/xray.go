@@ -136,7 +136,7 @@ func (s *XrayService) GetXrayConfig() (*xray.Config, error) {
 					}
 				}
 				for key := range c {
-					if key != "email" && key != "id" && key != "password" && key != "flow" && key != "method" && key != "auth" {
+					if key != "email" && key != "id" && key != "password" && key != "flow" && key != "method" && key != "auth" && key != "reverse" {
 						delete(c, key)
 					}
 					if flow, ok := c["flow"].(string); ok && flow == "xtls-rprx-vision-udp443" {

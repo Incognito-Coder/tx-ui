@@ -220,13 +220,18 @@
             this.isEdit = isEdit;
             this.inboundTags = app.templateSettings.inbounds.filter((i) => !ObjectUtil.isEmpty(i.tag)).map(obj => obj.tag);
             this.inboundTags.push(...app.inboundTags);
+            app.templateSettings.outbounds.filter(o => o.protocol === Protocols.VLESS && o.settings.reverse?.tag).forEach(o => {
+                this.inboundTags.push(o.settings.reverse.tag);
+            });
             if (app.enableDNS && !ObjectUtil.isEmpty(app.dnsTag)) this.inboundTags.push(app.dnsTag)
             this.outboundTags = ["", ...app.templateSettings.outbounds.filter((o) => !ObjectUtil.isEmpty(o.tag)).map(obj => obj.tag)];
-            if (app.templateSettings.reverse) {
-                if (app.templateSettings.reverse.bridges) {
-                    this.inboundTags.push(...app.templateSettings.reverse.bridges.map(b => b.tag));
-                }
-                if (app.templateSettings.reverse.portals) this.outboundTags.push(...app.templateSettings.reverse.portals.map(b => b.tag));
+            if (app.clientReverseTags) {
+                app.clientReverseTags.forEach(tag => {
+                    if (tag && !this.outboundTags.includes(tag)) {
+                        this.outboundTags.push(tag);
+                    }
+
+                });
             }
             if (app.templateSettings.routing && app.templateSettings.routing.balancers) {
                 this.balancerTags = ["", ...app.templateSettings.routing.balancers.filter((o) => !ObjectUtil.isEmpty(o.tag)).map(obj => obj.tag)];
