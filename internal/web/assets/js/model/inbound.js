@@ -1828,15 +1828,14 @@ class Inbound extends XrayCommonClass {
     }
 
     genHysteriaLink(address = '', port = this.port, remark = '', clientAuth) {
-        const protocol = this.settings.version == 2 ? "hysteria2" : "hysteria";
+        const protocol = this.settings.version === 2 ? "hysteria2" : "hysteria";
         const link = `${protocol}://${clientAuth}@${address}:${port}`;
 
         const params = new Map();
         params.set("security", "tls");
         if (this.stream.tls.settings.fingerprint?.length > 0) params.set("fp", this.stream.tls.settings.fingerprint);
         if (this.stream.tls.alpn?.length > 0) params.set("alpn", this.stream.tls.alpn);
-        if (this.stream.tls.settings.allowInsecure) params.set("insecure", "1");
-        if (this.stream.tls.settings.echConfigList?.length > 0) params.set("ech", this.stream.tls.settings.echConfigList.join(','));
+        if (this.stream.tls.settings.echConfigList?.length > 0) params.set("ech", this.stream.tls.settings.echConfigList);
         if (this.stream.tls.sni?.length > 0) params.set("sni", this.stream.tls.sni);
 
         const url = new URL(link);
