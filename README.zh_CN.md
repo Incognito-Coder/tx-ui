@@ -167,7 +167,7 @@ systemctl restart x-ui
       --network=host \
       --restart=unless-stopped \
       --name tx-ui \
-      ghcr.io/incognito-coder/tx-ui:latest
+      ghcr.io/incognitocoder/tx-ui:latest
    ```
 
 更新至最新版本
