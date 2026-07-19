@@ -74,6 +74,8 @@
 "xray" = "Настройки Xray"
 "logout" = "Выход"
 "link" = "Управление"
+"node_clients" = "Node Clients"
+"txThemeHub" = "TX ThemeHub"
 
 [pages.login]
 "hello" = "Привет"
@@ -205,6 +207,29 @@
 "import" = "Импортировать"
 "importInbound" = "Импортировать подключение"
 "reordered" = "Переупорядочено"
+
+[pages.node_clients]
+"showLinks" = "Показать ссылки"
+"noLinks" = "Ссылки отсутствуют"
+"title" = "Клиенты"
+"manageLinksFor" = "Управлять ссылками для"
+"linkDrawerHint" = "Выберите inbounds для привязки этого клиента. Используйте поле Flow, чтобы переопределить настройку потока для VLESS/Trojan XTLS."
+"linkedToPrefix" = "Связано с"
+"linkedToSuffix" = "inbound(ов)"
+"flowOverride" = "Переопределение Flow (необязательно), например xtls-rprx-vision"
+"commonValues" = "Распространённые значения"
+"subscriptionId" = "ID подписки"
+"credentialFields" = "Поля учётных данных"
+"forVmessVlessProtocols" = "Для протоколов VMESS/VLESS"
+"uuid" = "UUID"
+"forTrojanShadowsocksProtocols" = "Для протоколов Trojan/Shadowsocks"
+"password" = "Пароль"
+"forHysteriaProtocol" = "Для протокола Hysteria"
+"auth" = "Аутентификация"
+"limitsAndPolicy" = "Ограничения и политика"
+"telegramChatId" = "ID чата Telegram"
+"depleted" = "Истощён"
+"expired" = "Просрочен"
 
 [pages.client]
 "add" = "Добавить пользователя"

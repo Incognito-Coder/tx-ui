@@ -2,38 +2,44 @@
 <a-menu-item key="{{ .base_path }}panel/">
     <a-icon type="dashboard"></a-icon>
     <span>
-    <b>{{ i18n "menu.dashboard"}}</b>
-  </span>
+        <b>{{ i18n "menu.dashboard"}}</b>
+    </span>
 </a-menu-item>
 <a-menu-item key="{{ .base_path }}panel/inbounds">
     <a-icon type="user"></a-icon>
     <span>
-    <b>{{ i18n "menu.inbounds"}}</b>
-  </span>
+        <b>{{ i18n "menu.inbounds"}}</b>
+    </span>
+</a-menu-item>
+<a-menu-item key="{{ .base_path }}panel/nodeClients">
+    <a-icon type="cluster"></a-icon>
+    <span>
+        <b>{{ i18n "menu.node_clients"}}</b>
+    </span>
 </a-menu-item>
 <a-menu-item key="{{ .base_path }}panel/settings">
     <a-icon type="setting"></a-icon>
     <span>
-    <b>{{ i18n "menu.settings"}}</b>
-  </span>
+        <b>{{ i18n "menu.settings"}}</b>
+    </span>
 </a-menu-item>
 <a-menu-item key="{{ .base_path }}panel/xray">
     <a-icon type="tool"></a-icon>
     <span>
-    <b>{{ i18n "menu.xray"}}</b>
-  </span>
+        <b>{{ i18n "menu.xray"}}</b>
+    </span>
 </a-menu-item>
 <a-menu-item key="https://github.com/Incognito-Coder/TX-ThemeHub">
     <a-icon type="github"></a-icon>
     <span>
-    <b>TX ThemeHub</b>
-  </span>
+        <b>{{ i18n "menu.txThemeHub"}}</b>
+    </span>
 </a-menu-item>
 <a-menu-item key="{{ .base_path }}logout">
     <a-icon type="logout"></a-icon>
     <span>
-    <b>{{ i18n "menu.logout"}}</b>
-  </span>
+        <b>{{ i18n "menu.logout"}}</b>
+    </span>
 </a-menu-item>
 {{end}}
 
@@ -41,19 +47,19 @@
 {{define "commonSider"}}
 <a-layout-sider :theme="themeSwitcher.currentTheme" breakpoint="md" collapsible id="sider">
     <theme-switch></theme-switch>
-    <a-menu :selected-keys="['{{ .request_uri }}']" :theme="themeSwitcher.currentTheme" @click="({key}) => key.startsWith('http') ? window.open(key) : location.href = key"
-            mode="inline">
+    <a-menu :selected-keys="['{{ .request_uri }}']" :theme="themeSwitcher.currentTheme"
+        @click="({key}) => key.startsWith('http') ? window.open(key) : location.href = key" mode="inline">
         {{template "menuItems" .}}
     </a-menu>
 </a-layout-sider>
-<a-drawer :closable="false" :visible="siderDrawer.visible" :wrap-class-name="themeSwitcher.currentTheme" :wrap-style="{ padding: 0 }"
-          @close="siderDrawer.close()" id="sider-drawer" placement="left">
+<a-drawer :closable="false" :visible="siderDrawer.visible" :wrap-class-name="themeSwitcher.currentTheme"
+    :wrap-style="{ padding: 0 }" @close="siderDrawer.close()" id="sider-drawer" placement="left">
     <div @click="siderDrawer.change()" class="drawer-handle" slot="handle">
         <a-icon :type="siderDrawer.visible ? 'close' : 'menu-fold'"></a-icon>
     </div>
     <theme-switch></theme-switch>
-    <a-menu :selected-keys="['{{ .request_uri }}']" :theme="themeSwitcher.currentTheme" @click="({key}) => key.startsWith('http') ? window.open(key) : location.href = key"
-            mode="inline">
+    <a-menu :selected-keys="['{{ .request_uri }}']" :theme="themeSwitcher.currentTheme"
+        @click="({key}) => key.startsWith('http') ? window.open(key) : location.href = key" mode="inline">
         {{template "menuItems" .}}
     </a-menu>
 </a-drawer>

@@ -73,6 +73,8 @@
 "xray" = "Xray 设置"
 "logout" = "退出登录"
 "link" = "管理"
+"node_clients" = "Node Clients"
+"txThemeHub" = "TX ThemeHub"
 
 [pages.login]
 "hello" = "你好"
@@ -204,6 +206,29 @@
 "import" = "导入"
 "importInbound" = "导入入站规则"
 "reordered" = "入站规则已重新排序"
+
+[pages.node_clients]
+"showLinks" = "显示链接"
+"noLinks" = "没有可用链接"
+"title" = "客户端"
+"manageLinksFor" = "管理链接"
+"linkDrawerHint" = "选择要关联到此节点客户端的入站（inbound）。使用 Flow 字段可覆盖 VLESS/Trojan XTLS 的流设置。"
+"linkedToPrefix" = "已关联到"
+"linkedToSuffix" = "入站"
+"flowOverride" = "流覆盖（可选），例如 xtls-rprx-vision"
+"commonValues" = "常用值"
+"subscriptionId" = "订阅 ID"
+"credentialFields" = "凭据字段"
+"forVmessVlessProtocols" = "适用于 VMESS/VLESS 协议"
+"uuid" = "UUID"
+"forTrojanShadowsocksProtocols" = "适用于 Trojan/Shadowsocks 协议"
+"password" = "密码"
+"forHysteriaProtocol" = "适用于 Hysteria 协议"
+"auth" = "认证"
+"limitsAndPolicy" = "限制与策略"
+"telegramChatId" = "Telegram 聊天 ID"
+"depleted" = "已耗尽"
+"expired" = "已过期"
 
 [pages.client]
 "add" = "添加客户端"

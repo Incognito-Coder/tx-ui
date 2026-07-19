@@ -73,6 +73,8 @@
 "logout" = "Đăng xuất"
 "xray" = "Cài đặt Xray"
 "link" = "Quản lý"
+"node_clients" = "Node Clients"
+"txThemeHub" = "TX ThemeHub"
 
 [pages.login]
 "hello" = "Xin chào"
@@ -204,6 +206,29 @@
 "import" = "Nhập"
 "importInbound" = "Nhập inbound"
 "reordered" = "Sắp xếp lại điểm vào thành công"
+
+[pages.node_clients]
+"showLinks" = "Hiện liên kết"
+"noLinks" = "Không có liên kết"
+"title" = "Khách hàng"
+"manageLinksFor" = "Quản lý liên kết cho"
+"linkDrawerHint" = "Chọn inbounds để liên kết client này. Sử dụng trường Flow để ghi đè cấu hình luồng cho VLESS/Trojan XTLS."
+"linkedToPrefix" = "Được liên kết với"
+"linkedToSuffix" = "inbound(s)"
+"flowOverride" = "Ghi đè Flow (tùy chọn), ví dụ xtls-rprx-vision"
+"commonValues" = "Giá trị phổ biến"
+"subscriptionId" = "ID đăng ký"
+"credentialFields" = "Trường thông tin xác thực"
+"forVmessVlessProtocols" = "Cho các giao thức VMESS/VLESS"
+"uuid" = "UUID"
+"forTrojanShadowsocksProtocols" = "Cho các giao thức Trojan/Shadowsocks"
+"password" = "Mật khẩu"
+"forHysteriaProtocol" = "Cho giao thức Hysteria"
+"auth" = "Xác thực"
+"limitsAndPolicy" = "Giới hạn & Chính sách"
+"telegramChatId" = "ID Chat Telegram"
+"depleted" = "Hết"
+"expired" = "Hết hạn"
 
 [pages.client]
 "add" = "Thêm người dùng"

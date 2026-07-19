@@ -123,3 +123,30 @@ type VLESSSettings struct {
 	Encryption string   `json:"encryption"`
 	Fallbacks  []any    `json:"fallbacks"`
 }
+
+// NodeClient is the shared, protocol-agnostic client identity.
+type NodeClient struct {
+	Id         int    `json:"id"         form:"id"         gorm:"primaryKey;autoIncrement"`
+	Email      string `json:"email"      form:"email"      gorm:"uniqueIndex"`
+	SubID      string `json:"subId"      form:"subId"      gorm:"uniqueIndex"`
+	UUID       string `json:"uuid"       form:"uuid"       gorm:"column:uuid"` // for vmess/vless
+	Password   string `json:"password"   form:"password"`                      // for trojan/shadowsocks
+	Auth       string `json:"auth"       form:"auth"`                          // for hysteria
+	Security   string `json:"security"   form:"security"`
+	Flow       string `json:"flow"       form:"flow"` // global flow default; per-link override wins
+	TotalGB    int64  `json:"totalGB"    form:"totalGB"`
+	ExpiryTime int64  `json:"expiryTime" form:"expiryTime"`
+	LimitIP    int    `json:"limitIp"    form:"limitIp"`
+	TgID       int64  `json:"tgId"       form:"tgId"`
+	Enable     bool   `json:"enable"     form:"enable"     gorm:"default:true"`
+	Reset      int    `json:"reset"      form:"reset"` // auto-reset interval in days (0 = off)
+	Comment    string `json:"comment"    form:"comment"`
+}
+
+// NodeClientLink joins a NodeClient to an Inbound, with optional per-link overrides.
+type NodeClientLink struct {
+	Id           int    `json:"id"           gorm:"primaryKey;autoIncrement"`
+	NodeClientId int    `json:"nodeClientId" gorm:"uniqueIndex:idx_nc_inbound"`
+	InboundId    int    `json:"inboundId"    gorm:"uniqueIndex:idx_nc_inbound"`
+	Flow         string `json:"flow"` // per-link flow override (empty = use NodeClient.Flow)
+}

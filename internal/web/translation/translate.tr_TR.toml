@@ -73,6 +73,8 @@
 "xray" = "Xray Yapılandırmaları"
 "logout" = "Çıkış Yap"
 "link" = "Yönet"
+"node_clients" = "Node Clients"
+"txThemeHub" = "TX ThemeHub"
 
 [pages.login]
 "hello" = "Merhaba"
@@ -204,6 +206,29 @@
 "import" = "İçe Aktar"
 "importInbound" = "Bir Gelen İçe Aktar"
 "reordered" = "Gelen yeniden sıralandı"
+
+[pages.node_clients]
+"showLinks" = "Bağlantıları göster"
+"noLinks" = "Mevcut bağlantı yok"
+"title" = "Müşteriler"
+"manageLinksFor" = "İçin bağlantıları yönet"
+"linkDrawerHint" = "Bu node client ile ilişkilendirmek için inbounds seçin. Flow alanını VLESS/Trojan XTLS için akış ayarını geçersiz kılmak amacıyla kullanın."
+"linkedToPrefix" = "Bağlı"
+"linkedToSuffix" = "inbound(lar)"
+"flowOverride" = "Flow geçersiz kılma (isteğe bağlı), örn. xtls-rprx-vision"
+"commonValues" = "Yaygın değerler"
+"subscriptionId" = "Abonelik ID'si"
+"credentialFields" = "Kimlik bilgisi alanları"
+"forVmessVlessProtocols" = "VMESS/VLESS protokolleri için"
+"uuid" = "UUID"
+"forTrojanShadowsocksProtocols" = "Trojan/Shadowsocks protokolleri için"
+"password" = "Şifre"
+"forHysteriaProtocol" = "Hysteria protokolü için"
+"auth" = "Kimlik Doğrulama"
+"limitsAndPolicy" = "Sınırlar ve politika"
+"telegramChatId" = "Telegram Sohbet ID'si"
+"depleted" = "Tükenmiş"
+"expired" = "Süresi doldu"
 
 [pages.client]
 "add" = "Müşteri Ekle"

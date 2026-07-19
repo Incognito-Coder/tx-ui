@@ -6,6 +6,7 @@ import (
 	"runtime"
 	"sync"
 
+	"x-ui/internal/database/model"
 	"x-ui/internal/logger"
 	"x-ui/xray"
 
@@ -123,6 +124,53 @@ func (s *XrayService) GetXrayConfig() (*xray.Config, error) {
 							logger.Infof("Remove Inbound User %s due to expiration or traffic limit", c["email"])
 						}
 					}
+				}
+			}
+
+			// Merge node-client synthesised entries into the clients slice.
+			// Requirements: 3.1, 3.2
+			existingModelClients := make([]model.Client, 0, len(clients))
+			for _, client := range clients {
+				c := client.(map[string]interface{})
+				mc := model.Client{}
+				if v, ok := c["email"].(string); ok {
+					mc.Email = v
+				}
+				if v, ok := c["id"].(string); ok {
+					mc.ID = v
+				}
+				if v, ok := c["password"].(string); ok {
+					mc.Password = v
+				}
+				if v, ok := c["auth"].(string); ok {
+					mc.Auth = v
+				}
+				if v, ok := c["flow"].(string); ok {
+					mc.Flow = v
+				}
+				if v, ok := c["enable"].(bool); ok {
+					mc.Enable = v
+				} else {
+					mc.Enable = true
+				}
+				existingModelClients = append(existingModelClients, mc)
+			}
+			mergedClients, err := s.inboundService.nodeClientService.MergeIntoInboundConfig(inbound.Id, existingModelClients)
+			if err != nil {
+				logger.Warningf("GetXrayConfig: MergeIntoInboundConfig failed for inbound %d: %v", inbound.Id, err)
+			} else {
+				// Append synthesised node-client entries (those beyond len(existingModelClients)) to clients.
+				for i := len(existingModelClients); i < len(mergedClients); i++ {
+					nc := mergedClients[i]
+					entry := map[string]interface{}{
+						"email":    nc.Email,
+						"id":       nc.ID,
+						"password": nc.Password,
+						"auth":     nc.Auth,
+						"flow":     nc.Flow,
+						"enable":   nc.Enable,
+					}
+					clients = append(clients, entry)
 				}
 			}
 

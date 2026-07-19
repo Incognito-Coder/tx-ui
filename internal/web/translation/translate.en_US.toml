@@ -74,6 +74,8 @@
 "xray" = "Xray Configs"
 "logout" = "Log Out"
 "link" = "Manage"
+"node_clients" = "Node Clients"
+"txThemeHub" = "TX ThemeHub"
 
 [pages.login]
 "hello" = "Hello"
@@ -205,6 +207,33 @@
 "import" = "Import"
 "importInbound" = "Import an Inbound"
 "reordered" = "Reordered Successfully"
+
+[pages.node_clients]
+"showLinks" = "Show Links"
+"noLinks" = "No links available"
+"title" = "Clients"
+"manageLinks" = "Manage Links"
+"manageLinksFor" = "Manage Links for"
+"linkDrawerHint" = "Select inbounds to link this node client. Use the Flow field to override the flow setting for VLESS/Trojan XTLS."
+"linkedToPrefix" = "Linked to"
+"linkedToSuffix" = "inbound(s)"
+"flowOverride" = "Flow override (optional) e.g., xtls-rprx-vision"
+"commonValues" = "Common values"
+"subscriptionId" = "Subscription ID"
+"credentialFields" = "Credential Fields"
+"forVmessVlessProtocols" = "For VMESS/VLESS protocols"
+"uuid" = "UUID"
+"forTrojanShadowsocksProtocols" = "For Trojan/Shadowsocks protocols"
+"password" = "Password"
+"forHysteriaProtocol" = "For Hysteria protocol"
+"auth" = "Auth"
+"limitsAndPolicy" = "Limits & Policy"
+"telegramChatId" = "Telegram ChatID"
+"depleted" = "Depleted"
+"expired" = "Expired"
+"bulkDelete" = "Bulk Delete"
+"subscriptionUrl" = "Subscription URL"
+"subscriptionUrlJson" = "Subscription URL JSON"
 
 [pages.client]
 "add" = "Add Client"

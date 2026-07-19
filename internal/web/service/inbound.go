@@ -18,7 +18,8 @@ import (
 )
 
 type InboundService struct {
-	xrayApi xray.XrayAPI
+	xrayApi           xray.XrayAPI
+	nodeClientService NodeClientService
 }
 
 func (s *InboundService) GetInbounds(userId int) ([]*model.Inbound, error) {
@@ -999,12 +1000,28 @@ func (s *InboundService) addClientTraffic(tx *gorm.DB, traffics []*xray.ClientTr
 	}
 
 	var onlineClients []string
+	onlineClientsSet := make(map[string]struct{}, len(traffics))
 
-	emails := make([]string, 0, len(traffics))
+	emailsSet := make(map[string]struct{}, len(traffics))
 	for _, traffic := range traffics {
-		emails = append(emails, traffic.Email)
+		if traffic.Email != "" {
+			emailsSet[traffic.Email] = struct{}{}
+		}
+	}
+	emails := make([]string, 0, len(emailsSet))
+	for email := range emailsSet {
+		emails = append(emails, email)
 	}
 	dbClientTraffics := make([]*xray.ClientTraffic, 0, len(traffics))
+	err = tx.Model(xray.ClientTraffic{}).Where("email IN (?)", emails).Find(&dbClientTraffics).Error
+	if err != nil {
+		return err
+	}
+
+	if err := s.ensureClientTrafficRowsForNodeClients(tx, emails); err != nil {
+		return err
+	}
+	dbClientTraffics = make([]*xray.ClientTraffic, 0, len(traffics))
 	err = tx.Model(xray.ClientTraffic{}).Where("email IN (?)", emails).Find(&dbClientTraffics).Error
 	if err != nil {
 		return err
@@ -1020,27 +1037,49 @@ func (s *InboundService) addClientTraffic(tx *gorm.DB, traffics []*xray.ClientTr
 		return err
 	}
 
-	for dbTraffic_index := range dbClientTraffics {
-		for traffic_index := range traffics {
-			if dbClientTraffics[dbTraffic_index].Email == traffics[traffic_index].Email {
-				dbClientTraffics[dbTraffic_index].Up += traffics[traffic_index].Up
-				dbClientTraffics[dbTraffic_index].Down += traffics[traffic_index].Down
-
-				// Add user in onlineUsers array on traffic
-				if traffics[traffic_index].Up+traffics[traffic_index].Down > 0 {
-					onlineClients = append(onlineClients, traffics[traffic_index].Email)
-				}
-				break
-			}
+	emailToIndex := make(map[string]int, len(dbClientTraffics))
+	for index, dbTraffic := range dbClientTraffics {
+		if dbTraffic.Email == "" {
+			continue
+		}
+		existingIndex, ok := emailToIndex[dbTraffic.Email]
+		if !ok {
+			emailToIndex[dbTraffic.Email] = index
+			continue
+		}
+		if dbClientTraffics[existingIndex].NodeClientId == nil && dbTraffic.NodeClientId != nil {
+			emailToIndex[dbTraffic.Email] = index
 		}
 	}
 
-	// Set onlineUsers
-	p.SetOnlineClients(onlineClients)
+	for _, traffic := range traffics {
+		if traffic.Email == "" {
+			continue
+		}
+		index, ok := emailToIndex[traffic.Email]
+		if !ok {
+			continue
+		}
+		dbClientTraffics[index].Up += traffic.Up
+		dbClientTraffics[index].Down += traffic.Down
 
-	err = tx.Save(dbClientTraffics).Error
-	if err != nil {
+		if traffic.Up+traffic.Down > 0 {
+			onlineClientsSet[traffic.Email] = struct{}{}
+		}
+	}
+
+	// Persist updated Up/Down values for matched ClientTraffic rows
+	if err := tx.Save(dbClientTraffics).Error; err != nil {
 		logger.Warning("AddClientTraffic update data ", err)
+	}
+
+	for email := range onlineClientsSet {
+		onlineClients = append(onlineClients, email)
+	}
+
+	// Publish online clients
+	if p != nil {
+		p.SetOnlineClients(onlineClients)
 	}
 
 	// Sync traffic for clients with same subId
@@ -1198,6 +1237,68 @@ func (s *InboundService) adjustTraffics(tx *gorm.DB, dbClientTraffics []*xray.Cl
 	return dbClientTraffics, nil
 }
 
+func (s *InboundService) ensureClientTrafficRowsForNodeClients(tx *gorm.DB, emails []string) error {
+	type nodeClientLinkInfo struct {
+		Id         int
+		Email      string
+		TotalGB    int64
+		ExpiryTime int64
+		Reset      int
+		InboundId  int
+	}
+
+	if len(emails) == 0 {
+		return nil
+	}
+
+	var linkInfos []nodeClientLinkInfo
+	err := tx.Table("node_clients").
+		Select("node_clients.id, node_clients.email, node_clients.total_gb, node_clients.expiry_time, node_clients.reset, node_client_links.inbound_id").
+		Joins("JOIN node_client_links ON node_client_links.node_client_id = node_clients.id").
+		Where("node_clients.email IN (?)", emails).
+		Scan(&linkInfos).Error
+	if err != nil {
+		return err
+	}
+
+	for _, info := range linkInfos {
+		if info.Email == "" {
+			continue
+		}
+
+		ct := &xray.ClientTraffic{}
+		result := tx.Where("email = ? AND inbound_id = ?", info.Email, info.InboundId).First(ct)
+		if result.Error != nil && result.Error != gorm.ErrRecordNotFound {
+			return result.Error
+		}
+
+		if result.RowsAffected == 0 {
+			nodeClientId := info.Id
+			ct = &xray.ClientTraffic{
+				InboundId:    info.InboundId,
+				Email:        info.Email,
+				Enable:       true,
+				Up:           0,
+				Down:         0,
+				Total:        info.TotalGB,
+				ExpiryTime:   info.ExpiryTime,
+				Reset:        info.Reset,
+				NodeClientId: &nodeClientId,
+			}
+			if err := tx.Create(ct).Error; err != nil {
+				return err
+			}
+		} else if ct.NodeClientId == nil {
+			nodeClientId := info.Id
+			if err := tx.Model(ct).Update("node_client_id", nodeClientId).Error; err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
 func (s *InboundService) autoRenewClients(tx *gorm.DB) (bool, int64, error) {
 	// check for time expired
 	var traffics []*xray.ClientTraffic
@@ -1291,6 +1392,12 @@ func (s *InboundService) autoRenewClients(tx *gorm.DB) (bool, int64, error) {
 		}
 		s.xrayApi.Close()
 	}
+
+	// Auto-renew NodeClients whose reset interval has elapsed
+	if err := s.nodeClientService.AutoRenew(tx); err != nil {
+		logger.Warning("Error in auto-renewing node clients:", err)
+	}
+
 	return needRestart, int64(len(traffics)), nil
 }
 
@@ -1371,6 +1478,18 @@ func (s *InboundService) disableInvalidClients(tx *gorm.DB) (bool, int64, error)
 		Update("enable", false)
 	err := result.Error
 	count := result.RowsAffected
+	if err != nil {
+		return needRestart, count, err
+	}
+
+	// Disable exhausted/expired NodeClients
+	ncChanged, err := s.nodeClientService.DisableExhausted(tx)
+	if err != nil {
+		logger.Warning("Error in disabling exhausted node clients:", err)
+	} else if ncChanged {
+		needRestart = true
+	}
+
 	return needRestart, count, err
 }
 
@@ -1986,7 +2105,7 @@ func (s *InboundService) DelDepletedClients(id int) (err error) {
 	}
 
 	depletedClients := []xray.ClientTraffic{}
-	err = db.Model(xray.ClientTraffic{}).Where(whereText+" and enable = ?", id, false).Select("inbound_id, GROUP_CONCAT(email) as email").Group("inbound_id").Find(&depletedClients).Error
+	err = db.Model(xray.ClientTraffic{}).Where(whereText+" and enable = ? and node_client_id IS NULL", id, false).Select("inbound_id, GROUP_CONCAT(email) as email").Group("inbound_id").Find(&depletedClients).Error
 	if err != nil {
 		return err
 	}

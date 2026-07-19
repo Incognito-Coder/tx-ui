@@ -73,6 +73,8 @@
 "xray" = "Konfigurasi Xray"
 "logout" = "Keluar"
 "link" = "Kelola"
+"node_clients" = "Node Clients"
+"txThemeHub" = "TX ThemeHub"
 
 [pages.login]
 "hello" = "Halo"
@@ -204,6 +206,30 @@
 "import" = "Impor"
 "importInbound" = "Impor Masuk"
 "reordered" = "Masuk Dipesan Ulang"
+
+[pages.node_clients]
+"showLinks" = "Tampilkan tautan"
+"noLinks" = "Tidak ada tautan tersedia"
+"title" = "Klien"
+
+"manageLinksFor" = "Kelola tautan untuk"
+"linkDrawerHint" = "Pilih inbounds untuk menghubungkan client ini. Gunakan field Flow untuk menimpa pengaturan flow untuk VLESS/Trojan XTLS."
+"linkedToPrefix" = "Tertaut ke"
+"linkedToSuffix" = "inbound(s)"
+"flowOverride" = "Ganti Flow (opsional), mis. xtls-rprx-vision"
+"commonValues" = "Nilai umum"
+"subscriptionId" = "ID langganan"
+"credentialFields" = "Field kredensial"
+"forVmessVlessProtocols" = "Untuk protokol VMESS/VLESS"
+"uuid" = "UUID"
+"forTrojanShadowsocksProtocols" = "Untuk protokol Trojan/Shadowsocks"
+"password" = "Kata Sandi"
+"forHysteriaProtocol" = "Untuk protokol Hysteria"
+"auth" = "Autentikasi"
+"limitsAndPolicy" = "Batas & Kebijakan"
+"telegramChatId" = "ID Obrolan Telegram"
+"depleted" = "Habis"
+"expired" = "Kedaluwarsa"
 
 [pages.client]
 "add" = "Tambah Klien"

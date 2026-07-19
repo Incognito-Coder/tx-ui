@@ -63,6 +63,7 @@
                  :color="client.enable ? statsExpColor(record, client.email) : themeSwitcher.isDarkTheme ? '#2c3950' : '#bcbcbc'"></a-badge>
     </a-tooltip>
     [[ client.email ]]
+    <a-tag color="blue" style="margin-left: 4px; font-size: 10px; padding: 0 4px;" v-if="client.nodeClientId != null">(node)</a-tag>
 </template>
 <template slot="traffic" slot-scope="text, client">
     <a-popover :overlay-class-name="themeSwitcher.currentTheme">

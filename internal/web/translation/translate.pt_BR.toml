@@ -73,6 +73,8 @@
 "xray" = "Xray Configs"
 "logout" = "Sair"
 "link" = "Gerenciar"
+"node_clients" = "Node Clients"
+"txThemeHub" = "TX ThemeHub"
 
 [pages.login]
 "hello" = "Olá"
@@ -204,6 +206,29 @@
 "import" = "Importar"
 "importInbound" = "Importar um Inbound"
 "reordered" = "Reordenado com Sucesso"
+
+[pages.node_clients]
+"showLinks" = "Mostrar links"
+"noLinks" = "Nenhum link disponível"
+"title" = "Clientes"
+"manageLinksFor" = "Gerenciar links para"
+"linkDrawerHint" = "Selecione inbounds para vincular a este cliente. Use o campo Flow para sobrescrever a configuração de fluxo para VLESS/Trojan XTLS."
+"linkedToPrefix" = "Vinculado a"
+"linkedToSuffix" = "entrada(s)"
+"flowOverride" = "Substituição de Flow (opcional), ex.: xtls-rprx-vision"
+"commonValues" = "Valores comuns"
+"subscriptionId" = "ID de assinatura"
+"credentialFields" = "Campos de credenciais"
+"forVmessVlessProtocols" = "Para protocolos VMESS/VLESS"
+"uuid" = "UUID"
+"forTrojanShadowsocksProtocols" = "Para protocolos Trojan/Shadowsocks"
+"password" = "Senha"
+"forHysteriaProtocol" = "Para protocolo Hysteria"
+"auth" = "Autenticação"
+"limitsAndPolicy" = "Limites e política"
+"telegramChatId" = "ID do chat do Telegram"
+"depleted" = "Esgotado"
+"expired" = "Expirado"
 
 [pages.client]
 "add" = "Adicionar Cliente"

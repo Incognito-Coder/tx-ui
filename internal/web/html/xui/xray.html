@@ -299,7 +299,7 @@
                                     </a-row>
                                     <setting-list-item type="switch" title='{{ i18n "enable"}}' desc='{{ i18n "pages.xray.metrics.enableDesc"}}' v-model="metricsEnable"></setting-list-item>
                                     <template v-if="metricsEnable">
-                                        <setting-list-item type="text" title='{{ i18n "address"}}' desc='{{ i18n "pages.xray.metrics.listenDesc"}}' v-model="metricsListen"></setting-list-item>
+                                        <setting-list-item type="text" title='{{ i18n "pages.inbounds.address"}}' desc='{{ i18n "pages.xray.metrics.listenDesc"}}' v-model="metricsListen"></setting-list-item>
                                         <setting-list-item type="text" title='{{ i18n "pages.xray.metrics.tag"}}' desc='{{ i18n "pages.xray.metrics.tagDesc"}}' v-model="metricsTag"></setting-list-item>
                                     </template>
                                 </a-collapse-panel>

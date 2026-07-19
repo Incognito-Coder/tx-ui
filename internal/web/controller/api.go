@@ -10,9 +10,10 @@ import (
 
 type APIController struct {
 	BaseController
-	inboundController *InboundController
-	serverController  *ServerController
-	Tgbot             service.Tgbot
+	inboundController    *InboundController
+	serverController     *ServerController
+	nodeClientController *NodeClientController
+	Tgbot                service.Tgbot
 }
 
 func NewAPIController(g *gin.RouterGroup) *APIController {
@@ -41,6 +42,10 @@ func (a *APIController) initRouter(g *gin.RouterGroup) {
 	// Server API
 	server := api.Group("/server")
 	a.serverController = NewServerController(server)
+
+	// Node Clients API
+	nodeClients := api.Group("/nodeClients")
+	a.nodeClientController = NewNodeClientController(nodeClients)
 
 	// Extra routes
 	api.GET("/backuptotgbot", a.BackuptoTgbot)

@@ -1,0 +1,1259 @@
+<!DOCTYPE html>
+<html lang="en">
+{{template "head" .}}
+<style>
+    .ant-table:not(.ant-table-expanded-row .ant-table) {
+        outline: 1px solid #f0f0f0;
+        outline-offset: -1px;
+        border-radius: 1rem;
+        overflow-x: hidden;
+    }
+
+    .dark .ant-table:not(.ant-table-expanded-row .ant-table) {
+        outline-color: var(--dark-color-table-ring);
+    }
+
+    .ant-table .ant-table-content .ant-table-scroll .ant-table-body {
+        overflow-y: hidden;
+    }
+
+    @media (min-width: 769px) {
+        .ant-layout-content {
+            margin: 24px 16px;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .ant-card-body {
+            padding: .5rem;
+        }
+    }
+
+    .infinite-tag {
+        padding: 0 5px;
+        border-radius: 2rem;
+        min-width: 50px;
+        min-height: 22px;
+    }
+
+    .status-badge {
+        margin-left: 4px;
+    }
+
+    .qr-cv {
+        transition: all 0.3s ease-in-out;
+        cursor: pointer;
+    }
+
+    .qr-transition-enter-active,
+    .qr-transition-leave-active {
+        transition: opacity 0.3s, transform 0.3s;
+    }
+
+    .qr-transition-enter,
+    .qr-transition-leave-to {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+
+    .qr-transition-enter-to,
+    .qr-transition-leave {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    .qr-flash {
+        animation: qr-flash-animation 0.6s;
+    }
+
+    .dark .ant-drawer-mask {
+        background: rgba(10, 18, 34, 0.65);
+    }
+
+    .dark .ant-drawer-content-wrapper,
+    .dark .ant-drawer-content,
+    .dark .ant-drawer-body,
+    .dark .ant-drawer-header {
+        background: var(--dark-color-surface-700);
+        color: var(--dark-color-text-primary);
+    }
+
+    .dark .ant-drawer-title,
+    .dark .ant-drawer-close {
+        color: var(--dark-color-text-primary);
+    }
+
+    .dark .ant-alert {
+        background-color: rgba(32, 42, 60, 0.9);
+        border-color: rgba(44, 57, 80, 0.9);
+    }
+
+    .dark .ant-alert-info {
+        background-color: rgba(32, 42, 60, 0.9);
+        border-color: rgba(44, 57, 80, 0.9);
+    }
+
+    .dark .ant-alert-message,
+    .dark .ant-alert-description {
+        color: var(--dark-color-text-primary);
+    }
+
+    .dark .ant-list-item {
+        color: var(--dark-color-text-primary);
+    }
+
+    @keyframes qr-flash-animation {
+        0% {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        50% {
+            opacity: 0.5;
+            transform: scale(0.95);
+        }
+
+        100% {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+</style>
+
+<body>
+    <a-layout :class="themeSwitcher.currentTheme" id="app" v-cloak>
+        {{ template "commonSider" . }}
+        <a-layout id="content-layout">
+            <a-layout-content>
+                <a-spin :delay="500" :spinning="spinning" tip='{{ i18n "loading"}}'>
+                    <transition appear name="list">
+                        <a-card hoverable>
+                            <a-row>
+                                <a-col :lg="12" :sm="24" :xs="24">
+                                    {{ i18n "pages.node_clients.title" }}:
+                                    <a-tag color="green">[[ nodeClients.length ]]</a-tag>
+                                </a-col>
+                                <a-col :lg="12" :sm="24" :xs="24">
+                                    {{ i18n "enabled" }}:
+                                    <a-tag color="blue">[[ nodeClients.filter(nc => nc.enable).length ]]</a-tag>
+                                    {{ i18n "disabled" }}:
+                                    <a-tag color="red">[[ nodeClients.filter(nc => !nc.enable).length ]]</a-tag>
+                                </a-col>
+                            </a-row>
+                        </a-card>
+                    </transition>
+                    <transition appear name="list">
+                        <a-card hoverable>
+                            <div slot="title">
+                                <a-row>
+                                    <a-col :lg="12" :sm="12" :xs="12">
+                                        <a-button @click="ncModal.showAdd()" icon="plus" type="primary">
+                                            <template v-if="!isMobile">{{ i18n "pages.client.add" }}</template>
+                                        </a-button>
+                                        <a-button @click="confirmBulkDelete" icon="delete" type="danger"
+                                            v-if="selectedRowKeys.length > 0" style="margin-left: 8px;">
+                                            <template v-if="!isMobile">{{ i18n "pages.node_clients.bulkDelete" }} ([[
+                                                selectedRowKeys.length ]])</template>
+                                            <template v-else>([[ selectedRowKeys.length ]])</template>
+                                        </a-button>
+                                    </a-col>
+                                    <a-col :lg="12" :sm="12" :xs="12" style="text-align: right;">
+                                        <a-icon :spin="refreshing" @click="manualRefresh" style="margin: 0 5px;"
+                                            type="sync"></a-icon>
+                                    </a-col>
+                                </a-row>
+                            </div>
+                            <div
+                                :style="isMobile ? '' : 'display: flex; align-items: center; justify-content: flex-start;'">
+                                <a-input :size="isMobile ? 'small' : ''" autofocus placeholder='{{ i18n "search" }}'
+                                    style="max-width: 250px" v-model="searchKey"></a-input>
+                            </div>
+                            <a-table :columns="isMobile ? mobileColumns : columns" :data-source="searchedNodeClients"
+                                :pagination="pagination(searchedNodeClients)" :row-key="nc => nc.id"
+                                :row-selection="{ selectedRowKeys: selectedRowKeys, onChange: onSelectChange, columnWidth: 28 }"
+                                :scroll="isMobile ? {} : { x: 1000 }" style="margin-top: 10px">
+                                <!-- Action column -->
+                                <template slot="action" slot-scope="text, nc">
+                                    <a-dropdown :trigger="['click']">
+                                        <a-icon @click="e => e.preventDefault()" style="font-size: 20px;"
+                                            type="more"></a-icon>
+                                        <a-menu :theme="themeSwitcher.currentTheme" @click="a => clickAction(a, nc)"
+                                            slot="overlay">
+                                            <a-menu-item key="edit">
+                                                <a-icon type="edit"></a-icon>
+                                                {{ i18n "edit" }}
+                                            </a-menu-item>
+                                            <a-menu-item key="showLinks">
+                                                <a-icon type="qrcode"></a-icon>
+                                                {{ i18n "pages.node_clients.showLinks" }}
+                                            </a-menu-item>
+                                            <a-menu-item key="manageLinks">
+                                                <a-icon type="link"></a-icon>
+                                                {{ i18n "pages.node_clients.manageLinks" }}
+                                            </a-menu-item>
+                                            <a-menu-item key="resetTraffic">
+                                                <a-icon type="retweet"></a-icon>
+                                                {{ i18n "pages.inbounds.resetTraffic" }}
+                                            </a-menu-item>
+                                            <a-menu-item key="delete">
+                                                <span style="color: #FF4D4F">
+                                                    <a-icon type="delete"></a-icon> {{ i18n "delete" }}
+                                                </span>
+                                            </a-menu-item>
+                                        </a-menu>
+                                    </a-dropdown>
+                                </template>
+                                <!-- Enable toggle column -->
+                                <template slot="enable" slot-scope="text, nc">
+                                    <a-switch @change="toggleEnable(nc)" v-model="nc.enable"></a-switch>
+                                </template>
+                                <!-- SubID column -->
+                                <template slot="subId" slot-scope="text, nc">
+                                    <a-tooltip :title="nc.subId">
+                                        <span style="font-family: monospace; font-size: 11px;">
+                                            [[ nc.subId.length > 12 ? nc.subId.substring(0, 12) + '…' : nc.subId ]]
+                                        </span>
+                                    </a-tooltip>
+                                </template>
+                                <!-- Traffic column with status badge -->
+                                <template slot="traffic" slot-scope="text, nc">
+                                    <a-popover :overlay-class-name="themeSwitcher.currentTheme">
+                                        <template slot="content">
+                                            <table cellpadding="2" width="100%">
+                                                <tr>
+                                                    <td>↑[[ sizeFormat(getTrafficData(nc).up) ]]</td>
+                                                    <td>↓[[ sizeFormat(getTrafficData(nc).down) ]]</td>
+                                                </tr>
+                                                <tr v-if="nc.totalGB > 0 && getTrafficData(nc).used < nc.totalGB">
+                                                    <td>{{ i18n "remained" }}</td>
+                                                    <td>[[ sizeFormat(nc.totalGB - getTrafficData(nc).used) ]]</td>
+                                                </tr>
+                                            </table>
+                                        </template>
+                                        <a-tag :color="trafficColor(nc)">
+                                            [[ sizeFormat(getTrafficData(nc).used) ]] /
+                                            <template v-if="nc.totalGB > 0">
+                                                [[ sizeFormat(nc.totalGB) ]]
+                                            </template>
+                                            <template v-else>
+                                                <svg fill="currentColor" height="10px" viewBox="0 0 640 512"
+                                                    width="14px">
+                                                    <path
+                                                        d="M484.4 96C407 96 349.2 164.1 320 208.5C290.8 164.1 233 96 155.6 96C69.75 96 0 167.8 0 256s69.75 160 155.6 160C233.1 416 290.8 347.9 320 303.5C349.2 347.9 407 416 484.4 416C570.3 416 640 344.2 640 256S570.3 96 484.4 96zM155.6 368C96.25 368 48 317.8 48 256s48.25-112 107.6-112c67.75 0 120.5 82.25 137.1 112C276 285.8 223.4 368 155.6 368zM484.4 368c-67.75 0-120.5-82.25-137.1-112C364 226.2 416.6 144 484.4 144C543.8 144 592 194.2 592 256S543.8 368 484.4 368z"
+                                                        fill="currentColor"></path>
+                                                </svg>
+                                            </template>
+                                        </a-tag>
+                                        <!-- Status badges -->
+                                        <a-tag class="status-badge" color="orange" v-if="isDepleted(nc)">
+                                            {{ i18n "pages.node_clients.depleted" }}
+                                        </a-tag>
+                                        <a-tag class="status-badge" color="red" v-if="isExpired(nc)">
+                                            {{ i18n "pages.node_clients.expired" }}
+                                        </a-tag>
+                                    </a-popover>
+                                </template>
+                                <!-- Expiry column -->
+                                <template slot="expiryTime" slot-scope="text, nc">
+                                    <a-popover :overlay-class-name="themeSwitcher.currentTheme"
+                                        v-if="nc.expiryTime > 0">
+                                        <template slot="content">
+                                            [[ DateUtil.formatMillis(nc.expiryTime) ]]
+                                        </template>
+                                        <a-tag :color="isExpired(nc) ? 'red' : 'blue'" style="min-width: 50px;">
+                                            [[ remainedDays(nc.expiryTime) ]]
+                                        </a-tag>
+                                    </a-popover>
+                                    <a-tag class="infinite-tag" color="purple" v-else>
+                                        <svg fill="currentColor" height="10px" viewBox="0 0 640 512" width="14px">
+                                            <path
+                                                d="M484.4 96C407 96 349.2 164.1 320 208.5C290.8 164.1 233 96 155.6 96C69.75 96 0 167.8 0 256s69.75 160 155.6 160C233.1 416 290.8 347.9 320 303.5C349.2 347.9 407 416 484.4 416C570.3 416 640 344.2 640 256S570.3 96 484.4 96zM155.6 368C96.25 368 48 317.8 48 256s48.25-112 107.6-112c67.75 0 120.5 82.25 137.1 112C276 285.8 223.4 368 155.6 368zM484.4 368c-67.75 0-120.5-82.25-137.1-112C364 226.2 416.6 144 484.4 144C543.8 144 592 194.2 592 256S543.8 368 484.4 368z"
+                                                fill="currentColor"></path>
+                                        </svg>
+                                    </a-tag>
+                                </template>
+                                <!-- Linked inbounds count column -->
+                                <template slot="linkedInbounds" slot-scope="text, nc">
+                                    <a-tooltip :title="'{{ i18n "pages.node_clients.linkedToPrefix" }} ' + getLinkCount(nc.id) + ' {{ i18n "pages.node_clients.linkedToSuffix" }}'">
+                                        <a-badge :count="getLinkCount(nc.id)"
+                                            :number-style="{ backgroundColor: getLinkCount(nc.id) > 0 ? '#52c41a' : '#d9d9d9' }"
+                                            show-zero>
+                                            <a-icon style="font-size: 18px; cursor: pointer;" type="link"
+                                                @click="manageLinks(nc)"></a-icon>
+                                        </a-badge>
+                                    </a-tooltip>
+                                </template>
+                            </a-table>
+                        </a-card>
+                    </transition>
+
+                    <!-- Create/Edit Node Client Modal -->
+                    <a-modal :class="themeSwitcher.currentTheme" :closable="true"
+                        :confirm-loading="ncModal.confirmLoading" :mask-closable="false" :ok-text="ncModal.okText"
+                        :title="ncModal.title" @ok="handleModalOk" cancel-text='{{ i18n "close" }}' id="nc-modal"
+                        v-model="ncModal.visible">
+                        <a-form :colon="false" :label-col="{ md: {span:8} }" :wrapper-col="{ md: {span:14} }"
+                            layout="horizontal" v-if="ncModal.nodeClient">
+                            <a-form-item label='{{ i18n "pages.inbounds.enable" }}'>
+                                <a-switch v-model="ncModal.nodeClient.enable"></a-switch>
+                            </a-form-item>
+
+                            <a-form-item>
+                                <template slot="label">
+                                    <a-tooltip>
+                                        <template slot="title">
+                                            <span>{{ i18n "pages.inbounds.emailDesc" }}</span>
+                                        </template>
+                                        {{ i18n "pages.inbounds.email" }}
+                                        <a-icon @click="ncModal.nodeClient.email = RandomUtil.randomLowerAndNum(9)"
+                                            type="sync"></a-icon>
+                                    </a-tooltip>
+                                </template>
+                                <a-input v-model.trim="ncModal.nodeClient.email"></a-input>
+                            </a-form-item>
+
+                            <a-form-item>
+                                <template slot="label">
+                                    <a-tooltip>
+                                        <template slot="title">
+                                            <span>{{ i18n "pages.inbounds.subscriptionDesc" }}</span>
+                                        </template>
+                                        {{ i18n "pages.node_clients.subscriptionId" }}
+                                        <a-icon @click="ncModal.nodeClient.subId = RandomUtil.randomLowerAndNum(16)"
+                                            type="sync"></a-icon>
+                                    </a-tooltip>
+                                </template>
+                                <a-input v-model.trim="ncModal.nodeClient.subId"></a-input>
+                            </a-form-item>
+
+                            <a-divider>{{ i18n "pages.node_clients.credentialFields" }}</a-divider>
+
+                            <a-form-item>
+                                <template slot="label">
+                                    <a-tooltip>
+                                        <template slot="title">
+                                            <span>{{ i18n "pages.node_clients.forVmessVlessProtocols" }}</span>
+                                        </template>
+                                        {{ i18n "pages.node_clients.uuid" }}
+                                        <a-icon @click="ncModal.nodeClient.uuid = RandomUtil.randomUUID()"
+                                            type="sync"></a-icon>
+                                    </a-tooltip>
+                                </template>
+                                <a-input v-model.trim="ncModal.nodeClient.uuid"></a-input>
+                            </a-form-item>
+
+                            <a-form-item>
+                                <template slot="label">
+                                    <a-tooltip>
+                                        <template slot="title">
+                                            <span>{{ i18n "pages.node_clients.forTrojanShadowsocksProtocols" }}</span>
+                                        </template>
+                                        {{ i18n "pages.node_clients.password" }}
+                                        <a-icon @click="ncModal.nodeClient.password = RandomUtil.randomSeq(10)"
+                                            type="sync"></a-icon>
+                                    </a-tooltip>
+                                </template>
+                                <a-input v-model.trim="ncModal.nodeClient.password"></a-input>
+                            </a-form-item>
+
+                            <a-form-item>
+                                <template slot="label">
+                                    <a-tooltip>
+                                        <template slot="title">
+                                            <span>{{ i18n "pages.node_clients.forHysteriaProtocol" }}</span>
+                                        </template>
+                                        {{ i18n "pages.node_clients.auth" }}
+                                        <a-icon @click="ncModal.nodeClient.auth = RandomUtil.randomSeq(10)"
+                                            type="sync"></a-icon>
+                                    </a-tooltip>
+                                </template>
+                                <a-input v-model.trim="ncModal.nodeClient.auth"></a-input>
+                            </a-form-item>
+
+                            <a-divider>{{ i18n "pages.node_clients.limitsAndPolicy" }}</a-divider>
+
+                            <a-form-item>
+                                <template slot="label">
+                                    <a-tooltip>
+                                        <template slot="title">
+                                            0 <span>{{ i18n "pages.inbounds.meansNoLimit" }}</span>
+                                        </template>
+                                        {{ i18n "pages.inbounds.totalFlow" }} (GB)
+                                        <a-icon type="question-circle"></a-icon>
+                                    </a-tooltip>
+                                </template>
+                                <a-input-number :min="0" v-model.number="ncModal.nodeClient._totalGB"></a-input-number>
+                            </a-form-item>
+
+                            <a-form-item>
+                                <template slot="label">
+                                    <a-tooltip>
+                                        <template slot="title">{{ i18n "pages.inbounds.leaveBlankToNeverExpire"
+                                            }}</template>
+                                        {{ i18n "pages.inbounds.expireDate" }}
+                                        <a-icon type="question-circle"></a-icon>
+                                    </a-tooltip>
+                                </template>
+                                <a-date-picker :dropdown-class-name="themeSwitcher.currentTheme"
+                                    :show-time="{ format: 'HH:mm:ss' }" format="YYYY-MM-DD HH:mm:ss"
+                                    v-if="datepicker == 'gregorian'" v-model="ncModal.expiryTimeModel">
+                                </a-date-picker>
+                                <persian-datepicker placeholder='{{ i18n "pages.settings.datepickerPlaceholder" }}'
+                                    v-else v-model="ncModal.expiryTimeModel">
+                                </persian-datepicker>
+                            </a-form-item>
+
+                            <a-form-item v-if="ipLimitEnable">
+                                <template slot="label">
+                                    <a-tooltip>
+                                        <template slot="title">
+                                            <span>{{ i18n "pages.inbounds.IPLimitDesc"}}</span>
+                                        </template>
+                                        <span>{{ i18n "pages.inbounds.IPLimit"}} </span>
+                                        <a-icon type="question-circle"></a-icon>
+                                    </a-tooltip>
+                                </template>
+                                <a-input-number :min="0" v-model.number="ncModal.nodeClient.limitIp"></a-input-number>
+                            </a-form-item>
+
+                            <a-form-item v-if="tgBotEnable">
+                                <template slot="label">
+                                    <a-tooltip>
+                                        <template slot="title">
+                                            <span>{{ i18n "pages.inbounds.telegramDesc" }}</span>
+                                        </template>
+                                        {{ i18n "pages.node_clients.telegramChatId" }}
+                                        <a-icon type="question-circle"></a-icon>
+                                    </a-tooltip>
+                                </template>
+                                <a-input-number :min="0" style="width: 50%"
+                                    v-model.number="ncModal.nodeClient.tgId"></a-input-number>
+                            </a-form-item>
+
+                            <a-form-item>
+                                <template slot="label">
+                                    <a-tooltip>
+                                        <template slot="title">{{ i18n "pages.client.renewDesc" }}</template>
+                                        {{ i18n "pages.client.renew" }} (days)
+                                        <a-icon type="question-circle"></a-icon>
+                                    </a-tooltip>
+                                </template>
+                                <a-input-number :min="0" v-model.number="ncModal.nodeClient.reset"></a-input-number>
+                            </a-form-item>
+
+                            <a-form-item label='{{ i18n "comment" }}'>
+                                <a-textarea :auto-size="{ minRows: 2, maxRows: 4 }"
+                                    v-model.trim="ncModal.nodeClient.comment"></a-textarea>
+                            </a-form-item>
+                        </a-form>
+                    </a-modal>
+
+                </a-spin>
+            </a-layout-content>
+        </a-layout>
+
+        <!-- Link Management Drawer -->
+        <a-drawer :wrap-class-name="themeSwitcher.currentTheme" :closable="true" :title="'{{ i18n "pages.node_clients.manageLinksFor" }}: ' + (linkDrawer.nodeClient ? linkDrawer.nodeClient.email : '')"
+            :visible="linkDrawer.visible" :width="isMobile ? '100%' : 600" @close="handleDrawerClose"
+            placement="right">
+            <a-spin :spinning="linkDrawer.loading">
+                <div style="margin-bottom: 16px;">
+                    <a-alert message='{{ i18n "pages.node_clients.linkDrawerHint" }}' type="info" show-icon closable
+                        style="margin-bottom: 16px;">
+                    </a-alert>
+                </div>
+
+                <!-- Inbound selection list -->
+                <a-list :data-source="linkDrawer.allInbounds" bordered size="small">
+                    <a-list-item slot="renderItem" slot-scope="inbound">
+                        <div style="width: 100%;">
+                            <div style="display: flex; align-items: center; margin-bottom: 8px;">
+                                <a-checkbox :checked="linkDrawer.isLinked(inbound.id)"
+                                    @change="e => linkDrawer.toggleLink(inbound.id, e.target.checked)"
+                                    style="margin-right: 8px;">
+                                </a-checkbox>
+                                <strong>[[ inbound.remark || ('Inbound #' + inbound.id) ]]</strong>
+                                <span style="margin-left: auto; font-size: 12px; color: #888;">
+                                    {{ i18n "pages.inbounds.port" }}: [[ inbound.port ]] | {{ i18n "protocol" }}: [[
+                                    inbound.protocol
+                                    ]]
+                                </span>
+                            </div>
+                            <!-- Flow override input (visible only when linked) -->
+                            <div v-if="linkDrawer.isLinked(inbound.id)" style="margin-left: 28px;">
+                                <a-input :placeholder='`{{ i18n "pages.node_clients.flowOverride" }}`'
+                                    :value="linkDrawer.getFlowForInbound(inbound.id)"
+                                    @change="e => linkDrawer.setFlow(inbound.id, e.target.value)" size="small"
+                                    style="max-width: 300px;">
+                                </a-input>
+                                <div style="font-size: 11px; color: #888; margin-top: 4px;">
+                                    {{ i18n "pages.node_clients.commonValues" }}: <code>xtls-rprx-vision</code>,
+                                    <code>xtls-rprx-splice</code>
+                                </div>
+                            </div>
+                        </div>
+                    </a-list-item>
+                </a-list>
+
+                <!-- Action buttons -->
+                <div style="margin-top: 16px; text-align: right;">
+                    <a-button @click="handleDrawerClose" style="margin-right: 8px;">
+                        {{ i18n "cancel" }}
+                    </a-button>
+                    <a-button @click="handleDrawerSave" type="primary" :loading="linkDrawer.loading">
+                        {{ i18n "sure" }}
+                    </a-button>
+                </div>
+            </a-spin>
+        </a-drawer>
+
+        <a-modal :class="themeSwitcher.currentTheme" :closable="true" :dialog-style="isMobileQr ? { top: '18px' } : {}"
+            :footer="null" :title="nodeClientQrModal.title" width="fit-content" v-model="nodeClientQrModal.visible">
+            <tr-qr-modal class="qr-modal">
+                <template v-if="subSettings.enable && nodeClientQrModal.subLink">
+                    <tr-qr-box class="qr-box">
+                        <a-tag class="qr-tag" color="purple"><span>{{ i18n "pages.node_clients.subscriptionUrl"
+                                }}</span></a-tag>
+                        <tr-qr-bg class="qr-bg-sub">
+                            <tr-qr-bg-inner class="qr-bg-sub-inner">
+                                <canvas id="nodeClientSubQr" class="qr-cv"
+                                    @click="copyToClipboard('nodeClientSubQr', nodeClientQrModal.subLink)"></canvas>
+                            </tr-qr-bg-inner>
+                        </tr-qr-bg>
+                    </tr-qr-box>
+                    <tr-qr-box class="qr-box">
+                        <a-tag class="qr-tag" color="purple"><span>{{ i18n "pages.node_clients.subscriptionUrlJson"
+                                }}</span></a-tag>
+                        <tr-qr-bg class="qr-bg-sub">
+                            <tr-qr-bg-inner class="qr-bg-sub-inner">
+                                <canvas id="nodeClientSubJsonQr" class="qr-cv"
+                                    @click="copyToClipboard('nodeClientSubJsonQr', nodeClientQrModal.subJsonLink)"></canvas>
+                            </tr-qr-bg-inner>
+                        </tr-qr-bg>
+                    </tr-qr-box>
+                </template>
+                <template v-if="nodeClientQrModal.qrcodes.length === 0 && !nodeClientQrModal.subLink">
+                    <div style="padding: 16px; color: #888; text-align: center;">
+                        {{ i18n "pages.node_clients.noLinks" }}
+                    </div>
+                </template>
+                <template v-for="(row, index) in nodeClientQrModal.qrcodes">
+                    <tr-qr-box class="qr-box">
+                        <a-tag class="qr-tag" color="green"><span>[[ row.title ]]</span></a-tag>
+                        <tr-qr-bg class="qr-bg">
+                            <canvas :id="'nodeClientQr-' + index" class="qr-cv"
+                                @click="copyToClipboard('nodeClientQr-' + index, row.link)"></canvas>
+                        </tr-qr-bg>
+                    </tr-qr-box>
+                </template>
+            </tr-qr-modal>
+        </a-modal>
+
+    </a-layout>
+    {{template "js" .}}
+    <script src="{{ .base_path }}assets/base64/base64.min.js?{{ .cur_ver }}"></script>
+    <script src="{{ .base_path }}assets/qrcode/qrious2.min.js?{{ .cur_ver }}"></script>
+    <script src="{{ .base_path }}assets/clipboard/clipboard.min.js?{{ .cur_ver }}"></script>
+    <script src="{{ .base_path }}assets/js/model/inbound.js?{{ .cur_ver }}"></script>
+    <script src="{{ .base_path }}assets/js/model/dbinbound.js?{{ .cur_ver }}"></script>
+    {{template "component/themeSwitcher" .}}
+    {{template "component/persianDatepicker" .}}
+    <script>
+        const columns = [{
+            title: "ID",
+            align: 'right',
+            dataIndex: "id",
+            width: 30,
+            responsive: ["xs"],
+        }, {
+            title: '{{ i18n "pages.inbounds.operate" }}',
+            align: 'center',
+            width: 30,
+            scopedSlots: { customRender: 'action' },
+        }, {
+            title: '{{ i18n "pages.inbounds.enable" }}',
+            align: 'center',
+            width: 35,
+            scopedSlots: { customRender: 'enable' },
+        }, {
+            title: 'Email',
+            align: 'center',
+            width: 80,
+            dataIndex: "email",
+        }, {
+            title: 'SubID',
+            align: 'center',
+            width: 60,
+            scopedSlots: { customRender: 'subId' },
+        }, {
+            title: '{{ i18n "pages.inbounds.traffic" }}',
+            align: 'center',
+            width: 100,
+            scopedSlots: { customRender: 'traffic' },
+        }, {
+            title: '{{ i18n "pages.inbounds.expireDate" }}',
+            align: 'center',
+            width: 50,
+            scopedSlots: { customRender: 'expiryTime' },
+        }, {
+            title: 'Linked Inbounds',
+            align: 'center',
+            width: 50,
+            scopedSlots: { customRender: 'linkedInbounds' },
+        }];
+
+        const mobileColumns = [{
+            title: "ID",
+            align: 'right',
+            dataIndex: "id",
+            width: 10,
+        }, {
+            title: '{{ i18n "pages.inbounds.operate" }}',
+            align: 'center',
+            width: 25,
+            scopedSlots: { customRender: 'action' },
+        }, {
+            title: 'Email',
+            align: 'left',
+            width: 70,
+            dataIndex: "email",
+        }];
+
+        const app = new Vue({
+            delimiters: ["[[", "]]"],
+            el: '#app',
+            data: {
+                siderDrawer,
+                themeSwitcher,
+                persianDatepicker,
+                spinning: false,
+                refreshing: false,
+                nodeClients: [],
+                trafficMap: {},   // id -> { up, down, used }
+                linkCountMap: {}, // id -> count
+                searchKey: '',
+                searchedNodeClients: [],
+                selectedRowKeys: [],  // For bulk delete
+                pageSize: 50,
+                isMobile: window.innerWidth <= 768,
+                isMobileQr: window.innerWidth <= 768,
+                datepicker: 'gregorian',
+                remarkModel: '-ieo',
+                ipLimitEnable: false,
+                tgBotEnable: false,
+                subSettings: {
+                    enable: false,
+                    subURI: '',
+                    subJsonURI: ''
+                },
+                nodeClientQrModal: {
+                    visible: false,
+                    title: '',
+                    client: null,
+                    subLink: '',
+                    subJsonLink: '',
+                    qrcodes: [],
+                    clipboard: null,
+                    loading: false,
+                },
+                linkDrawer: {
+                    visible: false,
+                    loading: false,
+                    nodeClient: null,
+                    allInbounds: [],
+                    originalLinks: [],    // Links when drawer opens (for diffing): [{ inboundId, flow }, ...]
+                    selectedLinks: [],    // Current selection: [{ inboundId, flow }, ...]
+
+                    async show(vm, nc) {
+                        this.nodeClient = nc;
+                        this.visible = true;
+                        this.loading = true;
+
+                        try {
+                            const inboundsMsg = await HttpUtil.get('/panel/api/inbounds/list');
+                            if (inboundsMsg.success) {
+                                this.allInbounds = inboundsMsg.obj || [];
+                            } else {
+                                vm.$message.error('Failed to load inbounds: ' + (inboundsMsg.msg || 'unknown error'));
+                                this.allInbounds = [];
+                            }
+
+                            const linksMsg = await HttpUtil.get(`/panel/api/nodeClients/${nc.id}/links`);
+                            if (linksMsg.success) {
+                                const links = linksMsg.obj || [];
+                                this.originalLinks = links.map(link => ({ inboundId: link.inboundId, flow: link.flow || '' }));
+                                this.selectedLinks = links.map(link => ({ inboundId: link.inboundId, flow: link.flow || '' }));
+                            } else {
+                                vm.$message.error('Failed to load existing links: ' + (linksMsg.msg || 'unknown error'));
+                                this.originalLinks = [];
+                                this.selectedLinks = [];
+                            }
+                        } catch (error) {
+                            vm.$message.error('Error loading link data: ' + error.message);
+                        } finally {
+                            this.loading = false;
+                        }
+                    },
+
+                    close() {
+                        this.visible = false;
+                        this.nodeClient = null;
+                        this.allInbounds = [];
+                        this.originalLinks = [];
+                        this.selectedLinks = [];
+                    },
+
+                    isLinked(inboundId) {
+                        return this.selectedLinks.some(link => link.inboundId === inboundId);
+                    },
+
+                    getFlowForInbound(inboundId) {
+                        const link = this.selectedLinks.find(link => link.inboundId === inboundId);
+                        return link ? link.flow : '';
+                    },
+
+                    toggleLink(inboundId, checked) {
+                        if (checked) {
+                            // Add link if not already present
+                            if (!this.isLinked(inboundId)) {
+                                this.selectedLinks.push({ inboundId, flow: '' });
+                            }
+                        } else {
+                            // Remove link
+                            const index = this.selectedLinks.findIndex(link => link.inboundId === inboundId);
+                            if (index !== -1) {
+                                this.selectedLinks.splice(index, 1);
+                            }
+                        }
+                    },
+
+                    setFlow(inboundId, flow) {
+                        const link = this.selectedLinks.find(link => link.inboundId === inboundId);
+                        if (link) {
+                            link.flow = flow || '';
+                        }
+                    },
+
+                    async save(vm) {
+                        if (!this.nodeClient) return;
+
+                        this.loading = true;
+
+                        try {
+                            const originalIds = this.originalLinks.map(link => link.inboundId);
+                            const selectedIds = this.selectedLinks.map(link => link.inboundId);
+
+                            const added = this.selectedLinks.filter(link => !originalIds.includes(link.inboundId));
+                            const removed = this.originalLinks.filter(link => !selectedIds.includes(link.inboundId));
+
+                            const updated = this.selectedLinks.filter(link => {
+                                const orig = this.originalLinks.find(o => o.inboundId === link.inboundId);
+                                return orig && orig.flow !== link.flow;
+                            });
+
+                            let hasErrors = false;
+
+                            // Remove links
+                            for (const link of removed) {
+                                const msg = await HttpUtil.post(`/panel/api/nodeClients/${this.nodeClient.id}/removeLink/${link.inboundId}`);
+                                if (!msg.success) {
+                                    vm.$message.error(`Failed to remove link to inbound ${link.inboundId}: ` + (msg.msg || 'unknown error'));
+                                    hasErrors = true;
+                                }
+                            }
+
+                            // Add new links
+                            for (const link of added) {
+                                const payload = { inboundId: link.inboundId, flow: link.flow || '' };
+                                const msg = await HttpUtil.post(`/panel/api/nodeClients/${this.nodeClient.id}/addLink`, payload);
+                                if (!msg.success) {
+                                    vm.$message.error(`Failed to add link to inbound ${link.inboundId}: ` + (msg.msg || 'unknown error'));
+                                    hasErrors = true;
+                                }
+                            }
+
+                            // Update flow for existing links (remove and re-add)
+                            for (const link of updated) {
+                                const removeMsg = await HttpUtil.post(`/panel/api/nodeClients/${this.nodeClient.id}/removeLink/${link.inboundId}`);
+                                if (!removeMsg.success) {
+                                    vm.$message.error(`Failed to update flow for inbound ${link.inboundId}: ` + (removeMsg.msg || 'unknown error'));
+                                    hasErrors = true;
+                                    continue;
+                                }
+                                const payload = { inboundId: link.inboundId, flow: link.flow || '' };
+                                const addMsg = await HttpUtil.post(`/panel/api/nodeClients/${this.nodeClient.id}/addLink`, payload);
+                                if (!addMsg.success) {
+                                    vm.$message.error(`Failed to update flow for inbound ${link.inboundId}: ` + (addMsg.msg || 'unknown error'));
+                                    hasErrors = true;
+                                }
+                            }
+
+                            if (!hasErrors) {
+                                vm.$message.success('Links updated successfully');
+                                await vm.getNodeClients();
+                                this.close();
+                            } else {
+                                await vm.getNodeClients();
+                            }
+                        } catch (error) {
+                            vm.$message.error('Error saving links: ' + error.message);
+                        } finally {
+                            this.loading = false;
+                        }
+                    },
+                },
+                ncModal: {
+                    visible: false,
+                    confirmLoading: false,
+                    title: '',
+                    okText: '',
+                    isEdit: false,
+                    nodeClient: null,
+                    expiryTimeModel: null,
+
+                    _expiryMomentToMillis(momentObj) {
+                        if (!momentObj) return 0;
+                        if (typeof momentObj === 'number') return momentObj;
+                        if (momentObj && typeof momentObj.valueOf === 'function') return momentObj.valueOf();
+                        return 0;
+                    },
+
+                    _millisToMoment(ms) {
+                        if (!ms || ms === 0) return null;
+                        if (typeof moment !== 'undefined') return moment(ms);
+                        return null;
+                    },
+
+                    showAdd() {
+                        this.isEdit = false;
+                        this.title = 'Add Node Client';
+                        this.okText = '{{ i18n "sure" }}';
+                        this.nodeClient = {
+                            email: RandomUtil.randomLowerAndNum(9),
+                            subId: RandomUtil.randomLowerAndNum(16),
+                            uuid: RandomUtil.randomUUID(),
+                            password: RandomUtil.randomSeq(10),
+                            auth: RandomUtil.randomSeq(10),
+                            totalGB: 0,
+                            _totalGB: 0,
+                            expiryTime: 0,
+                            limitIp: 0,
+                            tgId: 0,
+                            enable: true,
+                            reset: 0,
+                            comment: '',
+                        };
+                        this.expiryTimeModel = null;
+                        this.visible = true;
+                    },
+
+                    showEdit(nc) {
+                        this.isEdit = true;
+                        this.title = 'Edit Node Client: ' + nc.email;
+                        this.okText = '{{ i18n "sure" }}';
+                        this.nodeClient = Object.assign({}, nc);
+                        this.nodeClient._totalGB = toFixed((nc.totalGB || 0) / ONE_GB, 2);
+                        this.expiryTimeModel = this._millisToMoment(nc.expiryTime);
+                        this.visible = true;
+                    },
+
+                    async ok(vm) {
+                        if (!this.nodeClient) return;
+
+                        // Sync expiry time from date picker model
+                        this.nodeClient.expiryTime = this._expiryMomentToMillis(this.expiryTimeModel);
+                        this.nodeClient.totalGB = toFixed((this.nodeClient._totalGB || 0) * ONE_GB, 0);
+
+                        if (!this.nodeClient.email || this.nodeClient.email.trim() === '') {
+                            vm.$message.error('Email is required');
+                            return;
+                        }
+
+                        this.confirmLoading = true;
+                        let url, msg;
+                        if (this.isEdit) {
+                            url = `/panel/api/nodeClients/update/${this.nodeClient.id}`;
+                            msg = await HttpUtil.post(url, this.nodeClient);
+                        } else {
+                            url = '/panel/api/nodeClients/create';
+                            msg = await HttpUtil.post(url, this.nodeClient);
+                        }
+                        this.confirmLoading = false;
+
+                        if (msg.success) {
+                            this.visible = false;
+                            vm.$message.success(this.isEdit ? 'Node client updated' : 'Node client created');
+                            await vm.getNodeClients();
+                        } else {
+                            vm.$message.error(msg.msg || (this.isEdit ? 'Failed to update node client' : 'Failed to create node client'));
+                        }
+                    },
+
+                    close() {
+                        this.visible = false;
+                        this.confirmLoading = false;
+                    },
+                },
+            },
+            methods: {
+                async handleModalOk() {
+                    await this.ncModal.ok(this);
+                },
+                handleDrawerClose() {
+                    this.linkDrawer.close();
+                },
+                async handleDrawerSave() {
+                    await this.linkDrawer.save(this);
+                },
+                loading(spinning = true) {
+                    this.spinning = spinning;
+                },
+                async getNodeClients() {
+                    this.refreshing = true;
+                    const msg = await HttpUtil.get('/panel/api/nodeClients/list');
+                    if (!msg.success) {
+                        this.refreshing = false;
+                        return;
+                    }
+                    this.nodeClients = msg.obj || [];
+                    // Load traffic for all clients in parallel
+                    await this.loadAllTraffic();
+                    this.searchNodeClients(this.searchKey);
+                    setTimeout(() => { this.refreshing = false; }, 300);
+                },
+                async loadAllTraffic() {
+                    const promises = this.nodeClients.map(nc =>
+                        HttpUtil.get(`/panel/api/nodeClients/${nc.id}/traffic`)
+                            .then(msg => {
+                                if (msg.success && msg.obj) {
+                                    const t = msg.obj;
+                                    this.$set(this.trafficMap, nc.id, {
+                                        up: t.up || 0,
+                                        down: t.down || 0,
+                                        used: (t.up || 0) + (t.down || 0),
+                                        total: t.total || 0,
+                                    });
+                                }
+                            })
+                            .catch(() => { })
+                    );
+                    await Promise.all(promises);
+                    // Load link counts in parallel
+                    const linkPromises = this.nodeClients.map(nc =>
+                        HttpUtil.get(`/panel/api/nodeClients/${nc.id}/links`)
+                            .then(msg => {
+                                if (msg.success && msg.obj) {
+                                    this.$set(this.linkCountMap, nc.id, (msg.obj || []).length);
+                                }
+                            })
+                            .catch(() => { })
+                    );
+                    await Promise.all(linkPromises);
+                },
+                getTrafficData(nc) {
+                    return this.trafficMap[nc.id] || { up: 0, down: 0, used: 0, total: 0 };
+                },
+                getLinkCount(id) {
+                    return this.linkCountMap[id] || 0;
+                },
+                isDepleted(nc) {
+                    if (nc.totalGB <= 0) return false;
+                    const traffic = this.getTrafficData(nc);
+                    return traffic.used >= nc.totalGB;
+                },
+                isExpired(nc) {
+                    if (nc.expiryTime <= 0) return false;
+                    return nc.expiryTime < Date.now();
+                },
+                trafficColor(nc) {
+                    if (this.isDepleted(nc) || this.isExpired(nc)) return 'red';
+                    const traffic = this.getTrafficData(nc);
+                    const total = nc.totalGB;
+                    if (total > 0) {
+                        const used = traffic.used;
+                        if (used / total >= 0.9) return 'orange';
+                    }
+                    return 'green';
+                },
+                remainedDays(expTime) {
+                    if (expTime === 0) return null;
+                    if (expTime < 0) return formatSecond(expTime / -1000);
+                    const now = Date.now();
+                    if (expTime < now) return '{{ i18n "depleted" }}';
+                    return formatSecond((expTime - now) / 1000);
+                },
+                searchNodeClients(key) {
+                    if (!key || key.trim() === '') {
+                        this.searchedNodeClients = this.nodeClients.slice();
+                    } else {
+                        const lKey = key.toLowerCase();
+                        this.searchedNodeClients = this.nodeClients.filter(nc =>
+                            (nc.email && nc.email.toLowerCase().includes(lKey)) ||
+                            (nc.subId && nc.subId.toLowerCase().includes(lKey)) ||
+                            (nc.comment && nc.comment.toLowerCase().includes(lKey))
+                        );
+                    }
+                },
+                clickAction(action, nc) {
+                    switch (action.key) {
+                        case "showLinks":
+                            this.showNodeClientQrcodes(nc);
+                            break;
+                        case "edit":
+                            this.ncModal.showEdit(nc);
+                            break;
+                        case "manageLinks":
+                            this.manageLinks(nc);
+                            break;
+                        case "resetTraffic":
+                            this.confirmResetTraffic(nc);
+                            break;
+                        case "delete":
+                            this.confirmDelete(nc);
+                            break;
+                    }
+                },
+                async manageLinks(nc) {
+                    await this.linkDrawer.show(this, nc);
+                },
+                async showNodeClientQrcodes(nc) {
+                    this.nodeClientQrModal.client = nc;
+                    this.nodeClientQrModal.title = `Node Client Links: ${nc.email}`;
+                    this.nodeClientQrModal.qrcodes = [];
+                    this.nodeClientQrModal.subLink = '';
+                    this.nodeClientQrModal.subJsonLink = '';
+                    this.nodeClientQrModal.loading = true;
+
+                    try {
+                        const linksMsg = await HttpUtil.get(`/panel/api/nodeClients/${nc.id}/links`);
+                        if (!linksMsg.success) {
+                            this.$message.error('Failed to load linked inbounds: ' + (linksMsg.msg || 'unknown error'));
+                            return;
+                        }
+
+                        const inboundsMsg = await HttpUtil.get('/panel/api/inbounds/list');
+                        if (!inboundsMsg.success) {
+                            this.$message.error('Failed to load inbound definitions: ' + (inboundsMsg.msg || 'unknown error'));
+                            return;
+                        }
+
+                        const inboundMap = {};
+                        (inboundsMsg.obj || []).forEach(inbound => {
+                            inboundMap[inbound.id] = inbound;
+                        });
+
+                        const links = linksMsg.obj || [];
+                        links.forEach(link => {
+                            const inboundData = inboundMap[link.inboundId];
+                            if (!inboundData) {
+                                return;
+                            }
+                            const dbInbound = new DBInbound(inboundData);
+                            const inbound = dbInbound.toInbound();
+                            const prefix = `Inbound #${dbInbound.id}${dbInbound.remark ? ' - ' + dbInbound.remark : ''}`;
+                            const linkClient = Object.assign({}, nc, {
+                                id: nc.uuid || nc.id,
+                            });
+                            if (inbound.protocol === Protocols.WIREGUARD) {
+                                inbound.genInboundLinks(dbInbound.remark).split('\r\n').forEach((l, idx) => {
+                                    if (!l) return;
+                                    this.nodeClientQrModal.qrcodes.push({
+                                        title: `${prefix} / Peer ${idx + 1}`,
+                                        link: l,
+                                        originalLink: l,
+                                    });
+                                });
+                            } else {
+                                inbound.genAllLinks(dbInbound.remark, this.remarkModel, linkClient).forEach((item) => {
+                                    this.nodeClientQrModal.qrcodes.push({
+                                        title: `${prefix} / ${item.remark}`,
+                                        link: item.link,
+                                        originalLink: item.link,
+                                    });
+                                });
+                            }
+                        });
+
+                        if (this.subSettings.enable && nc.subId) {
+                            this.nodeClientQrModal.subLink = this.subSettings.subURI + nc.subId;
+                            this.nodeClientQrModal.subJsonLink = this.subSettings.subJsonURI + nc.subId;
+                        }
+
+                        this.nodeClientQrModal.visible = true;
+                        this.$nextTick(() => {
+                            if (this.nodeClientQrModal.subLink) {
+                                this.setQrCode('nodeClientSubQr', this.nodeClientQrModal.subLink);
+                            }
+                            if (this.nodeClientQrModal.subJsonLink) {
+                                this.setQrCode('nodeClientSubJsonQr', this.nodeClientQrModal.subJsonLink);
+                            }
+                            this.nodeClientQrModal.qrcodes.forEach((row, index) => {
+                                this.setQrCode(`nodeClientQr-${index}`, row.link);
+                            });
+                        });
+                    } catch (error) {
+                        this.$message.error('Error loading node client links: ' + error.message);
+                    } finally {
+                        this.nodeClientQrModal.loading = false;
+                    }
+                },
+                copyToClipboard(elementId, content) {
+                    this.nodeClientQrModal.clipboard = new ClipboardJS('#' + elementId, {
+                        text: () => content,
+                    });
+                    this.nodeClientQrModal.clipboard.on('success', () => {
+                        this.$message.success('{{ i18n "copied" }}');
+                        this.nodeClientQrModal.clipboard.destroy();
+                    });
+                },
+                setQrCode(elementId, content) {
+                    const element = document.querySelector('#' + elementId);
+                    if (!element) {
+                        return;
+                    }
+                    new QRious({
+                        element: element,
+                        size: 240,
+                        value: content,
+                        background: 'white',
+                        backgroundAlpha: 0,
+                        foreground: 'black',
+                        padding: 2,
+                        level: 'L',
+                    });
+                },
+                async toggleEnable(nc) {
+                    const msg = await HttpUtil.post(`/panel/api/nodeClients/${nc.id}/toggle`);
+                    if (!msg.success) {
+                        // Revert the toggle on failure
+                        nc.enable = !nc.enable;
+                        this.$message.error('Failed to toggle node client: ' + (msg.msg || 'unknown error'));
+                    }
+                },
+                confirmResetTraffic(nc) {
+                    this.$confirm({
+                        title: 'Reset Traffic for ' + nc.email,
+                        content: 'Are you sure you want to reset all traffic for this node client?',
+                        class: themeSwitcher.currentTheme,
+                        okText: '{{ i18n "reset" }}',
+                        cancelText: '{{ i18n "cancel" }}',
+                        onOk: async () => {
+                            const msg = await HttpUtil.post(`/panel/api/nodeClients/${nc.id}/resetTraffic`);
+                            if (msg.success) {
+                                await this.getNodeClients();
+                            } else {
+                                this.$message.error('Failed to reset traffic: ' + (msg.msg || 'unknown error'));
+                            }
+                        },
+                    });
+                },
+                confirmDelete(nc) {
+                    this.$confirm({
+                        title: 'Delete Node Client "' + nc.email + '"',
+                        content: 'Are you sure you want to delete this node client? All links and traffic references will be removed.',
+                        class: themeSwitcher.currentTheme,
+                        okText: '{{ i18n "delete" }}',
+                        cancelText: '{{ i18n "cancel" }}',
+                        onOk: async () => {
+                            const msg = await HttpUtil.post(`/panel/api/nodeClients/del/${nc.id}`);
+                            if (msg.success) {
+                                await this.getNodeClients();
+                            } else {
+                                this.$message.error('Failed to delete: ' + (msg.msg || 'unknown error'));
+                            }
+                        },
+                    });
+                },
+                confirmBulkDelete() {
+                    if (this.selectedRowKeys.length === 0) {
+                        this.$message.warning('Please select at least one node client to delete');
+                        return;
+                    }
+                    const count = this.selectedRowKeys.length;
+                    this.$confirm({
+                        title: `Delete ${count} Node Client${count > 1 ? 's' : ''}`,
+                        content: `Are you sure you want to delete ${count} selected node client${count > 1 ? 's' : ''}? All links and traffic references will be removed.`,
+                        class: themeSwitcher.currentTheme,
+                        okText: '{{ i18n "delete" }}',
+                        cancelText: '{{ i18n "cancel" }}',
+                        onOk: async () => {
+                            const msg = await HttpUtil.post('/panel/api/nodeClients/bulkDel', { ids: this.selectedRowKeys });
+                            if (msg.success) {
+                                this.$message.success(`Successfully deleted ${count} node client${count > 1 ? 's' : ''}`);
+                                this.selectedRowKeys = [];
+                                await this.getNodeClients();
+                            } else {
+                                this.$message.error('Failed to bulk delete: ' + (msg.msg || 'unknown error'));
+                            }
+                        },
+                    });
+                },
+                onSelectChange(selectedKeys) {
+                    this.selectedRowKeys = selectedKeys;
+                },
+                async manualRefresh() {
+                    if (!this.refreshing) {
+                        this.spinning = true;
+                        await this.getNodeClients();
+                        this.spinning = false;
+                    }
+                },
+                pagination(obj) {
+                    if (this.pageSize > 0 && obj.length > this.pageSize) {
+                        const sizeOptions = [];
+                        for (let i = this.pageSize; i <= obj.length; i += this.pageSize) {
+                            sizeOptions.push(i.toString());
+                        }
+                        sizeOptions.push((obj.length).toString());
+                        return {
+                            showSizeChanger: true,
+                            size: 'small',
+                            position: 'bottom',
+                            pageSize: this.pageSize,
+                            pageSizeOptions: sizeOptions,
+                        };
+                    }
+                    return false;
+                },
+                onResize() {
+                    this.isMobile = window.innerWidth <= 768;
+                    this.isMobileQr = window.innerWidth <= 768;
+                },
+                async getDefaultSettings() {
+                    const msg = await HttpUtil.post('/panel/setting/defaultSettings');
+                    if (!msg.success) {
+                        return;
+                    }
+                    const s = msg.obj;
+
+                    this.datepicker = s.datepicker || 'gregorian';
+                    this.remarkModel = s.remarkModel || '-ieo';
+                    this.ipLimitEnable = s.ipLimitEnable || false;
+                    this.tgBotEnable = s.tgBotEnable || false;
+
+                    this.subSettings = {
+                        enable: s.subEnable,
+                        subURI: s.subURI,
+                        subJsonURI: s.subJsonURI,
+                    };
+                },
+            },
+            watch: {
+                searchKey: debounce(function (newVal) {
+                    this.searchNodeClients(newVal);
+                }, 500),
+            },
+            mounted() {
+                window.addEventListener('resize', this.onResize);
+                this.onResize();
+                this.loading();
+                Promise.all([
+                    this.getDefaultSettings(),
+                    this.getNodeClients(),
+                ]).finally(() => this.loading(false));
+            },
+        });
+    </script>
+</body>
+
+</html>
