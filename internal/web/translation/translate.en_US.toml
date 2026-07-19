@@ -76,6 +76,9 @@
 "link" = "Manage"
 "node_clients" = "Node Clients"
 "txThemeHub" = "TX ThemeHub"
+"theme" = "Theme"
+"themeDark" = "Dark"
+"themeUltra" = "Ultra"
 
 [pages.login]
 "hello" = "Hello"

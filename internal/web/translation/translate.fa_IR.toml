@@ -76,6 +76,9 @@
 "link" = "مدیریت"
 "node_clients" = "گره کاربران"
 "txThemeHub" = "تم هاب"
+"theme" = "تم"
+"themeDark" = "تیره"
+"themeUltra" = "تیره تر"
 
 [pages.login]
 "hello" = "سلام"

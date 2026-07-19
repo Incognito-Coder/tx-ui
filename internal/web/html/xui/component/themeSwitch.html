@@ -4,15 +4,15 @@
         <a-sub-menu>
       <span slot="title">
         <a-icon :theme="themeSwitcher.isDarkTheme ? 'filled' : 'outlined'" type="bulb"></a-icon>
-        <span>Theme</span>
+        <span>{{ i18n "menu.theme" }}</span>
       </span>
             <a-menu-item @mousedown="themeSwitcher.animationsOff()" class="ant-menu-theme-switch" id="change-theme">
-                Dark
+                {{ i18n "menu.themeDark" }}
                 <a-switch :default-checked="themeSwitcher.isDarkTheme" @change="themeSwitcher.toggleTheme()" size="small"
                           style="margin-left: 2px;"></a-switch>
             </a-menu-item>
             <a-menu-item @mousedown="themeSwitcher.animationsOffUltra()" class="ant-menu-theme-switch" id="change-theme-ultra"
-                         v-if="themeSwitcher.isDarkTheme"> Ultra
+                         v-if="themeSwitcher.isDarkTheme"> {{ i18n "menu.themeUltra" }}
                 <a-checkbox :checked="themeSwitcher.isUltra" @click="themeSwitcher.toggleUltra()"
                             style="margin-left: 2px;"></a-checkbox>
             </a-menu-item>
