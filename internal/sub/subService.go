@@ -19,12 +19,13 @@ import (
 )
 
 type SubService struct {
-	address        string
-	showInfo       bool
-	remarkModel    string
-	datepicker     string
-	inboundService service.InboundService
-	settingService service.SettingService
+	address           string
+	showInfo          bool
+	remarkModel       string
+	datepicker        string
+	inboundService    service.InboundService
+	settingService    service.SettingService
+	nodeClientService service.NodeClientService
 }
 
 func NewSubService(showInfo bool, remarkModel string) *SubService {
@@ -56,11 +57,11 @@ func (s *SubService) GetSubs(subId string, host string) ([]string, string, []str
 		s.datepicker = "gregorian"
 	}
 	for _, inbound := range inbounds {
-		clients, err := s.inboundService.GetClients(inbound)
+		clients, err := s.getClients(inbound)
 		if err != nil {
 			logger.Error("SubService - GetClients: Unable to get clients from inbound")
 		}
-		if clients == nil {
+		if len(clients) == 0 {
 			continue
 		}
 		if len(inbound.Listen) > 0 && inbound.Listen[0] == '@' {
@@ -113,15 +114,39 @@ func (s *SubService) getInboundsBySubId(subId string) ([]*model.Inbound, error) 
 	err := db.Model(model.Inbound{}).Preload("ClientStats").Where(`id in (
 		SELECT DISTINCT inbounds.id
 		FROM inbounds,
-			JSON_EACH(JSON_EXTRACT(inbounds.settings, '$.clients')) AS client 
+			JSON_EACH(JSON_EXTRACT(inbounds.settings, '$.clients')) AS client
 		WHERE
 			protocol in ('vmess','vless','trojan','shadowsocks','hysteria')
 			AND JSON_EXTRACT(client.value, '$.subId') = ? AND enable = ?
-	)`, subId, true).Find(&inbounds).Error
+		UNION
+		SELECT DISTINCT node_client_links.inbound_id
+		FROM node_client_links
+			JOIN node_clients ON node_clients.id = node_client_links.node_client_id
+			JOIN inbounds ON inbounds.id = node_client_links.inbound_id
+		WHERE node_clients.sub_id = ?
+			AND inbounds.protocol in ('vmess','vless','trojan','shadowsocks','hysteria')
+			AND inbounds.enable = ?
+	)`, subId, true, subId, true).Find(&inbounds).Error
 	if err != nil {
 		return nil, err
 	}
 	return inbounds, nil
+}
+
+// getClients returns the inbound's own clients merged with clients synthesised
+// from node clients linked to this inbound, so subscription links can be
+// generated for node clients as well.
+func (s *SubService) getClients(inbound *model.Inbound) ([]model.Client, error) {
+	clients, err := s.inboundService.GetClients(inbound)
+	if err != nil {
+		return nil, err
+	}
+	merged, err := s.nodeClientService.MergeIntoInboundConfig(inbound.Id, clients)
+	if err != nil {
+		logger.Warningf("SubService - getClients: MergeIntoInboundConfig failed for inbound %d: %v", inbound.Id, err)
+		return clients, nil
+	}
+	return merged, nil
 }
 
 func (s *SubService) getClientTraffics(traffics []xray.ClientTraffic, email string) xray.ClientTraffic {
@@ -179,7 +204,7 @@ func (s *SubService) genHysteriaLink(inbound *model.Inbound, email string) strin
 	}
 	var stream map[string]interface{}
 	json.Unmarshal([]byte(inbound.StreamSettings), &stream)
-	clients, _ := s.inboundService.GetClients(inbound)
+	clients, _ := s.getClients(inbound)
 	clientIndex := -1
 	for i, client := range clients {
 		if client.Email == email {
@@ -328,7 +353,7 @@ func (s *SubService) genVmessLink(inbound *model.Inbound, email string) string {
 		}
 	}
 
-	clients, _ := s.inboundService.GetClients(inbound)
+	clients, _ := s.getClients(inbound)
 	clientIndex := -1
 	for i, client := range clients {
 		if client.Email == email {
@@ -384,7 +409,7 @@ func (s *SubService) genVlessLink(inbound *model.Inbound, email string) string {
 
 	var stream map[string]interface{}
 	json.Unmarshal([]byte(inbound.StreamSettings), &stream)
-	clients, _ := s.inboundService.GetClients(inbound)
+	clients, _ := s.getClients(inbound)
 	clientIndex := -1
 	for i, client := range clients {
 		if client.Email == email {
@@ -584,7 +609,7 @@ func (s *SubService) genTrojanLink(inbound *model.Inbound, email string) string 
 	}
 	var stream map[string]interface{}
 	json.Unmarshal([]byte(inbound.StreamSettings), &stream)
-	clients, _ := s.inboundService.GetClients(inbound)
+	clients, _ := s.getClients(inbound)
 	clientIndex := -1
 	for i, client := range clients {
 		if client.Email == email {
@@ -775,7 +800,7 @@ func (s *SubService) genShadowsocksLink(inbound *model.Inbound, email string) st
 	}
 	var stream map[string]interface{}
 	json.Unmarshal([]byte(inbound.StreamSettings), &stream)
-	clients, _ := s.inboundService.GetClients(inbound)
+	clients, _ := s.getClients(inbound)
 
 	var settings map[string]interface{}
 	json.Unmarshal([]byte(inbound.Settings), &settings)
