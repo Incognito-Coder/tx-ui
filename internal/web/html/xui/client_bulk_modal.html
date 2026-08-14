@@ -2,7 +2,8 @@
 <a-modal :class="themeSwitcher.currentTheme" :closable="true" :confirm-loading="clientsBulkModal.confirmLoading"
          :mask-closable="false" :ok-text="clientsBulkModal.okText" :title="clientsBulkModal.title"
          @ok="clientsBulkModal.ok"
-         cancel-text='{{ i18n "close" }}' id="client-bulk-modal" v-model="clientsBulkModal.visible">
+         cancel-text='{{ i18n "close" }}' id="client-bulk-modal" v-model="clientsBulkModal.visible"
+         wrap-class-name="panel-modal panel-modal-lg">
     <a-form :colon="false" :label-col="{ md: {span:8} }" :wrapper-col="{ md: {span:14} }">
         <a-form-item label='{{ i18n "pages.client.method" }}'>
             <a-select :dropdown-class-name="themeSwitcher.currentTheme" buttonStyle="solid"

@@ -6,18 +6,43 @@
         .ant-layout-content {
             margin: 24px 16px;
         }
-
-        .ant-card-hoverable {
-            margin-inline: 0.3rem;
-        }
-
-        .ant-alert-error {
-            margin-inline: 0.3rem;
-        }
     }
 
-    .ant-col-sm-24 {
-        margin-top: 10px;
+    .overview-usage-row > .ant-card {
+        width: 100%;
+        margin-inline: 0;
+    }
+
+    .overview-details-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+        margin-top: 12px;
+    }
+
+    .overview-details-grid::before,
+    .overview-details-grid::after {
+        display: none;
+    }
+
+    #content-layout .overview-details-grid > [class*="ant-col-"] {
+        float: none;
+        width: auto;
+        max-width: none;
+        margin: 0;
+        padding: 0;
+    }
+
+    .overview-details-grid .ant-card {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+    }
+
+    @media (max-width: 991px) {
+        .overview-details-grid {
+            grid-template-columns: minmax(0, 1fr);
+        }
     }
 
     .ant-card-dark h2 {
@@ -40,8 +65,8 @@
                     </a-alert>
                 </transition>
                 <transition appear name="list">
-                    <a-row>
-                        <a-card hoverable>
+                    <a-row class="overview-usage-row">
+                        <a-card class="overview-usage-card" hoverable>
                             <a-row>
                                 <a-col :md="12" :sm="24">
                                     <a-row>
@@ -98,7 +123,7 @@
                     </a-row>
                 </transition>
                 <transition appear name="list">
-                    <a-row>
+                    <a-row class="overview-details-grid">
                         <a-col :lg="12" :sm="24">
                             <a-card hoverable>
                                 <b>TX-UI:</b>
@@ -330,7 +355,8 @@
     </a-layout>
     <a-modal :class="themeSwitcher.currentTheme" :closable="true" @ok="() => versionModal.visible = false"
              footer=""
-             id="version-modal" title='{{ i18n "pages.index.xraySwitch" }}' v-model="versionModal.visible">
+             id="version-modal" title='{{ i18n "pages.index.xraySwitch" }}' v-model="versionModal.visible"
+             wrap-class-name="panel-modal panel-modal-md">
         <a-alert message='{{ i18n "pages.index.xraySwitchClickDesk" }}' show-icon
                  style="margin-bottom: 12px; width: fit-content" type="warning"></a-alert>
         <template v-for="version, index in versionModal.versions">
@@ -343,7 +369,7 @@
     <a-modal :class="themeSwitcher.currentTheme" :closable="true"
              @cancel="() => logModal.visible = false" footer=""
              id="log-modal"
-             v-model="logModal.visible" width="800px">
+             v-model="logModal.visible" width="800px" wrap-class-name="panel-modal panel-modal-xl">
         <template slot="title">
             {{ i18n "pages.index.logs" }}
             <a-icon :disabled="logModal.loading"
@@ -392,7 +418,7 @@
              @cancel="() => xraylogModal.visible = false" footer=""
              id="xraylog-modal"
              v-model="xraylogModal.visible"
-             width="80vw">
+             width="80vw" wrap-class-name="panel-modal panel-modal-fluid">
         <template slot="title">
             {{ i18n "pages.index.logs" }}
             <a-icon :disabled="xraylogModal.loading"
@@ -433,7 +459,7 @@
     </a-modal>
     <a-modal :class="themeSwitcher.currentTheme" :closable="true" :title="backupModal.title"
              footer="" id="backup-modal"
-             v-model="backupModal.visible">
+             v-model="backupModal.visible" wrap-class-name="panel-modal panel-modal-md">
         <a-alert :message="backupModal.description" show-icon
                  style="margin-bottom: 10px; width: fit-content"
                  type="warning">
@@ -477,11 +503,11 @@
         get color() {
             const percent = this.percent;
             if (percent < 80) {
-                return '#1890ff'; // Green
+                return 'var(--ui-primary)';
             } else if (percent < 90) {
-                return "#f37b24"; // Orange
+                return 'var(--ui-warning)';
             } else {
-                return "#cf3c3c"; // Red
+                return 'var(--ui-danger)';
             }
         }
     }
@@ -576,7 +602,14 @@
         formatLogs(logs) {
             let formattedLogs = '';
             const levels = ["DEBUG", "INFO", "NOTICE", "WARNING", "ERROR"];
-            const levelColors = ["#3c89e8", "#1890ff", "#1890ff", "#f37b24", "#e04141", "#bcbcbc"];
+            const levelColors = [
+                "var(--ui-primary)",
+                "var(--ui-primary)",
+                "var(--ui-primary)",
+                "var(--ui-warning)",
+                "var(--ui-danger)",
+                "var(--ui-text-muted)",
+            ];
 
             logs.forEach((log, index) => {
                 let [data, message] = log.split(" - ", 2);
@@ -654,9 +687,9 @@
             logs.reverse().forEach((log, index) => {
                 let outboundColor = '';
                 if (log.Event === 1) {
-                    outboundColor = ' style="color: #e04141;"'; //red for blocked
+                    outboundColor = ' style="color: var(--ui-danger);"';
                 } else if (log.Event === 2) {
-                    outboundColor = ' style="color: #3c89e8;"'; //blue for proxies
+                    outboundColor = ' style="color: var(--ui-primary);"';
                 }
 
                 let text = ``;

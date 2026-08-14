@@ -1,6 +1,7 @@
 {{define "inboundInfoModal"}}
 <a-modal :class="themeSwitcher.currentTheme" :closable="true" :footer="null" :mask-closable="true"
-         id="inbound-info-modal" title='{{ i18n "pages.inbounds.details"}}' v-model="infoModal.visible" width="600px">
+         id="inbound-info-modal" title='{{ i18n "pages.inbounds.details"}}' v-model="infoModal.visible" width="600px"
+         wrap-class-name="panel-modal panel-modal-lg">
     <a-row>
         <a-col :md="12" :xs="24">
             <table>
@@ -13,7 +14,7 @@
                 <tr>
                     <td>{{ i18n "pages.inbounds.address" }}</td>
                     <td>
-                        <a-tooltip :title="[[ dbInbound.address ]]">
+                        <a-tooltip :title="dbInbound.address">
                             <a-tag class="info-large-tag">[[ dbInbound.address ]]</a-tag>
                         </a-tooltip>
                     </td>
@@ -39,7 +40,7 @@
                         <tr>
                             <td>{{ i18n "host" }}</td>
                             <td v-if="inbound.host">
-                                <a-tooltip :title="[[ inbound.host ]]">
+                                <a-tooltip :title="inbound.host">
                                     <a-tag class="info-large-tag">[[ inbound.host ]]</a-tag>
                                 </a-tooltip>
                             </td>
@@ -51,7 +52,7 @@
                         <tr>
                             <td>{{ i18n "path" }}</td>
                             <td v-if="inbound.path">
-                                <a-tooltip :title="[[ inbound.path ]]">
+                                <a-tooltip :title="inbound.path">
                                     <a-tag class="info-large-tag">[[ inbound.path ]]</a-tag>
                                 </a-tooltip>
                             <td v-else>
@@ -71,7 +72,7 @@
                         <tr>
                             <td>grpc serviceName</td>
                             <td>
-                                <a-tooltip :title="[[ inbound.serviceName ]]">
+                                <a-tooltip :title="inbound.serviceName">
                                     <a-tag class="info-large-tag">[[ inbound.serviceName ]]</a-tag>
                                 </a-tooltip>
                         <tr>
@@ -116,7 +117,7 @@
             <tr v-if="inbound.isSS2022">
                 <td>{{ i18n "password" }}</td>
                 <td>
-                    <a-tooltip :title="[[ inbound.settings.password  ]]">
+                    <a-tooltip :title="inbound.settings.password">
                         <a-tag class="info-large-tag">[[ inbound.settings.password ]]</a-tag>
                     </a-tooltip>
                 </td>
@@ -164,7 +165,7 @@
                 <tr v-if="infoModal.clientSettings.password">
                     <td>{{ i18n "password" }}</td>
                     <td>
-                        <a-tooltip :title="[[ infoModal.clientSettings.password  ]]">
+                        <a-tooltip :title="infoModal.clientSettings.password">
                             <a-tag class="info-large-tag">[[ infoModal.clientSettings.password ]]</a-tag>
                         </a-tooltip>
                     </td>
@@ -190,7 +191,7 @@
                 <tr v-if="infoModal.clientSettings.comment">
                     <td>{{ i18n "comment" }}</td>
                     <td>
-                        <a-tooltip :title="[[ infoModal.clientSettings.comment  ]]">
+                        <a-tooltip :title="infoModal.clientSettings.comment">
                             <a-tag class="info-large-tag">[[ infoModal.clientSettings.comment ]]</a-tag>
                         </a-tooltip>
                     </td>
@@ -206,7 +207,7 @@
                     <td>
                         <a-tag>[[ infoModal.clientIps ]]</a-tag>
                         <a-icon :spin="refreshing" @click="refreshIPs" style="margin: 0 5px;" type="sync"></a-icon>
-                        <a-tooltip :title="[[ dbInbound.address ]]">
+                        <a-tooltip :title="dbInbound.address">
                             <template slot="title">
                                 <span>{{ i18n "pages.inbounds.IPLimitlogclear" }}</span>
                             </template>
@@ -271,7 +272,7 @@
                                       size="small"></a-button>
                         </a-tooltip>
                     </tr-info-title>
-                    <a :href="[[ infoModal.subLink ]]" target="_blank">[[ infoModal.subLink ]]</a>
+                    <a :href="infoModal.subLink" rel="noopener noreferrer" target="_blank">[[ infoModal.subLink ]]</a>
                 </tr-info-row>
                 <tr-info-row class="tr-info-row">
                     <tr-info-title class="tr-info-title">
@@ -281,7 +282,7 @@
                                       size="small"></a-button>
                         </a-tooltip>
                     </tr-info-title>
-                    <a :href="[[ infoModal.subJsonLink ]]" target="_blank">[[ infoModal.subJsonLink ]]</a>
+                    <a :href="infoModal.subJsonLink" rel="noopener noreferrer" target="_blank">[[ infoModal.subJsonLink ]]</a>
                 </tr-info-row>
             </template>
             <template v-if="app.tgBotEnable && infoModal.clientSettings.tgId">
@@ -455,7 +456,7 @@
                                     </a-tooltip>
                                 </tr-info-title>
                                 <div class="client-table-odd-row"
-                                     style="border-radius: 1rem; padding: 0.5rem;"
+                                     style="border-radius: 7px; padding: 0.5rem;"
                                      v-html="infoModal.links[index].replaceAll(`\n`,`<br />`)" v-if="infoModal.links[index]">
                                 </div>
                             </tr-info-row>

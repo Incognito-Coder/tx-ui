@@ -1,41 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
 {{template "head" .}}
+<link href="{{ .base_path }}assets/codemirror/codemirror.min.css?{{ .cur_ver }}" rel="stylesheet">
+<link href="{{ .base_path }}assets/codemirror/fold/foldgutter.css" rel="stylesheet">
+<link href="{{ .base_path }}assets/codemirror/xq.min.css?{{ .cur_ver }}" rel="stylesheet">
+<link href="{{ .base_path }}assets/codemirror/lint/lint.css" rel="stylesheet">
+
+<script src="{{ .base_path }}assets/codemirror/codemirror.min.js?{{ .cur_ver }}"></script>
+<script src="{{ .base_path }}assets/codemirror/javascript.js"></script>
+<script src="{{ .base_path }}assets/codemirror/jshint.js"></script>
+<script src="{{ .base_path }}assets/codemirror/jsonlint.js"></script>
+<script src="{{ .base_path }}assets/codemirror/lint/lint.js"></script>
+<script src="{{ .base_path }}assets/codemirror/lint/javascript-lint.js"></script>
+<script src="{{ .base_path }}assets/codemirror/fold/foldcode.js"></script>
+<script src="{{ .base_path }}assets/codemirror/fold/foldgutter.js"></script>
+<script src="{{ .base_path }}assets/codemirror/fold/brace-fold.js"></script>
 <style>
-    .ant-table:not(.ant-table-expanded-row .ant-table) {
-        outline: 1px solid #f0f0f0;
-        outline-offset: -1px;
-        border-radius: 1rem;
-        overflow-x: hidden;
-    }
-
-    .dark .ant-table:not(.ant-table-expanded-row .ant-table) {
-        outline-color: var(--dark-color-table-ring);
-    }
-
     .ant-table .ant-table-content .ant-table-scroll .ant-table-body {
         overflow-y: hidden;
-    }
-
-    .ant-table .ant-table-content .ant-table-tbody tr:last-child .ant-table-wrapper {
-        margin: -10px 22px !important;
-    }
-
-    .ant-table .ant-table-content .ant-table-tbody tr:last-child .ant-table-wrapper .ant-table {
-        border-bottom-left-radius: 1rem;
-        border-bottom-right-radius: 1rem;
-    }
-
-    .ant-table .ant-table-content .ant-table-tbody tr:last-child tr:last-child td {
-        border-bottom-color: transparent;
-    }
-
-    .ant-table .ant-table-tbody tr:last-child.ant-table-expanded-row .ant-table-wrapper .ant-table-tbody > tr:last-child > td:first-child {
-        border-bottom-left-radius: 6px;
-    }
-
-    .ant-table .ant-table-tbody tr:last-child.ant-table-expanded-row .ant-table-wrapper .ant-table-tbody > tr:last-child > td:last-child {
-        border-bottom-right-radius: 6px;
     }
 
     @media (min-width: 769px) {
@@ -49,13 +31,6 @@
             padding: .5rem;
         }
 
-        .ant-table .ant-table-content .ant-table-tbody tr:last-child .ant-table-wrapper {
-            margin: -10px 2px !important;
-        }
-    }
-
-    .ant-col-sm-24 {
-        margin: 0.5rem -2rem 0.5rem 2rem;
     }
 
     tr.hideExpandIcon .ant-table-row-expand-icon {
@@ -64,19 +39,18 @@
 
     .infinite-tag {
         padding: 0 5px;
-        border-radius: 2rem;
         min-width: 50px;
         min-height: 22px;
     }
 
     .infinite-bar .ant-progress-inner .ant-progress-bg {
-        background-color: #F2EAF1;
-        border: #D5BED2 solid 1px;
+        background-color: var(--ui-primary-soft);
+        border: var(--ui-border-strong) solid 1px;
     }
 
     .dark .infinite-bar .ant-progress-inner .ant-progress-bg {
-        background-color: #7a316f !important;
-        border: #7a316f solid 1px;
+        background-color: var(--ui-primary-soft) !important;
+        border-color: var(--ui-primary);
     }
 
     .ant-collapse {
@@ -260,7 +234,7 @@
                                                 <a-icon type="file-done"></a-icon>
                                                 {{ i18n "pages.inbounds.resetAllClientTraffics" }}
                                             </a-menu-item>
-                                            <a-menu-item key="delDepletedClients" style="color: #FF4D4F;">
+                                            <a-menu-item key="delDepletedClients" style="color: var(--ui-danger);">
                                                 <a-icon type="rest"></a-icon>
                                                 {{ i18n "pages.inbounds.delDepletedClients" }}
                                             </a-menu-item>
@@ -313,6 +287,7 @@
                         </div>
                         <a-back-top></a-back-top>
                         <a-table :columns="isMobile ? mobileColumns : columns" :data-source="searchedInbounds"
+                                 class="inbounds-table"
                                  :expand-icon-as-cell="false"
                                  :expand-icon-column-index="0"
                                  :expand-row-by-click="false"
@@ -320,7 +295,7 @@
                                  :pagination=pagination(searchedInbounds)
                                  :row-class-name="dbInbound => (dbInbound.isMultiUser() ? '' : 'hideExpandIcon')"
                                  :row-key="dbInbound => dbInbound.id"
-                                 :scroll="isMobile ? {} : { x: 1000 }"
+                                 :scroll="{ x: isMobile ? 720 : 1000 }"
                                  style="margin-top: 10px">
                             <template slot="action" slot-scope="text, dbInbound">
                                 <!-- Reorder controls: move up/down (disabled at boundaries) -->
@@ -374,7 +349,7 @@
                                                 {{ i18n "pages.inbounds.export" }} - {{ i18n
                                                 "pages.settings.subSettings" }}
                                             </a-menu-item>
-                                            <a-menu-item key="delDepletedClients" style="color: #FF4D4F;">
+                                            <a-menu-item key="delDepletedClients" style="color: var(--ui-danger);">
                                                 <a-icon type="rest"></a-icon>
                                                 {{ i18n "pages.inbounds.delDepletedClients" }}
                                             </a-menu-item>
@@ -398,7 +373,7 @@
                                             {{ i18n "pages.inbounds.clone"}}
                                         </a-menu-item>
                                         <a-menu-item key="delete">
-                      <span style="color: #FF4D4F">
+                      <span style="color: var(--ui-danger)">
                         <a-icon type="delete"></a-icon> {{ i18n "delete"}}
                       </span>
                                         </a-menu-item>
@@ -673,7 +648,7 @@
                                         </table>
                                     </template>
                                     <a-badge>
-                                        <a-icon :style="'color: ' + themeSwitcher.isDarkTheme ? '#2c3950' : '#bcbcbc'" slot="count" type="pause-circle"
+                                        <a-icon style="color: var(--ui-text-muted)" slot="count" type="pause-circle"
                                                 v-if="!dbInbound.enable"></a-icon>
                                         <a-button shape="round" size="small" style="font-size: 14px; padding: 0 10px;">
                                             <a-icon type="info"></a-icon>
@@ -687,7 +662,7 @@
                                         :data-source="getInboundClients(record)"
                                         :pagination=pagination(getInboundClients(record))
                                         :row-key="client => client.id"
-                                        :style="isMobile ? 'margin: -10px 2px -11px;' : 'margin: -10px 22px -11px;'">
+                                        class="inbound-client-table">
                                     {{template "client_table"}}
                                 </a-table>
                             </template>
@@ -1519,20 +1494,20 @@
                 return formatSecond((expTime - now) / 1000);
             },
             statsExpColor(dbInbound, email) {
-                if (email.length == 0) return '#7a316f';
+                if (email.length == 0) return 'var(--ui-text-muted)';
                 clientStats = dbInbound.clientStats.find(stats => stats.email === email);
-                if (!clientStats) return '#7a316f';
+                if (!clientStats) return 'var(--ui-text-muted)';
                 statsColor = usageColor(clientStats.down + clientStats.up, this.trafficDiff, clientStats.total);
                 expColor = usageColor(new Date().getTime(), this.expireDiff, clientStats.expiryTime);
                 switch (true) {
                     case statsColor == "red" || expColor == "red":
-                        return "#cf3c3c"; // Red
+                        return 'var(--ui-danger)';
                     case statsColor == "orange" || expColor == "orange":
-                        return "#f37b24"; // Orange
+                        return 'var(--ui-warning)';
                     case statsColor == "green" || expColor == "green":
-                        return "#1890ff"; // Green
+                        return 'var(--ui-primary)';
                     default:
-                        return "#7a316f"; // purple
+                        return 'var(--ui-text-muted)';
                 }
             },
             isClientEnabled(dbInbound, email) {

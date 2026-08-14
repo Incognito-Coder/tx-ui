@@ -29,13 +29,13 @@
     </a-tooltip>
     <a-tooltip>
         <template slot="title">
-            <span style="color: #FF4D4F"> {{ i18n "delete"}}</span>
+            <span style="color: var(--ui-danger)"> {{ i18n "delete"}}</span>
         </template>
         <a-popconfirm :overlay-class-name="themeSwitcher.currentTheme"
                       @confirm="delClient(record.id,client,false)"
                       cancel-text='{{ i18n "cancel"}}' ok-text='{{ i18n "delete"}}' ok-type="danger"
                       title='{{ i18n "pages.inbounds.deleteClientContent"}}'>
-            <a-icon slot="icon" style="color: #e04141" type="question-circle-o"></a-icon>
+            <a-icon slot="icon" style="color: var(--ui-danger)" type="question-circle-o"></a-icon>
             <a-icon class="delete-icon" style="font-size: 24px; cursor: pointer;" type="delete"
                     v-if="isRemovable(record.id)"></a-icon>
         </a-popconfirm>
@@ -60,7 +60,7 @@
             <template v-else-if="client.enable && isClientOnline(client.email)">{{ i18n "online" }}</template>
         </template>
         <a-badge :class="isClientOnline(client.email)? 'online-animation' : ''"
-                 :color="client.enable ? statsExpColor(record, client.email) : themeSwitcher.isDarkTheme ? '#2c3950' : '#bcbcbc'"></a-badge>
+                 :color="client.enable ? statsExpColor(record, client.email) : 'var(--ui-border-strong)'"></a-badge>
     </a-tooltip>
     [[ client.email ]]
     <a-tag color="blue" style="margin-left: 4px; font-size: 10px; padding: 0 4px;" v-if="client.nodeClientId != null">(node)</a-tag>
@@ -84,7 +84,7 @@
                 <td class="tr-table-rt"> [[ sizeFormat(getSumStats(record, client.email)) ]]</td>
                 <td class="tr-table-bar" v-if="!client.enable">
                     <a-progress :percent="statsProgress(record, client.email)"
-                                :show-info="false" :stroke-color="themeSwitcher.isDarkTheme ? 'rgb(72 84 105)' : '#bcbcbc'"/>
+                                :show-info="false" stroke-color="var(--ui-border-strong)"/>
                 </td>
                 <td class="tr-table-bar" v-else-if="client.totalGB > 0">
                     <a-progress :percent="statsProgress(record, client.email)" :show-info="false"
@@ -179,7 +179,7 @@
             </a-menu-item>
             <a-menu-item @click="delClient(record.id,client)" v-if="isRemovable(record.id)">
                 <a-icon style="font-size: 14px;" type="delete"></a-icon>
-                <span style="color: #FF4D4F"> {{ i18n "delete"}}</span>
+                <span style="color: var(--ui-danger)"> {{ i18n "delete"}}</span>
             </a-menu-item>
             <a-menu-item>
                 <a-switch @change="switchEnableClient(record.id,client,$event)" size="small"
@@ -202,7 +202,7 @@
                     </td>
                     <td v-if="!client.enable" width="120px">
                         <a-progress :percent="statsProgress(record, client.email)"
-                                    :show-info="false" :stroke-color="themeSwitcher.isDarkTheme ? 'rgb(72 84 105)' : '#bcbcbc'"/>
+                                    :show-info="false" stroke-color="var(--ui-border-strong)"/>
                     </td>
                     <td v-else-if="client.totalGB > 0" width="120px">
                         <a-popover :overlay-class-name="themeSwitcher.currentTheme">
@@ -225,7 +225,7 @@
                     </td>
                     <td class="infinite-bar" v-else width="120px">
                         <a-progress :percent="100" :show-info="false"
-                                    :stroke-color="themeSwitcher.isDarkTheme ? '#2c1e32':'#F2EAF1'"></a-progress>
+                                    stroke-color="var(--ui-primary-soft)"></a-progress>
                     </td>
                     <td width="80px">
                         <template v-if="client.totalGB > 0">[[ client._totalGB + "GB" ]]</template>
@@ -284,7 +284,7 @@
                                     remainedDays(client.expiryTime) ]]
                                 </a-tag>
                             </a-popover>
-                            <a-tag :color="client.enable ? 'purple' : themeSwitcher.isDarkTheme ? '#2c3950' : '#bcbcbc'"
+                            <a-tag :color="client.enable ? 'purple' : 'var(--ui-border-strong)'"
                                    class="infinite-tag"
                                    v-else>
                                 <svg fill="currentColor" height="10px" viewBox="0 0 640 512" width="14px">
@@ -298,7 +298,7 @@
             </table>
         </template>
         <a-badge>
-            <a-icon :style="'color: ' + themeSwitcher.isDarkTheme ? '#2c3950' : '#bcbcbc'" slot="count" theme="filled" type="pause-circle"
+            <a-icon style="color: var(--ui-text-muted)" slot="count" theme="filled" type="pause-circle"
                     v-if="!client.enable"></a-icon>
             <a-button shape="round" size="small" style="font-size: 14px; padding: 0 10px;">
                 <a-icon type="solution"></a-icon>

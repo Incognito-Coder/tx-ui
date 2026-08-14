@@ -1,41 +1,41 @@
 {{define "menuItems"}}
-<a-menu-item key="{{ .base_path }}panel/">
+<a-menu-item key="{{ .base_path }}panel/" title='{{ i18n "menu.dashboard"}}'>
     <a-icon type="dashboard"></a-icon>
     <span>
         <b>{{ i18n "menu.dashboard"}}</b>
     </span>
 </a-menu-item>
-<a-menu-item key="{{ .base_path }}panel/inbounds">
+<a-menu-item key="{{ .base_path }}panel/inbounds" title='{{ i18n "menu.inbounds"}}'>
     <a-icon type="user"></a-icon>
     <span>
         <b>{{ i18n "menu.inbounds"}}</b>
     </span>
 </a-menu-item>
-<a-menu-item key="{{ .base_path }}panel/nodeClients">
+<a-menu-item key="{{ .base_path }}panel/nodeClients" title='{{ i18n "menu.node_clients"}}'>
     <a-icon type="cluster"></a-icon>
     <span>
         <b>{{ i18n "menu.node_clients"}}</b>
     </span>
 </a-menu-item>
-<a-menu-item key="{{ .base_path }}panel/settings">
+<a-menu-item key="{{ .base_path }}panel/settings" title='{{ i18n "menu.settings"}}'>
     <a-icon type="setting"></a-icon>
     <span>
         <b>{{ i18n "menu.settings"}}</b>
     </span>
 </a-menu-item>
-<a-menu-item key="{{ .base_path }}panel/xray">
+<a-menu-item key="{{ .base_path }}panel/xray" title='{{ i18n "menu.xray"}}'>
     <a-icon type="tool"></a-icon>
     <span>
         <b>{{ i18n "menu.xray"}}</b>
     </span>
 </a-menu-item>
-<a-menu-item key="https://github.com/Incognito-Coder/TX-ThemeHub">
+<a-menu-item key="https://github.com/Incognito-Coder/TX-ThemeHub" title='{{ i18n "menu.txThemeHub"}}'>
     <a-icon type="github"></a-icon>
     <span>
         <b>{{ i18n "menu.txThemeHub"}}</b>
     </span>
 </a-menu-item>
-<a-menu-item key="{{ .base_path }}logout">
+<a-menu-item key="{{ .base_path }}logout" title='{{ i18n "menu.logout"}}'>
     <a-icon type="logout"></a-icon>
     <span>
         <b>{{ i18n "menu.logout"}}</b>
@@ -45,27 +45,63 @@
 
 
 {{define "commonSider"}}
-<a-layout-sider :theme="themeSwitcher.currentTheme" breakpoint="md" collapsible id="sider">
-    <theme-switch></theme-switch>
-    <a-menu :selected-keys="['{{ .request_uri }}']" :theme="themeSwitcher.currentTheme"
-        @click="({key}) => key.startsWith('http') ? window.open(key) : location.href = key" mode="inline">
-        {{template "menuItems" .}}
-    </a-menu>
+<a-layout-sider :collapsed="siderDrawer.collapsed" :theme="themeSwitcher.currentTheme"
+                @collapse="(collapsed, type) => siderDrawer.setCollapsed(collapsed, type)"
+                breakpoint="md" collapsible id="sider">
+    <div @click="location.href = '{{ .base_path }}panel/'"
+         @keydown.enter="location.href = '{{ .base_path }}panel/'"
+         class="panel-brand" role="link" tabindex="0">
+        <span class="panel-brand-mark"><a-icon type="thunderbolt"></a-icon></span>
+        <span class="panel-brand-copy">
+            <strong>TX-UI</strong>
+            <small>v{{ .cur_ver }}</small>
+        </span>
+    </div>
+    <nav aria-label="Primary navigation" class="panel-navigation">
+        <a-menu :inline-collapsed="siderDrawer.collapsed" :selected-keys="['{{ .request_uri }}']"
+            :theme="themeSwitcher.currentTheme"
+            @click="({key}) => key.startsWith('http') ? window.open(key, '_blank', 'noopener,noreferrer') : location.href = key"
+            mode="inline">
+            {{template "menuItems" .}}
+        </a-menu>
+        <div class="panel-theme-control">
+            <theme-switch :collapsed="siderDrawer.collapsed"></theme-switch>
+        </div>
+    </nav>
 </a-layout-sider>
 <a-drawer :closable="false" :visible="siderDrawer.visible" :wrap-class-name="themeSwitcher.currentTheme"
     :wrap-style="{ padding: 0 }" @close="siderDrawer.close()" id="sider-drawer" placement="left">
-    <div @click="siderDrawer.change()" class="drawer-handle" slot="handle">
+    <div :aria-expanded="siderDrawer.visible.toString()"
+         :aria-label="siderDrawer.visible ? 'Close navigation' : 'Open navigation'"
+         @click="siderDrawer.change()" @keydown.enter="siderDrawer.change()"
+         @keydown.space.prevent="siderDrawer.change()" class="drawer-handle" role="button"
+         slot="handle" tabindex="0">
         <a-icon :type="siderDrawer.visible ? 'close' : 'menu-fold'"></a-icon>
     </div>
-    <theme-switch></theme-switch>
-    <a-menu :selected-keys="['{{ .request_uri }}']" :theme="themeSwitcher.currentTheme"
-        @click="({key}) => key.startsWith('http') ? window.open(key) : location.href = key" mode="inline">
-        {{template "menuItems" .}}
-    </a-menu>
+    <div @click="location.href = '{{ .base_path }}panel/'"
+         @keydown.enter="location.href = '{{ .base_path }}panel/'"
+         class="panel-brand" role="link" tabindex="0">
+        <span class="panel-brand-mark"><a-icon type="thunderbolt"></a-icon></span>
+        <span class="panel-brand-copy">
+            <strong>TX-UI</strong>
+            <small>v{{ .cur_ver }}</small>
+        </span>
+    </div>
+    <nav aria-label="Primary navigation" class="panel-navigation">
+        <a-menu :selected-keys="['{{ .request_uri }}']" :theme="themeSwitcher.currentTheme"
+            @click="({key}) => { siderDrawer.close(); key.startsWith('http') ? window.open(key, '_blank', 'noopener,noreferrer') : location.href = key }"
+            mode="inline">
+            {{template "menuItems" .}}
+        </a-menu>
+        <div class="panel-theme-control">
+            <theme-switch></theme-switch>
+        </div>
+    </nav>
 </a-drawer>
 <script>
     const siderDrawer = {
         visible: false,
+        collapsed: localStorage.getItem('sider-collapsed') === 'true',
         show() {
             this.visible = true;
         },
@@ -74,6 +110,12 @@
         },
         change() {
             this.visible = !this.visible;
+        },
+        setCollapsed(collapsed, type) {
+            this.collapsed = collapsed;
+            if (type !== 'responsive') {
+                localStorage.setItem('sider-collapsed', collapsed.toString());
+            }
         },
     };
 </script>

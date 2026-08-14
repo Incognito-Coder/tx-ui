@@ -82,9 +82,9 @@
                 </transition>
                 <a-space direction="vertical">
                     <a-card hoverable style="margin-bottom: .5rem;">
-                        <a-row style="display: flex; flex-wrap: wrap; align-items: center;">
-                            <a-col :sm="10" :xs="24" style="padding: 4px;">
-                                <a-space direction="horizontal">
+                        <a-row class="panel-toolbar">
+                            <a-col :sm="10" :xs="24" class="panel-toolbar-actions">
+                                <div class="panel-action-row">
                                     <a-button :disabled="saveBtnDisable" @click="updateXraySetting" type="primary">{{
                                         i18n "pages.xray.save" }}
                                     </a-button>
@@ -100,15 +100,15 @@
                                         </template>
                                         <a-icon type="question-circle"></a-icon>
                                     </a-popover>
-                                </a-space>
+                                </div>
                             </a-col>
-                            <a-col :sm="14" :xs="24">
+                            <a-col :sm="14" :xs="24" class="panel-toolbar-notice">
                                 <template>
-                                    <div>
+                                    <div class="panel-toolbar-notice-content">
                                         <a-back-top :target="() => document.getElementById('content-layout')"
                                                     visibility-height="200"></a-back-top>
                                         <a-alert message='{{ i18n "pages.settings.infoDesc" }}' show-icon
-                                                 style="float: right; width: fit-content" type="warning">
+                                                 class="panel-inline-notice" type="warning">
                                         </a-alert>
                                     </div>
                                 </template>
@@ -125,7 +125,7 @@
                                     <a-row :lg="12" :sm="24" :xs="24">
                                         <a-alert style="text-align: center;" type="warning">
                                             <template slot="message">
-                                                <a-icon style="color: #FFA031" theme="filled"
+                                                <a-icon style="color: var(--ui-warning)" theme="filled"
                                                         type="exclamation-circle"></a-icon>
                                                 {{ i18n "pages.xray.generalConfigsDesc" }}
                                             </template>
@@ -182,7 +182,7 @@
                                     <a-row :lg="12" :sm="24" :xs="24">
                                         <a-alert style="text-align: center;" type="warning">
                                             <template slot="message">
-                                                <a-icon style="color: #FFA031" theme="filled"
+                                                <a-icon style="color: var(--ui-warning)" theme="filled"
                                                         type="exclamation-circle"></a-icon>
                                                 {{ i18n "pages.xray.logConfigsDesc" }}
                                             </template>
@@ -271,7 +271,7 @@
                                     <a-row :lg="12" :sm="24" :xs="24">
                                         <a-alert style="text-align: center;" type="warning">
                                             <template slot="message">
-                                                <a-icon style="color: #FFA031" theme="filled"
+                                                <a-icon style="color: var(--ui-warning)" theme="filled"
                                                         type="exclamation-circle"></a-icon>
                                                 {{ i18n "pages.xray.blockConfigsDesc" }}
                                             </template>
@@ -292,7 +292,7 @@
                                     <a-row :xs="24" :sm="24" :lg="12">
                                         <a-alert type="warning" style="text-align: center;">
                                             <template slot="message">
-                                                <a-icon type="exclamation-circle" theme="filled" style="color: #FFA031"></a-icon>
+                                                <a-icon type="exclamation-circle" theme="filled" style="color: var(--ui-warning)"></a-icon>
                                                 {{ i18n "pages.xray.metrics.desc" }}
                                             </template>
                                         </a-alert>
@@ -307,7 +307,7 @@
                                     <a-row :lg="12" :sm="24" :xs="24">
                                         <a-alert style="text-align: center;" type="warning">
                                             <template slot="message">
-                                                <a-icon style="color: #FFA031" theme="filled"
+                                                <a-icon style="color: var(--ui-warning)" theme="filled"
                                                         type="exclamation-circle"></a-icon>
                                                 {{ i18n "pages.xray.blockConnectionsConfigsDesc" }}
                                             </template>
@@ -357,7 +357,7 @@
                                     <a-row :lg="12" :sm="24" :xs="24">
                                         <a-alert style="text-align: center; margin-top: 20px;" type="warning">
                                             <template slot="message">
-                                                <a-icon style="color: #FFA031" theme="filled"
+                                                <a-icon style="color: var(--ui-warning)" theme="filled"
                                                         type="exclamation-circle"></a-icon>
                                                 {{ i18n "pages.xray.directConnectionsConfigsDesc" }}
                                             </template>
@@ -408,7 +408,7 @@
                                     <a-row :lg="12" :sm="24" :xs="24">
                                         <a-alert style="text-align: center; margin-top: 20px;" type="warning">
                                             <template slot="message">
-                                                <a-icon style="color: #FFA031" theme="filled"
+                                                <a-icon style="color: var(--ui-warning)" theme="filled"
                                                         type="exclamation-circle"></a-icon>
                                                 {{ i18n "pages.xray.ipv4RoutingDesc" }}
                                             </template>
@@ -438,7 +438,7 @@
                                     <a-row :lg="12" :sm="24" :xs="24">
                                         <a-alert style="text-align: center; margin-top: 20px;" type="warning">
                                             <template slot="message">
-                                                <a-icon style="color: #FFA031" theme="filled"
+                                                <a-icon style="color: var(--ui-warning)" theme="filled"
                                                         type="exclamation-circle"></a-icon>
                                                 {{ i18n "pages.xray.warpRoutingDesc" }}
                                             </template>
@@ -483,16 +483,18 @@
                                 </a-collapse-panel>
                             </a-collapse>
                         </a-tab-pane>
-                        <a-tab-pane key="tpl-routing" style="padding-top: 20px;" tab='{{ i18n "pages.xray.Routings"}}'>
-                            <a-button @click="addRule" icon="plus" type="primary">{{ i18n "pages.xray.rules.add" }}
-                            </a-button>
+                        <a-tab-pane class="xray-table-pane" key="tpl-routing" tab='{{ i18n "pages.xray.Routings"}}'>
+                            <div class="xray-table-actions">
+                                <a-button @click="addRule" icon="plus" type="primary">{{ i18n "pages.xray.rules.add" }}
+                                </a-button>
+                            </div>
                             <a-table-sortable :columns="isMobile ? rulesMobileColumns : rulesColumns"
-                                              :data-source="routingRuleData"
+                                               class="xray-data-table"
+                                               :data-source="routingRuleData"
                                               :indent-size="0"
                                               :pagination="false"
                                               :row-key="r => r.key"
-                                              :scroll="isMobile ? {} : { x: 1000 }"
-                                              :style="isMobile ? 'padding: 5px 0' : 'margin-top: 10px;'"
+                                               :scroll="{ x: isMobile ? 720 : 1000 }"
                                               bordered
                                               v-on:onSort="replaceRule">
                                 <template slot="action" slot-scope="text, rule, index">
@@ -526,7 +528,7 @@
                                                 {{ i18n "edit" }}
                                             </a-menu-item>
                                             <a-menu-item @click="deleteRule(index)">
-                          <span style="color: #FF4D4F">
+                          <span style="color: var(--ui-danger)">
                             <a-icon type="delete"></a-icon> {{ i18n "delete"}}
                           </span>
                                             </a-menu-item>
@@ -649,19 +651,17 @@
                                 </template>
                             </a-table-sortable>
                         </a-tab-pane>
-                        <a-tab-pane force-render="true" key="tpl-outbound" style="padding-top: 20px;"
+                        <a-tab-pane class="xray-table-pane" force-render="true" key="tpl-outbound"
                                     tab='{{ i18n "pages.xray.Outbounds"}}'>
-                            <a-row>
-                                <a-col :lg="12" :sm="12" :xs="12">
-                                    <a-button @click="addOutbound()" icon="plus" style="margin-bottom: 10px;"
-                                              type="primary">
+                            <a-row class="xray-table-actions">
+                                <a-col :lg="12" :sm="12" :xs="12" class="xray-table-action-buttons">
+                                    <a-button @click="addOutbound()" icon="plus" type="primary">
                                         {{ i18n "pages.xray.outbound.addOutbound" }}
                                     </a-button>
-                                    <a-button @click="showWarp()" icon="cloud" style="margin-bottom: 10px;"
-                                              type="primary">WARP
+                                    <a-button @click="showWarp()" icon="cloud" type="primary">WARP
                                     </a-button>
                                 </a-col>
-                                <a-col :lg="12" :sm="12" :xs="12" style="text-align: right;">
+                                <a-col :lg="12" :sm="12" :xs="12" class="xray-table-tools">
                                     <a-icon :spin="refreshing" @click="refreshOutboundTraffic()" style="margin: 0 5px;"
                                             type="sync"></a-icon>
                                     <a-popconfirm :overlay-class-name="themeSwitcher.currentTheme"
@@ -670,19 +670,18 @@
                                                   ok-text='{{ i18n "reset"}}'
                                                   placement="topRight"
                                                   title='{{ i18n "pages.inbounds.resetTrafficContent"}}'>
-                                        <a-icon :style="themeSwitcher.isDarkTheme ? 'color: #1890ff' : 'color: #1890ff'"
+                                        <a-icon style="color: var(--ui-primary)"
                                                 slot="icon"
                                                 type="question-circle-o"></a-icon>
-                                        <a-icon style="cursor: pointer;" type="retweet"></a-icon>
+                                        <a-icon style="cursor: pointer; margin: 0 5px;" type="retweet"></a-icon>
                                     </a-popconfirm>
                                 </a-col>
                             </a-row>
-                            <a-table :columns="outboundColumns" :data-source="outboundData"
+                            <a-table :columns="outboundColumns" :data-source="outboundData" class="xray-data-table"
                                      :indent-size="0"
                                      :pagination="false"
                                      :row-key="r => r.key"
-                                     :scroll="isMobile ? {} : { x: 800 }"
-                                     :style="isMobile ? 'padding: 5px 5px' : 'margin-right: 1px;'"
+                                     :scroll="{ x: isMobile ? 680 : 800 }"
                                      bordered>
                                 <template slot="action" slot-scope="text, outbound, index">
                                     [[ index+1 ]]
@@ -705,7 +704,7 @@
                           </span>
                                             </a-menu-item>
                                             <a-menu-item @click="deleteOutbound(index)">
-                          <span style="color: #FF4D4F">
+                          <span style="color: var(--ui-danger)">
                             <a-icon type="delete"></a-icon> {{ i18n "delete"}}
                           </span>
                                             </a-menu-item>
@@ -773,16 +772,17 @@
                                 </template>
                             </a-table>
                         </a-tab-pane>
-                        <a-tab-pane force-render="true" key="tpl-balancer" style="padding-top: 20px;"
+                        <a-tab-pane class="xray-table-pane" force-render="true" key="tpl-balancer"
                                     tab='{{ i18n "pages.xray.Balancers"}}'>
-                            <a-button @click="addBalancer()" icon="plus" style="margin-bottom: 10px;" type="primary">
-                                {{ i18n "pages.xray.balancer.addBalancer"}}
-                            </a-button>
-                            <a-table :columns="balancerColumns" :data-source="balancersData" :indent-size="0"
+                            <div class="xray-table-actions">
+                                <a-button @click="addBalancer()" icon="plus" type="primary">
+                                    {{ i18n "pages.xray.balancer.addBalancer"}}
+                                </a-button>
+                            </div>
+                            <a-table :columns="balancerColumns" :data-source="balancersData" :indent-size="0" class="xray-data-table"
                                      :pagination="false"
                                      :row-key="r => r.key"
-                                     :scroll="isMobile ? {} : { x: 200 }"
-                                     :style="isMobile ? 'padding: 5px 0' : 'margin-left: 1px;'"
+                                     :scroll="{ x: isMobile ? 480 : 200 }"
                                      bordered
                                      v-if="balancersData.length>0">
                                 <template slot="action" slot-scope="text, balancer, index">
@@ -797,7 +797,7 @@
                                                 {{ i18n "edit" }}
                                             </a-menu-item>
                                             <a-menu-item @click="deleteBalancer(index)">
-                          <span style="color: #FF4D4F">
+                          <span style="color: var(--ui-danger)">
                             <a-icon type="delete"></a-icon> {{ i18n "delete"}}
                           </span>
                                             </a-menu-item>
@@ -838,7 +838,7 @@
                             </a-radio-group>
                             <textarea id="obsSetting" style="position:absolute; left: -800px;"></textarea>
                         </a-tab-pane>
-                        <a-tab-pane force-render="true" key="tpl-dns" style="padding-top: 20px;" tab='DNS'>
+                        <a-tab-pane class="xray-table-pane" force-render="true" key="tpl-dns" tab='DNS'>
                             <setting-list-item desc='{{ i18n "pages.xray.dns.enableDesc" }}'
                                                title='{{ i18n "pages.xray.dns.enable" }}'
                                                type="switch"
@@ -883,14 +883,13 @@
                                                    type="switch"
                                                    v-model="dnsUseSystemHosts"></setting-list-item>
                                 <a-divider>DNS</a-divider>
-                                <a-button @click="addDNSServer()" icon="plus" style="margin-bottom: 10px;"
+                                <a-button @click="addDNSServer()" class="xray-section-action" icon="plus"
                                           type="primary">{{ i18n
                                     "pages.xray.dns.add" }}
                                 </a-button>
-                                <a-table :columns="dnsColumns" :data-source="dnsServers" :indent-size="0"
+                                <a-table :columns="dnsColumns" :data-source="dnsServers" :indent-size="0" class="xray-data-table"
                                          :pagination="false"
-                                         :row-key="r => r.key" :scroll="isMobile ? {} : { x: 200 }"
-                                         :style="isMobile ? 'padding: 5px 0' : 'margin-left: 1px;'" bordered
+                                         :row-key="r => r.key" :scroll="{ x: isMobile ? 620 : 200 }" bordered
                                          v-if="dnsServers.length>0">
                                     <template slot="action" slot-scope="text,dns,index">
                                         [[ index+1 ]]
@@ -904,7 +903,7 @@
                                                     {{ i18n "edit" }}
                                                 </a-menu-item>
                                                 <a-menu-item @click="deleteDNSServer(index)">
-                                        <span style="color: #FF4D4F">
+                                        <span style="color: var(--ui-danger)">
                                             <a-icon type="delete"></a-icon> {{ i18n "delete"}}
                                         </span>
                                                 </a-menu-item>
@@ -923,14 +922,13 @@
                                     </template>
                                 </a-table>
                                 <a-divider>Fake DNS</a-divider>
-                                <a-button @click="addFakedns()" icon="plus" style="margin-bottom: 10px;" type="primary">
+                                <a-button @click="addFakedns()" class="xray-section-action" icon="plus" type="primary">
                                     {{ i18n
                                     "pages.xray.fakedns.add" }}
                                 </a-button>
-                                <a-table :columns="fakednsColumns" :data-source="fakeDns" :indent-size="0"
+                                <a-table :columns="fakednsColumns" :data-source="fakeDns" :indent-size="0" class="xray-data-table"
                                          :pagination="false"
-                                         :row-key="r => r.key" :scroll="isMobile ? {} : { x: 200 }"
-                                         :style="isMobile ? 'padding: 5px 0' : 'margin-left: 1px;'"
+                                         :row-key="r => r.key" :scroll="{ x: isMobile ? 480 : 200 }"
                                          bordered
                                          v-if="fakeDns && fakeDns.length>0">
                                     <template slot="action" slot-scope="text,fakedns,index">
@@ -945,7 +943,7 @@
                                                     {{ i18n "edit" }}
                                                 </a-menu-item>
                                                 <a-menu-item @click="deleteFakedns(index)">
-                                        <span style="color: #FF4D4F">
+                                        <span style="color: var(--ui-danger)">
                                             <a-icon type="delete"></a-icon> {{ i18n "delete"}}
                                         </span>
                                                 </a-menu-item>
@@ -988,12 +986,12 @@
                                 </a-space>
                             </template>
                         </a-tab-pane>
-                        <a-tab-pane force-render="true" key="tpl-advanced"
-                                    style="padding-top: 20px;" tab='{{ i18n "pages.xray.advancedTemplate"}}'>
+                        <a-tab-pane class="xray-advanced-pane" force-render="true" key="tpl-advanced"
+                                    tab='{{ i18n "pages.xray.advancedTemplate"}}'>
                             <a-list-item-meta description='{{ i18n "pages.xray.TemplateDesc"}}'
                                               title='{{ i18n "pages.xray.Template"}}'></a-list-item-meta>
                             <a-radio-group :size="isMobile ? 'small' : ''" @change="changeCode" button-style="solid"
-                                           style="margin: 10px 0;" v-model="advSettings">
+                                           class="xray-advanced-modes" v-model="advSettings">
                                 <a-radio-button value="xraySetting">{{ i18n "pages.xray.completeTemplate"}}
                                 </a-radio-button>
                                 <a-radio-button value="inboundSettings">{{ i18n "pages.xray.Inbounds" }}

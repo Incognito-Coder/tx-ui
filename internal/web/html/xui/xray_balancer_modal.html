@@ -10,7 +10,8 @@
         @ok="balancerModal.ok"
         cancel-text='{{ i18n "close" }}'
         id="balancer-modal"
-        v-model="balancerModal.visible">
+        v-model="balancerModal.visible"
+        wrap-class-name="panel-modal panel-modal-md">
     <a-form :colon="false" :label-col="{ md: {span:8} }" :wrapper-col="{ md: {span:14} }">
         <a-form-item :validate-status="balancerModal.duplicateTag? 'warning' : 'success'" has-feedback
                      label='{{ i18n "pages.xray.balancer.tag" }}'>

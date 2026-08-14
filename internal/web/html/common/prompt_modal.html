@@ -2,7 +2,8 @@
 <a-modal :class="themeSwitcher.currentTheme" :closable="true" :confirm-loading="promptModal.confirmLoading"
          :mask-closable="false" :ok-text="promptModal.okText" :title="promptModal.title"
          @ok="promptModal.ok"
-         cancel-text='{{ i18n "cancel" }}' id="prompt-modal" v-model="promptModal.visible">
+         cancel-text='{{ i18n "cancel" }}' id="prompt-modal" v-model="promptModal.visible"
+         wrap-class-name="panel-modal panel-modal-md">
     <a-input :autosize="{minRows: 10, maxRows: 20}" :type="promptModal.type"
              @keydown.ctrl.83="promptModal.ctrlS"
              @keydown.enter.native="promptModal.keyEnter"

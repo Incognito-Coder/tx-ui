@@ -1,7 +1,7 @@
 {{define "textModal"}}
 <a-modal :class="themeSwitcher.currentTheme" :closable="true" :title="txtModal.title"
          id="text-modal"
-         v-model="txtModal.visible">
+         v-model="txtModal.visible" wrap-class-name="panel-modal panel-modal-lg">
     <template slot="footer">
         <a-button :download="txtModal.fileName" :href="'data:application/text;charset=utf-8,' + encodeURIComponent(txtModal.content)"
                   icon="download"

@@ -1,7 +1,9 @@
 {{define "inboundModal"}}
 <a-modal :class="themeSwitcher.currentTheme" :closable="true" :confirm-loading="inModal.confirmLoading" :dialog-style="{ top: '20px' }"
-         :mask-closable="false" :ok-text="inModal.okText" :title="inModal.title" @ok="inModal.ok"
-         cancel-text='{{ i18n "close" }}' id="inbound-modal" v-model="inModal.visible">
+         :mask-closable="false" :ok-button-props="{ props: { disabled: !inModal.isValid } }"
+         :ok-text="inModal.okText" :title="inModal.title" @cancel="inModal.close" @ok="inModal.ok"
+         cancel-text='{{ i18n "close" }}' id="inbound-modal" v-model="inModal.visible"
+         wrap-class-name="panel-modal panel-modal-xl">
     {{template "form/inbound"}}
 </a-modal>
 <script>
@@ -15,8 +17,31 @@
         confirm: null,
         inbound: new Inbound(),
         dbInbound: new DBInbound(),
+        activeKey: 'form',
+        cm: null,
+        isValid: true,
+        cmOptions: {
+            lineNumbers: true,
+            mode: 'application/json',
+            theme: 'xq',
+            lint: true,
+            lineWrapping: true,
+            styleActiveLine: true,
+            matchBrackets: true,
+            smartIndent: true,
+            tabSize: 2,
+            lineWiseCopyCut: false,
+            foldGutter: true,
+            gutters: [
+                'CodeMirror-lint-markers',
+                'CodeMirror-linenumbers',
+                'CodeMirror-foldgutter',
+            ],
+        },
         ok() {
-            ObjectUtil.execute(inModal.confirm, inModal.inbound, inModal.dbInbound);
+            if (inModal.isValid) {
+                ObjectUtil.execute(inModal.confirm, inModal.inbound, inModal.dbInbound);
+            }
         },
         show({
                  title = '',
@@ -27,6 +52,7 @@
                  },
                  isEdit = false
              }) {
+            this.destroyEditor();
             this.title = title;
             this.okText = okText;
             if (inbound) {
@@ -40,15 +66,56 @@
                 this.dbInbound = new DBInbound();
             }
             this.confirm = confirm;
+            this.activeKey = 'form';
+            this.isValid = true;
             this.visible = true;
             this.isEdit = isEdit;
         },
         close() {
+            inModal.destroyEditor();
             inModal.visible = false;
             inModal.loading(false);
         },
         loading(loading = true) {
             inModal.confirmLoading = loading;
+        },
+        destroyEditor() {
+            if (this.cm != null) {
+                this.cm.toTextArea();
+                this.cm = null;
+            }
+        },
+        toggleJson(jsonTab) {
+            this.destroyEditor();
+            if (!jsonTab) {
+                this.activeKey = 'form';
+                this.isValid = true;
+                return;
+            }
+
+            const textArea = document.getElementById('inboundJson');
+            textArea.value = JSON.stringify(this.inbound.toJson(), null, 2);
+            this.cm = CodeMirror.fromTextArea(textArea, this.cmOptions);
+            this.cm.on('change', editor => this.applyJson(editor.getValue()));
+            this.activeKey = 'json';
+            this.isValid = true;
+            Vue.nextTick(() => {
+                if (this.cm != null) this.cm.refresh();
+            });
+        },
+        applyJson(value) {
+            try {
+                const json = JSON.parse(value);
+                if (json == null || Array.isArray(json) || typeof json !== 'object' ||
+                    !Object.values(Protocols).includes(json.protocol)) {
+                    this.isValid = false;
+                    return;
+                }
+                this.inbound = Inbound.fromJson(json);
+                this.isValid = true;
+            } catch (error) {
+                this.isValid = false;
+            }
         },
     };
 

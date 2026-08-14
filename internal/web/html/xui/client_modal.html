@@ -2,7 +2,7 @@
 <a-modal :class="themeSwitcher.currentTheme" :closable="true" :confirm-loading="clientModal.confirmLoading" :mask-closable="false"
          :ok-text="clientModal.okText" :title="clientModal.title" @ok="clientModal.ok"
          cancel-text='{{ i18n "close" }}'
-         id="client-modal" v-model="clientModal.visible">
+         id="client-modal" v-model="clientModal.visible" wrap-class-name="panel-modal panel-modal-lg">
     <template v-if="isEdit">
         <a-tag color="red" style="margin-bottom: 10px;display: block;text-align: center;"
                v-if="isExpiry || isTrafficExhausted">Account is (Expired|Traffic Ended) And

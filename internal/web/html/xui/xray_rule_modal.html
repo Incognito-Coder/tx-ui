@@ -1,7 +1,7 @@
 {{define "ruleModal"}}
 <a-modal :class="themeSwitcher.currentTheme" :closable="true" :confirm-loading="ruleModal.confirmLoading" :mask-closable="false"
          :ok-text="ruleModal.okText" :title="ruleModal.title" @ok="ruleModal.ok" cancel-text='{{ i18n "close" }}'
-         id="rule-modal" v-model="ruleModal.visible">
+         id="rule-modal" v-model="ruleModal.visible" wrap-class-name="panel-modal panel-modal-lg">
     <a-form :colon="false" :label-col="{ md: {span:8} }" :wrapper-col="{ md: {span:14} }">
         <a-form-item>
             <template slot="label">

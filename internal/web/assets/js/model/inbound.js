@@ -1517,8 +1517,6 @@ class Inbound extends XrayCommonClass {
     }
 
     isExpiry(index) {
-        console.log("isExpiry called with index:", index);
-        console.log("this.clients:", this.clients);
         if (!this.clients || index < 0 || index >= this.clients.length || !this.clients[index]) {
             return false;
         }

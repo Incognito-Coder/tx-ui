@@ -99,25 +99,24 @@
                 </transition>
                 <a-space direction="vertical">
                     <a-card hoverable style="margin-bottom: .5rem; overflow-x: hidden;">
-                        <a-row style="display: flex; flex-wrap: wrap; align-items: center;">
-                            <a-col :sm="10" :xs="24" style="padding: 4px;">
-                                <a-space direction="horizontal">
+                        <a-row class="panel-toolbar">
+                            <a-col :sm="10" :xs="24" class="panel-toolbar-actions">
+                                <div class="panel-action-row">
                                     <a-button :disabled="saveBtnDisable" @click="updateAllSetting" type="primary">{{
                                         i18n "pages.settings.save" }}
                                     </a-button>
                                     <a-button :disabled="!saveBtnDisable" @click="restartPanel" type="danger">{{ i18n
                                         "pages.settings.restartPanel" }}
                                     </a-button>
-                                </a-space>
+                                </div>
                             </a-col>
-                            <a-col :sm="14" :xs="24">
+                            <a-col :sm="14" :xs="24" class="panel-toolbar-notice">
                                 <template>
-                                    <div>
+                                    <div class="panel-toolbar-notice-content">
                                         <a-back-top :target="() => document.getElementById('content-layout')"
                                                     visibility-height="200"></a-back-top>
                                         <a-alert message='{{ i18n "pages.settings.infoDesc" }}' show-icon
-                                                 style="float: right; width: fit-content"
-                                                 type="warning">
+                                                 class="panel-inline-notice" type="warning">
                                         </a-alert>
                                     </div>
                                 </template>

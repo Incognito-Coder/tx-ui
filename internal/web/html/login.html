@@ -13,14 +13,26 @@
         height: 110px;
     }
 
-    .ant-btn,
-    .ant-input {
+    #login .ant-btn,
+    #login .ant-input {
         height: 50px;
-        border-radius: 30px;
+        border-radius: 12px;
     }
 
-    .ant-input-group-addon {
-        border-radius: 0 30px 30px 0;
+    #login .ant-input-group .ant-input {
+        border-radius: 12px 0 0 12px;
+        border-start-start-radius: 12px;
+        border-end-start-radius: 12px;
+        border-start-end-radius: 0;
+        border-end-end-radius: 0;
+    }
+
+    #login .ant-input-group-addon {
+        border-radius: 0 12px 12px 0;
+        border-start-start-radius: 0;
+        border-end-start-radius: 0;
+        border-start-end-radius: 12px;
+        border-end-end-radius: 12px;
         width: 50px;
         font-size: 18px;
     }
@@ -56,7 +68,7 @@
     #login {
         animation: charge 0.5s both;
         background-color: #fff;
-        border-radius: 2rem;
+        border-radius: 15px;
         padding: 3rem;
         transition: all 0.3s;
         user-select: none;
@@ -109,17 +121,7 @@
         color: #fff;
         background-color: #006655;
         border-color: #006655;
-        background-image: linear-gradient(
-                270deg,
-                rgba(123, 199, 77, 0) 30%,
-                #009980,
-                rgba(123, 199, 77, 0) 100%
-        );
-        background-repeat: no-repeat;
-        animation: ma-bg-move ease-in-out 5s infinite;
-        background-position-x: -500px;
         width: 95%;
-        animation-delay: -0.5s;
         box-shadow: 0 2px 0 rgba(0, 0, 0, 0.045);
     }
 
@@ -144,7 +146,7 @@
 
     .wave-btn-bg {
         position: relative;
-        border-radius: 25px;
+        border-radius: 12px;
         width: 100%;
         transition: all 0.3s cubic-bezier(.645, .045, .355, 1);
     }
@@ -166,9 +168,8 @@
     }
 
     .dark .wave-btn-bg-cl {
-        background-image: linear-gradient(rgba(13, 14, 33, 0), rgba(13, 14, 33, 0)),
-        radial-gradient(circle at left top, #006655, #009980, #006655) !important;
-        border-radius: 3em;
+        background: #006655;
+        border-radius: 12px;
     }
 
     .dark .wave-btn-bg-cl:hover {
@@ -185,14 +186,13 @@
         z-index: -1;
         background: inherit;
         background-size: inherit;
-        border-radius: 4em;
+        border-radius: 14px;
         opacity: 0;
         transition: 0.5s;
     }
 
     .dark .wave-btn-bg-cl:hover::before {
         opacity: 1;
-        filter: blur(20px);
         animation: wave-btn-tara 8s linear infinite;
     }
 
@@ -206,14 +206,10 @@
         font-size: 14px;
         color: #fff;
         text-align: center;
-        background-image: linear-gradient(
-                rgba(13, 14, 33, 0.45),
-                rgba(13, 14, 33, 0.35)
-        );
-        border-radius: 2rem;
+        background: #0d5f52;
+        border-radius: 12px;
         border: none;
         outline: none;
-        background-color: transparent;
         height: 46px;
         position: relative;
         white-space: nowrap;
@@ -518,7 +514,7 @@
                                                       v-model="lang">
                                                 <a-select-option :value="l.value" label="English"
                                                                  v-for="l in supportLangs">
-                                                    <span aria-label="l.name" role="img" v-text="l.icon"></span>
+                                                    <span :aria-label="l.name" role="img" v-text="l.icon"></span>
                                                     &nbsp;&nbsp;<span v-text="l.name"></span>
                                                 </a-select-option>
                                             </a-select>

@@ -1,4 +1,7 @@
 {{define "form/inbound"}}
+<a-tabs :active-key="inModal.activeKey" @change="activeKey => inModal.toggleJson(activeKey === 'json')"
+        class="inbound-editor-tabs">
+<a-tab-pane key="form" tab="Form">
 <!-- base -->
 <a-form :colon="false" :label-col="{ md: {span:8} }" :wrapper-col="{ md: {span:14} }">
     <a-form-item label='{{ i18n "enable" }}'>
@@ -130,5 +133,11 @@
         {{template "form/sniffing"}}
     </a-collapse-panel>
 </a-collapse>
+</a-tab-pane>
+<a-tab-pane :class="{ 'inbound-json-invalid': !inModal.isValid }"
+            class="inbound-json-pane" force-render="true" key="json" tab="JSON">
+    <textarea id="inboundJson" style="position:absolute; left: -800px;"></textarea>
+</a-tab-pane>
+</a-tabs>
 
 {{end}}
