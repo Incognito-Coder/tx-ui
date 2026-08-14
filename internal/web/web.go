@@ -268,11 +268,13 @@ func (s *Server) startTask() {
 		}
 	})
 
-	go func() {
-		time.Sleep(time.Second * 5)
-		// Statistics every 10 seconds, start the delay for 5 seconds for the first time, and staggered with the time to restart xray
-		s.cron.AddJob("@every 10s", job.NewXrayTrafficJob())
-	}()
+	// Check traffic frequently so exhausted clients are disabled with minimal
+	// overage. Skip overlapping runs because Xray traffic counters are reset
+	// after each successful collection.
+	trafficJob := cron.SkipIfStillRunning(cron.DefaultLogger)(job.NewXrayTrafficJob())
+	if _, err := s.cron.AddJob("@every 1s", trafficJob); err != nil {
+		logger.Warning("Failed to schedule Xray traffic job:", err)
+	}
 
 	// check and restart core as user defined hour
 	xRayCronJob, err := s.settingService.GetXrayRebootTime()

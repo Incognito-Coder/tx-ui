@@ -1481,6 +1481,12 @@ func (s *InboundService) disableInvalidClients(tx *gorm.DB) (bool, int64, error)
 	if err != nil {
 		return needRestart, count, err
 	}
+	if count > 0 {
+		// Removing credentials prevents new authentication, but Xray does not
+		// expose an API for closing this user's existing connections. Restart the
+		// core immediately so an exhausted client cannot keep transferring data.
+		needRestart = true
+	}
 
 	// Disable exhausted/expired NodeClients
 	ncChanged, err := s.nodeClientService.DisableExhausted(tx)
