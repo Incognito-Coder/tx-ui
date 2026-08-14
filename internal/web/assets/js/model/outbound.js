@@ -83,8 +83,6 @@ const USERS_SECURITY = {
     AES_128_GCM: "aes-128-gcm",
     CHACHA20_POLY1305: "chacha20-poly1305",
     AUTO: "auto",
-    NONE: "none",
-    ZERO: "zero",
 };
 
 const MODE_OPTION = {
@@ -347,8 +345,8 @@ class xHTTPStreamSettings extends CommonClass {
         noGRPCHeader = false,
         scMinPostsIntervalMs = "30",
         xmux = {
-            maxConcurrency: "16-32",
-            maxConnections: 0,
+            maxConcurrency: 0,
+            maxConnections: 3,
             cMaxReuseTimes: 0,
             hMaxRequestTimes: "600-900",
             hMaxReusableSecs: "1800-3000",
@@ -615,18 +613,63 @@ class UdpMask extends CommonClass {
     }
 }
 
-class FinalMaskStreamSettings extends CommonClass {
-    constructor(udp = []) {
+class TcpMask extends CommonClass {
+    constructor(type = 'xmc', settings = {}) {
         super();
+        this.type = type;
+        this.settings = this._getDefaultSettings(type, settings);
+    }
+
+    static fromJson(json = {}) {
+        return new TcpMask(json.type || 'xmc', json.settings || {});
+    }
+
+    _getDefaultSettings(type, settings = {}) {
+        if (type !== 'xmc') return settings;
+        return {
+            hostname: settings.hostname || '',
+            password: settings.password || '',
+            profiles: Array.isArray(settings.profiles) ? settings.profiles.map(profile => ({
+                username: profile.username || '',
+                uuid: profile.uuid || '',
+                texturesValue: profile.texturesValue || '',
+                texturesSignature: profile.texturesSignature || '',
+            })) : [],
+        };
+    }
+
+    addProfile() {
+        this.settings.profiles.push({
+            username: '',
+            uuid: RandomUtil.randomUUID(),
+            texturesValue: '',
+            texturesSignature: '',
+        });
+    }
+
+    delProfile(index) {
+        this.settings.profiles.splice(index, 1);
+    }
+
+    toJson() {
+        return {type: this.type, settings: this.settings};
+    }
+}
+
+class FinalMaskStreamSettings extends CommonClass {
+    constructor(tcp = [], udp = []) {
+        super();
+        this.tcp = Array.isArray(tcp) ? tcp.map(mask => TcpMask.fromJson(mask)) : [];
         this.udp = Array.isArray(udp) ? udp.map(u => new UdpMask(u.type, u.settings)) : [new UdpMask(udp.type, udp.settings)];
     }
 
     static fromJson(json = {}) {
-        return new FinalMaskStreamSettings(json.udp || []);
+        return new FinalMaskStreamSettings(json.tcp || [], json.udp || []);
     }
 
-    toJson() {
+    toJson(includeTcp = true) {
         return {
+            tcp: includeTcp ? this.tcp.map(mask => mask.toJson()) : undefined,
             udp: this.udp.map(udp => udp.toJson())
         };
 
@@ -754,7 +797,8 @@ class StreamSettings extends CommonClass {
     }
 
     get hasFinalMask() {
-        return this.finalmask.udp && this.finalmask.udp.length > 0;
+        return (this.finalmask.tcp && this.finalmask.tcp.length > 0) ||
+            (this.finalmask.udp && this.finalmask.udp.length > 0);
     }
 
     get isTls() {
@@ -801,8 +845,22 @@ class StreamSettings extends CommonClass {
         }
     }
 
+    addTcpMask(type = 'xmc') {
+        const mask = new TcpMask(type);
+        mask.addProfile();
+        this.finalmask.tcp.push(mask);
+    }
+
+    delTcpMask(index) {
+        if (this.finalmask.tcp) {
+            this.finalmask.tcp.splice(index, 1);
+        }
+    }
+
     toJson() {
         const network = this.network;
+        const finalMaskEnabled = (this.finalmask.udp && this.finalmask.udp.length > 0) ||
+            (!['kcp', 'hysteria'].includes(network) && this.finalmask.tcp && this.finalmask.tcp.length > 0);
         return {
             network: network,
             security: this.security,
@@ -815,7 +873,7 @@ class StreamSettings extends CommonClass {
             httpupgradeSettings: network === 'httpupgrade' ? this.httpupgrade.toJson() : undefined,
             xhttpSettings: network === 'xhttp' ? this.xhttp.toJson() : undefined,
             hysteriaSettings: network === 'hysteria' ? this.hysteria.toJson() : undefined,
-            finalmask: this.hasFinalMask ? this.finalmask.toJson() : undefined,
+            finalmask: finalMaskEnabled ? this.finalmask.toJson(!['kcp', 'hysteria'].includes(network)) : undefined,
             sockopt: this.sockopt != undefined ? this.sockopt.toJson() : undefined,
         };
     }
@@ -1389,7 +1447,7 @@ Outbound.VmessSettings = class extends CommonClass {
         this.address = address;
         this.port = port;
         this.id = id;
-        this.security = security;
+        this.security = ['none', 'zero', 'plain'].includes(security) ? USERS_SECURITY.AUTO : (security || USERS_SECURITY.AUTO);
     }
 
     static fromJson(json = {}) {

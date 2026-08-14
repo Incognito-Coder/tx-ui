@@ -1,4 +1,5 @@
 {
+  "env": {},
   "log": {
     "access": "none",
     "dnsLog": false,

@@ -492,7 +492,7 @@
 "domainStrategy" = "Alan Adı Stratejisi"
 
 [pages.xray.tun]
-"nameDesc" = "TUN arabiriminin adı. Varsayılan değer 'xray0'dir"
+"nameDesc" = "TUN arabiriminin adı. Kullanılabilir bir 'utunN' adını otomatik seçmek için boş bırakın"
 "mtuDesc" = "Maksimum İletim Birimi. Veri paketlerinin maksimum boyutu. Varsayılan değer 1500'dür"
 "userLevel" = "Kullanıcı Seviyesi"
 "userLevelDesc" = "Bu giriş yoluyla yapılan tüm bağlantılar bu kullanıcı seviyesini kullanacaktır. Varsayılan değer 0'dır"

@@ -107,8 +107,6 @@ const USERS_SECURITY = {
     AES_128_GCM: "aes-128-gcm",
     CHACHA20_POLY1305: "chacha20-poly1305",
     AUTO: "auto",
-    NONE: "none",
-    ZERO: "zero",
 };
 
 const MODE_OPTION = {
@@ -1109,18 +1107,63 @@ class UdpMask extends XrayCommonClass {
     }
 }
 
-class FinalMaskStreamSettings extends XrayCommonClass {
-    constructor(udp = []) {
+class TcpMask extends XrayCommonClass {
+    constructor(type = 'xmc', settings = {}) {
         super();
+        this.type = type;
+        this.settings = this._getDefaultSettings(type, settings);
+    }
+
+    static fromJson(json = {}) {
+        return new TcpMask(json.type || 'xmc', json.settings || {});
+    }
+
+    _getDefaultSettings(type, settings = {}) {
+        if (type !== 'xmc') return settings;
+        return {
+            hostname: settings.hostname || '',
+            password: settings.password || '',
+            profiles: Array.isArray(settings.profiles) ? settings.profiles.map(profile => ({
+                username: profile.username || '',
+                uuid: profile.uuid || '',
+                texturesValue: profile.texturesValue || '',
+                texturesSignature: profile.texturesSignature || '',
+            })) : [],
+        };
+    }
+
+    addProfile() {
+        this.settings.profiles.push({
+            username: '',
+            uuid: RandomUtil.randomUUID(),
+            texturesValue: '',
+            texturesSignature: '',
+        });
+    }
+
+    delProfile(index) {
+        this.settings.profiles.splice(index, 1);
+    }
+
+    toJson() {
+        return {type: this.type, settings: this.settings};
+    }
+}
+
+class FinalMaskStreamSettings extends XrayCommonClass {
+    constructor(tcp = [], udp = []) {
+        super();
+        this.tcp = Array.isArray(tcp) ? tcp.map(mask => TcpMask.fromJson(mask)) : [];
         this.udp = Array.isArray(udp) ? udp.map(u => new UdpMask(u.type, u.settings)) : [new UdpMask(udp.type, udp.settings)];
     }
 
     static fromJson(json = {}) {
-        return new FinalMaskStreamSettings(json.udp || []);
+        return new FinalMaskStreamSettings(json.tcp || [], json.udp || []);
     }
 
-    toJson() {
+    toJson(includeTcp = true) {
         return {
+            tcp: includeTcp ? this.tcp.map(mask => mask.toJson()) : undefined,
             udp: this.udp.map(udp => udp.toJson())
         };
 
@@ -1161,7 +1204,8 @@ class StreamSettings extends XrayCommonClass {
     }
 
     get hasFinalMask() {
-        return this.finalmask.udp && this.finalmask.udp.length > 0;
+        return (this.finalmask.tcp && this.finalmask.tcp.length > 0) ||
+            (this.finalmask.udp && this.finalmask.udp.length > 0);
     }
 
     get isTls() {
@@ -1226,8 +1270,22 @@ class StreamSettings extends XrayCommonClass {
         }
     }
 
+    addTcpMask(type = 'xmc') {
+        const mask = new TcpMask(type);
+        mask.addProfile();
+        this.finalmask.tcp.push(mask);
+    }
+
+    delTcpMask(index) {
+        if (this.finalmask.tcp) {
+            this.finalmask.tcp.splice(index, 1);
+        }
+    }
+
     toJson() {
         const network = this.network;
+        const finalMaskEnabled = (this.finalmask.udp && this.finalmask.udp.length > 0) ||
+            (!['kcp', 'hysteria'].includes(network) && this.finalmask.tcp && this.finalmask.tcp.length > 0);
         return {
             network: network,
             security: this.security,
@@ -1241,7 +1299,7 @@ class StreamSettings extends XrayCommonClass {
             httpupgradeSettings: network === 'httpupgrade' ? this.httpupgrade.toJson() : undefined,
             xhttpSettings: network === 'xhttp' ? this.xhttp.toJson() : undefined,
             hysteriaSettings: network === 'hysteria' ? this.hysteria.toJson() : undefined,
-            finalmask: this.hasFinalMask ? this.finalmask.toJson() : undefined,
+            finalmask: finalMaskEnabled ? this.finalmask.toJson(!['kcp', 'hysteria'].includes(network)) : undefined,
             sockopt: this.sockopt != undefined ? this.sockopt.toJson() : undefined,
         };
     }
@@ -2152,7 +2210,7 @@ Inbound.VmessSettings.VMESS = class extends Inbound.ClientBase {
     ) {
         super(email, limitIp, totalGB, expiryTime, enable, tgId, subId, comment, reset, created_at, updated_at);
         this.id = id;
-        this.security = security;
+        this.security = ['none', 'zero', 'plain'].includes(security) ? USERS_SECURITY.AUTO : (security || USERS_SECURITY.AUTO);
     }
 
     static fromJson(json = {}) {
@@ -2629,7 +2687,8 @@ Inbound.WireguardSettings = class extends XrayCommonClass {
         mtu = 1420,
         secretKey = Wireguard.generateKeypair().privateKey,
         peers = [new Inbound.WireguardSettings.Peer()],
-        noKernelTun = false
+        noKernelTun = false,
+        address = [],
     ) {
         super(protocol);
         this.mtu = mtu;
@@ -2637,6 +2696,7 @@ Inbound.WireguardSettings = class extends XrayCommonClass {
         this.pubKey = secretKey.length > 0 ? Wireguard.generateKeypair(secretKey).publicKey : '';
         this.peers = peers;
         this.noKernelTun = noKernelTun;
+        this.address = Array.isArray(address) ? address : [];
     }
 
     static fromJson(json = {}) {
@@ -2644,8 +2704,9 @@ Inbound.WireguardSettings = class extends XrayCommonClass {
             Protocols.WIREGUARD,
             json.mtu,
             json.secretKey,
-            json.peers.map(peer => Inbound.WireguardSettings.Peer.fromJson(peer)),
+            (json.peers || []).map(peer => Inbound.WireguardSettings.Peer.fromJson(peer)),
             json.noKernelTun,
+            json.address || [],
         );
     }
 
@@ -2663,12 +2724,13 @@ Inbound.WireguardSettings = class extends XrayCommonClass {
             secretKey: this.secretKey,
             peers: Inbound.WireguardSettings.Peer.toJsonArray(this.peers),
             noKernelTun: this.noKernelTun,
+            address: this.address.length > 0 ? this.address : undefined,
         };
     }
 };
 
 Inbound.WireguardSettings.Peer = class extends XrayCommonClass {
-    constructor(privateKey, publicKey, psk = '', allowedIPs = ['10.0.0.2/32'], keepAlive = 0) {
+    constructor(privateKey, publicKey, psk = '', allowedIPs = ['10.0.0.2/32'], keepAlive = 0, email = '', level = 0) {
         super();
         this.privateKey = privateKey
         this.publicKey = publicKey;
@@ -2676,11 +2738,14 @@ Inbound.WireguardSettings.Peer = class extends XrayCommonClass {
             [this.publicKey, this.privateKey] = Object.values(Wireguard.generateKeypair())
         }
         this.psk = psk;
+        allowedIPs = Array.isArray(allowedIPs) ? allowedIPs : [];
         allowedIPs.forEach((a, index) => {
             if (a.length > 0 && !a.includes('/')) allowedIPs[index] += '/32';
         })
         this.allowedIPs = allowedIPs;
         this.keepAlive = keepAlive;
+        this.email = email;
+        this.level = level;
     }
 
     static fromJson(json = {}) {
@@ -2689,7 +2754,9 @@ Inbound.WireguardSettings.Peer = class extends XrayCommonClass {
             json.publicKey,
             json.preSharedKey,
             json.allowedIPs,
-            json.keepAlive
+            json.keepAlive,
+            json.email,
+            json.level,
         );
     }
 
@@ -2703,6 +2770,8 @@ Inbound.WireguardSettings.Peer = class extends XrayCommonClass {
             preSharedKey: this.psk.length > 0 ? this.psk : undefined,
             allowedIPs: this.allowedIPs,
             keepAlive: this.keepAlive ?? undefined,
+            email: this.email || undefined,
+            level: this.level || 0,
         };
     }
 };
@@ -2710,30 +2779,50 @@ Inbound.WireguardSettings.Peer = class extends XrayCommonClass {
 Inbound.TunSettings = class extends Inbound.Settings {
     constructor(
         protocol,
-        name = 'xray0',
+        name = '',
+        desc = '',
         mtu = 1500,
-        userLevel = 0
+        userLevel = 0,
+        gateway = [],
+        dns = [],
+        autoSystemRoutingTable = [],
+        autoOutboundsInterface = '',
     ) {
         super(protocol);
         this.name = name;
+        this.desc = desc;
         this.mtu = mtu;
         this.userLevel = userLevel;
+        this.gateway = Array.isArray(gateway) ? gateway : [];
+        this.dns = Array.isArray(dns) ? dns : [];
+        this.autoSystemRoutingTable = Array.isArray(autoSystemRoutingTable) ? autoSystemRoutingTable : [];
+        this.autoOutboundsInterface = autoOutboundsInterface || '';
     }
 
     static fromJson(json = {}) {
         return new Inbound.TunSettings(
             Protocols.TUN,
-            json.name ?? 'xray0',
+            json.name ?? '',
+            json.desc ?? '',
             json.mtu ?? json.MTU ?? 1500,
-            json.userLevel ?? 0
+            json.userLevel ?? 0,
+            json.gateway || [],
+            json.dns || [],
+            json.autoSystemRoutingTable || [],
+            json.autoOutboundsInterface ?? '',
         );
     }
 
     toJson() {
         return {
-            name: this.name || 'xray0',
+            name: this.name || undefined,
+            desc: this.desc || undefined,
             mtu: this.mtu || 1500,
             userLevel: this.userLevel || 0,
+            gateway: this.gateway.length > 0 ? this.gateway : undefined,
+            dns: this.dns.length > 0 ? this.dns : undefined,
+            autoSystemRoutingTable: this.autoSystemRoutingTable.length > 0 ? this.autoSystemRoutingTable : undefined,
+            autoOutboundsInterface: this.autoOutboundsInterface || undefined,
         };
     }
 };

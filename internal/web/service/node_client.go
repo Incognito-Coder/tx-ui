@@ -801,13 +801,43 @@ func (s *NodeClientService) MergeIntoInboundConfig(inboundId int, existingClient
 	// Fetch all NodeClientLinks for this inbound that belong to an enabled NodeClient.
 	// We join node_clients to filter on enable = true in one query.
 	type linkWithNC struct {
-		model.NodeClientLink
-		model.NodeClient
+		LinkFlow   string `gorm:"column:link_flow"`
+		ClientID   int    `gorm:"column:client_id"`
+		Email      string
+		SubID      string
+		UUID       string
+		Password   string
+		Auth       string
+		Security   string
+		ClientFlow string `gorm:"column:client_flow"`
+		TotalGB    int64
+		ExpiryTime int64
+		LimitIP    int
+		TgID       int64
+		Enable     bool
+		Reset      int
+		Comment    string
 	}
 
 	var rows []linkWithNC
 	err := db.Table("node_client_links").
-		Select("node_client_links.*, node_clients.*").
+		Select(`
+			node_client_links.flow AS link_flow,
+			node_clients.id AS client_id,
+			node_clients.email,
+			node_clients.sub_id,
+			node_clients.uuid,
+			node_clients.password,
+			node_clients.auth,
+			node_clients.security,
+			node_clients.flow AS client_flow,
+			node_clients.total_gb,
+			node_clients.expiry_time,
+			node_clients.limit_ip,
+			node_clients.tg_id,
+			node_clients.enable,
+			node_clients.reset,
+			node_clients.comment`).
 		Joins("JOIN node_clients ON node_clients.id = node_client_links.node_client_id").
 		Where("node_client_links.inbound_id = ? AND node_clients.enable = ?", inboundId, true).
 		Scan(&rows).Error
@@ -828,8 +858,24 @@ func (s *NodeClientService) MergeIntoInboundConfig(inboundId int, existingClient
 	copy(merged, existingClients)
 
 	for _, row := range rows {
-		nc := row.NodeClient
-		link := row.NodeClientLink
+		nc := model.NodeClient{
+			Id:         row.ClientID,
+			Email:      row.Email,
+			SubID:      row.SubID,
+			UUID:       row.UUID,
+			Password:   row.Password,
+			Auth:       row.Auth,
+			Security:   row.Security,
+			Flow:       row.ClientFlow,
+			TotalGB:    row.TotalGB,
+			ExpiryTime: row.ExpiryTime,
+			LimitIP:    row.LimitIP,
+			TgID:       row.TgID,
+			Enable:     row.Enable,
+			Reset:      row.Reset,
+			Comment:    row.Comment,
+		}
+		link := model.NodeClientLink{Flow: row.LinkFlow}
 
 		emailKey := strings.ToLower(nc.Email)
 		if _, collision := seenEmails[emailKey]; collision {

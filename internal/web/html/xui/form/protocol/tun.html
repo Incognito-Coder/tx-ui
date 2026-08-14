@@ -10,7 +10,19 @@
                 <a-icon type="question-circle"></a-icon>
             </a-tooltip>
         </template>
-        <a-input placeholder="xray0" v-model.trim="inbound.settings.name"></a-input>
+        <a-input placeholder="utunN (auto)" v-model.trim="inbound.settings.name"></a-input>
+    </a-form-item>
+    <a-form-item>
+        <template slot="label">
+            <a-tooltip>
+                <template slot="title">
+                    <span>Optional Windows adapter description. Empty uses Wintun.</span>
+                </template>
+                Description
+                <a-icon type="question-circle"></a-icon>
+            </a-tooltip>
+        </template>
+        <a-input placeholder="Wintun" v-model.trim="inbound.settings.desc"></a-input>
     </a-form-item>
     <a-form-item>
         <template slot="label">
@@ -35,6 +47,35 @@
             </a-tooltip>
         </template>
         <a-input-number :min="0" placeholder="0" v-model.number="inbound.settings.userLevel"></a-input-number>
+    </a-form-item>
+    <a-alert message="Automatic routes can create a network loop. Make sure Xray's upstream remains reachable outside the TUN routes."
+             show-icon style="margin-bottom: 16px" type="warning"></a-alert>
+    <a-form-item label="Gateway Prefixes">
+        <a-select :dropdown-class-name="themeSwitcher.currentTheme" :token-separators="[',']"
+                  mode="tags" placeholder="169.254.10.1/30"
+                  v-model="inbound.settings.gateway"></a-select>
+    </a-form-item>
+    <a-form-item label="DNS Addresses">
+        <a-select :dropdown-class-name="themeSwitcher.currentTheme" :token-separators="[',']"
+                  mode="tags" placeholder="1.1.1.1"
+                  v-model="inbound.settings.dns"></a-select>
+    </a-form-item>
+    <a-form-item label="System Routes">
+        <a-select :dropdown-class-name="themeSwitcher.currentTheme" :token-separators="[',']"
+                  mode="tags" placeholder="0.0.0.0/0"
+                  v-model="inbound.settings.autoSystemRoutingTable"></a-select>
+    </a-form-item>
+    <a-form-item>
+        <template slot="label">
+            <a-tooltip>
+                <template slot="title">
+                    <span>Outbound interface excluded from automatic routes. Empty lets Xray select it automatically.</span>
+                </template>
+                Outbound Interface
+                <a-icon type="question-circle"></a-icon>
+            </a-tooltip>
+        </template>
+        <a-input placeholder="auto" v-model.trim="inbound.settings.autoOutboundsInterface"></a-input>
     </a-form-item>
 </a-form>
 {{end}}

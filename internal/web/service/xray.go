@@ -8,6 +8,7 @@ import (
 
 	"x-ui/internal/database/model"
 	"x-ui/internal/logger"
+	"x-ui/internal/util/json_util"
 	"x-ui/xray"
 
 	"go.uber.org/atomic"
@@ -90,6 +91,10 @@ func (s *XrayService) GetXrayConfig() (*xray.Config, error) {
 	if err != nil {
 		return nil, err
 	}
+	xrayConfig.OutboundConfigs, err = normalizeLegacyVMessOutbounds(xrayConfig.OutboundConfigs)
+	if err != nil {
+		return nil, err
+	}
 
 	err = s.xraySettingService.ensureLocalLogFile(xrayConfig, false)
 	if err != nil {
@@ -132,12 +137,18 @@ func (s *XrayService) GetXrayConfig() (*xray.Config, error) {
 			existingModelClients := make([]model.Client, 0, len(clients))
 			for _, client := range clients {
 				c := client.(map[string]interface{})
+				if inbound.Protocol == "vmess" {
+					normalizeLegacyVMessUser(c)
+				}
 				mc := model.Client{}
 				if v, ok := c["email"].(string); ok {
 					mc.Email = v
 				}
 				if v, ok := c["id"].(string); ok {
 					mc.ID = v
+				}
+				if v, ok := c["security"].(string); ok {
+					mc.Security = v
 				}
 				if v, ok := c["password"].(string); ok {
 					mc.Password = v
@@ -165,10 +176,14 @@ func (s *XrayService) GetXrayConfig() (*xray.Config, error) {
 					entry := map[string]interface{}{
 						"email":    nc.Email,
 						"id":       nc.ID,
+						"security": nc.Security,
 						"password": nc.Password,
 						"auth":     nc.Auth,
 						"flow":     nc.Flow,
 						"enable":   nc.Enable,
+					}
+					if inbound.Protocol == "vmess" {
+						normalizeLegacyVMessUser(entry)
 					}
 					clients = append(clients, entry)
 				}
@@ -232,6 +247,56 @@ func (s *XrayService) GetXrayConfig() (*xray.Config, error) {
 		xrayConfig.InboundConfigs = append(xrayConfig.InboundConfigs, *inboundConfig)
 	}
 	return xrayConfig, nil
+}
+
+func normalizeLegacyVMessUser(user map[string]interface{}) {
+	security, ok := user["security"].(string)
+	if !ok {
+		return
+	}
+	switch security {
+	case "none", "zero", "plain", "":
+		user["security"] = "auto"
+	}
+}
+
+func normalizeLegacyVMessOutbounds(raw json_util.RawMessage) (json_util.RawMessage, error) {
+	if len(raw) == 0 {
+		return raw, nil
+	}
+
+	var outbounds []map[string]interface{}
+	if err := json.Unmarshal(raw, &outbounds); err != nil {
+		return nil, err
+	}
+	changed := false
+	for _, outbound := range outbounds {
+		if outbound["protocol"] != "vmess" {
+			continue
+		}
+		settings, _ := outbound["settings"].(map[string]interface{})
+		vnext, _ := settings["vnext"].([]interface{})
+		for _, destinationValue := range vnext {
+			destination, _ := destinationValue.(map[string]interface{})
+			users, _ := destination["users"].([]interface{})
+			for _, userValue := range users {
+				user, _ := userValue.(map[string]interface{})
+				before, _ := user["security"].(string)
+				normalizeLegacyVMessUser(user)
+				after, _ := user["security"].(string)
+				changed = changed || before != after
+			}
+		}
+	}
+	if !changed {
+		return raw, nil
+	}
+
+	result, err := json.Marshal(outbounds)
+	if err != nil {
+		return nil, err
+	}
+	return json_util.RawMessage(result), nil
 }
 
 func (s *XrayService) GetXrayTraffic() ([]*xray.Traffic, []*xray.ClientTraffic, error) {

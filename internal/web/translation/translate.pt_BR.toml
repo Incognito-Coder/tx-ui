@@ -492,7 +492,7 @@
 "domainStrategy" = "Estratégia de Domínio"
 
 [pages.xray.tun]
-"nameDesc" = "O nome da interface TUN. O padrão é 'xray0'"
+"nameDesc" = "Nome da interface TUN. Deixe vazio para selecionar automaticamente um nome 'utunN' disponível"
 "mtuDesc" = "Unidade Máxima de Transmissão. O tamanho máximo dos pacotes de dados. O padrão é 1500"
 "userLevel" = "Nível do Usuário"
 "userLevelDesc" = "Todas as conexões feitas através deste inbound usarão este nível de usuário. O padrão é 0"

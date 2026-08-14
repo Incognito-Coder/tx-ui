@@ -7,6 +7,7 @@ import (
 )
 
 type Config struct {
+	Env              json_util.RawMessage `json:"env"`
 	LogConfig        json_util.RawMessage `json:"log"`
 	RouterConfig     json_util.RawMessage `json:"routing"`
 	DNSConfig        json_util.RawMessage `json:"dns"`
@@ -23,6 +24,9 @@ type Config struct {
 }
 
 func (c *Config) Equals(other *Config) bool {
+	if c == nil || other == nil {
+		return c == other
+	}
 	if len(c.InboundConfigs) != len(other.InboundConfigs) {
 		return false
 	}
@@ -30,6 +34,9 @@ func (c *Config) Equals(other *Config) bool {
 		if !inbound.Equals(&other.InboundConfigs[i]) {
 			return false
 		}
+	}
+	if !bytes.Equal(c.Env, other.Env) {
+		return false
 	}
 	if !bytes.Equal(c.LogConfig, other.LogConfig) {
 		return false
@@ -56,6 +63,12 @@ func (c *Config) Equals(other *Config) bool {
 		return false
 	}
 	if !bytes.Equal(c.FakeDNS, other.FakeDNS) {
+		return false
+	}
+	if !bytes.Equal(c.Observatory, other.Observatory) {
+		return false
+	}
+	if !bytes.Equal(c.BurstObservatory, other.BurstObservatory) {
 		return false
 	}
 	if !bytes.Equal(c.Metrics, other.Metrics) {

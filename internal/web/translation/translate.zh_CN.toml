@@ -492,7 +492,7 @@
 "domainStrategy" = "域策略"
 
 [pages.xray.tun]
-"nameDesc" = "TUN 接口的名称。默认值为 'xray0'"
+"nameDesc" = "TUN 接口名称。留空时自动选择可用的 'utunN' 名称"
 "mtuDesc" = "最大传输单元。数据包的最大大小。默认值为 1500"
 "userLevel" = "用户级别"
 "userLevelDesc" = "通过此入站的所有连接都将使用此用户级别。默认值为 0"
