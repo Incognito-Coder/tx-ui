@@ -548,7 +548,7 @@
 
             <!-- finalmask settings -->
             <template v-if="outbound.canEnableStream()">
-                <a-form-item label="TCP Masks"
+                <a-form-item label='{{ i18n "pages.xray.finalmask.tcpMasks" }}'
                              v-if="outbound.protocol !== Protocols.Hysteria && outbound.stream.network !== 'kcp'">
                     <a-button @click="outbound.stream.addTcpMask('xmc')" icon="plus" size="small"
                               type="primary"></a-button>
@@ -557,48 +557,48 @@
                     <a-form :colon="false" :key="tcpIndex" :label-col="{ md: {span:8} }"
                             :wrapper-col="{ md: {span:14} }"
                             v-for="(mask, tcpIndex) in outbound.stream.finalmask.tcp">
-                        <a-divider :style="{ margin: '0' }">TCP Mask [[ tcpIndex + 1 ]]
+                        <a-divider :style="{ margin: '0' }">{{ i18n "pages.xray.finalmask.tcpMask" }} [[ tcpIndex + 1 ]]
                             <a-icon :style="{ color: 'rgb(255, 77, 79)', cursor: 'pointer' }"
                                     @click="() => outbound.stream.delTcpMask(tcpIndex)"
                                     type="delete"></a-icon>
                         </a-divider>
-                        <a-form-item label="Type">
+                        <a-form-item label='{{ i18n "pages.xray.finalmask.type" }}'>
                             <a-select :dropdown-class-name="themeSwitcher.currentTheme" v-model="mask.type">
                                 <a-select-option value="xmc">XMC (Minecraft)</a-select-option>
                             </a-select>
                         </a-form-item>
                         <template v-if="mask.type === 'xmc'">
-                            <a-form-item label="Hostname">
-                                <a-input placeholder="Minecraft server hostname"
+                            <a-form-item label='{{ i18n "pages.xray.finalmask.hostname" }}'>
+                                <a-input placeholder='{{ i18n "pages.xray.finalmask.hostnamePlaceholder" }}'
                                          v-model.trim="mask.settings.hostname"></a-input>
                             </a-form-item>
-                            <a-form-item label="Password" required>
-                                <a-input placeholder="Shared XMC password" type="password"
+                            <a-form-item label='{{ i18n "password" }}' required>
+                                <a-input placeholder='{{ i18n "pages.xray.finalmask.passwordPlaceholder" }}' type="password"
                                          v-model.trim="mask.settings.password"></a-input>
                             </a-form-item>
-                            <a-form-item label="Signed Profiles">
+                            <a-form-item label='{{ i18n "pages.xray.finalmask.signedProfiles" }}'>
                                 <a-button @click="mask.addProfile()" icon="plus" size="small"></a-button>
                             </a-form-item>
                             <a-form :colon="false" :key="tcpIndex + '-' + profileIndex"
                                     :label-col="{ md: {span:8} }" :wrapper-col="{ md: {span:14} }"
                                     v-for="(profile, profileIndex) in mask.settings.profiles">
-                                <a-divider :style="{ margin: '0' }">Profile [[ profileIndex + 1 ]]
+                                <a-divider :style="{ margin: '0' }">{{ i18n "pages.xray.finalmask.profile" }} [[ profileIndex + 1 ]]
                                     <a-icon :style="{ color: 'rgb(255, 77, 79)', cursor: 'pointer' }"
                                             @click="() => mask.delProfile(profileIndex)"
                                             type="delete"></a-icon>
                                 </a-divider>
-                                <a-form-item label="Username" required>
-                                    <a-input placeholder="3-16 Minecraft characters"
+                                <a-form-item label='{{ i18n "username" }}' required>
+                                    <a-input placeholder='{{ i18n "pages.xray.finalmask.usernamePlaceholder" }}'
                                              v-model.trim="profile.username"></a-input>
                                 </a-form-item>
-                                <a-form-item label="UUID" required>
+                                <a-form-item label='{{ i18n "pages.xray.finalmask.uuid" }}' required>
                                     <a-input v-model.trim="profile.uuid"></a-input>
                                 </a-form-item>
-                                <a-form-item label="Textures Value" required>
+                                <a-form-item label='{{ i18n "pages.xray.finalmask.texturesValue" }}' required>
                                     <a-textarea :auto-size="{ minRows: 2, maxRows: 5 }"
                                                 v-model.trim="profile.texturesValue"></a-textarea>
                                 </a-form-item>
-                                <a-form-item label="Textures Signature" required>
+                                <a-form-item label='{{ i18n "pages.xray.finalmask.texturesSignature" }}' required>
                                     <a-textarea :auto-size="{ minRows: 2, maxRows: 5 }"
                                                 v-model.trim="profile.texturesSignature"></a-textarea>
                                 </a-form-item>

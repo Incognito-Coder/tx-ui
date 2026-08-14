@@ -1,4 +1,5 @@
 "username" = "Ім'я користувача"
+"useIPv4ForHost" = "Використовувати IPv4 для хоста"
 "password" = "Пароль"
 "login" = "Увійти"
 "confirm" = "Підтвердити"
@@ -67,6 +68,9 @@
 "moveDown" = "Перемістити вниз"
 
 [menu]
+"theme" = "Тема"
+"themeDark" = "Темна"
+"themeUltra" = "Ультра"
 "dashboard" = "Огляд"
 "inbounds" = "Вхідні"
 "settings" = "Параметри панелі"
@@ -208,6 +212,10 @@
 "reordered" = "Вхідні успішно впорядковані"
 
 [pages.node_clients]
+"bulkDelete" = "Масове видалення"
+"manageLinks" = "Керування посиланнями"
+"subscriptionUrl" = "URL підписки"
+"subscriptionUrlJson" = "URL підписки JSON"
 "showLinks" = "Показати посилання"
 "noLinks" = "Посилань немає"
 "title" = "Клієнти"
@@ -269,6 +277,8 @@
 "responseHeader" = "Заголовок відповіді"
 
 [pages.settings]
+"subUI" = "Власний шаблон підписки"
+"subUIDesc" = "Вставте свій HTML-код у /etc/x-ui/html/sub.html"
 "title" = "Параметри панелі"
 "save" = "Зберегти"
 "infoDesc" = "Кожна внесена тут зміна повинна бути збережена. Перезапустіть панель, щоб застосувати зміни."
@@ -380,6 +390,8 @@
 
 [pages.xray]
 "title" = "Xray конфігурації"
+"minClientVersion" = "Мінімальна версія клієнта"
+"minClientVersionPlaceholder" = "26.3.27 (типове значення Xray)"
 "save" = "Зберегти"
 "restart" = "Перезапустити Xray"
 "basicTemplate" = "Базовий шаблон"
@@ -450,6 +462,9 @@
 "useComma" = "Елементи, розділені комами"
 
 [pages.xray.outbound]
+"reverseTag" = "Зворотна мітка"
+"reverseTagDesc" = "Мітка вхідного зворотного проксі, яку використовує цей клієнт VLESS."
+"reverseTagPlaceholder" = "мітка-зворотного-входу"
 "addOutbound" = "Додати вихідний"
 "addReverse" = "Додати реверс"
 "editOutbound" = "Редагувати вихідні"
@@ -490,12 +505,40 @@
 "endpoint" = "Кінцева точка"
 "psk" = "Спільний ключ"
 "domainStrategy" = "Стратегія домену"
+"interfaceAddresses" = "Адреси інтерфейсу"
+"peers" = "Піри"
+"email" = "Електронна пошта"
+"emailPlaceholder" = "Ідентифікатор піра для динамічного керування та статистики"
+"userLevel" = "Рівень користувача"
 
 [pages.xray.tun]
+"name" = "Назва інтерфейсу"
 "nameDesc" = "Назва інтерфейсу TUN. Залиште порожнім для автоматичного вибору вільної назви 'utunN'"
+"adapterDescription" = "Опис"
+"descriptionDesc" = "Необов'язковий опис адаптера Windows. Залиште порожнім для використання Wintun"
 "mtuDesc" = "Максимальна одиниця передачі. Максимальний розмір пакетів даних. Значення за замовчуванням - 1500"
 "userLevel" = "Рівень користувача"
 "userLevelDesc" = "Всі з'єднання, встановлені через цей вхід, використовуватимуть цей рівень користувача. Значення за замовчуванням - 0"
+"routeWarning" = "Автоматичні маршрути можуть створити мережеву петлю. Переконайтеся, що висхідне з'єднання Xray залишається доступним поза маршрутами TUN."
+"gatewayPrefixes" = "Префікси шлюзу"
+"dnsAddresses" = "Адреси DNS"
+"systemRoutes" = "Системні маршрути"
+"outboundInterface" = "Вихідний інтерфейс"
+"outboundInterfaceDesc" = "Вихідний інтерфейс, виключений з автоматичних маршрутів. Залиште порожнім для автоматичного вибору Xray"
+
+[pages.xray.finalmask]
+"tcpMasks" = "Маски TCP"
+"tcpMask" = "Маска TCP"
+"type" = "Тип"
+"hostname" = "Ім'я хоста"
+"hostnamePlaceholder" = "Ім'я хоста сервера Minecraft"
+"passwordPlaceholder" = "Спільний пароль XMC"
+"signedProfiles" = "Підписані профілі"
+"profile" = "Профіль"
+"usernamePlaceholder" = "Від 3 до 16 символів Minecraft"
+"uuid" = "UUID"
+"texturesValue" = "Значення текстур"
+"texturesSignature" = "Підпис текстур"
 
 [pages.xray.dns]
 "enable" = "Увімкнути DNS"
@@ -517,6 +560,14 @@
 "useSystemHosts" = "Використовувати системний hosts"
 "useSystemHostsDesc" = "Використовувати файл hosts з встановленої системи"
 
+[pages.xray.metrics]
+"title" = "Метрики"
+"desc" = "Надає статистику ядра для збору Prometheus/Grafana."
+"enableDesc" = "Вмикає кінцеву точку метрик."
+"listenDesc" = "Адреса:порт кінцевої точки метрик (наприклад, 127.0.0.1:11111)."
+"tag" = "Вихідна мітка"
+"tagDesc" = "Унікальна вихідна мітка для кінцевої точки метрик."
+
 [pages.xray.fakedns]
 "add" = "Додати підроблений DNS"
 "edit" = "Редагувати підроблений DNS"
@@ -524,6 +575,8 @@
 "poolSize" = "Розмір пулу"
 
 [pages.xray.tunnel]
+"port" = "Порт"
+"serverPort" = "SSH-порт сервера"
 "enable" = "Увімкнути тунель"
 "enableDesc" = "Увімкнути 6TO4 тунель"
 "ip" = "IP-адреса тунелю"
@@ -591,6 +644,7 @@
 "xrayNotRunning" = "❗ Xray Core не запущений."
 
 [tgbot.messages]
+"enterEmail" = "Введіть електронну пошту клієнта"
 "enterClientInfo" = "Будь ласка, введіть інформацію про клієнта у форматі: email:expire_days:limit_gb"
 "cpuThreshold" = "🔴 Навантаження ЦП  {{ .Percent }}% перевищує порогове значення {{ .Threshold }}%"
 "selectUserFailed" = "❌ Помилка під час вибору користувача!"

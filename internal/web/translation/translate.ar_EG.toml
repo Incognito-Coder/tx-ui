@@ -73,8 +73,8 @@
 
 [menu]
 "theme" = "الثيم"
-"dark" = "داكن"
-"ultraDark" = "داكن جدًا"
+"themeDark" = "داكن"
+"themeUltra" = "داكن جدًا"
 "dashboard" = "نظرة عامة"
 "inbounds" = "الإدخالات"
 "settings" = "إعدادات البانل"
@@ -218,6 +218,10 @@
 "reordered" = "إعادة ترتيب الإدخالات"
 
 [pages.node_clients]
+"bulkDelete" = "حذف جماعي"
+"manageLinks" = "إدارة الروابط"
+"subscriptionUrl" = "رابط الاشتراك"
+"subscriptionUrlJson" = "رابط الاشتراك JSON"
 "showLinks" = "إظهار الروابط"
 "noLinks" = "لا توجد روابط متاحة"
 "title" = "العملاء"
@@ -405,6 +409,8 @@
 
 [pages.xray]
 "title" = "إعدادات Xray"
+"minClientVersion" = "الحد الأدنى لإصدار العميل"
+"minClientVersionPlaceholder" = "26.3.27 (الإعداد الافتراضي في Xray)"
 "save" = "احفظ"
 "restart" = "أعد تشغيل Xray"
 "basicTemplate" = "أساسي"
@@ -484,6 +490,9 @@
 "useComma" = "عناصر مفصولة بفواصل"
 
 [pages.xray.outbound]
+"reverseTag" = "تاج العكسي"
+"reverseTagDesc" = "تاج إدخال البروكسي العكسي الذي يستخدمه عميل VLESS هذا"
+"reverseTagPlaceholder" = "reverse-inbound-tag"
 "addOutbound" = "أضف مخرج"
 "addReverse" = "أضف عكسي"
 "editOutbound" = "عدل المخرج"
@@ -525,12 +534,40 @@
 "endpoint" = "النهاية"
 "psk" = "المفتاح المشترك"
 "domainStrategy" = "استراتيجية الدومين"
+"interfaceAddresses" = "عناوين الواجهة"
+"peers" = "النظراء"
+"email" = "البريد الإلكتروني"
+"emailPlaceholder" = "هوية النظير للإدارة الديناميكية والإحصاءات"
+"userLevel" = "مستوى المستخدم"
 
 [pages.xray.tun]
+"name" = "اسم الواجهة"
 "nameDesc" = "اسم واجهة TUN. اتركه فارغًا لاختيار اسم 'utunN' متاح تلقائيًا"
+"adapterDescription" = "الوصف"
+"descriptionDesc" = "وصف اختياري لمحول Windows. اتركه فارغًا لاستخدام Wintun"
 "mtuDesc" = "وحدة النقل الأقصى. الحد الأقصى لحجم حزم البيانات. القيمة الافتراضية هي 1500"
 "userLevel" = "مستوى المستخدم"
 "userLevelDesc" = "ستستخدم جميع الاتصالات المُرسلة عبر هذا الإدخال مستوى المستخدم هذا. القيمة الافتراضية هي 0"
+"routeWarning" = "قد تنشئ المسارات التلقائية حلقة شبكية. تأكد من بقاء اتصال Xray الصاعد متاحًا خارج مسارات TUN."
+"gatewayPrefixes" = "بادئات البوابة"
+"dnsAddresses" = "عناوين DNS"
+"systemRoutes" = "مسارات النظام"
+"outboundInterface" = "واجهة الخروج"
+"outboundInterfaceDesc" = "واجهة الخروج المستثناة من المسارات التلقائية. اتركها فارغة ليختارها Xray تلقائيًا"
+
+[pages.xray.finalmask]
+"tcpMasks" = "أقنعة TCP"
+"tcpMask" = "قناع TCP"
+"type" = "النوع"
+"hostname" = "اسم المضيف"
+"hostnamePlaceholder" = "اسم مضيف خادم Minecraft"
+"passwordPlaceholder" = "كلمة مرور XMC المشتركة"
+"signedProfiles" = "الملفات الشخصية الموقعة"
+"profile" = "الملف الشخصي"
+"usernamePlaceholder" = "من 3 إلى 16 حرفًا في Minecraft"
+"uuid" = "UUID"
+"texturesValue" = "قيمة الأنسجة"
+"texturesSignature" = "توقيع الأنسجة"
 
 [pages.xray.dns]
 "enable" = "فعل DNS"
@@ -553,6 +590,14 @@
 "edit" = "عدل السيرفر"
 "domains" = "الدومينات"
 "expectIPs" = "العناوين المتوقعة"
+
+[pages.xray.metrics]
+"title" = "المقاييس"
+"desc" = "يعرض إحصاءات النواة لجمعها بواسطة Prometheus/Grafana."
+"enableDesc" = "يفعّل نقطة نهاية المقاييس."
+"listenDesc" = "العنوان:المنفذ لنقطة نهاية المقاييس (مثال: 127.0.0.1:11111)."
+"tag" = "تاج الخروج"
+"tagDesc" = "تاج خروج فريد لنقطة نهاية المقاييس."
 
 [pages.xray.fakedns]
 "add" = "أضف Fake DNS"
@@ -631,6 +676,7 @@
 
 [tgbot.messages]
 "enterClientInfo" = "الرجاء إدخال معلومات العميل بالتنسيق: email:expire_days:limit_gb"
+"enterEmail" = "الرجاء إدخال البريد الإلكتروني للعميل"
 "cpuThreshold" = "🔴 حمل المعالج {{ .Percent }}% عدى الحد المسموح ({{ .Threshold }}%)"
 "selectUserFailed" = "❌ حصل خطأ في اختيار المستخدم!"
 "userSaved" = "✅ حفظت بيانات مستخدم Telegram."

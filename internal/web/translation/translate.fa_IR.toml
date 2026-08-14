@@ -390,6 +390,8 @@
 
 [pages.xray]
 "title" = "پیکربندی ایکس‌ری"
+"minClientVersion" = "حداقل نسخه کلاینت"
+"minClientVersionPlaceholder" = "26.3.27 (پیش‌فرض Xray)"
 "save" = "ذخیره"
 "restart" = "ریستارت ایکس‌ری"
 "basicTemplate" = "پایه"
@@ -503,12 +505,40 @@
 "endpoint" = "نقطه پایانی"
 "psk" = "کلید مشترک"
 "domainStrategy" = "استراتژی حل دامنه"
+"interfaceAddresses" = "آدرس‌های رابط"
+"peers" = "همتاها"
+"email" = "ایمیل"
+"emailPlaceholder" = "شناسه همتا برای مدیریت پویا و آمار"
+"userLevel" = "سطح کاربر"
 
 [pages.xray.tun]
+"name" = "نام رابط"
 "nameDesc" = "نام رابط TUN. برای انتخاب خودکار یک نام آزاد از نوع 'utunN' خالی بگذارید"
+"adapterDescription" = "توضیحات"
+"descriptionDesc" = "توضیحات اختیاری آداپتور ویندوز. برای استفاده از Wintun خالی بگذارید"
 "mtuDesc" = "واحد انتقال حداکثر. بیشترین اندازه بسته‌های داده. مقدار پیش‌فرض 1500 است"
 "userLevel" = "سطح کاربر"
 "userLevelDesc" = "تمام اتصالات انجام‌شده از طریق این ورودی از این سطح کاربری استفاده خواهند کرد. مقدار پیش‌فرض 0 است"
+"routeWarning" = "مسیرهای خودکار ممکن است حلقه شبکه ایجاد کنند. مطمئن شوید مسیر بالادستی Xray خارج از مسیرهای TUN قابل دسترسی باقی می‌ماند."
+"gatewayPrefixes" = "پیشوندهای دروازه"
+"dnsAddresses" = "آدرس‌های DNS"
+"systemRoutes" = "مسیرهای سیستم"
+"outboundInterface" = "رابط خروجی"
+"outboundInterfaceDesc" = "رابط خروجی مستثنا از مسیرهای خودکار. برای انتخاب خودکار توسط Xray خالی بگذارید"
+
+[pages.xray.finalmask]
+"tcpMasks" = "ماسک‌های TCP"
+"tcpMask" = "ماسک TCP"
+"type" = "نوع"
+"hostname" = "نام میزبان"
+"hostnamePlaceholder" = "نام میزبان سرور Minecraft"
+"passwordPlaceholder" = "رمز عبور مشترک XMC"
+"signedProfiles" = "پروفایل‌های امضاشده"
+"profile" = "پروفایل"
+"usernamePlaceholder" = "۳ تا ۱۶ نویسه Minecraft"
+"uuid" = "UUID"
+"texturesValue" = "مقدار تکسچرها"
+"texturesSignature" = "امضای تکسچرها"
 
 [pages.xray.dns]
 "enable" = "فعال کردن حل دامنه"
@@ -529,6 +559,14 @@
 "disableFallbackIfMatchDesc" = "در صورت تطابق دامنه با لیست سرور DNS، درخواست جایگزین DNS غیرفعال می‌شود"
 "useSystemHosts" = "استفاده از فایل hosts سیستم"
 "useSystemHostsDesc" = "استفاده از فایل hosts سیستم نصب‌شده"
+
+[pages.xray.metrics]
+"title" = "متریک‌ها"
+"desc" = "آمار هسته را برای جمع‌آوری توسط Prometheus/Grafana ارائه می‌کند."
+"enableDesc" = "نقطه پایانی متریک‌ها را فعال می‌کند."
+"listenDesc" = "آدرس:پورت نقطه پایانی متریک‌ها (مثال: 127.0.0.1:11111)."
+"tag" = "برچسب خروجی"
+"tagDesc" = "برچسب خروجی یکتا برای نقطه پایانی متریک‌ها."
 
 [pages.xray.fakedns]
 "add" = "افزودن دی‌ان‌اس جعلی"
@@ -607,6 +645,7 @@
 
 [tgbot.messages]
 "enterClientInfo" = "لطفا اطلاعات کاربر را در قالب زیر وارد کنید: email:expire_days:limit_gb"
+"enterEmail" = "لطفاً ایمیل کاربر را وارد کنید"
 "cpuThreshold" = "🔴 بار ‌پردازنده {{ .Percent }}% بیشتر از آستانه است {{ .Threshold }}%"
 "selectUserFailed" = "❌ خطا در انتخاب کاربر!"
 "userSaved" = "✅ کاربر تلگرام ذخیره شد."

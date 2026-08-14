@@ -1,4 +1,5 @@
 "username" = "Nama Pengguna"
+"useIPv4ForHost" = "Gunakan IPv4 untuk host"
 "password" = "Kata Sandi"
 "login" = "Masuk"
 "confirm" = "Konfirmasi"
@@ -67,6 +68,9 @@
 "moveDown" = "Pindah ke Bawah"
 
 [menu]
+"theme" = "Tema"
+"themeDark" = "Gelap"
+"themeUltra" = "Ultra"
 "dashboard" = "Ikhtisar"
 "inbounds" = "Masuk"
 "settings" = "Pengaturan Panel"
@@ -208,6 +212,10 @@
 "reordered" = "Masuk Dipesan Ulang"
 
 [pages.node_clients]
+"bulkDelete" = "Hapus Massal"
+"manageLinks" = "Kelola Tautan"
+"subscriptionUrl" = "URL Langganan"
+"subscriptionUrlJson" = "URL Langganan JSON"
 "showLinks" = "Tampilkan tautan"
 "noLinks" = "Tidak ada tautan tersedia"
 "title" = "Klien"
@@ -383,6 +391,8 @@
 
 [pages.xray]
 "title" = "Konfigurasi Xray"
+"minClientVersion" = "Versi Klien Minimum"
+"minClientVersionPlaceholder" = "26.3.27 (bawaan Xray)"
 "save" = "Simpan"
 "restart" = "Restart Xray"
 "basicTemplate" = "Dasar"
@@ -453,6 +463,9 @@
 "useComma" = "Item yang dipisahkan koma"
 
 [pages.xray.outbound]
+"reverseTag" = "Tag Reverse"
+"reverseTagDesc" = "Tag inbound proxy reverse yang digunakan oleh klien VLESS ini."
+"reverseTagPlaceholder" = "tag-inbound-reverse"
 "addOutbound" = "Tambahkan Keluar"
 "addReverse" = "Tambahkan Revers"
 "editOutbound" = "Edit Keluar"
@@ -493,12 +506,40 @@
 "endpoint" = "Titik Akhir"
 "psk" = "Kunci Pra-Bagi"
 "domainStrategy" = "Strategi Domain"
+"interfaceAddresses" = "Alamat Antarmuka"
+"peers" = "Peer"
+"email" = "Email"
+"emailPlaceholder" = "Identitas peer untuk pengelolaan dinamis dan statistik"
+"userLevel" = "Level Pengguna"
 
 [pages.xray.tun]
+"name" = "Nama Antarmuka"
 "nameDesc" = "Nama antarmuka TUN. Kosongkan untuk memilih nama 'utunN' yang tersedia secara otomatis"
+"adapterDescription" = "Deskripsi"
+"descriptionDesc" = "Deskripsi adaptor Windows opsional. Kosongkan untuk menggunakan Wintun"
 "mtuDesc" = "Unit Transmisi Maksimum. Ukuran maksimum paket data. Standar adalah 1500"
 "userLevel" = "Level Pengguna"
 "userLevelDesc" = "Semua koneksi yang dibuat melalui inbound ini akan menggunakan level pengguna ini. Standar adalah 0"
+"routeWarning" = "Rute otomatis dapat membuat loop jaringan. Pastikan upstream Xray tetap dapat dijangkau di luar rute TUN."
+"gatewayPrefixes" = "Prefiks Gateway"
+"dnsAddresses" = "Alamat DNS"
+"systemRoutes" = "Rute Sistem"
+"outboundInterface" = "Antarmuka Keluar"
+"outboundInterfaceDesc" = "Antarmuka keluar yang dikecualikan dari rute otomatis. Kosongkan agar Xray memilihnya secara otomatis"
+
+[pages.xray.finalmask]
+"tcpMasks" = "Mask TCP"
+"tcpMask" = "Mask TCP"
+"type" = "Tipe"
+"hostname" = "Nama Host"
+"hostnamePlaceholder" = "Nama host server Minecraft"
+"passwordPlaceholder" = "Kata sandi XMC bersama"
+"signedProfiles" = "Profil Bertanda Tangan"
+"profile" = "Profil"
+"usernamePlaceholder" = "3–16 karakter Minecraft"
+"uuid" = "UUID"
+"texturesValue" = "Nilai Tekstur"
+"texturesSignature" = "Tanda Tangan Tekstur"
 
 [pages.xray.dns]
 "enable" = "Aktifkan DNS"
@@ -519,6 +560,14 @@
 "disableFallbackIfMatchDesc" = "Menonaktifkan permintaan DNS fallback ketika daftar domain yang cocok pada server DNS ditemukan"
 "useSystemHosts" = "Gunakan Hosts Sistem"
 "useSystemHostsDesc" = "Gunakan file hosts dari sistem yang terpasang"
+
+[pages.xray.metrics]
+"title" = "Metrik"
+"desc" = "Mengekspos statistik inti untuk dikumpulkan oleh Prometheus/Grafana."
+"enableDesc" = "Mengaktifkan endpoint metrik."
+"listenDesc" = "Alamat:port untuk endpoint metrik (mis. 127.0.0.1:11111)."
+"tag" = "Tag Outbound"
+"tagDesc" = "Tag outbound unik untuk endpoint metrik."
 
 [pages.xray.fakedns]
 "add" = "Tambahkan DNS Palsu"
@@ -596,6 +645,7 @@
 "xrayNotRunning" = "❗ Xray Core tidak berjalan."
 
 [tgbot.messages]
+"enterEmail" = "Silakan masukkan email klien"
 "enterClientInfo" = "Silakan masukkan info klien dalam format: email:expire_days:limit_gb"
 "cpuThreshold" = "🔴 Beban CPU {{ .Percent }}% melebihi batas {{ .Threshold }}%"
 "selectUserFailed" = "❌ Kesalahan dalam pemilihan pengguna!"

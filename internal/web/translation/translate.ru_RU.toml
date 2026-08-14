@@ -68,6 +68,9 @@
 "moveDown" = "Переместить вниз"
 
 [menu]
+"theme" = "Тема"
+"themeDark" = "Тёмная"
+"themeUltra" = "Ультра"
 "dashboard" = "Статус системы"
 "inbounds" = "Подключения"
 "settings" = "Настройки панели"
@@ -209,6 +212,10 @@
 "reordered" = "Переупорядочено"
 
 [pages.node_clients]
+"bulkDelete" = "Массовое удаление"
+"manageLinks" = "Управление ссылками"
+"subscriptionUrl" = "URL подписки"
+"subscriptionUrlJson" = "URL подписки JSON"
 "showLinks" = "Показать ссылки"
 "noLinks" = "Ссылки отсутствуют"
 "title" = "Клиенты"
@@ -383,6 +390,8 @@
 
 [pages.xray]
 "title" = "Настройки Xray"
+"minClientVersion" = "Минимальная версия клиента"
+"minClientVersionPlaceholder" = "26.3.27 (по умолчанию в Xray)"
 "save" = "Сохранить настройки"
 "restart" = "Перезапустить Xray"
 "basicTemplate" = "Базовый шаблон"
@@ -453,6 +462,9 @@
 "useComma" = "Элементы, разделенные запятыми"
 
 [pages.xray.outbound]
+"reverseTag" = "Обратный тег"
+"reverseTagDesc" = "Тег входящего обратного прокси, который использует этот клиент VLESS."
+"reverseTagPlaceholder" = "тег-обратного-входящего"
 "addOutbound" = "Добавить исходящий"
 "addReverse" = "Добавить реверс"
 "editOutbound" = "Изменить исходящий"
@@ -493,12 +505,40 @@
 "endpoint" = "Конечная точка"
 "psk" = "Общий ключ"
 "domainStrategy" = "Стратегия домена"
+"interfaceAddresses" = "Адреса интерфейса"
+"peers" = "Пиры"
+"email" = "Электронная почта"
+"emailPlaceholder" = "Идентификатор пира для динамического управления и статистики"
+"userLevel" = "Уровень пользователя"
 
 [pages.xray.tun]
+"name" = "Имя интерфейса"
 "nameDesc" = "Имя интерфейса TUN. Оставьте пустым для автоматического выбора свободного имени 'utunN'"
+"adapterDescription" = "Описание"
+"descriptionDesc" = "Необязательное описание адаптера Windows. Оставьте пустым для использования Wintun"
 "mtuDesc" = "Максимальная единица передачи. Максимальный размер пакетов данных. Значение по умолчанию - 1500"
 "userLevel" = "Уровень пользователя"
 "userLevelDesc" = "Все соединения, установленные через этот входящий поток, будут использовать этот уровень пользователя. Значение по умолчанию - 0"
+"routeWarning" = "Автоматические маршруты могут создать сетевую петлю. Убедитесь, что вышестоящее соединение Xray остаётся доступным вне маршрутов TUN."
+"gatewayPrefixes" = "Префиксы шлюза"
+"dnsAddresses" = "Адреса DNS"
+"systemRoutes" = "Системные маршруты"
+"outboundInterface" = "Исходящий интерфейс"
+"outboundInterfaceDesc" = "Исходящий интерфейс, исключённый из автоматических маршрутов. Оставьте пустым для автоматического выбора Xray"
+
+[pages.xray.finalmask]
+"tcpMasks" = "Маски TCP"
+"tcpMask" = "Маска TCP"
+"type" = "Тип"
+"hostname" = "Имя хоста"
+"hostnamePlaceholder" = "Имя хоста сервера Minecraft"
+"passwordPlaceholder" = "Общий пароль XMC"
+"signedProfiles" = "Подписанные профили"
+"profile" = "Профиль"
+"usernamePlaceholder" = "От 3 до 16 символов Minecraft"
+"uuid" = "UUID"
+"texturesValue" = "Значение текстур"
+"texturesSignature" = "Подпись текстур"
 
 [pages.xray.dns]
 "enable" = "Включить DNS"
@@ -519,6 +559,14 @@
 "disableFallbackIfMatchDesc" = "Отключает резервные DNS-запросы при совпадении с доменом из списка DNS-сервера"
 "useSystemHosts" = "Использовать системный hosts"
 "useSystemHostsDesc" = "Использовать файл hosts установленной системы"
+
+[pages.xray.metrics]
+"title" = "Метрики"
+"desc" = "Предоставляет статистику ядра для сбора Prometheus/Grafana."
+"enableDesc" = "Включает конечную точку метрик."
+"listenDesc" = "Адрес:порт конечной точки метрик (например, 127.0.0.1:11111)."
+"tag" = "Исходящий тег"
+"tagDesc" = "Уникальный исходящий тег для конечной точки метрик."
 
 [pages.xray.fakedns]
 "add" = "Добавить поддельный DNS"
@@ -596,6 +644,7 @@
 "xrayNotRunning" = "❗ Xray Core не запущен."
 
 [tgbot.messages]
+"enterEmail" = "Введите адрес электронной почты клиента"
 "enterClientInfo" = "Пожалуйста, введите информацию о клиенте в формате: email:expire_days:limit_gb"
 "cpuThreshold" = "🔴 Загрузка процессора составляет {{ .Percent }}%, что превышает пороговое значение {{ .Threshold }}%"
 "selectUserFailed" = "❌ Ошибка при выборе пользователя!"

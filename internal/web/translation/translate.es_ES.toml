@@ -1,4 +1,5 @@
 "username" = "Nombre de Usuario"
+"useIPv4ForHost" = "Usar IPv4 para el host"
 "password" = "Contraseña"
 "login" = "Acceder"
 "confirm" = "Confirmar"
@@ -67,6 +68,9 @@
 "moveDown" = "Mover abajo"
 
 [menu]
+"theme" = "Tema"
+"themeDark" = "Oscuro"
+"themeUltra" = "Ultra"
 "dashboard" = "Estado del Sistema"
 "inbounds" = "Entradas"
 "settings" = "Configuraciones"
@@ -208,6 +212,10 @@
 "reordered" = "Entradas reordenadas con éxito"
 
 [pages.node_clients]
+"bulkDelete" = "Eliminación masiva"
+"manageLinks" = "Administrar enlaces"
+"subscriptionUrl" = "URL de suscripción"
+"subscriptionUrlJson" = "URL de suscripción JSON"
 "showLinks" = "Mostrar enlaces"
 "noLinks" = "No hay enlaces disponibles"
 "title" = "Clientes"
@@ -383,6 +391,8 @@
 
 [pages.xray]
 "title" = "Xray Configuración"
+"minClientVersion" = "Versión mínima del cliente"
+"minClientVersionPlaceholder" = "26.3.27 (valor predeterminado de Xray)"
 "save" = "Guardar configuración"
 "restart" = "Reiniciar Xray"
 "basicTemplate" = "Plantilla Básica"
@@ -453,6 +463,9 @@
 "useComma" = "Elementos separados por comas"
 
 [pages.xray.outbound]
+"reverseTag" = "Etiqueta inversa"
+"reverseTagDesc" = "La etiqueta de la entrada del proxy inverso que utiliza este cliente VLESS."
+"reverseTagPlaceholder" = "etiqueta-entrada-inversa"
 "addOutbound" = "Agregar salida"
 "addReverse" = "Agregar reverso"
 "editOutbound" = "Editar salida"
@@ -493,12 +506,40 @@
 "endpoint" = "Punto final"
 "psk" = "Clave precompartida"
 "domainStrategy" = "Estrategia de dominio"
+"interfaceAddresses" = "Direcciones de la interfaz"
+"peers" = "Pares"
+"email" = "Correo electrónico"
+"emailPlaceholder" = "Identidad del par para la gestión dinámica y las estadísticas"
+"userLevel" = "Nivel de usuario"
 
 [pages.xray.tun]
+"name" = "Nombre de la interfaz"
 "nameDesc" = "Nombre de la interfaz TUN. Déjelo vacío para seleccionar automáticamente un nombre 'utunN' disponible"
+"adapterDescription" = "Descripción"
+"descriptionDesc" = "Descripción opcional del adaptador de Windows. Déjela vacía para usar Wintun"
 "mtuDesc" = "Unidad Máxima de Transmisión. El tamaño máximo de los paquetes de datos. El valor predeterminado es 1500"
 "userLevel" = "Nivel de Usuario"
 "userLevelDesc" = "Todas las conexiones realizadas a través de este entrada utilizarán este nivel de usuario. El valor predeterminado es 0"
+"routeWarning" = "Las rutas automáticas pueden crear un bucle de red. Asegúrese de que la conexión ascendente de Xray siga siendo accesible fuera de las rutas TUN."
+"gatewayPrefixes" = "Prefijos de puerta de enlace"
+"dnsAddresses" = "Direcciones DNS"
+"systemRoutes" = "Rutas del sistema"
+"outboundInterface" = "Interfaz de salida"
+"outboundInterfaceDesc" = "Interfaz de salida excluida de las rutas automáticas. Déjela vacía para que Xray la seleccione automáticamente"
+
+[pages.xray.finalmask]
+"tcpMasks" = "Máscaras TCP"
+"tcpMask" = "Máscara TCP"
+"type" = "Tipo"
+"hostname" = "Nombre del host"
+"hostnamePlaceholder" = "Nombre del host del servidor de Minecraft"
+"passwordPlaceholder" = "Contraseña XMC compartida"
+"signedProfiles" = "Perfiles firmados"
+"profile" = "Perfil"
+"usernamePlaceholder" = "De 3 a 16 caracteres de Minecraft"
+"uuid" = "UUID"
+"texturesValue" = "Valor de texturas"
+"texturesSignature" = "Firma de texturas"
 
 [pages.xray.dns]
 "enable" = "Habilitar DNS"
@@ -520,6 +561,14 @@
 "useSystemHosts" = "Usar hosts del sistema"
 "useSystemHostsDesc" = "Usar el archivo hosts del sistema instalado"
 
+[pages.xray.metrics]
+"title" = "Métricas"
+"desc" = "Expone las estadísticas del núcleo para que Prometheus/Grafana las recopile."
+"enableDesc" = "Habilita el punto de conexión de métricas."
+"listenDesc" = "Dirección:puerto del punto de conexión de métricas (p. ej., 127.0.0.1:11111)."
+"tag" = "Etiqueta de salida"
+"tagDesc" = "Etiqueta de salida única para el punto de conexión de métricas."
+
 [pages.xray.fakedns]
 "add" = "Agregar DNS Falso"
 "edit" = "Editar DNS Falso"
@@ -527,6 +576,8 @@
 "poolSize" = "Tamaño del grupo"
 
 [pages.xray.tunnel]
+"port" = "Puerto"
+"serverPort" = "Puerto SSH del servidor"
 "enable" = "Habilitar túnel"
 "enableDesc" = "Habilitar túnel 6TO4"
 "ip" = "Dirección IP del túnel"
@@ -595,6 +646,7 @@
 
 [tgbot.messages]
 "enterClientInfo" = "Introduzca la información del cliente en el formato: email:expire_days:limit_gb"
+"enterEmail" = "Introduzca el correo electrónico del cliente"
 "cpuThreshold" = "🔴 El uso de CPU {{ .Percent }}% es mayor que el umbral {{ .Threshold }}%"
 "selectUserFailed" = "❌ ¡Error al seleccionar usuario!"
 "userSaved" = "✅ Usuario de Telegram guardado."

@@ -1,4 +1,5 @@
 "username" = "Tên người dùng"
+"useIPv4ForHost" = "Sử dụng IPv4 cho máy chủ"
 "password" = "Mật khẩu"
 "login" = "Đăng nhập"
 "confirm" = "Xác nhận"
@@ -67,6 +68,9 @@
 "moveDown" = "Di chuyển xuống"
 
 [menu]
+"theme" = "Giao diện"
+"themeDark" = "Tối"
+"themeUltra" = "Siêu tối"
 "dashboard" = "Trạng thái hệ thống"
 "inbounds" = "Đầu vào khách hàng"
 "settings" = "Cài đặt bảng điều khiển"
@@ -208,6 +212,10 @@
 "reordered" = "Sắp xếp lại điểm vào thành công"
 
 [pages.node_clients]
+"bulkDelete" = "Xóa hàng loạt"
+"manageLinks" = "Quản lý liên kết"
+"subscriptionUrl" = "URL đăng ký"
+"subscriptionUrlJson" = "URL đăng ký JSON"
 "showLinks" = "Hiện liên kết"
 "noLinks" = "Không có liên kết"
 "title" = "Khách hàng"
@@ -269,6 +277,8 @@
 "responseHeader" = "Header phản hồi"
 
 [pages.settings]
+"subUI" = "Mẫu đăng ký tùy chỉnh"
+"subUIDesc" = "Dán mã HTML của bạn vào /etc/x-ui/html/sub.html"
 "title" = "Cài đặt"
 "save" = "Lưu"
 "infoDesc" = "Mọi thay đổi được thực hiện ở đây cần phải được lưu. Vui lòng khởi động lại bảng điều khiển để áp dụng các thay đổi."
@@ -380,6 +390,8 @@
 
 [pages.xray]
 "title" = "Cài đặt Xray"
+"minClientVersion" = "Phiên bản máy khách tối thiểu"
+"minClientVersionPlaceholder" = "26.3.27 (mặc định của Xray)"
 "save" = "Lưu cài đặt"
 "restart" = "Khởi động lại Xray"
 "basicTemplate" = "Mẫu Cơ bản"
@@ -450,6 +462,9 @@
 "useComma" = "Các mục được phân tách bằng dấu phẩy"
 
 [pages.xray.outbound]
+"reverseTag" = "Thẻ đảo ngược"
+"reverseTagDesc" = "Thẻ inbound của proxy đảo ngược mà máy khách VLESS này sử dụng."
+"reverseTagPlaceholder" = "the-inbound-dao-nguoc"
 "addOutbound" = "Thêm thư đi"
 "addReverse" = "Thêm đảo ngược"
 "editOutbound" = "Chỉnh sửa gửi đi"
@@ -490,12 +505,40 @@
 "endpoint" = "Điểm cuối"
 "psk" = "Khóa chia sẻ"
 "domainStrategy" = "Chiến lược tên miền"
+"interfaceAddresses" = "Địa chỉ giao diện"
+"peers" = "Máy ngang hàng"
+"email" = "Email"
+"emailPlaceholder" = "Danh tính máy ngang hàng để quản lý động và thống kê"
+"userLevel" = "Mức người dùng"
 
 [pages.xray.tun]
+"name" = "Tên giao diện"
 "nameDesc" = "Tên giao diện TUN. Để trống để tự động chọn tên 'utunN' khả dụng"
+"adapterDescription" = "Mô tả"
+"descriptionDesc" = "Mô tả bộ điều hợp Windows không bắt buộc. Để trống để dùng Wintun"
 "mtuDesc" = "Đơn vị Truyền Tối đa. Kích thước tối đa của các gói dữ liệu. Giá trị mặc định là 1500"
 "userLevel" = "Mức Người Dùng"
 "userLevelDesc" = "Tất cả các kết nối được thực hiện thông qua inbound này sẽ sử dụng mức người dùng này. Giá trị mặc định là 0"
+"routeWarning" = "Các tuyến tự động có thể tạo vòng lặp mạng. Hãy đảm bảo kết nối thượng nguồn của Xray vẫn có thể truy cập bên ngoài các tuyến TUN."
+"gatewayPrefixes" = "Tiền tố cổng mạng"
+"dnsAddresses" = "Địa chỉ DNS"
+"systemRoutes" = "Tuyến hệ thống"
+"outboundInterface" = "Giao diện đầu ra"
+"outboundInterfaceDesc" = "Giao diện đầu ra được loại khỏi các tuyến tự động. Để trống để Xray tự động chọn"
+
+[pages.xray.finalmask]
+"tcpMasks" = "Mặt nạ TCP"
+"tcpMask" = "Mặt nạ TCP"
+"type" = "Loại"
+"hostname" = "Tên máy chủ"
+"hostnamePlaceholder" = "Tên máy chủ Minecraft"
+"passwordPlaceholder" = "Mật khẩu XMC dùng chung"
+"signedProfiles" = "Hồ sơ đã ký"
+"profile" = "Hồ sơ"
+"usernamePlaceholder" = "Từ 3 đến 16 ký tự Minecraft"
+"uuid" = "UUID"
+"texturesValue" = "Giá trị texture"
+"texturesSignature" = "Chữ ký texture"
 
 [pages.xray.dns]
 "enable" = "Kích hoạt DNS"
@@ -517,6 +560,14 @@
 "useSystemHosts" = "Sử dụng Hosts hệ thống"
 "useSystemHostsDesc" = "Sử dụng tệp hosts từ hệ thống đã cài đặt"
 
+[pages.xray.metrics]
+"title" = "Số liệu"
+"desc" = "Cung cấp số liệu thống kê lõi để Prometheus/Grafana thu thập."
+"enableDesc" = "Bật endpoint số liệu."
+"listenDesc" = "Địa chỉ:cổng cho endpoint số liệu (ví dụ: 127.0.0.1:11111)."
+"tag" = "Thẻ đầu ra"
+"tagDesc" = "Thẻ đầu ra duy nhất cho endpoint số liệu."
+
 [pages.xray.fakedns]
 "add" = "Thêm DNS giả"
 "edit" = "Chỉnh sửa DNS giả"
@@ -524,6 +575,8 @@
 "poolSize" = "Kích thước bể bơi"
 
 [pages.xray.tunnel]
+"port" = "Cổng"
+"serverPort" = "Cổng SSH máy chủ"
 "enable" = "Bật đường hầm"
 "enableDesc" = "Bật đường hầm 6TO4"
 "ip" = "Địa chỉ IP của đường hầm"
@@ -591,6 +644,7 @@
 "xrayNotRunning" = "❗ Xray Core không chạy."
 
 [tgbot.messages]
+"enterEmail" = "Vui lòng nhập email của máy khách"
 "enterClientInfo" = "Vui lòng nhập thông tin khách hàng theo định dạng: email:expire_days:limit_gb"
 "cpuThreshold" = "🔴 Sử dụng CPU {{ .Percent }}% vượt quá ngưỡng {{ .Threshold }}%"
 "selectUserFailed" = "❌ Lỗi khi chọn người dùng!"

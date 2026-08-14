@@ -390,6 +390,8 @@
 
 [pages.xray]
 "title" = "Xray Configs"
+"minClientVersion" = "Minimum Client Version"
+"minClientVersionPlaceholder" = "26.3.27 (Xray default)"
 "save" = "Save"
 "restart" = "Restart Xray"
 "basicTemplate" = "Basics"
@@ -503,12 +505,40 @@
 "endpoint" = "Endpoint"
 "psk" = "PreShared Key"
 "domainStrategy" = "Domain Strategy"
+"interfaceAddresses" = "Interface Addresses"
+"peers" = "Peers"
+"email" = "Email"
+"emailPlaceholder" = "Peer identity for dynamic management and statistics"
+"userLevel" = "User Level"
 
 [pages.xray.tun]
+"name" = "Interface Name"
 "nameDesc" = "The TUN interface name. Leave empty to auto-select an available 'utunN' name"
+"adapterDescription" = "Description"
+"descriptionDesc" = "Optional Windows adapter description. Leave empty to use Wintun"
 "mtuDesc" = "Maximum Transmission Unit. The maximum size of data packets. Default is 1500"
 "userLevel" = "User Level"
 "userLevelDesc" = "All connections made through this inbound will use this user level. Default is 0"
+"routeWarning" = "Automatic routes can create a network loop. Make sure Xray's upstream remains reachable outside the TUN routes."
+"gatewayPrefixes" = "Gateway Prefixes"
+"dnsAddresses" = "DNS Addresses"
+"systemRoutes" = "System Routes"
+"outboundInterface" = "Outbound Interface"
+"outboundInterfaceDesc" = "Outbound interface excluded from automatic routes. Leave empty to let Xray select it automatically"
+
+[pages.xray.finalmask]
+"tcpMasks" = "TCP Masks"
+"tcpMask" = "TCP Mask"
+"type" = "Type"
+"hostname" = "Hostname"
+"hostnamePlaceholder" = "Minecraft server hostname"
+"passwordPlaceholder" = "Shared XMC password"
+"signedProfiles" = "Signed Profiles"
+"profile" = "Profile"
+"usernamePlaceholder" = "3–16 Minecraft characters"
+"uuid" = "UUID"
+"texturesValue" = "Textures Value"
+"texturesSignature" = "Textures Signature"
 
 [pages.xray.dns]
 "enable" = "Enable DNS"

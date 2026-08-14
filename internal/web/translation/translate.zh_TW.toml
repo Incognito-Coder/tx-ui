@@ -66,7 +66,12 @@
 "moveUp" = "上移"
 "moveDown" = "下移"
 
+"useIPv4ForHost" = "主機使用 IPv4"
+
 [menu]
+"theme" = "主題"
+"themeDark" = "深色"
+"themeUltra" = "極致"
 "dashboard" = "系統狀態"
 "inbounds" = "入站列表"
 "settings" = "面板設定"
@@ -208,6 +213,10 @@
 "reordered" = "入站已重新排序"
 
 [pages.node_clients]
+"bulkDelete" = "批次刪除"
+"manageLinks" = "管理連結"
+"subscriptionUrl" = "訂閱 URL"
+"subscriptionUrlJson" = "訂閱 URL JSON"
 "showLinks" = "顯示連結"
 "noLinks" = "沒有可用連結"
 "title" = "客戶端"
@@ -269,6 +278,8 @@
 "responseHeader" = "響應頭"
 
 [pages.settings]
+"subUI" = "自訂訂閱範本"
+"subUIDesc" = "請將 HTML 程式碼貼到 /etc/x-ui/html/sub.html"
 "title" = "面板設定"
 "save" = "儲存"
 "infoDesc" = "此處的所有更改都需要儲存並重啟面板才能生效"
@@ -380,6 +391,8 @@
 
 [pages.xray]
 "title" = "Xray 配置"
+"minClientVersion" = "最低用戶端版本"
+"minClientVersionPlaceholder" = "26.3.27（Xray 預設值）"
 "save" = "儲存"
 "restart" = "重新啟動 Xray"
 "basicTemplate" = "基礎配置"
@@ -450,6 +463,9 @@
 "useComma" = "逗號分隔的項目"
 
 [pages.xray.outbound]
+"reverseTag" = "反向標籤"
+"reverseTagDesc" = "此 VLESS 用戶端使用的反向代理入站標籤。"
+"reverseTagPlaceholder" = "反向入站標籤"
 "addOutbound" = "新增出站"
 "addReverse" = "新增反向"
 "editOutbound" = "編輯出站"
@@ -490,12 +506,40 @@
 "endpoint" = "端點"
 "psk" = "共享金鑰"
 "domainStrategy" = "域策略"
+"interfaceAddresses" = "介面位址"
+"peers" = "對等端"
+"email" = "電子郵件"
+"emailPlaceholder" = "用於動態管理和統計的對等端識別碼"
+"userLevel" = "用戶級別"
 
 [pages.xray.tun]
+"name" = "介面名稱"
 "nameDesc" = "TUN 介面名稱。留空時自動選擇可用的 'utunN' 名稱"
+"adapterDescription" = "描述"
+"descriptionDesc" = "可選的 Windows 介面卡描述。留空時使用 Wintun"
 "mtuDesc" = "最大傳輸單元。資料包的最大大小。預設值為 1500"
 "userLevel" = "用戶級別"
 "userLevelDesc" = "通過此入站的所有連接都將使用此用戶級別。預設值為 0"
+"routeWarning" = "自動路由可能造成網路迴路。請確保 Xray 的上游在 TUN 路由之外仍可存取。"
+"gatewayPrefixes" = "閘道前綴"
+"dnsAddresses" = "DNS 位址"
+"systemRoutes" = "系統路由"
+"outboundInterface" = "出站介面"
+"outboundInterfaceDesc" = "從自動路由中排除的出站介面。留空時由 Xray 自動選擇"
+
+[pages.xray.finalmask]
+"tcpMasks" = "TCP 遮罩"
+"tcpMask" = "TCP 遮罩"
+"type" = "類型"
+"hostname" = "主機名稱"
+"hostnamePlaceholder" = "Minecraft 伺服器主機名稱"
+"passwordPlaceholder" = "共用 XMC 密碼"
+"signedProfiles" = "已簽署設定檔"
+"profile" = "設定檔"
+"usernamePlaceholder" = "3 至 16 個 Minecraft 字元"
+"uuid" = "UUID"
+"texturesValue" = "紋理值"
+"texturesSignature" = "紋理簽章"
 
 [pages.xray.dns]
 "enable" = "啟用 DNS"
@@ -517,6 +561,14 @@
 "useSystemHosts" = "使用系統 Hosts"
 "useSystemHostsDesc" = "使用已安裝系統的 hosts 檔案"
 
+[pages.xray.metrics]
+"title" = "指標"
+"desc" = "公開核心統計資訊，以供 Prometheus/Grafana 擷取。"
+"enableDesc" = "啟用指標端點。"
+"listenDesc" = "指標端點的位址:連接埠（例如 127.0.0.1:11111）。"
+"tag" = "出站標籤"
+"tagDesc" = "指標端點的唯一出站標籤。"
+
 [pages.xray.fakedns]
 "add" = "新增假 DNS"
 "edit" = "編輯假 DNS"
@@ -524,6 +576,8 @@
 "poolSize" = "池大小"
 
 [pages.xray.tunnel]
+"port" = "連接埠"
+"serverPort" = "伺服器 SSH 連接埠"
 "enable" = "啟用隧道"
 "enableDesc" = "啟用6TO4隧道"
 "ip" = "隧道IP地址"
@@ -591,6 +645,7 @@
 "xrayNotRunning" = "❗ Xray Core 未運行。"
 
 [tgbot.messages]
+"enterEmail" = "請輸入用戶端的電子郵件"
 "enterClientInfo" = "請輸入客戶端資訊，格式為: email:expire_days:limit_gb"
 "cpuThreshold" = "🔴 CPU 使用率為 {{ .Percent }}%，超過閾值 {{ .Threshold }}%"
 "selectUserFailed" = "❌ 使用者選擇錯誤！"

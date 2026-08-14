@@ -6,7 +6,7 @@
                 <template slot="title">
                     <span>{{ i18n "pages.xray.tun.nameDesc" }}</span>
                 </template>
-                Interface Name
+                {{ i18n "pages.xray.tun.name" }}
                 <a-icon type="question-circle"></a-icon>
             </a-tooltip>
         </template>
@@ -16,9 +16,9 @@
         <template slot="label">
             <a-tooltip>
                 <template slot="title">
-                    <span>Optional Windows adapter description. Empty uses Wintun.</span>
+                    <span>{{ i18n "pages.xray.tun.descriptionDesc" }}</span>
                 </template>
-                Description
+                {{ i18n "pages.xray.tun.adapterDescription" }}
                 <a-icon type="question-circle"></a-icon>
             </a-tooltip>
         </template>
@@ -48,19 +48,19 @@
         </template>
         <a-input-number :min="0" placeholder="0" v-model.number="inbound.settings.userLevel"></a-input-number>
     </a-form-item>
-    <a-alert message="Automatic routes can create a network loop. Make sure Xray's upstream remains reachable outside the TUN routes."
+    <a-alert message='{{ i18n "pages.xray.tun.routeWarning" }}'
              show-icon style="margin-bottom: 16px" type="warning"></a-alert>
-    <a-form-item label="Gateway Prefixes">
+    <a-form-item label='{{ i18n "pages.xray.tun.gatewayPrefixes" }}'>
         <a-select :dropdown-class-name="themeSwitcher.currentTheme" :token-separators="[',']"
                   mode="tags" placeholder="169.254.10.1/30"
                   v-model="inbound.settings.gateway"></a-select>
     </a-form-item>
-    <a-form-item label="DNS Addresses">
+    <a-form-item label='{{ i18n "pages.xray.tun.dnsAddresses" }}'>
         <a-select :dropdown-class-name="themeSwitcher.currentTheme" :token-separators="[',']"
                   mode="tags" placeholder="1.1.1.1"
                   v-model="inbound.settings.dns"></a-select>
     </a-form-item>
-    <a-form-item label="System Routes">
+    <a-form-item label='{{ i18n "pages.xray.tun.systemRoutes" }}'>
         <a-select :dropdown-class-name="themeSwitcher.currentTheme" :token-separators="[',']"
                   mode="tags" placeholder="0.0.0.0/0"
                   v-model="inbound.settings.autoSystemRoutingTable"></a-select>
@@ -69,9 +69,9 @@
         <template slot="label">
             <a-tooltip>
                 <template slot="title">
-                    <span>Outbound interface excluded from automatic routes. Empty lets Xray select it automatically.</span>
+                    <span>{{ i18n "pages.xray.tun.outboundInterfaceDesc" }}</span>
                 </template>
-                Outbound Interface
+                {{ i18n "pages.xray.tun.outboundInterface" }}
                 <a-icon type="question-circle"></a-icon>
             </a-tooltip>
         </template>

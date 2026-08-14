@@ -1,4 +1,5 @@
 "username" = "Nome de Usuário"
+"useIPv4ForHost" = "Usar IPv4 para o host"
 "password" = "Senha"
 "login" = "Entrar"
 "confirm" = "Confirmar"
@@ -67,6 +68,9 @@
 "moveDown" = "Mover para Baixo"
 
 [menu]
+"theme" = "Tema"
+"themeDark" = "Escuro"
+"themeUltra" = "Ultra"
 "dashboard" = "Visão Geral"
 "inbounds" = "Inbounds"
 "settings" = "Panel Settings"
@@ -208,6 +212,10 @@
 "reordered" = "Reordenado com Sucesso"
 
 [pages.node_clients]
+"bulkDelete" = "Exclusão em massa"
+"manageLinks" = "Gerenciar links"
+"subscriptionUrl" = "URL de assinatura"
+"subscriptionUrlJson" = "URL de assinatura JSON"
 "showLinks" = "Mostrar links"
 "noLinks" = "Nenhum link disponível"
 "title" = "Clientes"
@@ -251,7 +259,7 @@
 [pages.inbounds.toasts]
 "obtain" = "Obter"
 "getNewmldsa65Error" = "Erro ao obter o certificado mldsa65."
-"getNewVlessEncrror" = "Erro ao obter o certificado VlessEnc."
+"getNewVlessEncError" = "Erro ao obter o certificado VlessEnc."
 
 [pages.inbounds.stream.general]
 "request" = "Requisição"
@@ -269,6 +277,8 @@
 "responseHeader" = "Cabeçalho da Resposta"
 
 [pages.settings]
+"subUI" = "Modelo de assinatura personalizado"
+"subUIDesc" = "Cole seus códigos HTML em /etc/x-ui/html/sub.html"
 "title" = "Configurações do Painel"
 "save" = "Salvar"
 "infoDesc" = "Toda alteração feita aqui precisa ser salva. Reinicie o painel para aplicar as alterações."
@@ -380,6 +390,8 @@
 
 [pages.xray]
 "title" = "Configurações Xray"
+"minClientVersion" = "Versão mínima do cliente"
+"minClientVersionPlaceholder" = "26.3.27 (padrão do Xray)"
 "save" = "Salvar"
 "restart" = "Reiniciar Xray"
 "basicTemplate" = "Básico"
@@ -450,6 +462,9 @@
 "useComma" = "Itens separados por vírgula"
 
 [pages.xray.outbound]
+"reverseTag" = "Tag reversa"
+"reverseTagDesc" = "A tag do inbound de proxy reverso usada por este cliente VLESS."
+"reverseTagPlaceholder" = "tag-inbound-reversa"
 "addOutbound" = "Adicionar Saída"
 "addReverse" = "Adicionar Reverso"
 "editOutbound" = "Editar Saída"
@@ -490,12 +505,40 @@
 "endpoint" = "Ponto Final"
 "psk" = "Chave Pré-Compartilhada"
 "domainStrategy" = "Estratégia de Domínio"
+"interfaceAddresses" = "Endereços da interface"
+"peers" = "Pares"
+"email" = "E-mail"
+"emailPlaceholder" = "Identidade do par para gerenciamento dinâmico e estatísticas"
+"userLevel" = "Nível do usuário"
 
 [pages.xray.tun]
+"name" = "Nome da interface"
 "nameDesc" = "Nome da interface TUN. Deixe vazio para selecionar automaticamente um nome 'utunN' disponível"
+"adapterDescription" = "Descrição"
+"descriptionDesc" = "Descrição opcional do adaptador do Windows. Deixe vazio para usar o Wintun"
 "mtuDesc" = "Unidade Máxima de Transmissão. O tamanho máximo dos pacotes de dados. O padrão é 1500"
 "userLevel" = "Nível do Usuário"
 "userLevelDesc" = "Todas as conexões feitas através deste inbound usarão este nível de usuário. O padrão é 0"
+"routeWarning" = "Rotas automáticas podem criar um loop de rede. Certifique-se de que o upstream do Xray permaneça acessível fora das rotas TUN."
+"gatewayPrefixes" = "Prefixos do gateway"
+"dnsAddresses" = "Endereços DNS"
+"systemRoutes" = "Rotas do sistema"
+"outboundInterface" = "Interface de saída"
+"outboundInterfaceDesc" = "Interface de saída excluída das rotas automáticas. Deixe vazio para o Xray selecioná-la automaticamente"
+
+[pages.xray.finalmask]
+"tcpMasks" = "Máscaras TCP"
+"tcpMask" = "Máscara TCP"
+"type" = "Tipo"
+"hostname" = "Nome do host"
+"hostnamePlaceholder" = "Nome do host do servidor Minecraft"
+"passwordPlaceholder" = "Senha XMC compartilhada"
+"signedProfiles" = "Perfis assinados"
+"profile" = "Perfil"
+"usernamePlaceholder" = "De 3 a 16 caracteres do Minecraft"
+"uuid" = "UUID"
+"texturesValue" = "Valor das texturas"
+"texturesSignature" = "Assinatura das texturas"
 
 [pages.xray.dns]
 "enable" = "Ativar DNS"
@@ -517,6 +560,14 @@
 "useSystemHosts" = "Usar Hosts do Sistema"
 "useSystemHostsDesc" = "Usar o arquivo hosts do sistema instalado"
 
+[pages.xray.metrics]
+"title" = "Métricas"
+"desc" = "Expõe estatísticas do núcleo para coleta pelo Prometheus/Grafana."
+"enableDesc" = "Ativa o endpoint de métricas."
+"listenDesc" = "Endereço:porta do endpoint de métricas (ex.: 127.0.0.1:11111)."
+"tag" = "Tag de saída"
+"tagDesc" = "Tag de saída exclusiva para o endpoint de métricas."
+
 [pages.xray.fakedns]
 "add" = "Adicionar Fake DNS"
 "edit" = "Editar Fake DNS"
@@ -524,6 +575,8 @@
 "poolSize" = "Tamanho do Pool"
 
 [pages.xray.tunnel]
+"port" = "Porta"
+"serverPort" = "Porta SSH do servidor"
 "enable" = "Ativar túnel"
 "enableDesc" = "Ativar túnel 6TO4"
 "ip" = "Endereço IP do túnel"
@@ -591,6 +644,7 @@
 "xrayNotRunning" = "❗ Xray Core não está em execução."
 
 [tgbot.messages]
+"enterEmail" = "Digite o e-mail do cliente"
 "enterClientInfo" = "Por favor, insira as informações do cliente no formato: email:expire_days:limit_gb"
 "cpuThreshold" = "🔴 A carga da CPU {{ .Percent }}% excede o limite de {{ .Threshold }}%"
 "selectUserFailed" = "❌ Erro na seleção do usuário!"

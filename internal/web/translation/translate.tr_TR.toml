@@ -1,4 +1,5 @@
 "username" = "Kullanıcı Adı"
+"useIPv4ForHost" = "Ana bilgisayar için IPv4 kullan"
 "password" = "Şifre"
 "login" = "Giriş Yap"
 "confirm" = "Onayla"
@@ -67,6 +68,9 @@
 "moveDown" = "Aşağı Taşı"
 
 [menu]
+"theme" = "Tema"
+"themeDark" = "Koyu"
+"themeUltra" = "Ultra"
 "dashboard" = "Genel Bakış"
 "inbounds" = "Gelenler"
 "settings" = "Panel Ayarları"
@@ -208,6 +212,10 @@
 "reordered" = "Gelen yeniden sıralandı"
 
 [pages.node_clients]
+"bulkDelete" = "Toplu Sil"
+"manageLinks" = "Bağlantıları Yönet"
+"subscriptionUrl" = "Abonelik URL'si"
+"subscriptionUrlJson" = "Abonelik URL JSON"
 "showLinks" = "Bağlantıları göster"
 "noLinks" = "Mevcut bağlantı yok"
 "title" = "Müşteriler"
@@ -269,6 +277,8 @@
 "responseHeader" = "Yanıt Başlığı"
 
 [pages.settings]
+"subUI" = "Özel Abonelik Şablonu"
+"subUIDesc" = "HTML kodlarınızı /etc/x-ui/html/sub.html dosyasına yapıştırın"
 "title" = "Panel Ayarları"
 "save" = "Kaydet"
 "infoDesc" = "Burada yapılan her değişikliğin kaydedilmesi gerekir. Değişikliklerin uygulanması için paneli yeniden başlatın."
@@ -380,6 +390,8 @@
 
 [pages.xray]
 "title" = "Xray Yapılandırmaları"
+"minClientVersion" = "Minimum İstemci Sürümü"
+"minClientVersionPlaceholder" = "26.3.27 (Xray varsayılanı)"
 "save" = "Kaydet"
 "restart" = "Xray'i Yeniden Başlat"
 "basicTemplate" = "Temeller"
@@ -450,6 +462,9 @@
 "useComma" = "Virgülle ayrılmış öğeler"
 
 [pages.xray.outbound]
+"reverseTag" = "Ters Etiket"
+"reverseTagDesc" = "Bu VLESS istemcisinin kullandığı ters proxy giriş etiketi."
+"reverseTagPlaceholder" = "ters-giris-etiketi"
 "addOutbound" = "Giden Ekle"
 "addReverse" = "Ters Ekle"
 "editOutbound" = "Gideni Düzenle"
@@ -490,12 +505,40 @@
 "endpoint" = "Uç Nokta"
 "psk" = "Ön Paylaşılan Anahtar"
 "domainStrategy" = "Alan Adı Stratejisi"
+"interfaceAddresses" = "Arabirim Adresleri"
+"peers" = "Eşler"
+"email" = "E-posta"
+"emailPlaceholder" = "Dinamik yönetim ve istatistikler için eş kimliği"
+"userLevel" = "Kullanıcı Seviyesi"
 
 [pages.xray.tun]
+"name" = "Arabirim Adı"
 "nameDesc" = "TUN arabiriminin adı. Kullanılabilir bir 'utunN' adını otomatik seçmek için boş bırakın"
+"adapterDescription" = "Açıklama"
+"descriptionDesc" = "İsteğe bağlı Windows bağdaştırıcısı açıklaması. Wintun kullanmak için boş bırakın"
 "mtuDesc" = "Maksimum İletim Birimi. Veri paketlerinin maksimum boyutu. Varsayılan değer 1500'dür"
 "userLevel" = "Kullanıcı Seviyesi"
 "userLevelDesc" = "Bu giriş yoluyla yapılan tüm bağlantılar bu kullanıcı seviyesini kullanacaktır. Varsayılan değer 0'dır"
+"routeWarning" = "Otomatik rotalar bir ağ döngüsü oluşturabilir. Xray üst bağlantısının TUN rotaları dışından erişilebilir kaldığından emin olun."
+"gatewayPrefixes" = "Ağ Geçidi Önekleri"
+"dnsAddresses" = "DNS Adresleri"
+"systemRoutes" = "Sistem Rotaları"
+"outboundInterface" = "Çıkış Arabirimi"
+"outboundInterfaceDesc" = "Otomatik rotaların dışında tutulan çıkış arabirimi. Xray'in otomatik seçmesi için boş bırakın"
+
+[pages.xray.finalmask]
+"tcpMasks" = "TCP Maskeleri"
+"tcpMask" = "TCP Maskesi"
+"type" = "Tür"
+"hostname" = "Ana Bilgisayar Adı"
+"hostnamePlaceholder" = "Minecraft sunucusunun ana bilgisayar adı"
+"passwordPlaceholder" = "Paylaşılan XMC parolası"
+"signedProfiles" = "İmzalı Profiller"
+"profile" = "Profil"
+"usernamePlaceholder" = "3–16 Minecraft karakteri"
+"uuid" = "UUID"
+"texturesValue" = "Doku Değeri"
+"texturesSignature" = "Doku İmzası"
 
 [pages.xray.dns]
 "enable" = "DNS'yi Etkinleştir"
@@ -517,6 +560,14 @@
 "useSystemHosts" = "Sistem Hosts Dosyasını Kullan"
 "useSystemHostsDesc" = "Yüklü sistemin hosts dosyasını kullan"
 
+[pages.xray.metrics]
+"title" = "Metrikler"
+"desc" = "Prometheus/Grafana tarafından toplanmak üzere çekirdek istatistiklerini sunar."
+"enableDesc" = "Metrik uç noktasını etkinleştirir."
+"listenDesc" = "Metrik uç noktası için adres:port (ör. 127.0.0.1:11111)."
+"tag" = "Çıkış Etiketi"
+"tagDesc" = "Metrik uç noktası için benzersiz çıkış etiketi."
+
 [pages.xray.fakedns]
 "add" = "Sahte DNS Ekle"
 "edit" = "Sahte DNS'i Düzenle"
@@ -524,6 +575,8 @@
 "poolSize" = "Havuz Boyutu"
 
 [pages.xray.tunnel]
+"port" = "Port"
+"serverPort" = "Sunucu SSH Portu"
 "enable" = "Tüneli Etkinleştir"
 "enableDesc" = "6TO4 tünelini etkinleştir"
 "ip" = "Tünel IP adresi"
@@ -591,6 +644,7 @@
 "xrayNotRunning" = "❗ Xray Core çalışmıyor."
 
 [tgbot.messages]
+"enterEmail" = "Lütfen istemcinin e-posta adresini girin"
 "enterClientInfo" = "Lütfen müşteri bilgilerini şu formatta girin: email:expire_days:limit_gb"
 "cpuThreshold" = "🔴 CPU Yükü {{ .Percent }}% eşiği {{ .Threshold }}%'yi aşıyor"
 "selectUserFailed" = "❌ Kullanıcı seçiminde hata!"

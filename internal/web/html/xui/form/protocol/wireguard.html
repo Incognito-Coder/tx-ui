@@ -16,7 +16,7 @@
     <a-form-item label='{{ i18n "pages.xray.wireguard.publicKey" }}'>
         <a-input disabled v-model="inbound.settings.pubKey"></a-input>
     </a-form-item>
-    <a-form-item label="Interface Addresses">
+    <a-form-item label='{{ i18n "pages.xray.wireguard.interfaceAddresses" }}'>
         <a-select :dropdown-class-name="themeSwitcher.currentTheme" :token-separators="[',']"
                   mode="tags" placeholder="10.0.0.1/24"
                   v-model="inbound.settings.address"></a-select>
@@ -27,7 +27,7 @@
     <a-form-item label='No Kernel Tun'>
         <a-switch v-model="inbound.settings.noKernelTun"></a-switch>
     </a-form-item>
-    <a-form-item label="Peers">
+    <a-form-item label='{{ i18n "pages.xray.wireguard.peers" }}'>
         <a-button icon="plus" type="primary" size="small" @click="inbound.settings.addPeer()"></a-button>
     </a-form-item>
     <a-form v-for="(peer, index) in inbound.settings.peers" :colon="false" :label-col="{ md: {span:8} }"
@@ -36,11 +36,11 @@
             <a-icon v-if="inbound.settings.peers.length>1" type="delete" @click="() => inbound.settings.delPeer(index)"
                     style="color: rgb(255, 77, 79);cursor: pointer;"></a-icon>
         </a-divider>
-        <a-form-item label="Email">
-            <a-input placeholder="Peer identity for dynamic management and stats"
+        <a-form-item label='{{ i18n "pages.xray.wireguard.email" }}'>
+            <a-input placeholder='{{ i18n "pages.xray.wireguard.emailPlaceholder" }}'
                      v-model.trim="peer.email"></a-input>
         </a-form-item>
-        <a-form-item label="User Level">
+        <a-form-item label='{{ i18n "pages.xray.wireguard.userLevel" }}'>
             <a-input-number :min="0" v-model.number="peer.level"></a-input-number>
         </a-form-item>
         <a-form-item>
