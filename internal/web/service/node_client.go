@@ -218,7 +218,37 @@ func (s *NodeClientService) Update(nc *model.NodeClient) error {
 	}
 
 	db := database.GetDB()
-	if err := db.Save(nc).Error; err != nil {
+	tx := db.Begin()
+	if tx.Error != nil {
+		return tx.Error
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+			panic(r)
+		}
+	}()
+
+	if err := tx.Save(nc).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// Keep each linked traffic row's node-client metadata in sync while
+	// preserving its accumulated upload and download counters.
+	if err := tx.Model(&xray.ClientTraffic{}).
+		Where("node_client_id = ?", nc.Id).
+		Updates(map[string]interface{}{
+			"email":       nc.Email,
+			"total":       nc.TotalGB,
+			"expiry_time": nc.ExpiryTime,
+			"reset":       nc.Reset,
+		}).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if err := tx.Commit().Error; err != nil {
 		return err
 	}
 
@@ -397,12 +427,16 @@ func (s *NodeClientService) AddLink(nodeClientId, inboundId int, flow string) er
 			return fmt.Errorf("creating client traffic for email %s and inbound %d: %w", nc.Email, inboundId, err)
 		}
 	} else {
-		// Row exists — update NodeClientId if it is not already set.
-		if ct.NodeClientId == nil {
-			if err := tx.Model(ct).Update("node_client_id", nodeClientId).Error; err != nil {
-				tx.Rollback()
-				return fmt.Errorf("updating node_client_id on client traffic for email %s and inbound %d: %w", nc.Email, inboundId, err)
-			}
+		// Row exists — attach it and synchronize the node-client limits while
+		// preserving its accumulated upload and download counters.
+		if err := tx.Model(ct).Updates(map[string]interface{}{
+			"node_client_id": nodeClientId,
+			"total":          nc.TotalGB,
+			"expiry_time":    nc.ExpiryTime,
+			"reset":          nc.Reset,
+		}).Error; err != nil {
+			tx.Rollback()
+			return fmt.Errorf("updating client traffic for email %s and inbound %d: %w", nc.Email, inboundId, err)
 		}
 	}
 

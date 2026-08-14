@@ -16,6 +16,21 @@
         .ant-card-body {
             padding: .5rem;
         }
+
+        .node-clients-table .ant-table-selection-column {
+            width: 26px;
+            min-width: 26px;
+            padding-right: 2px !important;
+            padding-left: 0 !important;
+        }
+
+        .node-clients-table .ant-table-thead > tr > th:not(.ant-table-selection-column) {
+            padding: 10px 6px !important;
+            overflow: hidden;
+            line-height: 1.2;
+            text-overflow: ellipsis;
+            white-space: normal;
+        }
     }
 
     .infinite-tag {
@@ -121,9 +136,10 @@
                                     style="max-width: 250px" v-model="searchKey"></a-input>
                             </div>
                             <a-table :columns="isMobile ? mobileColumns : columns" :data-source="searchedNodeClients"
+                                class="node-clients-table"
                                 :pagination="pagination(searchedNodeClients)" :row-key="nc => nc.id"
-                                :row-selection="{ selectedRowKeys: selectedRowKeys, onChange: onSelectChange, columnWidth: 28 }"
-                                :scroll="{ x: isMobile ? 560 : 1000 }" style="margin-top: 10px">
+                                :row-selection="{ selectedRowKeys: selectedRowKeys, onChange: onSelectChange, columnWidth: isMobile ? 26 : 28 }"
+                                :scroll="{ x: isMobile ? 436 : 1000 }" style="margin-top: 10px">
                                 <!-- Action column -->
                                 <template slot="action" slot-scope="text, nc">
                                     <a-dropdown :trigger="['click']">
@@ -216,6 +232,9 @@
                                             [[ remainedDays(nc.expiryTime) ]]
                                         </a-tag>
                                     </a-popover>
+                                    <a-tag color="green" v-else-if="nc.expiryTime < 0">
+                                        [[ remainedDays(nc.expiryTime) ]]
+                                    </a-tag>
                                     <a-tag class="infinite-tag" color="purple" v-else>
                                         <svg fill="currentColor" height="10px" viewBox="0 0 640 512" width="14px">
                                             <path
@@ -337,7 +356,17 @@
                                 <a-input-number :min="0" v-model.number="ncModal.nodeClient._totalGB"></a-input-number>
                             </a-form-item>
 
-                            <a-form-item>
+                            <a-form-item label='{{ i18n "pages.client.delayedStart" }}'>
+                                <a-switch v-model="ncModal.delayedStart"
+                                    @change="ncModal.changeDelayedStart"></a-switch>
+                            </a-form-item>
+
+                            <a-form-item label='{{ i18n "pages.client.expireDays" }}'
+                                v-if="ncModal.delayedStart">
+                                <a-input-number :min="0" v-model.number="ncModal.delayedExpireDays"></a-input-number>
+                            </a-form-item>
+
+                            <a-form-item v-else>
                                 <template slot="label">
                                     <a-tooltip>
                                         <template slot="title">{{ i18n "pages.inbounds.leaveBlankToNeverExpire"
@@ -557,19 +586,29 @@
 
         const mobileColumns = [{
             title: "ID",
-            align: 'right',
+            align: 'center',
             dataIndex: "id",
-            width: 10,
+            width: 36,
         }, {
             title: '{{ i18n "pages.inbounds.operate" }}',
             align: 'center',
-            width: 25,
+            width: 64,
             scopedSlots: { customRender: 'action' },
         }, {
             title: 'Email',
             align: 'left',
-            width: 70,
+            width: 100,
             dataIndex: "email",
+        }, {
+            title: '{{ i18n "pages.inbounds.traffic" }}',
+            align: 'center',
+            width: 125,
+            scopedSlots: { customRender: 'traffic' },
+        }, {
+            title: '{{ i18n "pages.inbounds.expireDate" }}',
+            align: 'center',
+            width: 85,
+            scopedSlots: { customRender: 'expiryTime' },
         }];
 
         const app = new Vue({
@@ -763,6 +802,8 @@
                     isEdit: false,
                     nodeClient: null,
                     expiryTimeModel: null,
+                    delayedStart: false,
+                    delayedExpireDays: 0,
 
                     _expiryMomentToMillis(momentObj) {
                         if (!momentObj) return 0;
@@ -772,9 +813,17 @@
                     },
 
                     _millisToMoment(ms) {
-                        if (!ms || ms === 0) return null;
+                        if (!ms || ms <= 0) return null;
                         if (typeof moment !== 'undefined') return moment(ms);
                         return null;
+                    },
+
+                    changeDelayedStart(delayedStart) {
+                        if (delayedStart) {
+                            this.expiryTimeModel = null;
+                        } else {
+                            this.delayedExpireDays = 0;
+                        }
                     },
 
                     showAdd() {
@@ -797,6 +846,8 @@
                             comment: '',
                         };
                         this.expiryTimeModel = null;
+                        this.delayedStart = false;
+                        this.delayedExpireDays = 0;
                         this.visible = true;
                     },
 
@@ -806,15 +857,18 @@
                         this.okText = '{{ i18n "sure" }}';
                         this.nodeClient = Object.assign({}, nc);
                         this.nodeClient._totalGB = toFixed((nc.totalGB || 0) / ONE_GB, 2);
-                        this.expiryTimeModel = this._millisToMoment(nc.expiryTime);
+                        this.delayedStart = nc.expiryTime < 0;
+                        this.delayedExpireDays = this.delayedStart ? nc.expiryTime / -86400000 : 0;
+                        this.expiryTimeModel = this.delayedStart ? null : this._millisToMoment(nc.expiryTime);
                         this.visible = true;
                     },
 
                     async ok(vm) {
                         if (!this.nodeClient) return;
 
-                        // Sync expiry time from date picker model
-                        this.nodeClient.expiryTime = this._expiryMomentToMillis(this.expiryTimeModel);
+                        this.nodeClient.expiryTime = this.delayedStart
+                            ? -86400000 * (Number(this.delayedExpireDays) || 0)
+                            : this._expiryMomentToMillis(this.expiryTimeModel);
                         this.nodeClient.totalGB = toFixed((this.nodeClient._totalGB || 0) * ONE_GB, 0);
 
                         if (!this.nodeClient.email || this.nodeClient.email.trim() === '') {

@@ -1187,9 +1187,49 @@ func (s *InboundService) addClientTraffic(tx *gorm.DB, traffics []*xray.ClientTr
 
 func (s *InboundService) adjustTraffics(tx *gorm.DB, dbClientTraffics []*xray.ClientTraffic) ([]*xray.ClientTraffic, error) {
 	inboundIds := make([]int, 0, len(dbClientTraffics))
+	nodeClientIds := make(map[int]struct{})
 	for _, dbClientTraffic := range dbClientTraffics {
-		if dbClientTraffic.ExpiryTime < 0 {
+		if dbClientTraffic.ExpiryTime >= 0 {
+			continue
+		}
+		if dbClientTraffic.NodeClientId != nil {
+			nodeClientIds[*dbClientTraffic.NodeClientId] = struct{}{}
+		} else {
 			inboundIds = append(inboundIds, dbClientTraffic.InboundId)
+		}
+	}
+
+	// Node clients are synthesized into each linked inbound, so their delayed
+	// expiry must be activated on the node-client record and all linked traffic
+	// rows instead of in an inbound's settings JSON.
+	if len(nodeClientIds) > 0 {
+		ids := make([]int, 0, len(nodeClientIds))
+		for id := range nodeClientIds {
+			ids = append(ids, id)
+		}
+
+		var nodeClients []*model.NodeClient
+		if err := tx.Where("id IN (?) AND expiry_time < 0", ids).Find(&nodeClients).Error; err != nil {
+			return nil, err
+		}
+
+		nowMillis := time.Now().Unix() * 1000
+		for _, nodeClient := range nodeClients {
+			newExpiryTime := nowMillis - nodeClient.ExpiryTime
+			if err := tx.Model(nodeClient).Update("expiry_time", newExpiryTime).Error; err != nil {
+				return nil, err
+			}
+			if err := tx.Model(&xray.ClientTraffic{}).
+				Where("node_client_id = ?", nodeClient.Id).
+				Update("expiry_time", newExpiryTime).Error; err != nil {
+				return nil, err
+			}
+
+			for _, traffic := range dbClientTraffics {
+				if traffic.NodeClientId != nil && *traffic.NodeClientId == nodeClient.Id {
+					traffic.ExpiryTime = newExpiryTime
+				}
+			}
 		}
 	}
 
@@ -1208,7 +1248,7 @@ func (s *InboundService) adjustTraffics(tx *gorm.DB, dbClientTraffics []*xray.Cl
 				for client_index := range clients {
 					c := clients[client_index].(map[string]interface{})
 					for traffic_index := range dbClientTraffics {
-						if dbClientTraffics[traffic_index].ExpiryTime < 0 && c["email"] == dbClientTraffics[traffic_index].Email {
+						if dbClientTraffics[traffic_index].ExpiryTime < 0 && dbClientTraffics[traffic_index].NodeClientId == nil && c["email"] == dbClientTraffics[traffic_index].Email {
 							oldExpiryTime := c["expiryTime"].(float64)
 							newExpiryTime := (time.Now().Unix() * 1000) - int64(oldExpiryTime)
 							c["expiryTime"] = newExpiryTime

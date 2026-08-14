@@ -31,6 +31,31 @@
             padding: .5rem;
         }
 
+        .inbounds-table .ant-table-thead > tr > th {
+            padding-right: 6px !important;
+            padding-left: 6px !important;
+        }
+
+        .inbounds-table .ant-table-tbody > tr > td {
+            padding: 9px 6px !important;
+        }
+
+        .inbounds-table .ant-table-tbody > tr:not(.ant-table-expanded-row) > td:first-child {
+            white-space: nowrap;
+        }
+
+        .inbounds-table .ant-table-tbody > tr:not(.ant-table-expanded-row) > td:nth-child(2) {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .inbound-row-actions {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            vertical-align: middle;
+        }
     }
 
     tr.hideExpandIcon .ant-table-row-expand-icon {
@@ -295,29 +320,40 @@
                                  :pagination=pagination(searchedInbounds)
                                  :row-class-name="dbInbound => (dbInbound.isMultiUser() ? '' : 'hideExpandIcon')"
                                  :row-key="dbInbound => dbInbound.id"
-                                 :scroll="{ x: isMobile ? 720 : 1000 }"
+                                 :scroll="isMobile ? {} : { x: 1000 }"
                                  style="margin-top: 10px">
                             <template slot="action" slot-scope="text, dbInbound">
                                 <!-- Reorder controls: move up/down (disabled at boundaries) -->
-                                <a-tooltip title='{{ i18n "moveUp" }}'>
-                                    <a-icon @click.stop="moveUp(dbInbound.id)" style="margin-right:6px; cursor: pointer;"
-                                            type="arrow-up"
-                                            v-if="!isFirst(dbInbound.id)"></a-icon>
-                                    <a-icon style="margin-right:6px; opacity:0.35; cursor: default;" type="arrow-up"
-                                            v-else></a-icon>
-                                </a-tooltip>
-                                <a-tooltip title='{{ i18n "moveDown" }}'>
-                                    <a-icon @click.stop="moveDown(dbInbound.id)" style="margin-right:6px; cursor: pointer;"
-                                            type="arrow-down"
-                                            v-if="!isLast(dbInbound.id)"></a-icon>
-                                    <a-icon style="margin-right:6px; opacity:0.35; cursor: default;" type="arrow-down"
-                                            v-else></a-icon>
-                                </a-tooltip>
+                                <span class="inbound-row-actions">
+                                <template v-if="!isMobile">
+                                    <a-tooltip title='{{ i18n "moveUp" }}'>
+                                        <a-icon @click.stop="moveUp(dbInbound.id)" style="margin-right:6px; cursor: pointer;"
+                                                type="arrow-up"
+                                                v-if="!isFirst(dbInbound.id)"></a-icon>
+                                        <a-icon style="margin-right:6px; opacity:0.35; cursor: default;" type="arrow-up"
+                                                v-else></a-icon>
+                                    </a-tooltip>
+                                    <a-tooltip title='{{ i18n "moveDown" }}'>
+                                        <a-icon @click.stop="moveDown(dbInbound.id)" style="margin-right:6px; cursor: pointer;"
+                                                type="arrow-down"
+                                                v-if="!isLast(dbInbound.id)"></a-icon>
+                                        <a-icon style="margin-right:6px; opacity:0.35; cursor: default;" type="arrow-down"
+                                                v-else></a-icon>
+                                    </a-tooltip>
+                                </template>
                                 <a-dropdown :trigger="['click']">
                                     <a-icon @click="e => e.preventDefault()" style="font-size: 20px; text-decoration: solid;"
                                             type="more"></a-icon>
                                     <a-menu :theme="themeSwitcher.currentTheme" @click="a => clickAction(a, dbInbound)"
                                             slot="overlay">
+                                        <a-menu-item key="moveUp" v-if="isMobile && !isFirst(dbInbound.id)">
+                                            <a-icon type="arrow-up"></a-icon>
+                                            {{ i18n "moveUp" }}
+                                        </a-menu-item>
+                                        <a-menu-item key="moveDown" v-if="isMobile && !isLast(dbInbound.id)">
+                                            <a-icon type="arrow-down"></a-icon>
+                                            {{ i18n "moveDown" }}
+                                        </a-menu-item>
                                         <a-menu-item key="edit">
                                             <a-icon type="edit"></a-icon>
                                             {{ i18n "edit" }}
@@ -384,6 +420,7 @@
                                         </a-menu-item>
                                     </a-menu>
                                 </a-dropdown>
+                                </span>
                             </template>
                             <template slot="protocol" slot-scope="text, dbInbound">
                                 <a-tag color="purple" style="margin:0;">[[ dbInbound.protocol ]]</a-tag>
@@ -732,25 +769,18 @@
     }];
 
     const mobileColumns = [{
-        title: "ID",
-        align: 'right',
-        dataIndex: "id",
-        width: 10,
-        responsive: ["s"],
-    }, {
         title: '{{ i18n "pages.inbounds.operate" }}',
         align: 'center',
-        width: 25,
+        width: 74,
         scopedSlots: {customRender: 'action'},
     }, {
         title: '{{ i18n "pages.inbounds.remark" }}',
         align: 'left',
-        width: 70,
         dataIndex: "remark",
     }, {
         title: '{{ i18n "pages.inbounds.info" }}',
         align: 'center',
-        width: 10,
+        width: 42,
         scopedSlots: {customRender: 'info'},
     }];
 
@@ -776,12 +806,12 @@
     const innerMobileColumns = [
         {
             title: '{{ i18n "pages.inbounds.operate" }}',
-            width: 10,
+            width: 40,
             align: 'center',
             scopedSlots: {customRender: 'actionMenu'}
         },
-        {title: '{{ i18n "pages.inbounds.client" }}', width: 90, align: 'left', scopedSlots: {customRender: 'client'}},
-        {title: '{{ i18n "pages.inbounds.info" }}', width: 10, align: 'center', scopedSlots: {customRender: 'info'}},
+        {title: '{{ i18n "pages.inbounds.client" }}', align: 'left', scopedSlots: {customRender: 'client'}},
+        {title: '{{ i18n "pages.inbounds.info" }}', width: 40, align: 'center', scopedSlots: {customRender: 'info'}},
     ];
 
     const app = new Vue({
@@ -1021,6 +1051,12 @@
             },
             clickAction(action, dbInbound) {
                 switch (action.key) {
+                    case "moveUp":
+                        this.moveUp(dbInbound.id);
+                        break;
+                    case "moveDown":
+                        this.moveDown(dbInbound.id);
+                        break;
                     case "qrcode":
                         this.showQrcode(dbInbound.id);
                         break;
