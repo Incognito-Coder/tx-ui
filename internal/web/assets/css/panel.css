@@ -471,7 +471,26 @@ body {
 .ant-select-selection--single,
 .ant-calendar-picker-input,
 .ant-time-picker-input {
+    height: 38px;
     min-height: 38px;
+    max-height: 38px;
+}
+
+.ant-input:not(textarea) {
+    padding: 0 11px;
+    line-height: 36px;
+}
+
+.ant-input-number-input-wrap {
+    height: 100% !important;
+}
+
+.ant-input-number-input {
+    height: 100% !important;
+    min-height: 0 !important;
+    max-height: 100% !important;
+    padding: 0 11px !important;
+    line-height: 36px !important;
 }
 
 .ant-select-selection--single .ant-select-selection__rendered {
@@ -502,15 +521,24 @@ body {
     justify-content: center;
     gap: 7px;
     height: 36px;
-    min-height: 0;
     padding: 0 14px;
     font-weight: 600;
-    line-height: 34px;
+    line-height: 1.5;
     white-space: nowrap;
     border-color: var(--ui-border-strong);
     border-radius: 9px;
     background: var(--ui-surface);
     box-shadow: var(--ui-shadow-sm);
+    transition: all 0.2s ease;
+}
+
+.ant-btn-icon-only {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .ant-btn > .anticon + span,
@@ -521,22 +549,35 @@ body {
 .ant-btn-sm {
     height: 30px;
     padding: 0 10px;
-    line-height: 28px;
+    font-size: 13px;
+    line-height: 1.5;
     border-radius: 8px;
+}
+
+.ant-btn-sm.ant-btn-icon-only {
+    width: 30px;
+    height: 30px;
+    padding: 0;
 }
 
 .ant-btn-lg {
     height: 44px;
     padding: 0 20px;
     font-size: 15px;
-    line-height: 42px;
+    line-height: 1.5;
     border-radius: 11px;
+}
+
+.ant-btn-lg.ant-btn-icon-only {
+    width: 44px;
+    height: 44px;
+    padding: 0;
 }
 
 .ant-btn-circle,
 .ant-btn-circle-outline {
     width: 36px;
-    min-width: 36px;
+    height: 36px;
     padding: 0;
     border-radius: 50%;
 }
@@ -544,13 +585,13 @@ body {
 .ant-btn-sm.ant-btn-circle,
 .ant-btn-sm.ant-btn-circle-outline {
     width: 30px;
-    min-width: 30px;
+    height: 30px;
 }
 
 .ant-btn-lg.ant-btn-circle,
 .ant-btn-lg.ant-btn-circle-outline {
     width: 44px;
-    min-width: 44px;
+    height: 44px;
 }
 
 .ant-btn-round {
@@ -1024,13 +1065,350 @@ a:focus-visible {
 .ant-drawer-content,
 .ant-dropdown-menu,
 .ant-select-dropdown,
+.ant-select-dropdown-menu,
 .ant-popover-inner,
 .ant-calendar,
 .ant-message-notice-content {
     border: 1px solid var(--ui-border);
     border-radius: var(--ui-radius);
-    background: var(--ui-surface);
-    box-shadow: none;
+    background: var(--ui-surface) !important;
+    box-shadow: 0 10px 25px -5px rgb(0 0 0 / 10%), 0 8px 10px -6px rgb(0 0 0 / 10%);
+}
+
+.ant-select-dropdown,
+.ant-dropdown-menu {
+    min-width: 85px;
+}
+
+body.dark .ant-dropdown-menu,
+body.dark .ant-select-dropdown,
+body.dark .ant-select-dropdown-menu,
+#app.dark .ant-dropdown-menu,
+#app.dark .ant-select-dropdown,
+#app.dark .ant-select-dropdown-menu,
+.dark .ant-dropdown-menu,
+.dark .ant-select-dropdown,
+.dark .ant-select-dropdown-menu,
+.dark.ant-select-dropdown,
+.dark.ant-dropdown-menu {
+    border-color: var(--ui-border) !important;
+    background: var(--ui-surface) !important;
+    box-shadow: 0 10px 25px -5px rgb(0 0 0 / 50%), 0 8px 10px -6px rgb(0 0 0 / 50%) !important;
+}
+
+.ant-select-dropdown-menu-item,
+.ant-dropdown-menu-item,
+.ant-dropdown-menu-submenu-title,
+.dark .ant-select-dropdown-menu-item,
+.dark .ant-dropdown-menu-item,
+.dark .ant-dropdown-menu-submenu-title,
+.dark.ant-select-dropdown .ant-select-dropdown-menu-item {
+    background-color: transparent !important;
+    color: var(--ui-text) !important;
+    border-radius: var(--ui-radius-sm) !important;
+    padding: 6px 12px !important;
+    white-space: nowrap;
+    transition: background-color 0.15s ease, color 0.15s ease !important;
+}
+
+.ant-select-dropdown-menu-item:hover:not(.ant-select-dropdown-menu-item-disabled),
+.ant-select-dropdown-menu-item-active:not(.ant-select-dropdown-menu-item-disabled),
+.ant-dropdown-menu-item:hover:not(.ant-dropdown-menu-item-disabled),
+.ant-dropdown-menu-submenu-title:hover:not(.ant-dropdown-menu-submenu-title-disabled),
+.dark .ant-select-dropdown-menu-item:hover:not(.ant-select-dropdown-menu-item-disabled),
+.dark .ant-select-dropdown-menu-item-active:not(.ant-select-dropdown-menu-item-disabled),
+.dark .ant-dropdown-menu-item:hover:not(.ant-dropdown-menu-item-disabled),
+.dark .ant-dropdown-menu-submenu-title:hover:not(.ant-dropdown-menu-submenu-title-disabled),
+.dark.ant-select-dropdown .ant-select-dropdown-menu-item-active:not(.ant-select-dropdown-menu-item-disabled),
+.dark.ant-select-dropdown .ant-select-dropdown-menu-item:hover:not(.ant-select-dropdown-menu-item-disabled) {
+    background-color: var(--ui-surface-muted) !important;
+    color: var(--ui-text) !important;
+}
+
+.ant-select-dropdown-menu-item-selected,
+.ant-select-dropdown-menu-item-selected:hover,
+.ant-dropdown-menu-item-selected,
+.ant-dropdown-menu-item-selected:hover,
+.dark .ant-select-dropdown-menu-item-selected,
+.dark .ant-select-dropdown-menu-item-selected:hover,
+.dark .ant-dropdown-menu-item-selected,
+.dark .ant-dropdown-menu-item-selected:hover,
+.dark.ant-select-dropdown .ant-select-dropdown-menu-item-selected {
+    background-color: var(--ui-primary-soft) !important;
+    color: var(--ui-primary) !important;
+    font-weight: 600 !important;
+}
+
+/* DatePicker & Calendar design system styling */
+.ant-calendar-picker-container,
+.ant-calendar {
+    font-family: inherit !important;
+    border: 1px solid var(--ui-border) !important;
+    border-radius: var(--ui-radius) !important;
+    background: var(--ui-surface) !important;
+    color: var(--ui-text) !important;
+    box-shadow: 0 14px 35px -10px rgb(0 0 0 / 25%) !important;
+    overflow: hidden;
+}
+
+/* Header Input section ("Select date") */
+.ant-calendar-input-wrap {
+    height: 42px !important;
+    padding: 6px 12px !important;
+    border-bottom: 1px solid var(--ui-border) !important;
+    background: var(--ui-surface-muted) !important;
+}
+
+.ant-calendar-input {
+    height: 30px !important;
+    line-height: 30px !important;
+    padding: 0 10px !important;
+    color: var(--ui-text) !important;
+    background: var(--ui-surface) !important;
+    border: 1px solid var(--ui-border-strong) !important;
+    border-radius: var(--ui-radius-sm) !important;
+    font-size: 13px !important;
+}
+
+.ant-calendar-input::placeholder {
+    color: var(--ui-text-muted) !important;
+    opacity: 0.7;
+}
+
+/* Calendar Header ("Aug 2026", Prev/Next buttons) */
+.ant-calendar-header {
+    height: 40px !important;
+    line-height: 40px !important;
+    border-bottom: 1px solid var(--ui-border) !important;
+    background: transparent !important;
+}
+
+.ant-calendar-header a,
+.ant-calendar-header .ant-calendar-my-select,
+.ant-calendar-header .ant-calendar-year-select,
+.ant-calendar-header .ant-calendar-month-select,
+.ant-calendar-header .ant-calendar-day-select {
+    color: var(--ui-text) !important;
+    font-weight: 650 !important;
+    font-size: 14px !important;
+    transition: color 0.15s ease !important;
+}
+
+.ant-calendar-header a:hover {
+    color: var(--ui-primary) !important;
+}
+
+.ant-calendar-prev-year-btn,
+.ant-calendar-prev-month-btn,
+.ant-calendar-next-month-btn,
+.ant-calendar-next-year-btn {
+    color: var(--ui-text-muted) !important;
+    font-size: 14px !important;
+}
+
+.ant-calendar-prev-year-btn:hover,
+.ant-calendar-prev-month-btn:hover,
+.ant-calendar-next-month-btn:hover,
+.ant-calendar-next-year-btn:hover {
+    color: var(--ui-primary) !important;
+}
+
+/* Calendar Grid & Days Header */
+.ant-calendar-table {
+    background: transparent !important;
+    border-collapse: separate !important;
+    border-spacing: 0 2px !important;
+}
+
+.ant-calendar-column-header {
+    color: var(--ui-text-muted) !important;
+    font-weight: 600 !important;
+    font-size: 12px !important;
+}
+
+.ant-calendar-date {
+    width: 28px !important;
+    height: 28px !important;
+    line-height: 28px !important;
+    margin: 2px auto !important;
+    border-radius: var(--ui-radius-sm) !important;
+    color: var(--ui-text) !important;
+    font-weight: 500 !important;
+    background: transparent !important;
+    transition: all 0.15s ease !important;
+}
+
+.ant-calendar-date:hover {
+    background: var(--ui-surface-muted) !important;
+    color: var(--ui-text) !important;
+}
+
+/* Today date styling */
+.ant-calendar-today .ant-calendar-date {
+    border: 1px solid var(--ui-primary) !important;
+    color: var(--ui-primary) !important;
+    font-weight: 600 !important;
+    background: transparent !important;
+}
+
+/* Selected date styling */
+.ant-calendar-selected-day .ant-calendar-date,
+.ant-calendar-selected-day .ant-calendar-date:hover {
+    background: var(--ui-primary) !important;
+    color: #ffffff !important;
+    font-weight: 650 !important;
+    border-radius: var(--ui-radius-sm) !important;
+    box-shadow: 0 2px 8px rgb(37 99 235 / 30%) !important;
+}
+
+/* Outside month date styling */
+.ant-calendar-last-month-cell .ant-calendar-date,
+.ant-calendar-next-month-btn-day .ant-calendar-date,
+.ant-calendar-last-month-cell .ant-calendar-date:hover,
+.ant-calendar-next-month-btn-day .ant-calendar-date:hover {
+    color: var(--ui-text-muted) !important;
+    opacity: 0.35 !important;
+    background: transparent !important;
+}
+
+/* Calendar Footer ("Now", "Select Time", "Ok") */
+.ant-calendar-footer {
+    border-top: 1px solid var(--ui-border) !important;
+    background: var(--ui-surface-muted) !important;
+    padding: 8px 12px !important;
+    line-height: 30px !important;
+}
+
+.ant-calendar-footer-btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.ant-calendar-today-btn,
+.ant-calendar-time-picker-btn {
+    color: var(--ui-primary) !important;
+    font-weight: 600 !important;
+    font-size: 13px !important;
+    transition: color 0.15s ease !important;
+}
+
+.ant-calendar-today-btn:hover,
+.ant-calendar-time-picker-btn:hover {
+    color: var(--ui-primary-hover) !important;
+}
+
+/* "Ok" button in calendar footer */
+.ant-calendar-ok-btn,
+.ant-calendar-footer .ant-calendar-ok-btn,
+.ant-calendar-ok-btn.ant-btn {
+    height: 30px !important;
+    line-height: 28px !important;
+    padding: 0 14px !important;
+    background: var(--ui-primary) !important;
+    color: #ffffff !important;
+    border: 1px solid var(--ui-primary) !important;
+    border-radius: var(--ui-radius-sm) !important;
+    font-weight: 600 !important;
+    box-shadow: 0 2px 6px rgb(37 99 235 / 25%) !important;
+    transition: all 0.15s ease !important;
+}
+
+.ant-calendar-ok-btn:hover,
+.ant-calendar-footer .ant-calendar-ok-btn:hover,
+.ant-calendar-ok-btn.ant-btn:hover {
+    background: var(--ui-primary-hover) !important;
+    border-color: var(--ui-primary-hover) !important;
+    color: #ffffff !important;
+}
+
+.ant-calendar-ok-btn-disabled,
+.ant-calendar-footer .ant-calendar-ok-btn-disabled {
+    background: var(--ui-surface-muted) !important;
+    border-color: var(--ui-border) !important;
+    color: var(--ui-text-muted) !important;
+    opacity: 0.5 !important;
+    box-shadow: none !important;
+}
+
+/* Time Picker Panel */
+.ant-calendar-time-picker {
+    background: var(--ui-surface) !important;
+    border-top: 1px solid var(--ui-border) !important;
+}
+
+.ant-calendar-time-picker-inner {
+    background: var(--ui-surface) !important;
+}
+
+.ant-calendar-time-picker-select {
+    border-right: 1px solid var(--ui-border) !important;
+}
+
+.ant-calendar-time-picker-select li {
+    color: var(--ui-text) !important;
+    border-radius: var(--ui-radius-sm) !important;
+    margin: 2px 4px !important;
+    transition: background 0.15s ease !important;
+}
+
+.ant-calendar-time-picker-select li:hover {
+    background: var(--ui-surface-muted) !important;
+    color: var(--ui-text) !important;
+}
+
+li.ant-calendar-time-picker-select-option-selected {
+    background: var(--ui-primary-soft) !important;
+    color: var(--ui-primary) !important;
+    font-weight: 650 !important;
+}
+
+/* Year, Month & Decade Selection Panels */
+.ant-calendar-year-panel,
+.ant-calendar-month-panel,
+.ant-calendar-decade-panel {
+    background: var(--ui-surface) !important;
+    color: var(--ui-text) !important;
+}
+
+.ant-calendar-year-panel-header,
+.ant-calendar-month-panel-header,
+.ant-calendar-decade-panel-header {
+    border-bottom: 1px solid var(--ui-border) !important;
+    background: var(--ui-surface-muted) !important;
+    height: 40px !important;
+    line-height: 40px !important;
+}
+
+.ant-calendar-year-panel-header a,
+.ant-calendar-month-panel-header a,
+.ant-calendar-decade-panel-header a {
+    color: var(--ui-text) !important;
+    font-weight: 650 !important;
+}
+
+.ant-calendar-year-panel-year,
+.ant-calendar-month-panel-month,
+.ant-calendar-decade-panel-decade {
+    color: var(--ui-text) !important;
+    border-radius: var(--ui-radius-sm) !important;
+    transition: all 0.15s ease !important;
+}
+
+.ant-calendar-year-panel-year:hover,
+.ant-calendar-month-panel-month:hover,
+.ant-calendar-decade-panel-decade:hover {
+    background: var(--ui-surface-muted) !important;
+    color: var(--ui-text) !important;
+}
+
+.ant-calendar-year-panel-selected-cell .ant-calendar-year-panel-year,
+.ant-calendar-month-panel-selected-cell .ant-calendar-month-panel-month,
+.ant-calendar-decade-panel-selected-cell .ant-calendar-decade-panel-decade {
+    background: var(--ui-primary) !important;
+    color: #ffffff !important;
+    font-weight: 650 !important;
+    border-radius: var(--ui-radius-sm) !important;
 }
 
 .ant-modal-content {
@@ -1113,7 +1491,8 @@ a:focus-visible {
 }
 
 .panel-modal .ant-input:not(textarea) {
-    padding-block: 8px;
+    padding: 0 11px;
+    line-height: 38px;
 }
 
 .panel-modal .ant-input:not(textarea),
@@ -1121,7 +1500,14 @@ a:focus-visible {
 .panel-modal .ant-select-selection--single,
 .panel-modal .ant-calendar-picker-input,
 .panel-modal .ant-time-picker-input {
+    height: 40px;
     min-height: 40px;
+    max-height: 40px;
+}
+
+.panel-modal .ant-input-number-input {
+    line-height: 38px !important;
+    padding: 0 11px !important;
 }
 
 .panel-modal .ant-select-selection--single .ant-select-selection__rendered {
@@ -1201,11 +1587,47 @@ a:focus-visible {
 }
 
 #login .ant-btn-primary-login {
+    width: 100%;
+    height: 50px;
     min-height: 48px;
     border: 0;
     border-radius: 12px;
+    font-size: 16px;
+    font-weight: 500;
     background: var(--ui-primary);
-    box-shadow: none;
+    color: #ffffff;
+    box-shadow: 0 4px 12px rgb(37 99 235 / 20%);
+    transition: all 0.2s ease;
+}
+
+#login .ant-btn-primary-login:hover,
+#login .ant-btn-primary-login:focus {
+    width: 100%;
+    background: var(--ui-primary-hover);
+    color: #ffffff;
+    box-shadow: 0 6px 16px rgb(37 99 235 / 30%);
+}
+
+#login .ant-btn-primary-login:active {
+    width: 100%;
+    background: var(--ui-primary);
+    color: #ffffff;
+}
+
+body.dark #login .ant-btn-primary-login,
+#app.dark #login .ant-btn-primary-login {
+    background: var(--ui-primary);
+    color: #ffffff;
+    box-shadow: 0 4px 12px rgb(79 140 255 / 20%);
+}
+
+body.dark #login .ant-btn-primary-login:hover,
+body.dark #login .ant-btn-primary-login:focus,
+#app.dark #login .ant-btn-primary-login:hover,
+#app.dark #login .ant-btn-primary-login:focus {
+    background: var(--ui-primary-hover);
+    color: #ffffff;
+    box-shadow: 0 6px 16px rgb(79 140 255 / 30%);
 }
 
 body.light #login,

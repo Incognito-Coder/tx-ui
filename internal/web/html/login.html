@@ -114,112 +114,45 @@
 
     .ant-btn-primary-login {
         width: 100%;
+        height: 50px;
+        border: 0;
+        border-radius: 12px;
+        font-size: 16px;
+        font-weight: 500;
+        background: var(--ui-primary);
+        color: #ffffff;
+        box-shadow: 0 4px 12px rgb(37 99 235 / 20%);
+        transition: all 0.2s ease;
     }
 
     .ant-btn-primary-login:focus,
     .ant-btn-primary-login:hover {
-        color: #fff;
-        background-color: #006655;
-        border-color: #006655;
-        width: 95%;
-        box-shadow: 0 2px 0 rgba(0, 0, 0, 0.045);
+        width: 100%;
+        background: var(--ui-primary-hover);
+        color: #ffffff;
+        border: 0;
+        box-shadow: 0 6px 16px rgb(37 99 235 / 30%);
     }
 
     .ant-btn-primary-login.active,
     .ant-btn-primary-login:active {
-        color: #fff;
-        background-color: #006655;
-        border-color: #006655;
-    }
-
-    @keyframes ma-bg-move {
-        0% {
-            background-position: -500px 0;
-        }
-        50% {
-            background-position: 1000px 0;
-        }
-        100% {
-            background-position: 1000px 0;
-        }
-    }
-
-    .wave-btn-bg {
-        position: relative;
-        border-radius: 12px;
         width: 100%;
-        transition: all 0.3s cubic-bezier(.645, .045, .355, 1);
-    }
-
-    .dark .wave-btn-bg {
-        color: #fff;
-        position: relative;
-        background-color: #0a7557;
-        border: 2px double transparent;
-        background-origin: border-box;
-        background-clip: padding-box, border-box;
-        background-size: 300%;
-        width: 100%;
-        z-index: 1;
-    }
-
-    .dark .wave-btn-bg:hover {
-        animation: wave-btn-tara 4s ease infinite;
-    }
-
-    .dark .wave-btn-bg-cl {
-        background: #006655;
-        border-radius: 12px;
-    }
-
-    .dark .wave-btn-bg-cl:hover {
-        width: 95%;
-    }
-
-    .dark .wave-btn-bg-cl:before {
-        position: absolute;
-        content: "";
-        top: -5px;
-        left: -5px;
-        bottom: -5px;
-        right: -5px;
-        z-index: -1;
-        background: inherit;
-        background-size: inherit;
-        border-radius: 14px;
-        opacity: 0;
-        transition: 0.5s;
-    }
-
-    .dark .wave-btn-bg-cl:hover::before {
-        opacity: 1;
-        animation: wave-btn-tara 8s linear infinite;
-    }
-
-    @keyframes wave-btn-tara {
-        to {
-            background-position: 300%;
-        }
+        background: var(--ui-primary);
+        color: #ffffff;
+        border: 0;
     }
 
     .dark .ant-btn-primary-login {
-        font-size: 14px;
-        color: #fff;
-        text-align: center;
-        background: #0d5f52;
-        border-radius: 12px;
-        border: none;
-        outline: none;
-        height: 46px;
-        position: relative;
-        white-space: nowrap;
-        cursor: pointer;
-        touch-action: manipulation;
-        padding: 0 15px;
-        width: 100%;
-        animation: none;
-        background-position-x: 0;
-        box-shadow: none;
+        background: var(--ui-primary);
+        color: #ffffff;
+        box-shadow: 0 4px 12px rgb(79 140 255 / 20%);
+    }
+
+    .dark .ant-btn-primary-login:focus,
+    .dark .ant-btn-primary-login:hover {
+        background: var(--ui-primary-hover);
+        color: #ffffff;
+        box-shadow: 0 6px 16px rgb(79 140 255 / 30%);
     }
 
     .waves-header {
@@ -496,14 +429,11 @@
                                 </a-form-item>
                                 <a-form-item>
                                     <a-row class="centered" justify="center">
-                                        <div :style="loading ? { width: '52px' } : { display: 'inline-block' }" class="wave-btn-bg wave-btn-bg-cl"
-                                             style="height: 50px;">
-                                            <a-button :icon="loading ? 'poweroff' : undefined" :loading="loading"
-                                                      @click="login" class="ant-btn-primary-login"
-                                                      type="primary">
-                                                [[ loading ? '' : '{{ i18n "login" }}' ]]
-                                            </a-button>
-                                        </div>
+                                        <a-button :icon="loading ? 'poweroff' : undefined" :loading="loading"
+                                                  @click="login" class="ant-btn-primary-login"
+                                                  type="primary">
+                                            [[ loading ? '' : '{{ i18n "login" }}' ]]
+                                        </a-button>
                                     </a-row>
                                 </a-form-item>
                                 <a-form-item>
