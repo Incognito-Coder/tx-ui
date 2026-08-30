@@ -783,12 +783,8 @@ a:focus-visible {
 }
 
 .ant-table-pagination.ant-pagination {
-    float: none;
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    gap: 4px;
-    margin: 18px 0 0;
+    display: inline-block;
+    margin-left: 16px;
 }
 
 .ant-pagination-item,
