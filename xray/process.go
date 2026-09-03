@@ -19,11 +19,25 @@ import (
 )
 
 func GetBinaryName() string {
-	return fmt.Sprintf("xray-%s-%s", runtime.GOOS, runtime.GOARCH)
+	ext := ""
+	if runtime.GOOS == "windows" {
+		ext = ".exe"
+	}
+	return fmt.Sprintf("xray-%s-%s%s", runtime.GOOS, runtime.GOARCH, ext)
 }
 
 func GetBinaryPath() string {
-	return config.GetBinFolderPath() + "/" + GetBinaryName()
+	basePath := config.GetBinFolderPath() + "/" + fmt.Sprintf("xray-%s-%s", runtime.GOOS, runtime.GOARCH)
+	if runtime.GOOS == "windows" {
+		if _, err := os.Stat(basePath + ".exe"); err == nil {
+			return basePath + ".exe"
+		}
+		if _, err := os.Stat(basePath); err == nil {
+			return basePath
+		}
+		return basePath + ".exe"
+	}
+	return basePath
 }
 
 func GetConfigPath() string {

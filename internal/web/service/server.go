@@ -415,7 +415,7 @@ func (s *ServerService) downloadXRay(version string) (string, error) {
 		arch = "64"
 	case "arm64":
 		arch = "arm64-v8a"
-	case "armv7":
+	case "armv7", "arm":
 		arch = "arm32-v7a"
 	case "armv6":
 		arch = "arm32-v6"
@@ -425,6 +425,22 @@ func (s *ServerService) downloadXRay(version string) (string, error) {
 		arch = "32"
 	case "s390x":
 		arch = "s390x"
+	case "mips64":
+		arch = "mips64"
+	case "mips64le":
+		arch = "mips64le"
+	case "mips":
+		arch = "mips32"
+	case "mipsle":
+		arch = "mips32le"
+	case "riscv64":
+		arch = "riscv64"
+	case "ppc64":
+		arch = "ppc64"
+	case "ppc64le":
+		arch = "ppc64le"
+	case "loong64":
+		arch = "loong64"
 	}
 
 	fileName := fmt.Sprintf("Xray-%s-%s.zip", osName, arch)
@@ -434,6 +450,10 @@ func (s *ServerService) downloadXRay(version string) (string, error) {
 		return "", err
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("failed to download xray-core release (%s): HTTP %d", fileName, resp.StatusCode)
+	}
 
 	os.Remove(fileName)
 	file, err := os.Create(fileName)
@@ -493,12 +513,11 @@ func (s *ServerService) UpdateXray(version string) error {
 		return err
 	}
 
+	zipEntryName := "xray"
 	if runtime.GOOS == "windows" {
-		targetBinary := filepath.Join("bin", "xray-windows-amd64.exe")
-		err = copyZipFile("xray.exe", targetBinary)
-	} else {
-		err = copyZipFile("xray", xray.GetBinaryPath())
+		zipEntryName = "xray.exe"
 	}
+	err = copyZipFile(zipEntryName, xray.GetBinaryPath())
 	if err != nil {
 		return err
 	}
