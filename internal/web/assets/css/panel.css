@@ -834,10 +834,47 @@ a:focus-visible {
     color: var(--ui-primary);
 }
 
-#content-layout .ant-tabs-ink-bar {
-    height: 3px;
-    border-radius: 3px 3px 0 0;
-    background: var(--ui-primary);
+.ant-tabs-ink-bar,
+#content-layout .ant-tabs-ink-bar,
+.ant-modal .ant-tabs-ink-bar,
+.dark .ant-tabs-ink-bar,
+.dark .ant-modal .ant-tabs-ink-bar {
+    height: 3px !important;
+    border-radius: 3px 3px 0 0 !important;
+    background: var(--ui-primary) !important;
+    background-color: var(--ui-primary) !important;
+}
+
+/* Ensure ant-collapse top and bottom border radius are identical across single and multi-item collapse panels */
+.ant-collapse {
+    border-radius: var(--ui-radius) !important;
+    overflow: hidden !important;
+}
+
+.ant-collapse > .ant-collapse-item {
+    border-radius: 0 !important;
+}
+
+.ant-collapse > .ant-collapse-item:first-child,
+.ant-collapse > .ant-collapse-item:first-child > .ant-collapse-header {
+    border-top-left-radius: var(--ui-radius) !important;
+    border-top-right-radius: var(--ui-radius) !important;
+}
+
+.ant-collapse > .ant-collapse-item:last-child,
+.ant-collapse > .ant-collapse-item:last-child > .ant-collapse-header,
+.ant-collapse > .ant-collapse-item:last-child > .ant-collapse-content {
+    border-bottom-left-radius: var(--ui-radius) !important;
+    border-bottom-right-radius: var(--ui-radius) !important;
+}
+
+.ant-collapse > .ant-collapse-item:only-child > .ant-collapse-header {
+    border-radius: var(--ui-radius) !important;
+}
+
+.ant-collapse > .ant-collapse-item:only-child.ant-collapse-item-active > .ant-collapse-header {
+    border-bottom-left-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
 }
 
 .xray-table-pane {

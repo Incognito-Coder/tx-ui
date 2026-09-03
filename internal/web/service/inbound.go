@@ -628,7 +628,9 @@ func (s *InboundService) AddInboundClient(data *model.Inbound) (bool, error) {
 			if client.Enable && oldInbound.Protocol != "wireguard" {
 				cipher := ""
 				if oldInbound.Protocol == "shadowsocks" {
-					cipher = oldSettings["method"].(string)
+					if m, ok := oldSettings["method"].(string); ok {
+						cipher = m
+					}
 				}
 				err1 := s.xrayApi.AddUser(string(oldInbound.Protocol), oldInbound.Tag, map[string]interface{}{
 					"email":    client.Email,
@@ -695,8 +697,9 @@ func (s *InboundService) DelInboundClient(inboundId int, clientId string) (bool,
 		} else if v, ok := c["id"].(string); ok {
 			c_id = v
 		}
-		if c_id == clientId || (c["email"] != nil && c["email"].(string) == clientId) {
-			email, _ = c["email"].(string)
+		cEmail, _ := c["email"].(string)
+		if c_id == clientId || (cEmail != "" && cEmail == clientId) {
+			email = cEmail
 			needApiDel, _ = c["enable"].(bool)
 		} else {
 			newClients = append(newClients, client)
@@ -991,7 +994,9 @@ func (s *InboundService) UpdateInboundClient(data *model.Inbound, clientId strin
 		if clients[0].Enable {
 			cipher := ""
 			if oldInbound.Protocol == "shadowsocks" {
-				cipher = oldSettings["method"].(string)
+				if m, ok := oldSettings["method"].(string); ok {
+					cipher = m
+				}
 			}
 			err1 := s.xrayApi.AddUser(string(oldInbound.Protocol), oldInbound.Tag, map[string]interface{}{
 				"email":    clients[0].Email,
@@ -1470,11 +1475,21 @@ func (s *InboundService) autoRenewClients(tx *gorm.DB) (bool, int64, error) {
 	for inbound_index := range inbounds {
 		settings := map[string]interface{}{}
 		json.Unmarshal([]byte(inbounds[inbound_index].Settings), &settings)
-		clients := settings["clients"].([]interface{})
-		for client_index := range clients {
-			c := clients[client_index].(map[string]interface{})
+		rawClients, ok := settings["clients"].([]interface{})
+		if !ok {
+			rawClients, ok = settings["peers"].([]interface{})
+			if !ok {
+				continue
+			}
+		}
+		for client_index := range rawClients {
+			c, ok := rawClients[client_index].(map[string]interface{})
+			if !ok {
+				continue
+			}
 			for traffic_index, traffic := range traffics {
-				if traffic.Email == c["email"].(string) {
+				cEmail, _ := c["email"].(string)
+				if cEmail != "" && traffic.Email == cEmail {
 					newExpiryTime := traffic.ExpiryTime
 					for newExpiryTime < now {
 						newExpiryTime += (int64(traffic.Reset) * 86400000)
@@ -1496,12 +1511,16 @@ func (s *InboundService) autoRenewClients(tx *gorm.DB) (bool, int64, error) {
 								client:   c,
 							})
 					}
-					clients[client_index] = interface{}(c)
+					rawClients[client_index] = interface{}(c)
 					break
 				}
 			}
 		}
-		settings["clients"] = clients
+		if _, isClients := settings["clients"]; isClients {
+			settings["clients"] = rawClients
+		} else {
+			settings["peers"] = rawClients
+		}
 		newSettings, err := json.MarshalIndent(settings, "", "  ")
 		if err != nil {
 			return false, 0, err
@@ -2117,7 +2136,9 @@ func (s *InboundService) ResetClientTraffic(id int, clientEmail string) (bool, e
 					if err != nil {
 						return false, err
 					}
-					cipher = oldSettings["method"].(string)
+					if m, ok := oldSettings["method"].(string); ok {
+						cipher = m
+					}
 				}
 				err1 := s.xrayApi.AddUser(string(inbound.Protocol), inbound.Tag, map[string]interface{}{
 					"email":    client.Email,
@@ -2265,15 +2286,21 @@ func (s *InboundService) DelDepletedClients(id int) (err error) {
 			return err
 		}
 
-		oldClients := oldSettings["clients"].([]interface{})
+		rawClients, ok := oldSettings["clients"].([]interface{})
+		if !ok {
+			rawClients, _ = oldSettings["peers"].([]interface{})
+		}
 		var newClients []interface{}
-		for _, client := range oldClients {
+		for _, client := range rawClients {
 			deplete := false
-			c := client.(map[string]interface{})
-			for _, email := range emails {
-				if email == c["email"].(string) {
-					deplete = true
-					break
+			c, isMap := client.(map[string]interface{})
+			if isMap {
+				cEmail, _ := c["email"].(string)
+				for _, email := range emails {
+					if cEmail != "" && email == cEmail {
+						deplete = true
+						break
+					}
 				}
 			}
 			if !deplete {
