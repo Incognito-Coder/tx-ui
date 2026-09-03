@@ -316,6 +316,12 @@
                                 <setting-list-item desc='{{ i18n "pages.settings.telegramChatIdDesc"}}' title='{{ i18n "pages.settings.telegramChatId"}}'
                                                    type="text"
                                                    v-model="allSetting.tgBotChatId"></setting-list-item>
+                                <setting-list-item desc='Telegram Supergroup Thread/Topic ID (0 for default)' title='Telegram Topic ID'
+                                                   type="number"
+                                                   v-model="allSetting.tgBotTopicId"></setting-list-item>
+                                <setting-list-item desc='Only send notifications without processing user commands' title='Telegram Bot Notify Only'
+                                                   type="switch"
+                                                   v-model="allSetting.tgBotNotifyOnly"></setting-list-item>
                                 <setting-list-item desc='{{ i18n "pages.settings.telegramNotifyTimeDesc"}}' title='{{ i18n "pages.settings.telegramNotifyTime"}}'
                                                    type="text"
                                                    v-model="allSetting.tgRunTime"></setting-list-item>

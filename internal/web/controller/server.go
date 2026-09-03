@@ -43,6 +43,7 @@ func (a *ServerController) initRouter(g *gin.RouterGroup) {
 	g.GET("/getDb", a.getDb)
 	g.GET("/getNewUUID", a.getNewUUID)
 	g.GET("/getNewX25519Cert", a.getNewX25519Cert)
+	g.GET("/getNewCert", a.getNewCert)
 	g.GET("/getNewmldsa65", a.getNewmldsa65)
 	g.GET("/getNewmlkem768", a.getNewmlkem768)
 	g.GET("/getNewVlessEnc", a.getNewVlessEnc)
@@ -61,6 +62,15 @@ func (a *ServerController) initRouter(g *gin.RouterGroup) {
 
 func (a *ServerController) refreshStatus() {
 	a.lastStatus = a.serverService.GetStatus(a.lastStatus)
+}
+
+func (a *ServerController) getNewCert(c *gin.Context) {
+	cert, err := a.serverService.GetNewCert()
+	if err != nil {
+		jsonMsg(c, "Error generating self-signed certificate", err)
+		return
+	}
+	jsonObj(c, cert, nil)
 }
 
 func (a *ServerController) getNewmldsa65(c *gin.Context) {

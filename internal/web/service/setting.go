@@ -45,6 +45,8 @@ var defaultValueMap = map[string]string{
 	"tgBotProxy":          "",
 	"tgBotAPIServer":      "",
 	"tgBotChatId":         "",
+	"tgBotTopicId":        "0",
+	"tgBotNotifyOnly":     "false",
 	"tgRunTime":           "@daily",
 	"tgBotBackup":         "false",
 	"tgBotLoginNotify":    "true",
@@ -423,6 +425,14 @@ func (s *SettingService) GetBasePath() (string, error) {
 		basePath += "/"
 	}
 	return basePath, nil
+}
+
+func (s *SettingService) GetTgBotTopicId() (int, error) {
+	return s.getInt("tgBotTopicId")
+}
+
+func (s *SettingService) GetTgBotNotifyOnly() (bool, error) {
+	return s.getBool("tgBotNotifyOnly")
 }
 
 func (s *SettingService) GetTimeLocation() (*time.Location, error) {

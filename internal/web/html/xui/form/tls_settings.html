@@ -92,6 +92,12 @@
                 <a-form-item label='{{ i18n "pages.inbounds.privatekey" }}'>
                     <a-input :rows="3" type="textarea" v-model="cert.key"></a-input>
                 </a-form-item>
+                <a-form-item label=" ">
+                    <a-space>
+                        <a-button @click="getNewSelfSignedCert(cert)" icon="import" type="primary">Get Self-Signed Cert</a-button>
+                        <a-button @click="cert.cert = ''; cert.key = ''" danger>Clear</a-button>
+                    </a-space>
+                </a-form-item>
             </template>
             <a-form-item label="One Time Loading">
                 <a-switch v-model="cert.oneTimeLoading"></a-switch>

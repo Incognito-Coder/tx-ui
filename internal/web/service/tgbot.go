@@ -142,9 +142,14 @@ func (t *Tgbot) Start(i18nFS embed.FS) error {
 	})
 
 	// Start receiving Telegram bot messages
+	notifyOnly, _ := t.settingService.GetTgBotNotifyOnly()
 	if !isRunning {
 		logger.Info("Telegram bot receiver started")
-		go t.OnReceive()
+		if !notifyOnly {
+			go t.OnReceive()
+		} else {
+			logger.Info("Telegram bot running in Notify-Only Mode")
+		}
 		isRunning = true
 	}
 
@@ -1144,11 +1149,15 @@ func (t *Tgbot) SendMsgToTgbot(chatId int64, msg string, replyMarkup ...telego.R
 	} else {
 		allMessages = append(allMessages, msg)
 	}
+	topicId, _ := t.settingService.GetTgBotTopicId()
 	for n, message := range allMessages {
 		params := telego.SendMessageParams{
 			ChatID:    tu.ID(chatId),
 			Text:      message,
 			ParseMode: "HTML",
+		}
+		if topicId > 0 {
+			params.MessageThreadID = topicId
 		}
 		// only add replyMarkup to last message
 		if len(replyMarkup) > 0 && n == (len(allMessages)-1) {

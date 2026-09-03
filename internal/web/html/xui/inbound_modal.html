@@ -228,6 +228,16 @@
                 this.inbound.stream.reality.mldsa65Seed = '';
                 this.inbound.stream.reality.settings.mldsa65Verify = '';
             },
+            async getNewSelfSignedCert(certObj) {
+                inModal.loading(true);
+                const msg = await HttpUtil.get('/panel/api/server/getNewCert');
+                inModal.loading(false);
+                if (!msg.success) {
+                    return;
+                }
+                certObj.cert = msg.obj.cert;
+                certObj.key = msg.obj.key;
+            },
             async getNewEchCert() {
                 inModal.loading(true);
                 const msg = await HttpUtil.post('/panel/api/server/getNewEchCert', {sni: inModal.inbound.stream.tls.sni});
