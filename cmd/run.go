@@ -75,46 +75,53 @@ func RunWebServer() {
 
 	sigCh := make(chan os.Signal, 1)
 	// Trap shutdown signals
-	signal.Notify(sigCh, syscall.SIGHUP, syscall.SIGTERM)
-	for {
-		sig := <-sigCh
+	signal.Notify(sigCh, syscall.SIGHUP, syscall.SIGTERM, os.Interrupt)
 
-		switch sig {
-		case syscall.SIGHUP:
-			logger.Info("Received SIGHUP signal. Restarting servers...")
+	restartServers := func() {
+		err := server.Stop()
+		if err != nil {
+			logger.Debug("Error stopping web server:", err)
+		}
+		err = subServer.Stop()
+		if err != nil {
+			logger.Debug("Error stopping sub server:", err)
+		}
 
-			err := server.Stop()
-			if err != nil {
-				logger.Debug("Error stopping web server:", err)
-			}
-			err = subServer.Stop()
-			if err != nil {
-				logger.Debug("Error stopping sub server:", err)
-			}
-
-			server = web.NewServer()
-			global.SetWebServer(server)
-			err = server.Start()
-			if err != nil {
-				log.Fatalf("Error restarting web server: %v", err)
-				return
-			}
-			log.Println("Web server restarted successfully.")
-
-			subServer = sub.NewServer()
-			global.SetSubServer(subServer)
-			err = subServer.Start()
-			if err != nil {
-				log.Fatalf("Error restarting sub server: %v", err)
-				return
-			}
-			log.Println("Sub server restarted successfully.")
-
-		default:
-			server.Stop()
-			subServer.Stop()
-			log.Println("Shutting down servers.")
+		server = web.NewServer()
+		global.SetWebServer(server)
+		err = server.Start()
+		if err != nil {
+			log.Fatalf("Error restarting web server: %v", err)
 			return
+		}
+		log.Println("Web server restarted successfully.")
+
+		subServer = sub.NewServer()
+		global.SetSubServer(subServer)
+		err = subServer.Start()
+		if err != nil {
+			log.Fatalf("Error restarting sub server: %v", err)
+			return
+		}
+		log.Println("Sub server restarted successfully.")
+	}
+
+	for {
+		select {
+		case sig := <-sigCh:
+			switch sig {
+			case syscall.SIGHUP:
+				logger.Info("Received SIGHUP signal. Restarting servers...")
+				restartServers()
+			default:
+				server.Stop()
+				subServer.Stop()
+				log.Println("Shutting down servers.")
+				return
+			}
+		case <-global.RestartChan:
+			logger.Info("Received panel restart request. Restarting servers...")
+			restartServers()
 		}
 	}
 }

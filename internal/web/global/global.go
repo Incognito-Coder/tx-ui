@@ -8,9 +8,17 @@ import (
 )
 
 var (
-	webServer WebServer
-	subServer SubServer
+	webServer   WebServer
+	subServer   SubServer
+	RestartChan = make(chan struct{}, 1)
 )
+
+func TriggerRestart() {
+	select {
+	case RestartChan <- struct{}{}:
+	default:
+	}
+}
 
 type WebServer interface {
 	GetCron() *cron.Cron
