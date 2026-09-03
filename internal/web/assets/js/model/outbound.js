@@ -54,7 +54,9 @@ const SNIFFING_OPTION = {
     HTTP: "http",
     TLS: "tls",
     QUIC: "quic",
-    FAKEDNS: "fakedns"
+    FAKEDNS: "fakedns",
+    FAKEDNS_OTHER: "fakedns+other",
+    RDNS: "rdns"
 };
 
 const OutboundDomainStrategies = [

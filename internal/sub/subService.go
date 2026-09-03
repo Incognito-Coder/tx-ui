@@ -277,57 +277,79 @@ func (s *SubService) genVmessLink(inbound *model.Inbound, email string) string {
 	obj["net"] = network
 	switch network {
 	case "tcp":
-		tcp, _ := stream["tcpSettings"].(map[string]interface{})
-		header, _ := tcp["header"].(map[string]interface{})
-		typeStr, _ := header["type"].(string)
-		obj["type"] = typeStr
-		if typeStr == "http" {
-			request := header["request"].(map[string]interface{})
-			requestPath, _ := request["path"].([]interface{})
-			obj["path"] = requestPath[0].(string)
-			headers, _ := request["headers"].(map[string]interface{})
-			obj["host"] = searchHost(headers)
+		if tcp, ok := stream["tcpSettings"].(map[string]interface{}); ok {
+			if header, ok := tcp["header"].(map[string]interface{}); ok {
+				typeStr, _ := header["type"].(string)
+				obj["type"] = typeStr
+				if typeStr == "http" {
+					if request, ok := header["request"].(map[string]interface{}); ok {
+						if requestPath, ok := request["path"].([]interface{}); ok && len(requestPath) > 0 {
+							if pathStr, ok := requestPath[0].(string); ok {
+								obj["path"] = pathStr
+							}
+						}
+						if headers, ok := request["headers"].(map[string]interface{}); ok {
+							obj["host"] = searchHost(headers)
+						}
+					}
+				}
+			}
 		}
 	case "kcp":
-		kcp, _ := stream["kcpSettings"].(map[string]interface{})
-		header, _ := kcp["header"].(map[string]interface{})
-		obj["type"], _ = header["type"].(string)
-		obj["path"], _ = kcp["seed"].(string)
+		if kcp, ok := stream["kcpSettings"].(map[string]interface{}); ok {
+			if header, ok := kcp["header"].(map[string]interface{}); ok {
+				obj["type"], _ = header["type"].(string)
+			}
+			obj["path"], _ = kcp["seed"].(string)
+		}
 	case "ws":
-		ws, _ := stream["wsSettings"].(map[string]interface{})
-		obj["path"] = ws["path"].(string)
-		if host, ok := ws["host"].(string); ok && len(host) > 0 {
-			obj["host"] = host
-		} else {
-			headers, _ := ws["headers"].(map[string]interface{})
-			obj["host"] = searchHost(headers)
+		if ws, ok := stream["wsSettings"].(map[string]interface{}); ok {
+			if path, ok := ws["path"].(string); ok {
+				obj["path"] = path
+			}
+			if host, ok := ws["host"].(string); ok && len(host) > 0 {
+				obj["host"] = host
+			} else if headers, ok := ws["headers"].(map[string]interface{}); ok {
+				obj["host"] = searchHost(headers)
+			}
 		}
 	case "grpc":
-		grpc, _ := stream["grpcSettings"].(map[string]interface{})
-		obj["path"] = grpc["serviceName"].(string)
-		obj["authority"] = grpc["authority"].(string)
-		if grpc["multiMode"].(bool) {
-			obj["type"] = "multi"
+		if grpc, ok := stream["grpcSettings"].(map[string]interface{}); ok {
+			if serviceName, ok := grpc["serviceName"].(string); ok {
+				obj["path"] = serviceName
+			}
+			if authority, ok := grpc["authority"].(string); ok {
+				obj["authority"] = authority
+			}
+			if multiMode, ok := grpc["multiMode"].(bool); ok && multiMode {
+				obj["type"] = "multi"
+			}
 		}
 	case "httpupgrade":
-		httpupgrade, _ := stream["httpupgradeSettings"].(map[string]interface{})
-		obj["path"] = httpupgrade["path"].(string)
-		if host, ok := httpupgrade["host"].(string); ok && len(host) > 0 {
-			obj["host"] = host
-		} else {
-			headers, _ := httpupgrade["headers"].(map[string]interface{})
-			obj["host"] = searchHost(headers)
+		if httpupgrade, ok := stream["httpupgradeSettings"].(map[string]interface{}); ok {
+			if path, ok := httpupgrade["path"].(string); ok {
+				obj["path"] = path
+			}
+			if host, ok := httpupgrade["host"].(string); ok && len(host) > 0 {
+				obj["host"] = host
+			} else if headers, ok := httpupgrade["headers"].(map[string]interface{}); ok {
+				obj["host"] = searchHost(headers)
+			}
 		}
 	case "xhttp":
-		xhttp, _ := stream["xhttpSettings"].(map[string]interface{})
-		obj["path"] = xhttp["path"].(string)
-		if host, ok := xhttp["host"].(string); ok && len(host) > 0 {
-			obj["host"] = host
-		} else {
-			headers, _ := xhttp["headers"].(map[string]interface{})
-			obj["host"] = searchHost(headers)
+		if xhttp, ok := stream["xhttpSettings"].(map[string]interface{}); ok {
+			if path, ok := xhttp["path"].(string); ok {
+				obj["path"] = path
+			}
+			if host, ok := xhttp["host"].(string); ok && len(host) > 0 {
+				obj["host"] = host
+			} else if headers, ok := xhttp["headers"].(map[string]interface{}); ok {
+				obj["host"] = searchHost(headers)
+			}
+			if mode, ok := xhttp["mode"].(string); ok {
+				obj["mode"] = mode
+			}
 		}
-		obj["mode"], _ = xhttp["mode"].(string)
 	}
 	security, _ := stream["security"].(string)
 	obj["tls"] = security
@@ -431,57 +453,83 @@ func (s *SubService) genVlessLink(inbound *model.Inbound, email string) string {
 
 	switch streamNetwork {
 	case "tcp":
-		tcp, _ := stream["tcpSettings"].(map[string]interface{})
-		header, _ := tcp["header"].(map[string]interface{})
-		typeStr, _ := header["type"].(string)
-		if typeStr == "http" {
-			request := header["request"].(map[string]interface{})
-			requestPath, _ := request["path"].([]interface{})
-			params["path"] = requestPath[0].(string)
-			headers, _ := request["headers"].(map[string]interface{})
-			params["host"] = searchHost(headers)
-			params["headerType"] = "http"
+		if tcp, ok := stream["tcpSettings"].(map[string]interface{}); ok {
+			if header, ok := tcp["header"].(map[string]interface{}); ok {
+				typeStr, _ := header["type"].(string)
+				if typeStr == "http" {
+					if request, ok := header["request"].(map[string]interface{}); ok {
+						if requestPath, ok := request["path"].([]interface{}); ok && len(requestPath) > 0 {
+							if pathStr, ok := requestPath[0].(string); ok {
+								params["path"] = pathStr
+							}
+						}
+						if headers, ok := request["headers"].(map[string]interface{}); ok {
+							params["host"] = searchHost(headers)
+						}
+						params["headerType"] = "http"
+					}
+				}
+			}
 		}
 	case "kcp":
-		kcp, _ := stream["kcpSettings"].(map[string]interface{})
-		header, _ := kcp["header"].(map[string]interface{})
-		params["headerType"] = header["type"].(string)
-		params["seed"] = kcp["seed"].(string)
+		if kcp, ok := stream["kcpSettings"].(map[string]interface{}); ok {
+			if header, ok := kcp["header"].(map[string]interface{}); ok {
+				if hType, ok := header["type"].(string); ok {
+					params["headerType"] = hType
+				}
+			}
+			if seed, ok := kcp["seed"].(string); ok {
+				params["seed"] = seed
+			}
+		}
 	case "ws":
-		ws, _ := stream["wsSettings"].(map[string]interface{})
-		params["path"] = ws["path"].(string)
-		if host, ok := ws["host"].(string); ok && len(host) > 0 {
-			params["host"] = host
-		} else {
-			headers, _ := ws["headers"].(map[string]interface{})
-			params["host"] = searchHost(headers)
+		if ws, ok := stream["wsSettings"].(map[string]interface{}); ok {
+			if path, ok := ws["path"].(string); ok {
+				params["path"] = path
+			}
+			if host, ok := ws["host"].(string); ok && len(host) > 0 {
+				params["host"] = host
+			} else if headers, ok := ws["headers"].(map[string]interface{}); ok {
+				params["host"] = searchHost(headers)
+			}
 		}
 	case "grpc":
-		grpc, _ := stream["grpcSettings"].(map[string]interface{})
-		params["serviceName"] = grpc["serviceName"].(string)
-		params["authority"], _ = grpc["authority"].(string)
-		if grpc["multiMode"].(bool) {
-			params["mode"] = "multi"
+		if grpc, ok := stream["grpcSettings"].(map[string]interface{}); ok {
+			if serviceName, ok := grpc["serviceName"].(string); ok {
+				params["serviceName"] = serviceName
+			}
+			if authority, ok := grpc["authority"].(string); ok {
+				params["authority"] = authority
+			}
+			if multiMode, ok := grpc["multiMode"].(bool); ok && multiMode {
+				params["mode"] = "multi"
+			}
 		}
 	case "httpupgrade":
-		httpupgrade, _ := stream["httpupgradeSettings"].(map[string]interface{})
-		params["path"] = httpupgrade["path"].(string)
-		if host, ok := httpupgrade["host"].(string); ok && len(host) > 0 {
-			params["host"] = host
-		} else {
-			headers, _ := httpupgrade["headers"].(map[string]interface{})
-			params["host"] = searchHost(headers)
+		if httpupgrade, ok := stream["httpupgradeSettings"].(map[string]interface{}); ok {
+			if path, ok := httpupgrade["path"].(string); ok {
+				params["path"] = path
+			}
+			if host, ok := httpupgrade["host"].(string); ok && len(host) > 0 {
+				params["host"] = host
+			} else if headers, ok := httpupgrade["headers"].(map[string]interface{}); ok {
+				params["host"] = searchHost(headers)
+			}
 		}
 	case "xhttp":
-		xhttp, _ := stream["xhttpSettings"].(map[string]interface{})
-		params["path"] = xhttp["path"].(string)
-		if host, ok := xhttp["host"].(string); ok && len(host) > 0 {
-			params["host"] = host
-		} else {
-			headers, _ := xhttp["headers"].(map[string]interface{})
-			params["host"] = searchHost(headers)
+		if xhttp, ok := stream["xhttpSettings"].(map[string]interface{}); ok {
+			if path, ok := xhttp["path"].(string); ok {
+				params["path"] = path
+			}
+			if host, ok := xhttp["host"].(string); ok && len(host) > 0 {
+				params["host"] = host
+			} else if headers, ok := xhttp["headers"].(map[string]interface{}); ok {
+				params["host"] = searchHost(headers)
+			}
+			if mode, ok := xhttp["mode"].(string); ok {
+				params["mode"] = mode
+			}
 		}
-		params["mode"], _ = xhttp["mode"].(string)
 	}
 	security, _ := stream["security"].(string)
 	if security == "tls" {
@@ -625,57 +673,83 @@ func (s *SubService) genTrojanLink(inbound *model.Inbound, email string) string 
 
 	switch streamNetwork {
 	case "tcp":
-		tcp, _ := stream["tcpSettings"].(map[string]interface{})
-		header, _ := tcp["header"].(map[string]interface{})
-		typeStr, _ := header["type"].(string)
-		if typeStr == "http" {
-			request := header["request"].(map[string]interface{})
-			requestPath, _ := request["path"].([]interface{})
-			params["path"] = requestPath[0].(string)
-			headers, _ := request["headers"].(map[string]interface{})
-			params["host"] = searchHost(headers)
-			params["headerType"] = "http"
+		if tcp, ok := stream["tcpSettings"].(map[string]interface{}); ok {
+			if header, ok := tcp["header"].(map[string]interface{}); ok {
+				typeStr, _ := header["type"].(string)
+				if typeStr == "http" {
+					if request, ok := header["request"].(map[string]interface{}); ok {
+						if requestPath, ok := request["path"].([]interface{}); ok && len(requestPath) > 0 {
+							if pathStr, ok := requestPath[0].(string); ok {
+								params["path"] = pathStr
+							}
+						}
+						if headers, ok := request["headers"].(map[string]interface{}); ok {
+							params["host"] = searchHost(headers)
+						}
+						params["headerType"] = "http"
+					}
+				}
+			}
 		}
 	case "kcp":
-		kcp, _ := stream["kcpSettings"].(map[string]interface{})
-		header, _ := kcp["header"].(map[string]interface{})
-		params["headerType"] = header["type"].(string)
-		params["seed"] = kcp["seed"].(string)
+		if kcp, ok := stream["kcpSettings"].(map[string]interface{}); ok {
+			if header, ok := kcp["header"].(map[string]interface{}); ok {
+				if hType, ok := header["type"].(string); ok {
+					params["headerType"] = hType
+				}
+			}
+			if seed, ok := kcp["seed"].(string); ok {
+				params["seed"] = seed
+			}
+		}
 	case "ws":
-		ws, _ := stream["wsSettings"].(map[string]interface{})
-		params["path"] = ws["path"].(string)
-		if host, ok := ws["host"].(string); ok && len(host) > 0 {
-			params["host"] = host
-		} else {
-			headers, _ := ws["headers"].(map[string]interface{})
-			params["host"] = searchHost(headers)
+		if ws, ok := stream["wsSettings"].(map[string]interface{}); ok {
+			if path, ok := ws["path"].(string); ok {
+				params["path"] = path
+			}
+			if host, ok := ws["host"].(string); ok && len(host) > 0 {
+				params["host"] = host
+			} else if headers, ok := ws["headers"].(map[string]interface{}); ok {
+				params["host"] = searchHost(headers)
+			}
 		}
 	case "grpc":
-		grpc, _ := stream["grpcSettings"].(map[string]interface{})
-		params["serviceName"] = grpc["serviceName"].(string)
-		params["authority"], _ = grpc["authority"].(string)
-		if grpc["multiMode"].(bool) {
-			params["mode"] = "multi"
+		if grpc, ok := stream["grpcSettings"].(map[string]interface{}); ok {
+			if serviceName, ok := grpc["serviceName"].(string); ok {
+				params["serviceName"] = serviceName
+			}
+			if authority, ok := grpc["authority"].(string); ok {
+				params["authority"] = authority
+			}
+			if multiMode, ok := grpc["multiMode"].(bool); ok && multiMode {
+				params["mode"] = "multi"
+			}
 		}
 	case "httpupgrade":
-		httpupgrade, _ := stream["httpupgradeSettings"].(map[string]interface{})
-		params["path"] = httpupgrade["path"].(string)
-		if host, ok := httpupgrade["host"].(string); ok && len(host) > 0 {
-			params["host"] = host
-		} else {
-			headers, _ := httpupgrade["headers"].(map[string]interface{})
-			params["host"] = searchHost(headers)
+		if httpupgrade, ok := stream["httpupgradeSettings"].(map[string]interface{}); ok {
+			if path, ok := httpupgrade["path"].(string); ok {
+				params["path"] = path
+			}
+			if host, ok := httpupgrade["host"].(string); ok && len(host) > 0 {
+				params["host"] = host
+			} else if headers, ok := httpupgrade["headers"].(map[string]interface{}); ok {
+				params["host"] = searchHost(headers)
+			}
 		}
 	case "xhttp":
-		xhttp, _ := stream["xhttpSettings"].(map[string]interface{})
-		params["path"] = xhttp["path"].(string)
-		if host, ok := xhttp["host"].(string); ok && len(host) > 0 {
-			params["host"] = host
-		} else {
-			headers, _ := xhttp["headers"].(map[string]interface{})
-			params["host"] = searchHost(headers)
+		if xhttp, ok := stream["xhttpSettings"].(map[string]interface{}); ok {
+			if path, ok := xhttp["path"].(string); ok {
+				params["path"] = path
+			}
+			if host, ok := xhttp["host"].(string); ok && len(host) > 0 {
+				params["host"] = host
+			} else if headers, ok := xhttp["headers"].(map[string]interface{}); ok {
+				params["host"] = searchHost(headers)
+			}
+			if mode, ok := xhttp["mode"].(string); ok {
+				params["mode"] = mode
+			}
 		}
-		params["mode"], _ = xhttp["mode"].(string)
 	}
 	security, _ := stream["security"].(string)
 	if security == "tls" {
@@ -819,57 +893,83 @@ func (s *SubService) genShadowsocksLink(inbound *model.Inbound, email string) st
 
 	switch streamNetwork {
 	case "tcp":
-		tcp, _ := stream["tcpSettings"].(map[string]interface{})
-		header, _ := tcp["header"].(map[string]interface{})
-		typeStr, _ := header["type"].(string)
-		if typeStr == "http" {
-			request := header["request"].(map[string]interface{})
-			requestPath, _ := request["path"].([]interface{})
-			params["path"] = requestPath[0].(string)
-			headers, _ := request["headers"].(map[string]interface{})
-			params["host"] = searchHost(headers)
-			params["headerType"] = "http"
+		if tcp, ok := stream["tcpSettings"].(map[string]interface{}); ok {
+			if header, ok := tcp["header"].(map[string]interface{}); ok {
+				typeStr, _ := header["type"].(string)
+				if typeStr == "http" {
+					if request, ok := header["request"].(map[string]interface{}); ok {
+						if requestPath, ok := request["path"].([]interface{}); ok && len(requestPath) > 0 {
+							if pathStr, ok := requestPath[0].(string); ok {
+								params["path"] = pathStr
+							}
+						}
+						if headers, ok := request["headers"].(map[string]interface{}); ok {
+							params["host"] = searchHost(headers)
+						}
+						params["headerType"] = "http"
+					}
+				}
+			}
 		}
 	case "kcp":
-		kcp, _ := stream["kcpSettings"].(map[string]interface{})
-		header, _ := kcp["header"].(map[string]interface{})
-		params["headerType"] = header["type"].(string)
-		params["seed"] = kcp["seed"].(string)
+		if kcp, ok := stream["kcpSettings"].(map[string]interface{}); ok {
+			if header, ok := kcp["header"].(map[string]interface{}); ok {
+				if hType, ok := header["type"].(string); ok {
+					params["headerType"] = hType
+				}
+			}
+			if seed, ok := kcp["seed"].(string); ok {
+				params["seed"] = seed
+			}
+		}
 	case "ws":
-		ws, _ := stream["wsSettings"].(map[string]interface{})
-		params["path"] = ws["path"].(string)
-		if host, ok := ws["host"].(string); ok && len(host) > 0 {
-			params["host"] = host
-		} else {
-			headers, _ := ws["headers"].(map[string]interface{})
-			params["host"] = searchHost(headers)
+		if ws, ok := stream["wsSettings"].(map[string]interface{}); ok {
+			if path, ok := ws["path"].(string); ok {
+				params["path"] = path
+			}
+			if host, ok := ws["host"].(string); ok && len(host) > 0 {
+				params["host"] = host
+			} else if headers, ok := ws["headers"].(map[string]interface{}); ok {
+				params["host"] = searchHost(headers)
+			}
 		}
 	case "grpc":
-		grpc, _ := stream["grpcSettings"].(map[string]interface{})
-		params["serviceName"] = grpc["serviceName"].(string)
-		params["authority"], _ = grpc["authority"].(string)
-		if grpc["multiMode"].(bool) {
-			params["mode"] = "multi"
+		if grpc, ok := stream["grpcSettings"].(map[string]interface{}); ok {
+			if serviceName, ok := grpc["serviceName"].(string); ok {
+				params["serviceName"] = serviceName
+			}
+			if authority, ok := grpc["authority"].(string); ok {
+				params["authority"] = authority
+			}
+			if multiMode, ok := grpc["multiMode"].(bool); ok && multiMode {
+				params["mode"] = "multi"
+			}
 		}
 	case "httpupgrade":
-		httpupgrade, _ := stream["httpupgradeSettings"].(map[string]interface{})
-		params["path"] = httpupgrade["path"].(string)
-		if host, ok := httpupgrade["host"].(string); ok && len(host) > 0 {
-			params["host"] = host
-		} else {
-			headers, _ := httpupgrade["headers"].(map[string]interface{})
-			params["host"] = searchHost(headers)
+		if httpupgrade, ok := stream["httpupgradeSettings"].(map[string]interface{}); ok {
+			if path, ok := httpupgrade["path"].(string); ok {
+				params["path"] = path
+			}
+			if host, ok := httpupgrade["host"].(string); ok && len(host) > 0 {
+				params["host"] = host
+			} else if headers, ok := httpupgrade["headers"].(map[string]interface{}); ok {
+				params["host"] = searchHost(headers)
+			}
 		}
 	case "xhttp":
-		xhttp, _ := stream["xhttpSettings"].(map[string]interface{})
-		params["path"] = xhttp["path"].(string)
-		if host, ok := xhttp["host"].(string); ok && len(host) > 0 {
-			params["host"] = host
-		} else {
-			headers, _ := xhttp["headers"].(map[string]interface{})
-			params["host"] = searchHost(headers)
+		if xhttp, ok := stream["xhttpSettings"].(map[string]interface{}); ok {
+			if path, ok := xhttp["path"].(string); ok {
+				params["path"] = path
+			}
+			if host, ok := xhttp["host"].(string); ok && len(host) > 0 {
+				params["host"] = host
+			} else if headers, ok := xhttp["headers"].(map[string]interface{}); ok {
+				params["host"] = searchHost(headers)
+			}
+			if mode, ok := xhttp["mode"].(string); ok {
+				params["mode"] = mode
+			}
 		}
-		params["mode"], _ = xhttp["mode"].(string)
 	}
 
 	security, _ := stream["security"].(string)
