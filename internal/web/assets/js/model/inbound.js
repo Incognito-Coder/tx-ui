@@ -7,6 +7,7 @@ const Protocols = {
     MIXED: 'mixed',
     HTTP: 'http',
     WIREGUARD: 'wireguard',
+    Wireguard: 'wireguard',
     TUN: 'tun',
     HYSTERIA: 'hysteria',
 };

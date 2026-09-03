@@ -21,7 +21,7 @@
                       @confirm="resetClientTraffic(client,record.id,false)"
                       cancel-text='{{ i18n "cancel"}}' ok-text='{{ i18n "reset"}}'
                       title='{{ i18n "pages.inbounds.resetTrafficContent"}}'>
-            <a-icon :style="themeSwitcher.isDarkTheme ? 'color: var(--color-primary-100)' : 'color: var(--color-primary-100)'" slot="icon"
+            <a-icon style="color: var(--ui-primary)" slot="icon"
                     type="question-circle-o"></a-icon>
             <a-icon class="normal-icon" style="font-size: 24px; cursor: pointer;" type="retweet"
                     v-if="client.email.length > 0"></a-icon>

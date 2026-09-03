@@ -118,7 +118,7 @@
                     });
                 });
             } else if (this.inbound.protocol == Protocols.WIREGUARD) {
-                const clients = this.inbound.clients || [];
+                const clients = (this.inbound.clients && this.inbound.clients.length > 0) ? this.inbound.clients : (this.inbound.settings?.peers || []);
                 clients.forEach((c, index) => {
                     this.inbound.genAllLinks(this.dbInbound.remark, app.remarkModel, c).forEach(l => {
                         this.qrcodes.push({

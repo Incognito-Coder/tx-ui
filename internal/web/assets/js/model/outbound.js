@@ -3,13 +3,18 @@ const Protocols = {
     Blackhole: "blackhole",
     DNS: "dns",
     VMess: "vmess",
+    VMESS: "vmess",
     VLESS: "vless",
     Trojan: "trojan",
+    TROJAN: "trojan",
     Shadowsocks: "shadowsocks",
+    SHADOWSOCKS: "shadowsocks",
     Socks: "socks",
     HTTP: "http",
     Wireguard: "wireguard",
-    Hysteria: "hysteria"
+    WIREGUARD: "wireguard",
+    Hysteria: "hysteria",
+    HYSTERIA: "hysteria"
 };
 
 const SSMethods = {
