@@ -252,36 +252,39 @@ location /sub {
 - Oracle Linux 8+
 - OpenSUSE Tubleweed
 - Amazon Linux 2023
-- Windows x64
+- Windows x64 / x86 / ARM64
+- macOS (Intel & Apple Silicon M1/M2/M3/M4)
+- FreeBSD
+- OpenBSD
 
 ## Arquitecturas y Dispositivos Compatibles
 
 <details>
   <summary>Haz clic para detalles de arquitecturas y dispositivos compatibles</summary>
 
-Nuestra plataforma ofrece compatibilidad con una amplia gama de arquitecturas y dispositivos, garantizando flexibilidad
-en diversos entornos informáticos. A continuación se presentan las principales arquitecturas que admitimos:
+Nuestra plataforma ofrece compatibilidad con una amplia gama de arquitecturas y dispositivos, garantizando flexibilidad en diversos entornos informáticos. A continuación se presentan las principales arquitecturas que admitimos:
 
-- **amd64**: Esta arquitectura predominante es la estándar para computadoras personales y servidores, y admite la
-  mayoría de los sistemas operativos modernos sin problemas.
+- **amd64**: Esta arquitectura predominante es la estándar para computadoras personales y servidores, y admite la mayoría de los sistemas operativos modernos.
 
-- **x86 / i386**: Ampliamente adoptada en computadoras de escritorio y portátiles, esta arquitectura cuenta con un
-  amplio soporte de numerosos sistemas operativos y aplicaciones, incluidos, entre otros, Windows, macOS y sistemas
-  Linux.
+- **x86 / i386**: Ampliamente adoptada en computadoras de escritorio y portátiles, incluidos sistemas Windows, macOS, Linux, FreeBSD y OpenBSD.
 
-- **armv8 / arm64 / aarch64**: Diseñada para dispositivos móviles y embebidos contemporáneos, como teléfonos
-  inteligentes y tabletas, esta arquitectura está ejemplificada por dispositivos como Raspberry Pi 4, Raspberry Pi 3,
-  Raspberry Pi Zero 2/Zero 2 W, Orange Pi 3 LTS, entre otros.
+- **armv8 / arm64 / aarch64**: Diseñada para dispositivos móviles, de escritorio y embebidos contemporáneos (Apple Silicon M1/M2/M3/M4, Raspberry Pi 4/5, Orange Pi 3/5, etc.).
 
-- **armv7 / arm / arm32**: Sirve como arquitectura para dispositivos móviles y embebidos más antiguos, y sigue siendo
-  ampliamente utilizada en dispositivos como Orange Pi Zero LTS, Orange Pi PC Plus, Raspberry Pi 2, entre otros.
+- **armv7 / arm / arm32**: Sirve como arquitectura para dispositivos móviles y embebidos como Orange Pi Zero LTS, Orange Pi PC Plus, Raspberry Pi 2/3, entre otros.
 
-- **armv6 / arm / arm32**: Orientada a dispositivos embebidos muy antiguos, esta arquitectura, aunque menos común,
-  todavía se utiliza. Dispositivos como Raspberry Pi 1, Raspberry Pi Zero/Zero W, dependen de esta arquitectura.
+- **armv6 / arm / arm32**: Orientada a dispositivos embebidos de bajo consumo (Raspberry Pi 1, Raspberry Pi Zero/Zero W).
 
-- **armv5 / arm / arm32**: Una arquitectura más antigua asociada principalmente con sistemas embebidos tempranos, es
-  menos común hoy en día pero aún puede encontrarse en dispositivos heredados como versiones antiguas de Raspberry Pi y
-  algunos teléfonos inteligentes más antiguos.
+- **armv5 / arm / arm32**: Una arquitectura más antigua asociada con sistemas embebidos heredados.
+
+- **mips64 / mips64le / mips32 / mips32le**: Arquitecturas MIPS para enrutadores, hardware de red (plataformas OpenWrt/Linux embebido) y sistemas corporativos.
+
+- **riscv64**: Arquitectura de conjunto de instrucciones abiertas RISC-V de 64 bits para hardware embebido moderno y computadoras de placa única (SiFive, Milk-V, StarFive).
+
+- **ppc64 / ppc64le**: Arquitectura PowerPC de 64 bits para servidores empresariales (sistemas IBM Power).
+
+- **s390x**: Esta arquitectura se utiliza comúnmente en computadoras mainframe de IBM y ofrece alto rendimiento y confiabilidad.
+
+- **loong64**: Arquitectura LoongArch de 64 bits para plataformas Loongson.
 
 </details>
 

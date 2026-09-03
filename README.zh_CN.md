@@ -246,7 +246,10 @@ location /sub {
 - Oracle Linux 8+
 - OpenSUSE Tubleweed
 - Amazon Linux 2023
-- Windows x64
+- Windows x64 / x86 / ARM64
+- macOS (Intel & Apple Silicon M1/M2/M3/M4)
+- FreeBSD
+- OpenBSD
 
 ## 支持的架构和设备
 
@@ -257,20 +260,25 @@ location /sub {
 
 - **amd64**: 这种流行的架构是个人计算机和服务器的标准，可以无缝地适应大多数现代操作系统。
 
-- **x86 / i386**: 这种架构在台式机和笔记本电脑中被广泛采用，得到了众多操作系统和应用程序的广泛支持，包括但不限于
-  Windows、macOS 和 Linux 系统。
+- **x86 / i386**: 这种架构在台式机和笔记本电脑中被广泛采用，得到了众多操作系统和应用程序的广泛支持，包括 Windows、macOS、Linux、FreeBSD 和 OpenBSD 系统。
 
-- **armv8 / arm64 / aarch64**: 这种架构专为智能手机和平板电脑等当代移动和嵌入式设备量身定制，以 Raspberry Pi 4、Raspberry
-  Pi 3、Raspberry Pi Zero 2/Zero 2 W、Orange Pi 3 LTS 等设备为例。
+- **armv8 / arm64 / aarch64**: 这种架构专为现代移动、桌面和嵌入式设备（Apple Silicon M1/M2/M3/M4、Raspberry Pi 4/5、Orange Pi 3/5 等）量身定制。
 
-- **armv7 / arm / arm32**: 作为较旧的移动和嵌入式设备的架构，它仍然广泛用于Orange Pi Zero LTS、Orange Pi PC Plus、Raspberry
-  Pi 2等设备。
+- **armv7 / arm / arm32**: 作为移动和嵌入式设备的架构，广泛用于 Orange Pi Zero LTS、Orange Pi PC Plus、Raspberry Pi 2/3 等设备。
 
-- **armv6 / arm / arm32**: 这种架构面向非常老旧的嵌入式设备，虽然不太普遍，但仍在使用中。Raspberry Pi 1、Raspberry Pi
-  Zero/Zero W 等设备都依赖于这种架构。
+- **armv6 / arm / arm32**: 这种架构面向低功耗嵌入式设备（Raspberry Pi 1、Raspberry Pi Zero/Zero W）。
 
-- **armv5 / arm / arm32**: 它是一种主要与早期嵌入式系统相关的旧架构，目前不太常见，但仍可能出现在早期 Raspberry Pi
-  版本和一些旧智能手机等传统设备中。
+- **armv5 / arm / arm32**: 主要与早期嵌入式系统相关的旧架构。
+
+- **mips64 / mips64le / mips32 / mips32le**: 用于路由器、网络硬件（OpenWrt/嵌入式 Linux 平台）和企业系统的 MIPS 架构。
+
+- **riscv64**: 用于现代嵌入式硬件和单板计算机（SiFive、Milk-V、StarFive）的 64 位 RISC-V 开源指令集架构。
+
+- **ppc64 / ppc64le**: 用于企业级服务器（IBM Power 系统）的 64 位 PowerPC 架构。
+
+- **s390x**: 常用于 IBM 大型机计算机，为企业工作负载提供高性能和可靠性。
+
+- **loong64**: 用于龙芯平台的 64 位 LoongArch 架构。
 
 </details>
 

@@ -254,7 +254,10 @@ location /sub {
 - Oracle Linux 8+
 - OpenSUSE Tubleweed
 - Amazon Linux 2023
-- Windows x64
+- Windows x64 / x86 / ARM64
+- macOS (Intel & Apple Silicon M1/M2/M3/M4)
+- FreeBSD
+- OpenBSD
 
 ## Supported Architectures and Devices
 
@@ -268,23 +271,25 @@ computing environments. The following are key architectures that we support:
   operating systems seamlessly.
 
 - **x86 / i386**: Widely adopted in desktop and laptop computers, this architecture enjoys broad support from numerous
-  operating systems and applications, including but not limited to Windows, macOS, and Linux systems.
+  operating systems and applications, including Windows, macOS, Linux, FreeBSD, and OpenBSD systems.
 
-- **armv8 / arm64 / aarch64**: Tailored for contemporary mobile and embedded devices, such as smartphones and tablets,
-  this architecture is exemplified by devices like Raspberry Pi 4, Raspberry Pi 3, Raspberry Pi Zero 2/Zero 2 W, Orange
-  Pi 3 LTS, and more.
+- **armv8 / arm64 / aarch64**: Tailored for contemporary mobile, desktop, and embedded devices (Apple Silicon M1/M2/M3/M4, Raspberry Pi 4/5, Orange Pi 3/5, etc.).
 
-- **armv7 / arm / arm32**: Serving as the architecture for older mobile and embedded devices, it remains widely utilized
-  in devices like Orange Pi Zero LTS, Orange Pi PC Plus, Raspberry Pi 2, among others.
+- **armv7 / arm / arm32**: Serving as the architecture for mobile and embedded devices like Orange Pi Zero LTS, Orange Pi PC Plus, Raspberry Pi 2/3, among others.
 
-- **armv6 / arm / arm32**: Geared towards very old embedded devices, this architecture, while less prevalent, is still
-  in use. Devices such as Raspberry Pi 1, Raspberry Pi Zero/Zero W, rely on this architecture.
+- **armv6 / arm / arm32**: Geared towards low-power embedded devices (Raspberry Pi 1, Raspberry Pi Zero/Zero W).
 
-- **armv5 / arm / arm32**: An older architecture primarily associated with early embedded systems, it is less common
-  today but may still be found in legacy devices like early Raspberry Pi versions and some older smartphones.
+- **armv5 / arm / arm32**: An older architecture primarily associated with legacy embedded devices.
 
-- **s390x**: This architecture is commonly used in IBM mainframe computers and offers high performance and reliability
-  for enterprise workloads.
+- **mips64 / mips64le / mips32 / mips32le**: MIPS architectures for routers, networking hardware (OpenWrt/embedded Linux platforms), and enterprise systems.
+
+- **riscv64**: 64-bit RISC-V open instruction set architecture for modern embedded hardware and single-board computers (SiFive, Milk-V, StarFive).
+
+- **ppc64 / ppc64le**: 64-bit PowerPC architecture for enterprise servers (IBM Power systems).
+
+- **s390x**: This architecture is commonly used in IBM mainframe computers and offers high performance and reliability for enterprise workloads.
+
+- **loong64**: 64-bit LoongArch architecture for Loongson platforms.
 
 </details>
 
