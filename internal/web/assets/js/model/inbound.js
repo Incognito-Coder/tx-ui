@@ -2723,7 +2723,7 @@ Inbound.WireguardSettings = class extends XrayCommonClass {
         this.pubKey = secretKey.length > 0 ? Wireguard.generateKeypair(secretKey).publicKey : '';
         this.peers = peers;
         this.noKernelTun = noKernelTun;
-        this.address = Array.isArray(address) ? address : [];
+        this.address = Array.isArray(address) ? address : (typeof address === 'string' && address.length > 0 ? [address] : []);
     }
 
     static fromJson(json = {}) {
@@ -2755,7 +2755,7 @@ Inbound.WireguardSettings = class extends XrayCommonClass {
             peers: peersJson,
             clients: peersJson,
             noKernelTun: this.noKernelTun,
-            address: this.address.length > 0 ? this.address : undefined,
+            address: Array.isArray(this.address) && this.address.length > 0 ? this.address : (typeof this.address === 'string' && this.address.length > 0 ? [this.address] : ['10.0.0.1/24']),
         };
     }
 };

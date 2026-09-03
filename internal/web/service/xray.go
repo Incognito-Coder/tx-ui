@@ -199,6 +199,35 @@ func (s *XrayService) GetXrayConfig() (*xray.Config, error) {
 			}
 
 			if inbound.Protocol == model.WireGuard {
+				if addr, ok := settings["address"]; ok && addr != nil {
+					switch a := addr.(type) {
+					case []string:
+						settings["address"] = a
+					case []interface{}:
+						arr := make([]string, 0, len(a))
+						for _, item := range a {
+							if s, ok := item.(string); ok && s != "" {
+								arr = append(arr, s)
+							}
+						}
+						if len(arr) > 0 {
+							settings["address"] = arr
+						} else {
+							settings["address"] = []string{"10.0.0.1/24"}
+						}
+					case string:
+						if a != "" {
+							settings["address"] = []string{a}
+						} else {
+							settings["address"] = []string{"10.0.0.1/24"}
+						}
+					default:
+						settings["address"] = []string{"10.0.0.1/24"}
+					}
+				} else {
+					settings["address"] = []string{"10.0.0.1/24"}
+				}
+
 				var final_peers []interface{}
 				for _, client := range clients {
 					c, isMap := client.(map[string]interface{})
