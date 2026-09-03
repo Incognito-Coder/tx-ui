@@ -71,6 +71,7 @@
 "theme" = "Tema"
 "themeDark" = "Escuro"
 "themeUltra" = "Ultra"
+"themeColor" = "Cor do Tema"
 "dashboard" = "Visão Geral"
 "inbounds" = "Inbounds"
 "settings" = "Panel Settings"

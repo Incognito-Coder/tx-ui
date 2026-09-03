@@ -16,6 +16,32 @@
                 <a-checkbox :checked="themeSwitcher.isUltra" @click="themeSwitcher.toggleUltra()"
                             style="margin-left: 2px;"></a-checkbox>
             </a-menu-item>
+            <a-menu-item class="ant-menu-theme-switch panel-color-picker-menu-item">
+                <div class="panel-color-picker-wrapper" @click.stop @mousedown.stop>
+                    <div class="panel-color-picker-title">{{ i18n "menu.themeColor" }}</div>
+                    <div class="panel-color-picker-grid">
+                        <button v-for="(colorObj, key) in themeSwitcher.colorPresets"
+                                :key="key"
+                                :class="['panel-color-swatch', { active: themeSwitcher.currentColorKey === key }]"
+                                :style="{ backgroundColor: themeSwitcher.isDarkTheme ? colorObj.dark.primary : colorObj.light.primary }"
+                                :title="colorObj.name"
+                                @click="themeSwitcher.setColorScheme(key)">
+                            <a-icon v-if="themeSwitcher.currentColorKey === key" type="check" style="font-size: 11px;"></a-icon>
+                        </button>
+                        <label :class="['panel-color-swatch', 'custom-picker', { active: themeSwitcher.currentColorKey === 'custom' }]"
+                               :style="{ backgroundColor: themeSwitcher.customColor }"
+                               title="Custom Color">
+                            <input type="color"
+                                   :value="themeSwitcher.customColor"
+                                   @change="themeSwitcher.setCustomColor($event.target.value)"
+                                   @input="themeSwitcher.setCustomColor($event.target.value)"
+                                   class="panel-color-input" />
+                            <a-icon v-if="themeSwitcher.currentColorKey === 'custom'" type="check" style="font-size: 11px;"></a-icon>
+                            <a-icon v-else type="bg-colors" style="font-size: 11px;"></a-icon>
+                        </label>
+                    </div>
+                </div>
+            </a-menu-item>
         </a-sub-menu>
     </a-menu>
 </template>
@@ -35,6 +61,32 @@
                 </a-checkbox>
             </template>
         </a-menu-item>
+        <a-menu-item class="ant-menu-theme-switch panel-color-picker-menu-item">
+            <div class="panel-color-picker-wrapper login-color-picker" @click.stop @mousedown.stop style="padding: 4px 16px 8px;">
+                <div class="panel-color-picker-title" style="text-align: center;">{{ i18n "menu.themeColor" }}</div>
+                <div class="panel-color-picker-grid" style="justify-content: center;">
+                    <button v-for="(colorObj, key) in themeSwitcher.colorPresets"
+                            :key="key"
+                            :class="['panel-color-swatch', { active: themeSwitcher.currentColorKey === key }]"
+                            :style="{ backgroundColor: themeSwitcher.isDarkTheme ? colorObj.dark.primary : colorObj.light.primary }"
+                            :title="colorObj.name"
+                            @click="themeSwitcher.setColorScheme(key)">
+                        <a-icon v-if="themeSwitcher.currentColorKey === key" type="check" style="font-size: 11px;"></a-icon>
+                    </button>
+                    <label :class="['panel-color-swatch', 'custom-picker', { active: themeSwitcher.currentColorKey === 'custom' }]"
+                           :style="{ backgroundColor: themeSwitcher.customColor }"
+                           title="Custom Color">
+                        <input type="color"
+                               :value="themeSwitcher.customColor"
+                               @change="themeSwitcher.setCustomColor($event.target.value)"
+                               @input="themeSwitcher.setCustomColor($event.target.value)"
+                               class="panel-color-input" />
+                        <a-icon v-if="themeSwitcher.currentColorKey === 'custom'" type="check" style="font-size: 11px;"></a-icon>
+                        <a-icon v-else type="bg-colors" style="font-size: 11px;"></a-icon>
+                    </label>
+                </div>
+            </div>
+        </a-menu-item>
     </a-menu>
 </template>
 {{end}}
@@ -44,14 +96,269 @@
     function createThemeSwitcher() {
         const isDarkTheme = localStorage.getItem('dark-mode') === 'true';
         const isUltra = localStorage.getItem('isUltraDarkThemeEnabled') === 'true';
+        const currentColorKey = localStorage.getItem('panel-theme-color') || 'default';
+        const customColor = localStorage.getItem('panel-custom-color') || '#2563eb';
+
+        const COLOR_PRESETS = {
+            default: {
+                name: 'Blue',
+                light: { primary: '#2563eb', hover: '#1d4ed8', soft: 'rgba(37, 99, 235, 0.12)', focus: 'rgba(37, 99, 235, 0.20)' },
+                dark:  { primary: '#4f8cff', hover: '#74a4ff', soft: 'rgba(79, 140, 255, 0.16)', focus: 'rgba(79, 140, 255, 0.24)' },
+                tagGreen: {
+                    light: { color: '#047857', border: '#a7f3d0', bg: '#ecfdf5' },
+                    dark:  { color: '#6ee7b7', border: '#245c49', bg: '#10261f' }
+                },
+                tagPurple: {
+                    light: { color: '#7c3aed', border: '#e9d5ff', bg: '#faf5ff' },
+                    dark:  { color: '#d8b4fe', border: '#5b3b72', bg: '#281d33' }
+                }
+            },
+            emerald: {
+                name: 'Emerald',
+                light: { primary: '#059669', hover: '#047857', soft: 'rgba(5, 150, 105, 0.12)', focus: 'rgba(5, 150, 105, 0.20)' },
+                dark:  { primary: '#10b981', hover: '#34d399', soft: 'rgba(16, 185, 129, 0.16)', focus: 'rgba(16, 185, 129, 0.24)' },
+                tagGreen: {
+                    light: { color: '#047857', border: '#a7f3d0', bg: '#ecfdf5' },
+                    dark:  { color: '#34d399', border: '#1e5e45', bg: '#0b291e' }
+                },
+                tagPurple: {
+                    light: { color: '#0d9488', border: '#99f6e4', bg: '#f0fdfa' },
+                    dark:  { color: '#2dd4bf', border: '#134e4a', bg: '#042f2e' }
+                }
+            },
+            purple: {
+                name: 'Purple',
+                light: { primary: '#7c3aed', hover: '#6d28d9', soft: 'rgba(124, 58, 237, 0.12)', focus: 'rgba(124, 58, 237, 0.20)' },
+                dark:  { primary: '#8b5cf6', hover: '#a78bfa', soft: 'rgba(139, 92, 246, 0.16)', focus: 'rgba(139, 92, 246, 0.24)' },
+                tagGreen: {
+                    light: { color: '#059669', border: '#a7f3d0', bg: '#ecfdf5' },
+                    dark:  { color: '#34d399', border: '#1e5e45', bg: '#0b291e' }
+                },
+                tagPurple: {
+                    light: { color: '#6d28d9', border: '#ddd6fe', bg: '#f5f3ff' },
+                    dark:  { color: '#a78bfa', border: '#4c1d95', bg: '#2e1065' }
+                }
+            },
+            rose: {
+                name: 'Rose',
+                light: { primary: '#e11d48', hover: '#be123c', soft: 'rgba(225, 29, 72, 0.12)', focus: 'rgba(225, 29, 72, 0.20)' },
+                dark:  { primary: '#f43f5e', hover: '#fb7185', soft: 'rgba(244, 63, 94, 0.16)', focus: 'rgba(244, 63, 94, 0.24)' },
+                tagGreen: {
+                    light: { color: '#047857', border: '#a7f3d0', bg: '#ecfdf5' },
+                    dark:  { color: '#34d399', border: '#1e5e45', bg: '#0b291e' }
+                },
+                tagPurple: {
+                    light: { color: '#be123c', border: '#fecdd3', bg: '#fff1f2' },
+                    dark:  { color: '#fb7185', border: '#881337', bg: '#4c0519' }
+                }
+            },
+            amber: {
+                name: 'Amber',
+                light: { primary: '#d97706', hover: '#b45309', soft: 'rgba(217, 119, 6, 0.12)', focus: 'rgba(217, 119, 6, 0.20)' },
+                dark:  { primary: '#f59e0b', hover: '#fbbf24', soft: 'rgba(245, 158, 11, 0.16)', focus: 'rgba(245, 158, 11, 0.24)' },
+                tagGreen: {
+                    light: { color: '#059669', border: '#a7f3d0', bg: '#ecfdf5' },
+                    dark:  { color: '#34d399', border: '#1e5e45', bg: '#0b291e' }
+                },
+                tagPurple: {
+                    light: { color: '#b45309', border: '#fde68a', bg: '#fffbeb' },
+                    dark:  { color: '#fbbf24', border: '#78350f', bg: '#451a03' }
+                }
+            },
+            teal: {
+                name: 'Teal',
+                light: { primary: '#0891b2', hover: '#0e7490', soft: 'rgba(8, 145, 178, 0.12)', focus: 'rgba(8, 145, 178, 0.20)' },
+                dark:  { primary: '#06b6d4', hover: '#22d3ee', soft: 'rgba(6, 182, 212, 0.16)', focus: 'rgba(6, 182, 212, 0.24)' },
+                tagGreen: {
+                    light: { color: '#0e7490', border: '#a5f3fc', bg: '#ecfeff' },
+                    dark:  { color: '#22d3ee', border: '#164e63', bg: '#083344' }
+                },
+                tagPurple: {
+                    light: { color: '#6d28d9', border: '#ddd6fe', bg: '#f5f3ff' },
+                    dark:  { color: '#a78bfa', border: '#4c1d95', bg: '#2e1065' }
+                }
+            },
+            violet: {
+                name: 'Violet',
+                light: { primary: '#c026d3', hover: '#a21caf', soft: 'rgba(192, 38, 211, 0.12)', focus: 'rgba(192, 38, 211, 0.20)' },
+                dark:  { primary: '#d946ef', hover: '#e879f9', soft: 'rgba(217, 70, 239, 0.16)', focus: 'rgba(217, 70, 239, 0.24)' },
+                tagGreen: {
+                    light: { color: '#059669', border: '#a7f3d0', bg: '#ecfdf5' },
+                    dark:  { color: '#34d399', border: '#1e5e45', bg: '#0b291e' }
+                },
+                tagPurple: {
+                    light: { color: '#a21caf', border: '#f5d0fe', bg: '#fdf4ff' },
+                    dark:  { color: '#e879f9', border: '#701a75', bg: '#4a044e' }
+                }
+            }
+        };
+
+        function hexToRgb(hex) {
+            if (!hex) return { r: 37, g: 99, b: 235 };
+            hex = hex.replace(/^#/, '');
+            if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+            const num = parseInt(hex, 16);
+            if (isNaN(num)) return { r: 37, g: 99, b: 235 };
+            return {
+                r: (num >> 16) & 255,
+                g: (num >> 8) & 255,
+                b: num & 255
+            };
+        }
+
+        function hexToHsl(hex) {
+            let { r, g, b } = hexToRgb(hex);
+            r /= 255; g /= 255; b /= 255;
+            const max = Math.max(r, g, b), min = Math.min(r, g, b);
+            let h, s, l = (max + min) / 2;
+            if (max === min) {
+                h = s = 0;
+            } else {
+                const d = max - min;
+                s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                switch (max) {
+                    case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                    case g: h = (b - r) / d + 2; break;
+                    case b: h = (r - g) / d + 4; break;
+                }
+                h /= 6;
+            }
+            return { h: Math.round(h * 360), s: Math.round(s * 100), l: Math.round(l * 100) };
+        }
+
+        function hslToHex(h, s, l) {
+            l /= 100;
+            const a = (s * Math.min(l, 1 - l)) / 100;
+            const f = n => {
+                const k = (n + h / 30) % 12;
+                const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+                return Math.round(255 * color).toString(16).padStart(2, '0');
+            };
+            return `#${f(0)}${f(8)}${f(4)}`;
+        }
+
+        function setHue(hex, targetHue) {
+            const { s, l } = hexToHsl(hex);
+            return hslToHex(targetHue, Math.max(s, 55), Math.min(Math.max(l, 35), 65));
+        }
+
+        function adjustColor(hex, factor) {
+            const { r, g, b } = hexToRgb(hex);
+            const clamp = (val) => Math.min(255, Math.max(0, Math.round(val)));
+            const newR = clamp(r * factor);
+            const newG = clamp(g * factor);
+            const newB = clamp(b * factor);
+            return '#' + [newR, newG, newB].map(x => x.toString(16).padStart(2, '0')).join('');
+        }
+
+        function generateCustomTheme(hex, isDark) {
+            const { r, g, b } = hexToRgb(hex);
+            if (isDark) {
+                const primary = adjustColor(hex, 1.1);
+                const hover = adjustColor(hex, 1.25);
+                return {
+                    primary,
+                    hover,
+                    soft: `rgba(${r}, ${g}, ${b}, 0.18)`,
+                    focus: `rgba(${r}, ${g}, ${b}, 0.26)`
+                };
+            } else {
+                const primary = hex;
+                const hover = adjustColor(hex, 0.82);
+                return {
+                    primary,
+                    hover,
+                    soft: `rgba(${r}, ${g}, ${b}, 0.12)`,
+                    focus: `rgba(${r}, ${g}, ${b}, 0.20)`
+                };
+            }
+        }
+
+        function getTagStyle(primaryHex, hoverHex, softBg, isDark) {
+            const { r, g, b } = hexToRgb(primaryHex);
+            const color = hoverHex || primaryHex;
+            const border = isDark ? `rgba(${r}, ${g}, ${b}, 0.35)` : `rgba(${r}, ${g}, ${b}, 0.30)`;
+            const bg = softBg || (isDark ? `rgba(${r}, ${g}, ${b}, 0.16)` : `rgba(${r}, ${g}, ${b}, 0.10)`);
+            return { color, border, bg };
+        }
+
+        function applyThemeColor(key, customHex, isDark) {
+            let styleEl = document.getElementById('tx-theme-color-style');
+            if (!styleEl) {
+                styleEl = document.createElement('style');
+                styleEl.id = 'tx-theme-color-style';
+                document.head.appendChild(styleEl);
+            }
+
+            if (!key || key === 'default') {
+                styleEl.innerHTML = '';
+                return;
+            }
+
+            let theme, tagGreen, tagPurple;
+            if (key === 'custom' && customHex) {
+                theme = generateCustomTheme(customHex, isDark);
+                const greenHex = setHue(customHex, 150);
+                tagGreen = getTagStyle(greenHex, isDark ? adjustColor(greenHex, 1.2) : adjustColor(greenHex, 0.8), null, isDark);
+                const purpleHex = setHue(customHex, 275);
+                tagPurple = getTagStyle(purpleHex, isDark ? adjustColor(purpleHex, 1.2) : adjustColor(purpleHex, 0.8), null, isDark);
+            } else if (COLOR_PRESETS[key]) {
+                const preset = COLOR_PRESETS[key];
+                theme = isDark ? preset.dark : preset.light;
+                if (preset.tagGreen) {
+                    tagGreen = isDark ? preset.tagGreen.dark : preset.tagGreen.light;
+                }
+                if (preset.tagPurple) {
+                    tagPurple = isDark ? preset.tagPurple.dark : preset.tagPurple.light;
+                }
+            }
+
+            if (!tagGreen) {
+                let greenPrimary = isDark ? '#10b981' : '#059669';
+                tagGreen = getTagStyle(greenPrimary, null, null, isDark);
+            }
+            if (!tagPurple) {
+                let purplePrimary = isDark ? '#8b5cf6' : '#7c3aed';
+                tagPurple = getTagStyle(purplePrimary, null, null, isDark);
+            }
+
+            if (theme) {
+                const tagBlue = getTagStyle(theme.primary, theme.hover, theme.soft, isDark);
+
+                styleEl.innerHTML = `
+                    :root, body, #app, .dark, html[data-theme="ultra-dark"] #app.dark, html[data-theme="ultra-dark"] body.dark {
+                        --ui-primary: ${theme.primary} !important;
+                        --ui-primary-hover: ${theme.hover} !important;
+                        --ui-primary-soft: ${theme.soft} !important;
+                        --ui-focus: 0 0 0 3px ${theme.focus} !important;
+                        --color-primary-100: ${theme.primary} !important;
+
+                        --ui-tag-blue-color: ${tagBlue.color} !important;
+                        --ui-tag-blue-border: ${tagBlue.border} !important;
+                        --ui-tag-blue-bg: ${tagBlue.bg} !important;
+
+                        --ui-tag-green-color: ${tagGreen.color} !important;
+                        --ui-tag-green-border: ${tagGreen.border} !important;
+                        --ui-tag-green-bg: ${tagGreen.bg} !important;
+
+                        --ui-tag-purple-color: ${tagPurple.color} !important;
+                        --ui-tag-purple-border: ${tagPurple.border} !important;
+                        --ui-tag-purple-bg: ${tagPurple.bg} !important;
+                    }
+                `;
+            }
+        }
+
         if (isDarkTheme && isUltra) {
             document.documentElement.setAttribute('data-theme', 'ultra-dark');
         } else {
             document.documentElement.removeAttribute('data-theme');
         }
-        const theme = isDarkTheme ? 'dark' : 'light';
         document.body.classList.toggle('dark', isDarkTheme);
         document.body.classList.toggle('light', !isDarkTheme);
+
+        // Immediately apply saved theme color on script load
+        applyThemeColor(currentColorKey, customColor, isDarkTheme);
 
         function temporarilyDisableAnimations(event) {
             document.documentElement.setAttribute('data-theme-animations', 'off');
@@ -82,8 +389,24 @@
             },
             isDarkTheme,
             isUltra,
+            currentColorKey,
+            customColor,
+            colorPresets: COLOR_PRESETS,
             get currentTheme() {
                 return this.isDarkTheme ? 'dark' : 'light';
+            },
+            setColorScheme(key) {
+                this.currentColorKey = key;
+                localStorage.setItem('panel-theme-color', key);
+                applyThemeColor(key, this.customColor, this.isDarkTheme);
+            },
+            setCustomColor(hex) {
+                if (!hex) return;
+                this.customColor = hex;
+                this.currentColorKey = 'custom';
+                localStorage.setItem('panel-custom-color', hex);
+                localStorage.setItem('panel-theme-color', 'custom');
+                applyThemeColor('custom', hex, this.isDarkTheme);
             },
             toggleTheme() {
                 this.isDarkTheme = !this.isDarkTheme;
@@ -95,6 +418,7 @@
                 } else {
                     document.documentElement.removeAttribute('data-theme');
                 }
+                applyThemeColor(this.currentColorKey, this.customColor, this.isDarkTheme);
                 const message = document.getElementById('message');
                 if (message) message.className = this.currentTheme;
             },
@@ -106,6 +430,7 @@
                     document.documentElement.removeAttribute('data-theme');
                 }
                 localStorage.setItem('isUltraDarkThemeEnabled', this.isUltra.toString());
+                applyThemeColor(this.currentColorKey, this.customColor, this.isDarkTheme);
             }
         };
     }

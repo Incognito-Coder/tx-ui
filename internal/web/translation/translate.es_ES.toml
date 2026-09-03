@@ -71,6 +71,7 @@
 "theme" = "Tema"
 "themeDark" = "Oscuro"
 "themeUltra" = "Ultra"
+"themeColor" = "Color del tema"
 "dashboard" = "Estado del Sistema"
 "inbounds" = "Entradas"
 "settings" = "Configuraciones"

@@ -825,6 +825,15 @@ a:focus-visible {
     font-weight: 600;
 }
 
+.ant-tabs-nav .ant-tabs-tab:hover,
+.ant-tabs-nav .ant-tabs-tab:focus,
+.ant-tabs-nav .ant-tabs-tab-active,
+#content-layout .ant-tabs-nav .ant-tabs-tab:hover,
+#content-layout .ant-tabs-nav .ant-tabs-tab:focus,
+#content-layout .ant-tabs-nav .ant-tabs-tab-active {
+    color: var(--ui-primary);
+}
+
 #content-layout .ant-tabs-ink-bar {
     height: 3px;
     border-radius: 3px 3px 0 0;
@@ -956,21 +965,21 @@ a:focus-visible {
 }
 
 .ant-tag-blue {
-    color: #1d4ed8;
-    border-color: #bfdbfe;
-    background: #eff6ff;
+    color: var(--ui-tag-blue-color, #1d4ed8) !important;
+    border-color: var(--ui-tag-blue-border, #bfdbfe) !important;
+    background: var(--ui-tag-blue-bg, #eff6ff) !important;
 }
 
 .ant-tag-green {
-    color: #047857;
-    border-color: #a7f3d0;
-    background: #ecfdf5;
+    color: var(--ui-tag-green-color, #047857) !important;
+    border-color: var(--ui-tag-green-border, #a7f3d0) !important;
+    background: var(--ui-tag-green-bg, #ecfdf5) !important;
 }
 
 .ant-tag-purple {
-    color: #7e22ce;
-    border-color: #e9d5ff;
-    background: #faf5ff;
+    color: var(--ui-tag-purple-color, #7e22ce) !important;
+    border-color: var(--ui-tag-purple-border, #e9d5ff) !important;
+    background: var(--ui-tag-purple-bg, #faf5ff) !important;
 }
 
 .ant-tag-orange {
@@ -1816,23 +1825,23 @@ body.dark .ant-tag,
 
 body.dark .ant-tag-blue,
 #app.dark .ant-tag-blue {
-    color: #93c5fd;
-    border-color: #28557b;
-    background: #132538;
+    color: var(--ui-tag-blue-color, #93c5fd) !important;
+    border-color: var(--ui-tag-blue-border, #28557b) !important;
+    background: var(--ui-tag-blue-bg, #132538) !important;
 }
 
 body.dark .ant-tag-green,
 #app.dark .ant-tag-green {
-    color: #6ee7b7;
-    border-color: #245c49;
-    background: #10261f;
+    color: var(--ui-tag-green-color, #6ee7b7) !important;
+    border-color: var(--ui-tag-green-border, #245c49) !important;
+    background: var(--ui-tag-green-bg, #10261f) !important;
 }
 
 body.dark .ant-tag-purple,
 #app.dark .ant-tag-purple {
-    color: #d8b4fe;
-    border-color: #5b3b72;
-    background: #281d33;
+    color: var(--ui-tag-purple-color, #d8b4fe) !important;
+    border-color: var(--ui-tag-purple-border, #5b3b72) !important;
+    background: var(--ui-tag-purple-bg, #281d33) !important;
 }
 
 body.dark .ant-tag-orange,
@@ -2111,3 +2120,84 @@ html[data-theme="ultra-dark"] body.dark {
         transition-duration: .01ms !important;
     }
 }
+
+/* Panel theme color switcher */
+.ant-menu-theme-switch.panel-color-picker-menu-item {
+    height: auto !important;
+    line-height: normal !important;
+    padding: 0 !important;
+    cursor: default !important;
+    background: transparent !important;
+}
+
+.ant-menu-theme-switch.panel-color-picker-menu-item:hover {
+    background: transparent !important;
+}
+
+.panel-color-picker-wrapper {
+    padding: 8px 16px 10px;
+    border-top: 1px solid var(--ui-border);
+    margin-top: 4px;
+    user-select: none;
+}
+
+
+.panel-color-picker-wrapper.login-color-picker {
+    border-top: none;
+    margin-top: 0;
+}
+
+.panel-color-picker-title {
+    margin-bottom: 8px;
+    color: var(--ui-text-muted);
+    font-weight: 500;
+    font-size: 12px;
+}
+
+.panel-color-picker-grid {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 7px;
+}
+
+.panel-color-swatch {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    color: #ffffff;
+    font-size: 11px;
+    border: 2px solid transparent;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+    outline: none;
+}
+
+.panel-color-swatch:hover {
+    transform: scale(1.18);
+}
+
+.panel-color-swatch.active {
+    border-color: var(--ui-surface);
+    box-shadow: 0 0 0 2px var(--ui-primary);
+}
+
+.panel-color-swatch.custom-picker {
+    overflow: hidden;
+}
+
+.panel-color-input {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+}
+

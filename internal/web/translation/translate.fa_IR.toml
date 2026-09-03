@@ -79,6 +79,7 @@
 "theme" = "تم"
 "themeDark" = "تیره"
 "themeUltra" = "تیره تر"
+"themeColor" = "رنگ تم"
 
 [pages.login]
 "hello" = "سلام"

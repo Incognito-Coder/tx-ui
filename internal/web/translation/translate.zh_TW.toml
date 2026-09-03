@@ -72,6 +72,7 @@
 "theme" = "主題"
 "themeDark" = "深色"
 "themeUltra" = "極致"
+"themeColor" = "主題顏色"
 "dashboard" = "系統狀態"
 "inbounds" = "入站列表"
 "settings" = "面板設定"

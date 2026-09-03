@@ -79,6 +79,7 @@
 "theme" = "Theme"
 "themeDark" = "Dark"
 "themeUltra" = "Ultra"
+"themeColor" = "Theme Color"
 
 [pages.login]
 "hello" = "Hello"

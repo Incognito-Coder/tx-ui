@@ -71,6 +71,7 @@
 "theme" = "Тема"
 "themeDark" = "Тёмная"
 "themeUltra" = "Ультра"
+"themeColor" = "Цвет темы"
 "dashboard" = "Статус системы"
 "inbounds" = "Подключения"
 "settings" = "Настройки панели"
