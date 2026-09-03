@@ -1221,3 +1221,176 @@ func (s *ServerService) GetNewmlkem768() (any, error) {
 
 	return keyPair, nil
 }
+
+type MetricsSummary struct {
+	AllocBytes    uint64           `json:"allocBytes"`
+	SysBytes      uint64           `json:"sysBytes"`
+	HeapAlloc     uint64           `json:"heapAlloc"`
+	HeapSys       uint64           `json:"heapSys"`
+	HeapObjects   uint64           `json:"heapObjects"`
+	Goroutines    uint64           `json:"goroutines"`
+	NumGC         uint64           `json:"numGC"`
+	StatsTraffic  map[string]int64 `json:"statsTraffic"`
+}
+
+type XrayMetrics struct {
+	Enabled    bool                   `json:"enabled"`
+	Listen     string                 `json:"listen"`
+	Tag        string                 `json:"tag"`
+	RawMetrics string                 `json:"rawMetrics,omitempty"`
+	ParsedData map[string]interface{} `json:"parsedData,omitempty"`
+	Summary    *MetricsSummary        `json:"summary,omitempty"`
+	Error      string                 `json:"error,omitempty"`
+}
+
+func extractMetricsSummary(body []byte, parsed map[string]interface{}) *MetricsSummary {
+	summary := &MetricsSummary{
+		StatsTraffic: make(map[string]int64),
+	}
+
+	if parsed != nil {
+		if g, ok := parsed["goroutines"].(float64); ok {
+			summary.Goroutines = uint64(g)
+		}
+		if ms, ok := parsed["memstats"].(map[string]interface{}); ok {
+			if v, ok := ms["Alloc"].(float64); ok {
+				summary.AllocBytes = uint64(v)
+			}
+			if v, ok := ms["Sys"].(float64); ok {
+				summary.SysBytes = uint64(v)
+			}
+			if v, ok := ms["HeapAlloc"].(float64); ok {
+				summary.HeapAlloc = uint64(v)
+			}
+			if v, ok := ms["HeapSys"].(float64); ok {
+				summary.HeapSys = uint64(v)
+			}
+			if v, ok := ms["HeapObjects"].(float64); ok {
+				summary.HeapObjects = uint64(v)
+			}
+			if v, ok := ms["NumGC"].(float64); ok {
+				summary.NumGC = uint64(v)
+			}
+		}
+		for k, v := range parsed {
+			if strings.HasPrefix(k, "stats.") || strings.HasPrefix(k, "stat.") {
+				if num, ok := v.(float64); ok {
+					summary.StatsTraffic[k] = int64(num)
+				}
+			}
+		}
+	}
+
+	lines := strings.Split(string(body), "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "#") || line == "" {
+			continue
+		}
+		parts := strings.Fields(line)
+		if len(parts) < 2 {
+			continue
+		}
+		key := parts[0]
+		val, err := strconv.ParseFloat(parts[1], 64)
+		if err != nil {
+			continue
+		}
+
+		if summary.Goroutines == 0 && (key == "go_goroutines" || strings.Contains(key, "goroutines")) {
+			summary.Goroutines = uint64(val)
+		} else if summary.AllocBytes == 0 && (key == "go_memstats_alloc_bytes" || strings.Contains(key, "alloc_bytes")) {
+			summary.AllocBytes = uint64(val)
+		} else if summary.SysBytes == 0 && (key == "go_memstats_sys_bytes" || strings.Contains(key, "sys_bytes")) {
+			summary.SysBytes = uint64(val)
+		} else if summary.HeapAlloc == 0 && (key == "go_memstats_heap_alloc_bytes" || strings.Contains(key, "heap_alloc_bytes")) {
+			summary.HeapAlloc = uint64(val)
+		} else if summary.HeapSys == 0 && (key == "go_memstats_heap_sys_bytes" || strings.Contains(key, "heap_sys_bytes")) {
+			summary.HeapSys = uint64(val)
+		} else if summary.HeapObjects == 0 && (key == "go_memstats_heap_objects" || strings.Contains(key, "heap_objects")) {
+			summary.HeapObjects = uint64(val)
+		} else if summary.NumGC == 0 && (key == "go_memstats_gc_sys_bytes" || key == "go_gc_duration_seconds_count") {
+			summary.NumGC = uint64(val)
+		}
+
+		if strings.HasPrefix(key, "xray_") || strings.HasPrefix(key, "stats_") {
+			summary.StatsTraffic[key] = int64(val)
+		}
+	}
+
+	return summary
+}
+
+func (s *ServerService) GetXrayMetrics() (*XrayMetrics, error) {
+	metrics := &XrayMetrics{
+		Enabled: false,
+	}
+
+	xrayConfig, err := s.xrayService.GetXrayConfig()
+	if err != nil {
+		metrics.Error = "Failed to load Xray config: " + err.Error()
+		return metrics, nil
+	}
+
+	if len(xrayConfig.Metrics) == 0 {
+		metrics.Error = "Metrics service is not configured or disabled in Xray Configs"
+		return metrics, nil
+	}
+
+	var metricsConf struct {
+		Listen string `json:"listen"`
+		Tag    string `json:"tag"`
+	}
+	if err := json.Unmarshal(xrayConfig.Metrics, &metricsConf); err != nil {
+		metrics.Error = "Invalid metrics configuration in Xray Configs: " + err.Error()
+		return metrics, nil
+	}
+
+	metrics.Enabled = true
+	metrics.Listen = metricsConf.Listen
+	metrics.Tag = metricsConf.Tag
+
+	if metrics.Listen == "" {
+		metrics.Listen = "127.0.0.1:11111"
+	}
+
+	addr := metrics.Listen
+	if strings.HasPrefix(addr, "0.0.0.0:") {
+		addr = "127.0.0.1:" + strings.TrimPrefix(addr, "0.0.0.0:")
+	} else if strings.HasPrefix(addr, ":") {
+		addr = "127.0.0.1" + addr
+	}
+
+	client := &http.Client{
+		Timeout: 3 * time.Second,
+	}
+
+	metricsUrl := "http://" + addr + "/debug/vars"
+	resp, err := client.Get(metricsUrl)
+	if err != nil {
+		metricsUrl = "http://" + addr + "/metrics"
+		resp, err = client.Get(metricsUrl)
+	}
+
+	if err != nil {
+		metrics.Error = fmt.Sprintf("Failed to connect to Xray metrics listener (%s): %v", addr, err)
+		return metrics, nil
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		metrics.Error = "Failed to read metrics response: " + err.Error()
+		return metrics, nil
+	}
+
+	metrics.RawMetrics = string(body)
+	var parsed map[string]interface{}
+	if err := json.Unmarshal(body, &parsed); err == nil {
+		metrics.ParsedData = parsed
+	}
+
+	metrics.Summary = extractMetricsSummary(body, parsed)
+
+	return metrics, nil
+}

@@ -845,6 +845,19 @@ a:focus-visible {
     background-color: var(--ui-primary) !important;
 }
 
+.ant-modal .ant-tabs-bar {
+    margin-bottom: 16px !important;
+}
+
+.ant-modal .ant-tabs-content {
+    margin-top: 14px !important;
+}
+
+.metrics-modal-wide .ant-modal {
+    width: 90vw !important;
+    max-width: 1400px !important;
+}
+
 /* Ensure ant-collapse top and bottom border radius are identical across single and multi-item collapse panels */
 .ant-collapse {
     border-radius: var(--ui-radius) !important;
@@ -1478,6 +1491,12 @@ li.ant-calendar-time-picker-select-option-selected {
 
 .panel-modal-fluid .ant-modal {
     width: min(1200px, calc(100vw - 40px)) !important;
+}
+
+.panel-modal-xxl .ant-modal,
+.metrics-modal-wide .ant-modal {
+    width: min(1360px, calc(100vw - 40px)) !important;
+    max-width: calc(100vw - 40px) !important;
 }
 
 .panel-modal-auto .ant-modal {

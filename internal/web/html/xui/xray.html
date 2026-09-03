@@ -297,11 +297,18 @@
                                             </template>
                                         </a-alert>
                                     </a-row>
+                                    <a-list-item>
                                     <setting-list-item type="switch" title='{{ i18n "enable"}}' desc='{{ i18n "pages.xray.metrics.enableDesc"}}' v-model="metricsEnable"></setting-list-item>
                                     <template v-if="metricsEnable">
                                         <setting-list-item type="text" title='{{ i18n "pages.inbounds.address"}}' desc='{{ i18n "pages.xray.metrics.listenDesc"}}' v-model="metricsListen"></setting-list-item>
                                         <setting-list-item type="text" title='{{ i18n "pages.xray.metrics.tag"}}' desc='{{ i18n "pages.xray.metrics.tagDesc"}}' v-model="metricsTag"></setting-list-item>
                                     </template>
+                                    <div style="margin-top: 18px; margin-bottom: 14px; padding: 0 20px;">
+                                        <a-button icon="dashboard" type="primary" style="border-radius: var(--ui-radius);" @click="fetchXrayMetrics">
+                                            Access Live Xray Metrics
+                                        </a-button>
+                                    </div>
+                                    </a-list-item>
                                 </a-collapse-panel>
                                 <a-collapse-panel header='{{ i18n "pages.xray.basicRouting"}}'>
                                     <a-row :lg="12" :sm="24" :xs="24">
@@ -1008,6 +1015,162 @@
             </a-spin>
         </a-layout-content>
     </a-layout>
+    <a-modal :class="themeSwitcher.currentTheme" :closable="true" :footer="null" :width="1360" wrap-class-name="panel-modal panel-modal-xxl metrics-modal-wide"
+             v-model="metricsModal.visible" @cancel="stopMetricsAutoRefresh">
+        <template slot="title">
+            <div style="display: flex; align-items: center; justify-content: space-between; padding-right: 24px; flex-wrap: wrap; gap: 8px;">
+                <span style="font-weight: 700; font-size: 16px;">
+                    <a-icon type="dashboard" style="color: var(--ui-primary); margin-right: 8px; font-size: 18px;"></a-icon>
+                    [[ isMobile ? 'Xray Telemetry' : 'Live Xray Telemetry & Metrics Dashboard' ]]
+                </span>
+                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    <a-tag :color="metricsModal.data && metricsModal.data.enabled ? 'green' : 'red'">
+                        <a-badge :status="metricsModal.autoRefresh ? 'processing' : 'default'"></a-badge>
+                        [[ metricsModal.data && metricsModal.data.enabled ? (isMobile ? 'Live' : 'Live Listener Active') : 'Offline' ]]
+                    </a-tag>
+                    <a-button size="small" icon="sync" :spin="metricsModal.loading" type="primary" @click="fetchXrayMetrics">Sync</a-button>
+                </div>
+            </div>
+        </template>
+        <a-spin :spinning="metricsModal.loading && !metricsModal.data">
+            <template v-if="metricsModal.error">
+                <a-alert :message="metricsModal.error" type="warning" show-icon style="margin-bottom: 14px;"></a-alert>
+            </template>
+
+            <a-tabs default-active-key="overview" size="small">
+                <!-- Tab 1: Telemetry Overview & Gauges -->
+                <a-tab-pane key="overview" tab="Overview & Load" style="padding-top: 14px;">
+                    <a-row :gutter="[12, 12]" style="margin-bottom: 18px;">
+                        <a-col :xs="12" :sm="12" :lg="6">
+                            <div style="background: var(--ui-surface-muted); border: 1px solid var(--ui-border); border-radius: var(--ui-radius); padding: 12px 10px; text-align: center; box-shadow: var(--ui-shadow-sm);">
+                                <div style="display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 12px; color: var(--ui-text-muted); font-weight: 600;">
+                                    <a-icon type="database" style="color: var(--ui-primary);"></a-icon>
+                                    Allocated Memory
+                                </div>
+                                <div style="font-size: 18px; font-weight: 700; color: var(--ui-primary); margin: 6px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                    [[ formatMetricsBytes(getMetricsVal('allocBytes')) ]]
+                                </div>
+                                <a-progress :percent="getMemUsagePercent()" size="small" :stroke-color="'var(--ui-primary)'" :show-info="false"></a-progress>
+                                <div style="font-size: 11px; color: var(--ui-text-muted); margin-top: 6px;">Total Sys: [[ formatMetricsBytes(getMetricsVal('sysBytes')) ]]</div>
+                            </div>
+                        </a-col>
+                        <a-col :xs="12" :sm="12" :lg="6">
+                            <div style="background: var(--ui-surface-muted); border: 1px solid var(--ui-border); border-radius: var(--ui-radius); padding: 12px 10px; text-align: center; box-shadow: var(--ui-shadow-sm);">
+                                <div style="display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 12px; color: var(--ui-text-muted); font-weight: 600;">
+                                    <a-icon type="appstore" style="color: var(--ui-success);"></a-icon>
+                                    Heap Allocation
+                                </div>
+                                <div style="font-size: 18px; font-weight: 700; color: var(--ui-success); margin: 6px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                    [[ formatMetricsBytes(getMetricsVal('heapAlloc')) ]]
+                                </div>
+                                <a-progress :percent="getHeapUsagePercent()" size="small" :stroke-color="'var(--ui-success)'" :show-info="false"></a-progress>
+                                <div style="font-size: 11px; color: var(--ui-text-muted); margin-top: 6px;">Heap Sys: [[ formatMetricsBytes(getMetricsVal('heapSys')) ]]</div>
+                            </div>
+                        </a-col>
+                        <a-col :xs="12" :sm="12" :lg="6">
+                            <div style="background: var(--ui-surface-muted); border: 1px solid var(--ui-border); border-radius: var(--ui-radius); padding: 12px 10px; text-align: center; box-shadow: var(--ui-shadow-sm);">
+                                <div style="display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 12px; color: var(--ui-text-muted); font-weight: 600;">
+                                    <a-icon type="branches" style="color: #8b5cf6;"></a-icon>
+                                    Goroutines Threads
+                                </div>
+                                <div style="font-size: 18px; font-weight: 700; color: #8b5cf6; margin: 6px 0;">
+                                    [[ getMetricsVal('goroutines') || 0 ]]
+                                </div>
+                                <div style="font-size: 11px; color: var(--ui-text-muted); margin-top: 6px;">Active Workers</div>
+                            </div>
+                        </a-col>
+                        <a-col :xs="12" :sm="12" :lg="6">
+                            <div style="background: var(--ui-surface-muted); border: 1px solid var(--ui-border); border-radius: var(--ui-radius); padding: 12px 10px; text-align: center; box-shadow: var(--ui-shadow-sm);">
+                                <div style="display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 12px; color: var(--ui-text-muted); font-weight: 600;">
+                                    <a-icon type="sync" style="color: var(--ui-warning);"></a-icon>
+                                    GC / Objects
+                                </div>
+                                <div style="font-size: 18px; font-weight: 700; color: var(--ui-warning); margin: 6px 0;">
+                                    [[ getMetricsVal('numGC') || 0 ]]
+                                </div>
+                                <div style="font-size: 11px; color: var(--ui-text-muted); margin-top: 6px;">Obj: [[ getMetricsVal('heapObjects') || 0 ]]</div>
+                            </div>
+                        </a-col>
+                    </a-row>
+
+                    <!-- Auto Refresh Bar -->
+                    <div style="display: flex; align-items: center; justify-content: space-between; background: var(--ui-surface-muted); padding: 10px 16px; border-radius: var(--ui-radius); margin-bottom: 12px; border: 1px solid var(--ui-border);">
+                        <span><a-icon type="clock-circle" style="margin-right: 6px; color: var(--ui-primary);"></a-icon> Realtime Auto-Polling Stream (Every 3s)</span>
+                        <a-switch size="small" v-model="metricsModal.autoRefresh" @change="toggleMetricsAutoRefresh"></a-switch>
+                    </div>
+                </a-tab-pane>
+
+                <!-- Tab 2: Realtime SVG Sparkline Charts -->
+                <a-tab-pane key="charts" tab="Realtime Telemetry Charts" style="padding-top: 14px;">
+                    <div style="margin-bottom: 16px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                            <strong><a-icon type="area-chart" style="color: var(--ui-primary); margin-right: 6px;"></a-icon> Memory Alloc Trend (Bytes)</strong>
+                            <span style="font-size: 12px; color: var(--ui-primary); font-weight: 600;">Latest: [[ formatMetricsBytes(getMetricsVal('allocBytes')) ]]</span>
+                        </div>
+                        <div style="background: var(--ui-surface-muted); border: 1px solid var(--ui-border); border-radius: var(--ui-radius); padding: 10px; height: 170px; position: relative;">
+                            <svg width="100%" height="100%" viewBox="0 0 1300 150" preserveAspectRatio="none">
+                                <defs>
+                                    <linearGradient id="memGradient" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stop-color="var(--ui-primary)" stop-opacity="0.35"/>
+                                        <stop offset="100%" stop-color="var(--ui-primary)" stop-opacity="0.0"/>
+                                    </linearGradient>
+                                </defs>
+                                <path :d="getSvgAreaPath(metricsModal.history.alloc, 1300, 150)" fill="url(#memGradient)"/>
+                                <path :d="getSvgPath(metricsModal.history.alloc, 1300, 150)" fill="none" stroke="var(--ui-primary)" stroke-width="2.5"/>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                            <strong><a-icon type="branches" style="color: #8b5cf6; margin-right: 6px;"></a-icon> Active Goroutines Thread Trend</strong>
+                            <span style="font-size: 12px; color: #8b5cf6; font-weight: 600;">Threads: [[ getMetricsVal('goroutines') ]]</span>
+                        </div>
+                        <div style="background: var(--ui-surface-muted); border: 1px solid var(--ui-border); border-radius: var(--ui-radius); padding: 10px; height: 170px; position: relative;">
+                            <svg width="100%" height="100%" viewBox="0 0 1300 150" preserveAspectRatio="none">
+                                <defs>
+                                    <linearGradient id="goGradient" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stop-color="#8b5cf6" stop-opacity="0.35"/>
+                                        <stop offset="100%" stop-color="#8b5cf6" stop-opacity="0.0"/>
+                                    </linearGradient>
+                                </defs>
+                                <path :d="getSvgAreaPath(metricsModal.history.goroutines, 1300, 150)" fill="url(#goGradient)"/>
+                                <path :d="getSvgPath(metricsModal.history.goroutines, 1300, 150)" fill="none" stroke="#8b5cf6" stroke-width="2.5"/>
+                            </svg>
+                        </div>
+                    </div>
+                </a-tab-pane>
+
+                <!-- Tab 3: Traffic Stats -->
+                <a-tab-pane key="traffic" tab="Stats Breakdown" style="padding-top: 14px;">
+                    <div v-if="metricsModal.data && metricsModal.data.summary && Object.keys(metricsModal.data.summary.statsTraffic).length > 0">
+                        <a-row :gutter="[10, 10]">
+                            <a-col :xs="24" :sm="12" v-for="(val, key) in metricsModal.data.summary.statsTraffic" :key="key">
+                                <div style="background: var(--ui-surface-muted); padding: 8px 12px; border-radius: var(--ui-radius); border: 1px solid var(--ui-border); display: flex; justify-content: space-between; align-items: center;">
+                                    <span style="font-size: 12px; word-break: break-all;">[[ key ]]</span>
+                                    <strong style="color: var(--ui-primary)">[[ formatMetricsBytes(val) ]]</strong>
+                                </div>
+                            </a-col>
+                        </a-row>
+                    </div>
+                    <a-empty v-else description="No inbound/outbound traffic stats counters exposed by Xray metrics listener"></a-empty>
+                </a-tab-pane>
+
+                <!-- Tab 4: Raw Inspector -->
+                <a-tab-pane key="raw" tab="Raw Inspector" style="padding-top: 14px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; gap: 10px;">
+                        <a-input placeholder="Filter metrics output..." v-model="metricsModal.filterKeyword" size="small" allow-clear icon="search"></a-input>
+                        <a-button icon="snippets" size="small" id="copy-metrics-btn" @click="copyToClipboard('copy-metrics-btn', getFilteredRawMetrics())">
+                            Copy Raw
+                        </a-button>
+                    </div>
+                    <div class="client-table-odd-row" style="border-radius: var(--ui-radius); padding: 12px; font-family: monospace; white-space: pre-wrap; word-break: break-all; max-height: 340px; overflow-y: auto; font-size: 12px;">
+                        [[ getFilteredRawMetrics() || 'No metrics data available' ]]
+                    </div>
+                </a-tab-pane>
+            </a-tabs>
+        </a-spin>
+    </a-modal>
 </a-layout>
 {{template "js" .}}
 {{template "component/themeSwitcher" .}}
@@ -1167,6 +1330,22 @@
             outboundTestStates: {},
             saveBtnDisable: true,
             refreshing: false,
+            metricsModal: {
+                visible: false,
+                loading: false,
+                data: null,
+                parsed: null,
+                raw: '',
+                error: '',
+                filterKeyword: '',
+                autoRefresh: false,
+                timer: null,
+                history: {
+                    alloc: [],
+                    sys: [],
+                    goroutines: []
+                }
+            },
             restartResult: '',
             showAlert: false,
             isMobile: window.innerWidth <= 768,
@@ -1470,6 +1649,108 @@
                     newTemplateSettings.routing.rules = newRules;
                 }
                 this.templateSettings = newTemplateSettings;
+            },
+            async fetchXrayMetrics() {
+                this.metricsModal.visible = true;
+                if (!this.metricsModal.data) this.metricsModal.loading = true;
+                this.metricsModal.error = '';
+                try {
+                    const res = await HttpUtil.get('/panel/api/server/getXrayMetrics');
+                    if (res.success) {
+                        this.metricsModal.data = res.obj;
+                        this.metricsModal.raw = res.obj.rawMetrics || '';
+                        this.metricsModal.parsed = res.obj.parsedData || null;
+                        if (res.obj.error) {
+                            this.metricsModal.error = res.obj.error;
+                        }
+                        this.recordMetricsHistory();
+                    } else {
+                        this.metricsModal.error = res.msg || 'Failed to fetch Xray metrics';
+                    }
+                } catch (e) {
+                    this.metricsModal.error = e.message || 'Error communicating with server';
+                } finally {
+                    this.metricsModal.loading = false;
+                }
+            },
+            recordMetricsHistory() {
+                const alloc = this.getMetricsVal('allocBytes');
+                const sys = this.getMetricsVal('sysBytes');
+                const goroutines = this.getMetricsVal('goroutines');
+
+                this.metricsModal.history.alloc.push(alloc);
+                if (this.metricsModal.history.alloc.length > 20) this.metricsModal.history.alloc.shift();
+
+                this.metricsModal.history.sys.push(sys);
+                if (this.metricsModal.history.sys.length > 20) this.metricsModal.history.sys.shift();
+
+                this.metricsModal.history.goroutines.push(goroutines);
+                if (this.metricsModal.history.goroutines.length > 20) this.metricsModal.history.goroutines.shift();
+            },
+            toggleMetricsAutoRefresh(val) {
+                if (val) {
+                    this.fetchXrayMetrics();
+                    this.metricsModal.timer = setInterval(() => {
+                        if (this.metricsModal.visible) {
+                            this.fetchXrayMetrics();
+                        } else {
+                            this.stopMetricsAutoRefresh();
+                        }
+                    }, 3000);
+                } else {
+                    this.stopMetricsAutoRefresh();
+                }
+            },
+            stopMetricsAutoRefresh() {
+                this.metricsModal.autoRefresh = false;
+                if (this.metricsModal.timer) {
+                    clearInterval(this.metricsModal.timer);
+                    this.metricsModal.timer = null;
+                }
+            },
+            getMetricsVal(key) {
+                if (!this.metricsModal.data || !this.metricsModal.data.summary) return 0;
+                return this.metricsModal.data.summary[key] || 0;
+            },
+            getMemUsagePercent() {
+                const alloc = this.getMetricsVal('allocBytes');
+                const sys = this.getMetricsVal('sysBytes') || 1;
+                return Math.min(100, Math.round((alloc / sys) * 100));
+            },
+            getHeapUsagePercent() {
+                const alloc = this.getMetricsVal('heapAlloc');
+                const sys = this.getMetricsVal('heapSys') || 1;
+                return Math.min(100, Math.round((alloc / sys) * 100));
+            },
+            getFilteredRawMetrics() {
+                const raw = this.metricsModal.raw || '';
+                const kw = (this.metricsModal.filterKeyword || '').toLowerCase().trim();
+                if (!kw) return raw;
+                return raw.split('\n').filter(line => line.toLowerCase().includes(kw)).join('\n');
+            },
+            getSvgPath(data, width = 1300, height = 150) {
+                if (!data || data.length < 2) return `M 0,${height/2} L ${width},${height/2}`;
+                const max = Math.max(...data, 1);
+                const min = Math.min(...data, 0);
+                const range = max - min || 1;
+                const step = width / (data.length - 1);
+                return data.reduce((acc, val, idx) => {
+                    const x = (idx * step).toFixed(1);
+                    const y = (height - ((val - min) / range) * (height - 20) - 10).toFixed(1);
+                    return `${acc} ${idx === 0 ? 'M' : 'L'} ${x},${y}`;
+                }, '');
+            },
+            getSvgAreaPath(data, width = 1300, height = 150) {
+                const linePath = this.getSvgPath(data, width, height);
+                if (!linePath) return '';
+                return `${linePath} L ${width},${height} L 0,${height} Z`;
+            },
+            formatMetricsBytes(bytes) {
+                if (!bytes || bytes === 0) return '0 B';
+                const k = 1024;
+                const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
             },
             changeCode() {
                 if (this.cm != null) {

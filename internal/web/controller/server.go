@@ -38,6 +38,7 @@ func NewServerController(g *gin.RouterGroup) *ServerController {
 
 func (a *ServerController) initRouter(g *gin.RouterGroup) {
 	g.GET("/status", a.status)
+	g.GET("/getXrayMetrics", a.getXrayMetrics)
 	g.GET("/getXrayVersion", a.getXrayVersion)
 	g.GET("/getConfigJson", a.getConfigJson)
 	g.GET("/getDb", a.getDb)
@@ -98,6 +99,15 @@ func (a *ServerController) status(c *gin.Context) {
 	a.lastGetStatusTime = time.Now()
 
 	jsonObj(c, a.lastStatus, nil)
+}
+
+func (a *ServerController) getXrayMetrics(c *gin.Context) {
+	metrics, err := a.serverService.GetXrayMetrics()
+	if err != nil {
+		jsonMsg(c, "Failed to retrieve Xray metrics", err)
+		return
+	}
+	jsonObj(c, metrics, nil)
 }
 
 func (a *ServerController) getXrayVersion(c *gin.Context) {
