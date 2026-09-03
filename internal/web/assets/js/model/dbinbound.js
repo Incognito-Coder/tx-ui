@@ -122,6 +122,7 @@ class DBInbound {
             case Protocols.VLESS:
             case Protocols.TROJAN:
             case Protocols.HYSTERIA:
+            case Protocols.WIREGUARD:
                 return true;
             case Protocols.SHADOWSOCKS:
                 return this.toInbound().isSSMultiUser;
@@ -137,6 +138,7 @@ class DBInbound {
             case Protocols.TROJAN:
             case Protocols.HYSTERIA:
             case Protocols.SHADOWSOCKS:
+            case Protocols.WIREGUARD:
                 return true;
             default:
                 return false;

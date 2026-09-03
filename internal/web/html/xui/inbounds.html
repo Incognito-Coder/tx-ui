@@ -83,8 +83,12 @@
     }
 
     .info-large-tag {
-        max-width: 200px;
+        max-width: 360px;
         overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        display: inline-block;
+        vertical-align: middle;
     }
 
     .online-animation .ant-badge-status-dot {
@@ -359,7 +363,7 @@
                                             {{ i18n "edit" }}
                                         </a-menu-item>
                                         <a-menu-item key="qrcode"
-                                                     v-if="(dbInbound.isSS && !dbInbound.toInbound().isSSMultiUser) || dbInbound.isWireguard">
+                                                     v-if="(dbInbound.isSS && !dbInbound.toInbound().isSSMultiUser)">
                                             <a-icon type="qrcode"></a-icon>
                                             {{ i18n "qrCode" }}
                                         </a-menu-item>

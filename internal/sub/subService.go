@@ -116,7 +116,7 @@ func (s *SubService) getInboundsBySubId(subId string) ([]*model.Inbound, error) 
 		FROM inbounds,
 			JSON_EACH(JSON_EXTRACT(inbounds.settings, '$.clients')) AS client
 		WHERE
-			protocol in ('vmess','vless','trojan','shadowsocks','hysteria')
+			protocol in ('vmess','vless','trojan','shadowsocks','hysteria','wireguard')
 			AND JSON_EXTRACT(client.value, '$.subId') = ? AND enable = ?
 		UNION
 		SELECT DISTINCT node_client_links.inbound_id
@@ -124,7 +124,7 @@ func (s *SubService) getInboundsBySubId(subId string) ([]*model.Inbound, error) 
 			JOIN node_clients ON node_clients.id = node_client_links.node_client_id
 			JOIN inbounds ON inbounds.id = node_client_links.inbound_id
 		WHERE node_clients.sub_id = ?
-			AND inbounds.protocol in ('vmess','vless','trojan','shadowsocks','hysteria')
+			AND inbounds.protocol in ('vmess','vless','trojan','shadowsocks','hysteria','wireguard')
 			AND inbounds.enable = ?
 	)`, subId, true, subId, true).Find(&inbounds).Error
 	if err != nil {
@@ -193,8 +193,74 @@ func (s *SubService) getLink(inbound *model.Inbound, email string) string {
 		return s.genShadowsocksLink(inbound, email)
 	case "hysteria":
 		return s.genHysteriaLink(inbound, email)
+	case "wireguard":
+		return s.genWireguardLink(inbound, email)
 	}
 	return ""
+}
+
+func (s *SubService) genWireguardLink(inbound *model.Inbound, email string) string {
+	if inbound.Protocol != model.WireGuard {
+		return ""
+	}
+	clients, _ := s.getClients(inbound)
+	var targetClient *model.Client
+	for _, client := range clients {
+		if client.Email == email {
+			c := client
+			targetClient = &c
+			break
+		}
+	}
+	if targetClient == nil {
+		return ""
+	}
+
+	var settings map[string]interface{}
+	json.Unmarshal([]byte(inbound.Settings), &settings)
+
+	serverPubKey, _ := settings["pubKey"].(string)
+	mtu := 1420
+	if m, ok := settings["mtu"].(float64); ok && m > 0 {
+		mtu = int(m)
+	}
+
+	privKey := targetClient.PrivateKey
+	if privKey == "" {
+		privKey = targetClient.Password
+	}
+	allowedIp := "10.0.0.2/32"
+	if len(targetClient.AllowedIPs) > 0 {
+		allowedIp = targetClient.AllowedIPs[0]
+	}
+
+	address := s.address
+	if inbound.Listen != "" && inbound.Listen != "0.0.0.0" {
+		address = inbound.Listen
+	}
+
+	remark := s.genRemark(inbound, email, "")
+
+	var conf strings.Builder
+	conf.WriteString("[Interface]\n")
+	conf.WriteString(fmt.Sprintf("PrivateKey = %s\n", privKey))
+	conf.WriteString(fmt.Sprintf("Address = %s\n", allowedIp))
+	conf.WriteString("DNS = 1.1.1.1, 1.0.0.1\n")
+	if mtu > 0 {
+		conf.WriteString(fmt.Sprintf("MTU = %d\n", mtu))
+	}
+	conf.WriteString(fmt.Sprintf("\n# %s\n", remark))
+	conf.WriteString("[Peer]\n")
+	conf.WriteString(fmt.Sprintf("PublicKey = %s\n", serverPubKey))
+	conf.WriteString("AllowedIPs = 0.0.0.0/0, ::/0\n")
+	conf.WriteString(fmt.Sprintf("Endpoint = %s:%d\n", address, inbound.Port))
+	if targetClient.Psk != "" {
+		conf.WriteString(fmt.Sprintf("PresharedKey = %s\n", targetClient.Psk))
+	}
+	if targetClient.KeepAlive > 0 {
+		conf.WriteString(fmt.Sprintf("PersistentKeepalive = %d\n", targetClient.KeepAlive))
+	}
+	return conf.String()
 }
 
 func (s *SubService) genHysteriaLink(inbound *model.Inbound, email string) string {

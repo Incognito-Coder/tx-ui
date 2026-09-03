@@ -108,13 +108,25 @@
             this.qrcodes = [];
             // Reset the status fetched flag when showing the modal
             if (qrModalApp) qrModalApp.statusFetched = false;
-            if (this.inbound.protocol == Protocols.WIREGUARD) {
-                this.inbound.genInboundLinks(dbInbound.remark).split('\r\n').forEach((l, index) => {
+            if (client) {
+                this.inbound.genAllLinks(this.dbInbound.remark, app.remarkModel, client).forEach(l => {
                     this.qrcodes.push({
-                        remark: "Peer " + (index + 1),
-                        link: l,
+                        remark: l.remark,
+                        link: l.link,
                         useIPv4: false,
-                        originalLink: l
+                        originalLink: l.link
+                    });
+                });
+            } else if (this.inbound.protocol == Protocols.WIREGUARD) {
+                const clients = this.inbound.clients || [];
+                clients.forEach((c, index) => {
+                    this.inbound.genAllLinks(this.dbInbound.remark, app.remarkModel, c).forEach(l => {
+                        this.qrcodes.push({
+                            remark: l.remark || ("Peer " + (index + 1)),
+                            link: l.link,
+                            useIPv4: false,
+                            originalLink: l.link
+                        });
                     });
                 });
             } else {

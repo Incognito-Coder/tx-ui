@@ -111,10 +111,13 @@ func (s *XrayService) GetXrayConfig() (*xray.Config, error) {
 		if !inbound.Enable {
 			continue
 		}
-		// get settings clients
+		// get settings clients or peers
 		settings := map[string]interface{}{}
 		json.Unmarshal([]byte(inbound.Settings), &settings)
 		clients, ok := settings["clients"].([]interface{})
+		if !ok && inbound.Protocol == model.WireGuard {
+			clients, ok = settings["peers"].([]interface{})
+		}
 		if ok {
 			// check users active or not
 			clientStats := inbound.ClientStats
@@ -146,6 +149,12 @@ func (s *XrayService) GetXrayConfig() (*xray.Config, error) {
 				}
 				if v, ok := c["id"].(string); ok {
 					mc.ID = v
+				}
+				if v, ok := c["publicKey"].(string); ok {
+					mc.PublicKey = v
+				}
+				if v, ok := c["privateKey"].(string); ok {
+					mc.PrivateKey = v
 				}
 				if v, ok := c["security"].(string); ok {
 					mc.Security = v
@@ -189,27 +198,95 @@ func (s *XrayService) GetXrayConfig() (*xray.Config, error) {
 				}
 			}
 
-			// clear client config for additional parameters
-			var final_clients []interface{}
-			for _, client := range clients {
-				c := client.(map[string]interface{})
-				if c["enable"] != nil {
-					if enable, ok := c["enable"].(bool); ok && !enable {
+			if inbound.Protocol == model.WireGuard {
+				var final_peers []interface{}
+				for _, client := range clients {
+					c, isMap := client.(map[string]interface{})
+					if !isMap {
 						continue
 					}
-				}
-				for key := range c {
-					if key != "email" && key != "id" && key != "password" && key != "flow" && key != "method" && key != "auth" && key != "reverse" {
-						delete(c, key)
+					if c["enable"] != nil {
+						if enable, ok := c["enable"].(bool); ok && !enable {
+							continue
+						}
 					}
-					if flow, ok := c["flow"].(string); ok && flow == "xtls-rprx-vision-udp443" {
-						c["flow"] = "xtls-rprx-vision"
+					peer := map[string]interface{}{}
+					pubKey := ""
+					if v, ok := c["publicKey"].(string); ok && v != "" {
+						pubKey = v
+					} else if v, ok := c["id"].(string); ok && v != "" {
+						pubKey = v
 					}
+					if pubKey == "" {
+						continue
+					}
+					peer["publicKey"] = pubKey
+					if v, ok := c["psk"].(string); ok && v != "" {
+						peer["preSharedKey"] = v
+					} else if v, ok := c["preSharedKey"].(string); ok && v != "" {
+						peer["preSharedKey"] = v
+					}
+					if v, ok := c["allowedIPs"]; ok && v != nil {
+						switch a := v.(type) {
+						case []string:
+							peer["allowedIPs"] = a
+						case []interface{}:
+							arr := make([]string, 0, len(a))
+							for _, item := range a {
+								if s, ok := item.(string); ok && s != "" {
+									arr = append(arr, s)
+								}
+							}
+							if len(arr) > 0 {
+								peer["allowedIPs"] = arr
+							} else {
+								peer["allowedIPs"] = []string{"10.0.0.2/32"}
+							}
+						case string:
+							if a != "" {
+								peer["allowedIPs"] = []string{a}
+							} else {
+								peer["allowedIPs"] = []string{"10.0.0.2/32"}
+							}
+						default:
+							peer["allowedIPs"] = []string{"10.0.0.2/32"}
+						}
+					} else {
+						peer["allowedIPs"] = []string{"10.0.0.2/32"}
+					}
+					if v, ok := c["email"].(string); ok && v != "" {
+						peer["email"] = v
+					}
+					final_peers = append(final_peers, peer)
 				}
-				final_clients = append(final_clients, interface{}(c))
+				if sec, ok := settings["privateKey"].(string); ok && sec != "" {
+					settings["secretKey"] = sec
+				}
+				settings["peers"] = final_peers
+				delete(settings, "clients")
+			} else {
+				// clear client config for additional parameters
+				var final_clients []interface{}
+				for _, client := range clients {
+					c := client.(map[string]interface{})
+					if c["enable"] != nil {
+						if enable, ok := c["enable"].(bool); ok && !enable {
+							continue
+						}
+					}
+					for key := range c {
+						if key != "email" && key != "id" && key != "password" && key != "flow" && key != "method" && key != "auth" && key != "reverse" {
+							delete(c, key)
+						}
+						if flow, ok := c["flow"].(string); ok && flow == "xtls-rprx-vision-udp443" {
+							c["flow"] = "xtls-rprx-vision"
+						}
+					}
+					final_clients = append(final_clients, interface{}(c))
+				}
+				settings["clients"] = final_clients
 			}
 
-			settings["clients"] = final_clients
 			modifiedSettings, err := json.MarshalIndent(settings, "", "  ")
 			if err != nil {
 				return nil, err

@@ -64,7 +64,8 @@
                 case Protocols.TROJAN:
                     return client.password;
                 case Protocols.SHADOWSOCKS:
-                    return client.email;
+                case Protocols.WIREGUARD:
+                    return client.email || client.publicKey || client.id;
                 case Protocols.HYSTERIA:
                     return client.auth;
                 default:
@@ -91,7 +92,13 @@
                     clients.push(newClient);
                     return newClient;
                 case Protocols.HYSTERIA:
-                    return clients.push(new Inbound.HysteriaSettings.Hysteria());
+                    newClient = new Inbound.HysteriaSettings.Hysteria();
+                    clients.push(newClient);
+                    return newClient;
+                case Protocols.WIREGUARD:
+                    newClient = new Inbound.WireguardSettings.Peer();
+                    clients.push(newClient);
+                    return newClient;
                 default:
                     return null;
             }

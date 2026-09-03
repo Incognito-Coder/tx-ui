@@ -1383,6 +1383,7 @@ class Inbound extends XrayCommonClass {
             case Protocols.SHADOWSOCKS:
                 return this.isSSMultiUser ? this.settings.shadowsockses : null;
             case Protocols.HYSTERIA: return this.settings.hysterias;
+            case Protocols.WIREGUARD: return this.settings.peers;
             default:
                 return null;
         }
@@ -1925,6 +1926,31 @@ class Inbound extends XrayCommonClass {
         return txt;
     }
 
+    genWireguardClientLink(address, port, remark, client) {
+        if (!client) return '';
+        let privKey = client.privateKey || client.password || '';
+        let allowedIp = (client.allowedIPs && client.allowedIPs.length > 0) ? client.allowedIPs[0] : '10.0.0.2/32';
+        let txt = `[Interface]\n`;
+        txt += `PrivateKey = ${privKey}\n`;
+        txt += `Address = ${allowedIp}\n`;
+        txt += `DNS = 1.1.1.1, 1.0.0.1\n`;
+        if (this.settings && this.settings.mtu) {
+            txt += `MTU = ${this.settings.mtu}\n`;
+        }
+        txt += `\n# ${remark}\n`;
+        txt += `[Peer]\n`;
+        txt += `PublicKey = ${this.settings ? this.settings.pubKey : ''}\n`;
+        txt += `AllowedIPs = 0.0.0.0/0, ::/0\n`;
+        txt += `Endpoint = ${address}:${port}`;
+        if (client.psk) {
+            txt += `\nPresharedKey = ${client.psk}`;
+        }
+        if (client.keepAlive) {
+            txt += `\nPersistentKeepalive = ${client.keepAlive}\n`;
+        }
+        return txt;
+    }
+
     genLink(address = '', port = this.port, forceTls = 'same', remark = '', client) {
         if (!client) {
             return '';
@@ -1939,7 +1965,9 @@ class Inbound extends XrayCommonClass {
             case Protocols.TROJAN:
                 return this.genTrojanLink(address, port, forceTls, remark, client.password);
             case Protocols.HYSTERIA:
-                return this.genHysteriaLink(address, port, remark, client.auth.length > 0 ? client.auth : this.stream.hysteria.auth);
+                return this.genHysteriaLink(address, port, remark, client.auth && client.auth.length > 0 ? client.auth : this.stream.hysteria.auth);
+            case Protocols.WIREGUARD:
+                return this.genWireguardClientLink(address, port, remark, client);
             default:
                 return '';
         }
@@ -2699,11 +2727,12 @@ Inbound.WireguardSettings = class extends XrayCommonClass {
     }
 
     static fromJson(json = {}) {
+        let rawPeers = json.clients && Array.isArray(json.clients) && json.clients.length > 0 ? json.clients : json.peers;
         return new Inbound.WireguardSettings(
             Protocols.WIREGUARD,
             json.mtu,
             json.secretKey,
-            (json.peers || []).map(peer => Inbound.WireguardSettings.Peer.fromJson(peer)),
+            (rawPeers || []).map(peer => Inbound.WireguardSettings.Peer.fromJson(peer)),
             json.noKernelTun,
             json.address || [],
         );
@@ -2718,44 +2747,65 @@ Inbound.WireguardSettings = class extends XrayCommonClass {
     }
 
     toJson() {
+        let peersJson = Inbound.WireguardSettings.Peer.toJsonArray(this.peers);
         return {
             mtu: this.mtu ?? undefined,
             secretKey: this.secretKey,
-            peers: Inbound.WireguardSettings.Peer.toJsonArray(this.peers),
+            pubKey: this.pubKey,
+            peers: peersJson,
+            clients: peersJson,
             noKernelTun: this.noKernelTun,
             address: this.address.length > 0 ? this.address : undefined,
         };
     }
 };
 
-Inbound.WireguardSettings.Peer = class extends XrayCommonClass {
-    constructor(privateKey, publicKey, psk = '', allowedIPs = ['10.0.0.2/32'], keepAlive = 0, email = '', level = 0) {
-        super();
-        this.privateKey = privateKey
+Inbound.WireguardSettings.Peer = class extends Inbound.ClientBase {
+    constructor(privateKey, publicKey, psk = '', allowedIPs = ['10.0.0.2/32'], keepAlive = 0, email = '', level = 0, limitIp = 0, totalGB = 0, expiryTime = 0, enable = true, tgId = '', subId = '', comment = '', reset = 0) {
+        if (!email) {
+            email = RandomUtil.randomLowerAndNum(8);
+        }
+        if (!subId) {
+            subId = RandomUtil.randomLowerAndNum(16);
+        }
+        if (!psk) {
+            psk = Wireguard.keyToBase64(Wireguard.generatePresharedKey());
+        }
+        super(email, limitIp, totalGB, expiryTime, enable, tgId, subId, comment, reset);
+        this.privateKey = privateKey;
         this.publicKey = publicKey;
         if (!this.publicKey) {
-            [this.publicKey, this.privateKey] = Object.values(Wireguard.generateKeypair())
+            [this.publicKey, this.privateKey] = Object.values(Wireguard.generateKeypair());
         }
+        this.id = this.publicKey;
+        this.password = this.privateKey;
         this.psk = psk;
         allowedIPs = Array.isArray(allowedIPs) ? allowedIPs : [];
         allowedIPs.forEach((a, index) => {
             if (a.length > 0 && !a.includes('/')) allowedIPs[index] += '/32';
-        })
+        });
         this.allowedIPs = allowedIPs;
         this.keepAlive = keepAlive;
-        this.email = email;
         this.level = level;
     }
 
     static fromJson(json = {}) {
         return new Inbound.WireguardSettings.Peer(
-            json.privateKey,
-            json.publicKey,
-            json.preSharedKey,
-            json.allowedIPs,
-            json.keepAlive,
+            json.privateKey || json.password,
+            json.publicKey || json.id,
+            json.psk || json.preSharedKey || '',
+            json.allowedIPs || ['10.0.0.2/32'],
+            json.keepAlive || 0,
             json.email,
-            json.level,
+            json.level || 0,
+            json.limitIp || 0,
+            json.totalGB || 0,
+            json.expiryTime || 0,
+            json.enable !== false,
+            json.tgId || '',
+            json.subId || '',
+            json.comment || '',
+            json.reset || 0,
         );
     }
 
@@ -2764,13 +2814,24 @@ Inbound.WireguardSettings.Peer = class extends XrayCommonClass {
             if (a.length > 0 && !a.includes('/')) this.allowedIPs[index] += '/32';
         });
         return {
-            privateKey: this.privateKey,
+            id: this.publicKey,
             publicKey: this.publicKey,
-            preSharedKey: this.psk.length > 0 ? this.psk : undefined,
+            privateKey: this.privateKey,
+            password: this.privateKey,
+            preSharedKey: this.psk ? this.psk : undefined,
+            psk: this.psk ? this.psk : undefined,
             allowedIPs: this.allowedIPs,
             keepAlive: this.keepAlive ?? undefined,
             email: this.email || undefined,
             level: this.level || 0,
+            limitIp: this.limitIp,
+            totalGB: this.totalGB,
+            expiryTime: this.expiryTime,
+            enable: this.enable,
+            tgId: this.tgId,
+            subId: this.subId,
+            comment: this.comment,
+            reset: this.reset,
         };
     }
 };

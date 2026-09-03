@@ -61,6 +61,42 @@
             <a-select-option :value="key" v-for="key in USERS_SECURITY">[[ key ]]</a-select-option>
         </a-select>
     </a-form-item>
+    <template v-if="inbound.protocol === Protocols.WIREGUARD">
+        <a-form-item>
+            <template slot="label">
+                <a-tooltip>
+                    <template slot="title">
+                        <span>{{ i18n "reset" }}</span>
+                    </template>
+                    {{ i18n "pages.xray.wireguard.secretKey" }}
+                    <a-icon @click="[client.publicKey, client.privateKey] = Object.values(Wireguard.generateKeypair())"
+                            type="sync"></a-icon>
+                </a-tooltip>
+            </template>
+            <a-input v-model.trim="client.privateKey"></a-input>
+        </a-form-item>
+        <a-form-item label='{{ i18n "pages.xray.wireguard.publicKey" }}'>
+            <a-input v-model.trim="client.publicKey"></a-input>
+        </a-form-item>
+        <a-form-item>
+            <template slot="label">
+                <a-tooltip>
+                    <template slot="title">
+                        <span>{{ i18n "reset" }}</span>
+                    </template>
+                    {{ i18n "pages.xray.wireguard.psk" }}
+                    <a-icon @click="client.psk = Wireguard.keyToBase64(Wireguard.generatePresharedKey())"
+                            type="sync"></a-icon>
+                </a-tooltip>
+            </template>
+            <a-input v-model.trim="client.psk"></a-input>
+        </a-form-item>
+        <a-form-item label='{{ i18n "pages.xray.wireguard.allowedIPs" }}'>
+            <a-select :dropdown-class-name="themeSwitcher.currentTheme" :token-separators="[',']"
+                      mode="tags" placeholder="10.0.0.2/32"
+                      v-model="client.allowedIPs"></a-select>
+        </a-form-item>
+    </template>
     <a-form-item v-if="client.email && app.subSettings?.enable">
         <template slot="label">
             <a-tooltip>

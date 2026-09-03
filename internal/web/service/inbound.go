@@ -124,17 +124,29 @@ func (s *InboundService) GetClientReverseTags() (string, error) {
 }
 
 func (s *InboundService) GetClients(inbound *model.Inbound) ([]model.Client, error) {
-	settings := map[string][]model.Client{}
+	settings := map[string]interface{}{}
 	json.Unmarshal([]byte(inbound.Settings), &settings)
 	if settings == nil {
 		return nil, fmt.Errorf("setting is null")
 	}
 
-	clients := settings["clients"]
-	if clients == nil {
-		return nil, nil
+	if rawClients, ok := settings["clients"]; ok && rawClients != nil {
+		var clients []model.Client
+		clientsBytes, _ := json.Marshal(rawClients)
+		json.Unmarshal(clientsBytes, &clients)
+		return clients, nil
 	}
-	return clients, nil
+
+	if inbound.Protocol == model.WireGuard {
+		if rawPeers, ok := settings["peers"]; ok && rawPeers != nil {
+			var clients []model.Client
+			peersBytes, _ := json.Marshal(rawPeers)
+			json.Unmarshal(peersBytes, &clients)
+			return clients, nil
+		}
+	}
+
+	return nil, nil
 }
 
 func (s *InboundService) getAllEmails() ([]string, error) {
@@ -144,6 +156,13 @@ func (s *InboundService) getAllEmails() ([]string, error) {
 		SELECT JSON_EXTRACT(client.value, '$.email')
 		FROM inbounds,
 			JSON_EACH(JSON_EXTRACT(inbounds.settings, '$.clients')) AS client
+		WHERE inbounds.settings IS NOT NULL AND JSON_TYPE(inbounds.settings, '$.clients') = 'array'
+		UNION
+		SELECT JSON_EXTRACT(peer.value, '$.email')
+		FROM inbounds,
+			JSON_EACH(JSON_EXTRACT(inbounds.settings, '$.peers')) AS peer
+		WHERE inbounds.settings IS NOT NULL AND JSON_TYPE(inbounds.settings, '$.peers') = 'array'
+		  AND JSON_EXTRACT(peer.value, '$.email') IS NOT NULL
 		`).Scan(&emails).Error
 	if err != nil {
 		return nil, err
@@ -239,6 +258,10 @@ func (s *InboundService) AddInbound(inbound *model.Inbound) (*model.Inbound, boo
 			}
 		} else if inbound.Protocol == "hysteria" {
 			if client.Auth == "" {
+				return inbound, false, common.NewError("empty client ID")
+			}
+		} else if inbound.Protocol == "wireguard" {
+			if client.PublicKey == "" || client.Email == "" {
 				return inbound, false, common.NewError("empty client ID")
 			}
 		} else {
@@ -514,7 +537,13 @@ func (s *InboundService) AddInboundClient(data *model.Inbound) (bool, error) {
 		return false, err
 	}
 
-	interfaceClients := settings["clients"].([]interface{})
+	var interfaceClients []interface{}
+	if raw, ok := settings["clients"].([]interface{}); ok {
+		interfaceClients = raw
+	} else if rawPeers, ok := settings["peers"].([]interface{}); ok {
+		interfaceClients = rawPeers
+	}
+
 	existEmail, err := s.checkEmailsExistForClients(clients)
 	if err != nil {
 		return false, err
@@ -542,6 +571,10 @@ func (s *InboundService) AddInboundClient(data *model.Inbound) (bool, error) {
 			if client.Auth == "" {
 				return false, common.NewError("empty client ID")
 			}
+		} else if oldInbound.Protocol == "wireguard" {
+			if client.PublicKey == "" || client.Email == "" {
+				return false, common.NewError("empty client ID")
+			}
 		} else {
 			if client.ID == "" {
 				return false, common.NewError("empty client ID")
@@ -555,10 +588,18 @@ func (s *InboundService) AddInboundClient(data *model.Inbound) (bool, error) {
 		return false, err
 	}
 
-	oldClients := oldSettings["clients"].([]interface{})
+	var oldClients []interface{}
+	if raw, ok := oldSettings["clients"].([]interface{}); ok {
+		oldClients = raw
+	} else if rawPeers, ok := oldSettings["peers"].([]interface{}); ok {
+		oldClients = rawPeers
+	}
 	oldClients = append(oldClients, interfaceClients...)
 
 	oldSettings["clients"] = oldClients
+	if oldInbound.Protocol == "wireguard" {
+		oldSettings["peers"] = oldClients
+	}
 
 	newSettings, err := json.MarshalIndent(oldSettings, "", "  ")
 	if err != nil {
@@ -579,11 +620,14 @@ func (s *InboundService) AddInboundClient(data *model.Inbound) (bool, error) {
 	}()
 
 	needRestart := false
+	if oldInbound.Protocol == "wireguard" {
+		needRestart = true
+	}
 	s.xrayApi.Init(p.GetAPIPort())
 	for _, client := range clients {
 		if len(client.Email) > 0 {
 			s.AddClientStat(tx, data.Id, &client)
-			if client.Enable {
+			if client.Enable && oldInbound.Protocol != "wireguard" {
 				cipher := ""
 				if oldInbound.Protocol == "shadowsocks" {
 					cipher = oldSettings["method"].(string)
@@ -630,18 +674,30 @@ func (s *InboundService) DelInboundClient(inboundId int, clientId string) (bool,
 	switch oldInbound.Protocol {
 	case "trojan":
 		client_key = "password"
-	case "shadowsocks":
+	case "shadowsocks", "wireguard":
 		client_key = "email"
 	case "hysteria":
 		client_key = "auth"
 	}
-	interfaceClients := settings["clients"].([]interface{})
+	var interfaceClients []interface{}
+	if raw, ok := settings["clients"].([]interface{}); ok {
+		interfaceClients = raw
+	} else if rawPeers, ok := settings["peers"].([]interface{}); ok {
+		interfaceClients = rawPeers
+	}
 	var newClients []interface{}
 	needApiDel := false
 	for _, client := range interfaceClients {
 		c := client.(map[string]interface{})
-		c_id := c[client_key].(string)
-		if c_id == clientId {
+		c_id := ""
+		if v, ok := c[client_key].(string); ok {
+			c_id = v
+		} else if v, ok := c["publicKey"].(string); ok {
+			c_id = v
+		} else if v, ok := c["id"].(string); ok {
+			c_id = v
+		}
+		if c_id == clientId || (c["email"] != nil && c["email"].(string) == clientId) {
 			email, _ = c["email"].(string)
 			needApiDel, _ = c["enable"].(bool)
 		} else {
@@ -654,6 +710,9 @@ func (s *InboundService) DelInboundClient(inboundId int, clientId string) (bool,
 	}
 
 	settings["clients"] = newClients
+	if oldInbound.Protocol == "wireguard" {
+		settings["peers"] = newClients
+	}
 	newSettings, err := json.MarshalIndent(settings, "", "  ")
 	if err != nil {
 		return false, err
@@ -669,6 +728,9 @@ func (s *InboundService) DelInboundClient(inboundId int, clientId string) (bool,
 		return false, err
 	}
 	needRestart := false
+	if oldInbound.Protocol == "wireguard" {
+		needRestart = true
+	}
 
 	if len(email) > 0 {
 		notDepleted := true
@@ -682,7 +744,7 @@ func (s *InboundService) DelInboundClient(inboundId int, clientId string) (bool,
 			logger.Error("Delete stats Data Error")
 			return false, err
 		}
-		if needApiDel && notDepleted {
+		if needApiDel && notDepleted && oldInbound.Protocol != "wireguard" {
 			s.xrayApi.Init(p.GetAPIPort())
 			err1 := s.xrayApi.RemoveUser(oldInbound.Tag, email)
 			if err1 == nil {
@@ -714,7 +776,12 @@ func (s *InboundService) UpdateInboundClient(data *model.Inbound, clientId strin
 		return false, err
 	}
 
-	interfaceClients := settings["clients"].([]interface{})
+	var interfaceClients []interface{}
+	if raw, ok := settings["clients"].([]interface{}); ok {
+		interfaceClients = raw
+	} else if rawPeers, ok := settings["peers"].([]interface{}); ok {
+		interfaceClients = rawPeers
+	}
 
 	oldInbound, err := s.GetInbound(data.Id)
 	if err != nil {
@@ -740,11 +807,26 @@ func (s *InboundService) UpdateInboundClient(data *model.Inbound, clientId strin
 		} else if oldInbound.Protocol == "hysteria" {
 			oldClientId = oldClient.Auth
 			newClientId = clients[0].Auth
+		} else if oldInbound.Protocol == "wireguard" {
+			oldClientId = oldClient.Email
+			if oldClientId == "" {
+				oldClientId = oldClient.PublicKey
+			}
+			if oldClientId == "" {
+				oldClientId = oldClient.ID
+			}
+			newClientId = clients[0].Email
+			if newClientId == "" {
+				newClientId = clients[0].PublicKey
+			}
+			if newClientId == "" {
+				newClientId = clients[0].ID
+			}
 		} else {
 			oldClientId = oldClient.ID
 			newClientId = clients[0].ID
 		}
-		if clientId == oldClientId {
+		if clientId == oldClientId || (oldClient.Email != "" && clientId == oldClient.Email) {
 			oldEmail = oldClient.Email
 			clientIndex = index
 			break
@@ -771,9 +853,20 @@ func (s *InboundService) UpdateInboundClient(data *model.Inbound, clientId strin
 	if err != nil {
 		return false, err
 	}
-	settingsClients := oldSettings["clients"].([]interface{})
-	settingsClients[clientIndex] = interfaceClients[0]
+
+	var settingsClients []interface{}
+	if raw, ok := oldSettings["clients"].([]interface{}); ok {
+		settingsClients = raw
+	} else if rawPeers, ok := oldSettings["peers"].([]interface{}); ok {
+		settingsClients = rawPeers
+	}
+	if clientIndex >= 0 && clientIndex < len(settingsClients) {
+		settingsClients[clientIndex] = interfaceClients[0]
+	}
 	oldSettings["clients"] = settingsClients
+	if oldInbound.Protocol == "wireguard" {
+		oldSettings["peers"] = settingsClients
+	}
 
 	newSettings, err := json.MarshalIndent(oldSettings, "", "  ")
 	if err != nil {
@@ -2515,6 +2608,68 @@ func (s *InboundService) MigrationRequirements() {
 
 	// Remove orphaned traffics
 	tx.Where("inbound_id = 0").Delete(xray.ClientTraffic{})
+
+	// Migrate legacy WireGuard inbounds with "peers" under "clients"
+	var wgInbounds []*model.Inbound
+	err = tx.Model(model.Inbound{}).Where("protocol = ?", string(model.WireGuard)).Find(&wgInbounds).Error
+	if err == nil {
+		allEmails, _ := s.getAllEmails()
+		for _, inbound := range wgInbounds {
+			settings := map[string]interface{}{}
+			if json.Unmarshal([]byte(inbound.Settings), &settings) != nil {
+				continue
+			}
+			if _, done := settings["clients"]; done {
+				continue
+			}
+			peers, ok := settings["peers"].([]interface{})
+			if !ok {
+				continue
+			}
+
+			for index, peer := range peers {
+				p, ok := peer.(map[string]interface{})
+				if !ok {
+					continue
+				}
+				email, _ := p["email"].(string)
+				if email == "" {
+					baseEmail := fmt.Sprintf("%s-peer%d", inbound.Tag, index+1)
+					candidate := baseEmail
+					for suffix := 2; s.contains(allEmails, candidate); suffix++ {
+						candidate = fmt.Sprintf("%s-%d", baseEmail, suffix)
+					}
+					email = candidate
+					p["email"] = email
+					allEmails = append(allEmails, email)
+				}
+				if _, ok := p["enable"]; !ok { p["enable"] = true }
+				if _, ok := p["totalGB"]; !ok { p["totalGB"] = 0 }
+				if _, ok := p["expiryTime"]; !ok { p["expiryTime"] = 0 }
+				if _, ok := p["limitIp"]; !ok { p["limitIp"] = 0 }
+				if _, ok := p["reset"]; !ok { p["reset"] = 0 }
+			}
+
+			settings["clients"] = peers
+			delete(settings, "peers")
+
+			if modified, err := json.MarshalIndent(settings, "", "  "); err == nil {
+				inbound.Settings = string(modified)
+				tx.Model(model.Inbound{}).Where("id = ?", inbound.Id).Update("settings", inbound.Settings)
+				if modelClients, err := s.GetClients(inbound); err == nil {
+					for _, mc := range modelClients {
+						if len(mc.Email) > 0 {
+							var count int64
+							tx.Model(xray.ClientTraffic{}).Where("email = ?", mc.Email).Count(&count)
+							if count == 0 {
+								s.AddClientStat(tx, inbound.Id, &mc)
+							}
+						}
+					}
+				}
+			}
+		}
+	}
 
 	// Migrate old MultiDomain to External Proxy
 	var externalProxy []struct {

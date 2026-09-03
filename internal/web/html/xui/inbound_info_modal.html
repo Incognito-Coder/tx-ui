@@ -1,6 +1,6 @@
 {{define "inboundInfoModal"}}
 <a-modal :class="themeSwitcher.currentTheme" :closable="true" :footer="null" :mask-closable="true"
-         id="inbound-info-modal" title='{{ i18n "pages.inbounds.details"}}' v-model="infoModal.visible" width="600px"
+         id="inbound-info-modal" title='{{ i18n "pages.inbounds.details"}}' v-model="infoModal.visible" width="680px"
          wrap-class-name="panel-modal panel-modal-lg">
     <a-row>
         <a-col :md="12" :xs="24">
@@ -85,7 +85,7 @@
                 </table>
             </template>
         </a-col>
-        <template v-if="dbInbound.hasLink()">
+        <template v-if="dbInbound.hasLink() && !dbInbound.isWireguard">
             {{ i18n "security" }}
             <a-tag :color="inbound.stream.security == 'none' ? 'red' : 'green'">[[ inbound.stream.security ]]</a-tag>
             <br/>
@@ -106,6 +106,26 @@
                 </a-tag>
                 <a-tag color="orange" v-else>{{ i18n "none" }}</a-tag>
             </template>
+        </template>
+        <template v-if="dbInbound.isWireguard">
+            <table style="margin-bottom: 10px;">
+                <tr v-if="inbound.settings.pubKey">
+                    <td>Public Key</td>
+                    <td>
+                        <a-tooltip :title="inbound.settings.pubKey">
+                            <a-tag class="info-large-tag">[[ inbound.settings.pubKey ]]</a-tag>
+                        </a-tooltip>
+                    </td>
+                </tr>
+                <tr>
+                    <td>MTU</td>
+                    <td><a-tag color="blue">[[ inbound.settings.mtu || 1420 ]]</a-tag></td>
+                </tr>
+                <tr v-if="inbound.settings.address">
+                    <td>Interface Address</td>
+                    <td><a-tag color="green">[[ Array.isArray(inbound.settings.address) ? inbound.settings.address.join(', ') : inbound.settings.address ]]</a-tag></td>
+                </tr>
+            </table>
         </template>
         <table style="margin-bottom: 10px; width: 100%;" v-if="dbInbound.isSS">
             <tr>
@@ -141,35 +161,69 @@
                         <a-tag color="red">{{ i18n "none" }}</a-tag>
                     </td>
                 </tr>
-                <tr v-if="infoModal.clientSettings.id">
-                    <td>ID</td>
-                    <td>
-                        <a-tag>[[ infoModal.clientSettings.id ]]</a-tag>
-                    </td>
-                </tr>
-                <tr v-if="dbInbound.isVMess">
-                    <td>{{ i18n "security" }}</td>
-                    <td>
-                        <a-tag>[[ infoModal.clientSettings.security ]]</a-tag>
-                    </td>
-                </tr>
-                <tr v-if="infoModal.inbound.canEnableTlsFlow()">
-                    <td>Flow</td>
-                    <td v-if="infoModal.clientSettings.flow">
-                        <a-tag>[[ infoModal.clientSettings.flow ]]</a-tag>
-                    </td>
-                    <td v-else>
-                        <a-tag color="orange">{{ i18n "none" }}</a-tag>
-                    </td>
-                </tr>
-                <tr v-if="infoModal.clientSettings.password">
-                    <td>{{ i18n "password" }}</td>
-                    <td>
-                        <a-tooltip :title="infoModal.clientSettings.password">
-                            <a-tag class="info-large-tag">[[ infoModal.clientSettings.password ]]</a-tag>
-                        </a-tooltip>
-                    </td>
-                </tr>
+                <template v-if="!dbInbound.isWireguard">
+                    <tr v-if="infoModal.clientSettings.id">
+                        <td>ID</td>
+                        <td>
+                            <a-tag>[[ infoModal.clientSettings.id ]]</a-tag>
+                        </td>
+                    </tr>
+                    <tr v-if="dbInbound.isVMess">
+                        <td>{{ i18n "security" }}</td>
+                        <td>
+                            <a-tag>[[ infoModal.clientSettings.security ]]</a-tag>
+                        </td>
+                    </tr>
+                    <tr v-if="infoModal.inbound.canEnableTlsFlow()">
+                        <td>Flow</td>
+                        <td v-if="infoModal.clientSettings.flow">
+                            <a-tag>[[ infoModal.clientSettings.flow ]]</a-tag>
+                        </td>
+                        <td v-else>
+                            <a-tag color="orange">{{ i18n "none" }}</a-tag>
+                        </td>
+                    </tr>
+                    <tr v-if="infoModal.clientSettings.password">
+                        <td>{{ i18n "password" }}</td>
+                        <td>
+                            <a-tooltip :title="infoModal.clientSettings.password">
+                                <a-tag class="info-large-tag">[[ infoModal.clientSettings.password ]]</a-tag>
+                            </a-tooltip>
+                        </td>
+                    </tr>
+                </template>
+                <template v-else>
+                    <tr v-if="infoModal.clientSettings.publicKey || infoModal.clientSettings.id">
+                        <td>Public Key</td>
+                        <td>
+                            <a-tooltip :title="infoModal.clientSettings.publicKey || infoModal.clientSettings.id">
+                                <a-tag class="info-large-tag">[[ infoModal.clientSettings.publicKey || infoModal.clientSettings.id ]]</a-tag>
+                            </a-tooltip>
+                        </td>
+                    </tr>
+                    <tr v-if="infoModal.clientSettings.privateKey || infoModal.clientSettings.password">
+                        <td>Private Key</td>
+                        <td>
+                            <a-tooltip :title="infoModal.clientSettings.privateKey || infoModal.clientSettings.password">
+                                <a-tag class="info-large-tag">[[ infoModal.clientSettings.privateKey || infoModal.clientSettings.password ]]</a-tag>
+                            </a-tooltip>
+                        </td>
+                    </tr>
+                    <tr v-if="infoModal.clientSettings.psk || infoModal.clientSettings.preSharedKey">
+                        <td>Preshared Key</td>
+                        <td>
+                            <a-tooltip :title="infoModal.clientSettings.psk || infoModal.clientSettings.preSharedKey">
+                                <a-tag class="info-large-tag">[[ infoModal.clientSettings.psk || infoModal.clientSettings.preSharedKey ]]</a-tag>
+                            </a-tooltip>
+                        </td>
+                    </tr>
+                    <tr v-if="infoModal.clientSettings.allowedIPs">
+                        <td>Allowed IPs</td>
+                        <td>
+                            <a-tag color="blue">[[ Array.isArray(infoModal.clientSettings.allowedIPs) ? infoModal.clientSettings.allowedIPs.join(', ') : infoModal.clientSettings.allowedIPs ]]</a-tag>
+                        </td>
+                    </tr>
+                </template>
                 <tr>
                     <td>{{ i18n "status" }}</td>
                     <td>
@@ -298,31 +352,39 @@
                 </tr-info-row>
             </template>
             <template v-if="dbInbound.hasLink()">
-                <a-divider>URL</a-divider>
-                <tr-info-row class="tr-info-row" v-for="(link,index) in infoModal.links">
+                <a-divider>[[ dbInbound.isWireguard ? 'WireGuard Configuration' : 'URL' ]]</a-divider>
+                <tr-info-row class="tr-info-row" v-for="(item,index) in infoModal.links">
                     <tr-info-title class="tr-info-title">
-                        <a-tag class="tr-info-tag" color="green">[[ link.remark ]]</a-tag>
+                        <a-tag class="tr-info-tag" color="green">[[ item.remark || ('Peer ' + (index + 1)) ]]</a-tag>
                         <a-tooltip title='{{ i18n "copy" }}'>
-                            <a-button :id="'copy-url-link-'+index" @click="copyToClipboard('copy-url-link-'+index, link.link)" icon="snippets" size="small"
+                            <a-button :id="'copy-url-link-'+index" @click="copyToClipboard('copy-url-link-'+index, getLinkString(item))" icon="snippets" size="small"
                                       style="min-width: 24px;"></a-button>
                         </a-tooltip>
+                        <a-tooltip title='{{ i18n "download" }}' v-if="dbInbound.isWireguard">
+                            <a-button :style="{ minWidth: '24px' }" @click="FileManager.downloadTextFile(getLinkString(item), (item.remark || 'wireguard') + '.conf')" icon="download" size="small"></a-button>
+                        </a-tooltip>
                     </tr-info-title>
-                    <code>[[ link.link ]]</code>
+                    <template v-if="dbInbound.isWireguard">
+                        <div class="client-table-odd-row" style="border-radius: 7px; padding: 0.5rem; font-family: monospace; white-space: pre-wrap; margin-top: 6px;" v-html="getLinkString(item).replaceAll('\n', '<br />')"></div>
+                    </template>
+                    <template v-else>
+                        <code>[[ item.link ]]</code>
+                    </template>
                 </tr-info-row>
             </template>
         </template>
         <template v-else>
             <template v-if="dbInbound.isSS && !inbound.isSSMultiUser">
                 <a-divider>URL</a-divider>
-                <tr-info-row class="tr-info-row" v-for="(link,index) in infoModal.links">
+                <tr-info-row class="tr-info-row" v-for="(item,index) in infoModal.links">
                     <tr-info-title class="tr-info-title">
-                        <a-tag class="tr-info-tag" color="green">[[ link.remark ]]</a-tag>
+                        <a-tag class="tr-info-tag" color="green">[[ item.remark ]]</a-tag>
                         <a-tooltip title='{{ i18n "copy" }}'>
-                            <a-button :id="'copy-url-link-'+index" @click="copyToClipboard('copy-url-link-'+index, link.link)" icon="snippets" size="small"
+                            <a-button :id="'copy-url-link-'+index" @click="copyToClipboard('copy-url-link-'+index, getLinkString(item))" icon="snippets" size="small"
                                       style="min-width: 24px;"></a-button>
                         </a-tooltip>
                     </tr-info-title>
-                    <code>[[ link.link ]]</code>
+                    <code>[[ item.link ]]</code>
                 </tr-info-row>
             </template>
             <table class="tr-info-table" v-if="inbound.protocol == Protocols.TUNNEL">
@@ -397,72 +459,6 @@
                     </td>
                 </tr>
             </table>
-            <table class="tr-info-table" v-if="dbInbound.isWireguard">
-                <tr class="client-table-odd-row">
-                    <td>{{ i18n "pages.xray.wireguard.secretKey" }}</td>
-                    <td>[[ inbound.settings.secretKey ]]</td>
-                </tr>
-                <tr>
-                    <td>{{ i18n "pages.xray.wireguard.publicKey" }}</td>
-                    <td>[[ inbound.settings.pubKey ]]</td>
-                </tr>
-                <tr class="client-table-odd-row">
-                    <td>MTU</td>
-                    <td>[[ inbound.settings.mtu ]]</td>
-                </tr>
-                <tr>
-                    <td>No Kernel Tun</td>
-                    <td>[[ inbound.settings.noKernelTun ]]</td>
-                </tr>
-                <template v-for="(peer, index) in inbound.settings.peers">
-                    <tr>
-                        <td colspan="2">
-                            <a-divider>Peer [[ index + 1 ]]</a-divider>
-                        </td>
-                    </tr>
-                    <tr class="client-table-odd-row">
-                        <td>{{ i18n "pages.xray.wireguard.secretKey" }}</td>
-                        <td>[[ peer.privateKey ]]</td>
-                    </tr>
-                    <tr>
-                        <td>{{ i18n "pages.xray.wireguard.publicKey" }}</td>
-                        <td>[[ peer.publicKey ]]</td>
-                    </tr>
-                    <tr class="client-table-odd-row">
-                        <td>{{ i18n "pages.xray.wireguard.psk" }}</td>
-                        <td>[[ peer.psk ]]</td>
-                    </tr>
-                    <tr>
-                        <td>{{ i18n "pages.xray.wireguard.allowedIPs" }}</td>
-                        <td>[[ peer.allowedIPs.join(",") ]]</td>
-                    </tr>
-                    <tr class="client-table-odd-row">
-                        <td>Keep Alive</td>
-                        <td>[[ peer.keepAlive ]]</td>
-                    </tr>
-                    <tr>
-                        <td colspan="2">
-                            <tr-info-row class="tr-info-row">
-                                <tr-info-title class="tr-info-title">
-                                    <a-tag color="blue">Config</a-tag>
-                                    <a-tooltip title='{{ i18n "copy" }}'>
-                                        <a-button :id="'copy-url-link-'+index" @click="copyToClipboard('copy-url-link-'+index, infoModal.links[index])" icon="snippets"
-                                                  size="small"
-                                                  style="min-width: 24px;"></a-button>
-                                    </a-tooltip>
-                                    <a-tooltip title='{{ i18n "download" }}'>
-                                        <a-button :style="{ minWidth: '24px' }" @click="FileManager.downloadTextFile(infoModal.links[index], `peer-${index + 1}.conf`)" icon="download"
-                                                  size="small"></a-button>
-                                    </a-tooltip>
-                                </tr-info-title>
-                                <div class="client-table-odd-row"
-                                     style="border-radius: 7px; padding: 0.5rem;"
-                                     v-html="infoModal.links[index].replaceAll(`\n`,`<br />`)" v-if="infoModal.links[index]">
-                                </div>
-                            </tr-info-row>
-                        </td>
-                    </tr>
-            </table>
         </template>
         </template>
 </a-modal>
@@ -515,7 +511,17 @@
                 });
             }
             if (this.inbound.protocol == Protocols.WIREGUARD) {
-                this.links = this.inbound.genInboundLinks(dbInbound.remark).split('\r\n');
+                if (this.clientSettings) {
+                    this.links = this.inbound.genAllLinks(this.dbInbound.remark, app.remarkModel, this.clientSettings);
+                } else {
+                    const clients = this.inbound.clients || [];
+                    this.links = [];
+                    clients.forEach((c, index) => {
+                        this.inbound.genAllLinks(this.dbInbound.remark, app.remarkModel, c).forEach(l => {
+                            this.links.push(l);
+                        });
+                    });
+                }
             } else {
                 this.links = this.inbound.genAllLinks(this.dbInbound.remark, app.remarkModel, this.clientSettings);
             }
@@ -564,6 +570,12 @@
             },
         },
         methods: {
+            getLinkString(item) {
+                if (!item) return '';
+                if (typeof item === 'string') return item;
+                if (typeof item === 'object' && typeof item.link === 'string') return item.link;
+                return '';
+            },
             copyToClipboard(elementId, content) {
                 this.infoModal.clipboard = new ClipboardJS('#' + elementId, {
                     text: () => content,

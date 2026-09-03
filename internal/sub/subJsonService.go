@@ -211,6 +211,8 @@ func (s *SubJsonService) getConfig(inbound *model.Inbound, client model.Client, 
 			newOutbounds = append(newOutbounds, s.genServer(inbound, streamSettings, client))
 		case "hysteria":
 			newOutbounds = append(newOutbounds, s.genHy(inbound, newStream, client))
+		case "wireguard":
+			newOutbounds = append(newOutbounds, s.genWireguard(inbound, client))
 		}
 
 		newOutbounds = append(newOutbounds, s.defaultOutbounds...)
@@ -458,4 +460,50 @@ type ServerSetting struct {
 	Port     int    `json:"port"`
 	Flow     string `json:"flow,omitempty"`
 	Method   string `json:"method,omitempty"`
+}
+
+func (s *SubJsonService) genWireguard(inbound *model.Inbound, client model.Client) json_util.RawMessage {
+	var settings map[string]interface{}
+	json.Unmarshal([]byte(inbound.Settings), &settings)
+
+	serverPubKey, _ := settings["pubKey"].(string)
+	privKey := client.PrivateKey
+	if privKey == "" {
+		privKey = client.Password
+	}
+	allowedIp := "10.0.0.2/32"
+	if len(client.AllowedIPs) > 0 {
+		allowedIp = client.AllowedIPs[0]
+	}
+
+	address := s.SubService.address
+	if inbound.Listen != "" && inbound.Listen != "0.0.0.0" {
+		address = inbound.Listen
+	}
+
+	peer := map[string]interface{}{
+		"publicKey": serverPubKey,
+		"endpoint":  fmt.Sprintf("%s:%d", address, inbound.Port),
+	}
+	if client.Psk != "" {
+		peer["preSharedKey"] = client.Psk
+	}
+	if client.KeepAlive > 0 {
+		peer["keepAlive"] = client.KeepAlive
+	}
+
+	wgSettings := map[string]interface{}{
+		"secretKey": privKey,
+		"address":   []string{allowedIp},
+		"peers":     []interface{}{peer},
+	}
+
+	outbound := map[string]interface{}{
+		"protocol": "wireguard",
+		"tag":      "proxy",
+		"settings": wgSettings,
+	}
+
+	res, _ := json.Marshal(outbound)
+	return json_util.RawMessage(res)
 }

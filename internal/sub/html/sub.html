@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html dir="rtl" lang="fa">
 
 <head>
@@ -98,14 +98,14 @@
                 .join("\n");           // return as text again
         }
     </script>
-    <div class="bg-gray-700 rounded-xl shadow-lg p-4 font-mono flow-text break-words  mt-3">
-        {{ range .result }}
-        <div class="text-gray-400 text-sm">
-            <script>document.write(trimRemark('{{ . }}'));</script>
-            <button class="bg-gray-500 px-2 py-1 m-1 rounded-lg text-white"
-                    onclick="copyToClipboard(trimRemark('{{ . }}'))"><i
+    <div class="bg-gray-700 rounded-xl shadow-lg p-4 font-mono flow-text break-words mt-3">
+        {{ range $item := .result }}
+        <div class="text-gray-400 text-sm text-left font-mono whitespace-pre-wrap bg-gray-900 p-3 rounded-lg my-2">
+            <button class="bg-gray-500 hover:bg-gray-600 px-2 py-1 m-1 rounded-lg text-white float-right"
+                    onclick="copyToClipboard({{ $item | js }})"><i
                     class="fa-regular fa-copy"></i> کپی
             </button>
+            <script>document.write(trimRemark({{ $item | js }}));</script>
         </div>
         {{ end }}
     </div>
