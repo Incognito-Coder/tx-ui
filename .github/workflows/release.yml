@@ -11,144 +11,183 @@ jobs:
     permissions:
       contents: write
     strategy:
+      fail-fast: false
       matrix:
-        platform:
-          - amd64
-          - arm64
-          - armv7
-          - armv6
-          - 386
-          - armv5
-          - s390x
-          - windows-amd64   # Added Windows support
-    runs-on: ${{ matrix.platform == 'windows-amd64' && 'windows-latest' || 'ubuntu-22.04' }}
+        include:
+          - platform: amd64
+            os: ubuntu-22.04
+          - platform: arm64
+            os: ubuntu-22.04
+          - platform: armv7
+            os: ubuntu-22.04
+          - platform: armv6
+            os: ubuntu-22.04
+          - platform: 386
+            os: ubuntu-22.04
+          - platform: armv5
+            os: ubuntu-22.04
+          - platform: s390x
+            os: ubuntu-22.04
+          - platform: windows-amd64
+            os: windows-latest
+          - platform: windows-386
+            os: windows-latest
+          - platform: windows-arm64
+            os: windows-latest
+          - platform: darwin-amd64
+            os: macos-latest
+          - platform: darwin-arm64
+            os: macos-latest
+    runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@v4
 
       - name: Setup Go
-        uses: actions/setup-go@v7
+        uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
           check-latest: true
 
-      - name: Install dependencies
-        if: matrix.platform != 'windows-amd64'
+      - name: Install dependencies (Linux)
+        if: runner.os == 'Linux'
         run: |
           sudo apt-get update
           if [ "${{ matrix.platform }}" == "arm64" ]; then
-            sudo apt install gcc-aarch64-linux-gnu
+            sudo apt install -y gcc-aarch64-linux-gnu
           elif [ "${{ matrix.platform }}" == "armv7" ]; then
-            sudo apt install gcc-arm-linux-gnueabihf
+            sudo apt install -y gcc-arm-linux-gnueabihf
           elif [ "${{ matrix.platform }}" == "armv6" ]; then
-            sudo apt install gcc-arm-linux-gnueabihf
+            sudo apt install -y gcc-arm-linux-gnueabihf
           elif [ "${{ matrix.platform }}" == "386" ]; then
-            sudo apt install gcc-i686-linux-gnu
+            sudo apt install -y gcc-i686-linux-gnu
           elif [ "${{ matrix.platform }}" == "armv5" ]; then
-            sudo apt install gcc-arm-linux-gnueabi
+            sudo apt install -y gcc-arm-linux-gnueabi
           elif [ "${{ matrix.platform }}" == "s390x" ]; then
-            sudo apt install gcc-s390x-linux-gnu
+            sudo apt install -y gcc-s390x-linux-gnu
           fi
 
-      - name: Build x-ui (Linux)
-        if: matrix.platform != 'windows-amd64'
+      - name: Build x-ui (Linux / macOS)
+        if: runner.os != 'Windows'
         run: |
           export CGO_ENABLED=1
-          export GOOS=linux
-          export GOARCH=${{ matrix.platform }}
-          if [ "${{ matrix.platform }}" == "arm64" ]; then
-            export GOARCH=arm64
-            export CC=aarch64-linux-gnu-gcc
-          elif [ "${{ matrix.platform }}" == "armv7" ]; then
-            export GOARCH=arm
-            export GOARM=7
-            export CC=arm-linux-gnueabihf-gcc
-          elif [ "${{ matrix.platform }}" == "armv6" ]; then
-            export GOARCH=arm
-            export GOARM=6
-            export CC=arm-linux-gnueabihf-gcc
-          elif [ "${{ matrix.platform }}" == "386" ]; then
-            export GOARCH=386
-            export CC=i686-linux-gnu-gcc
-          elif [ "${{ matrix.platform }}" == "armv5" ]; then
-            export GOARCH=arm
-            export GOARM=5
-            export CC=arm-linux-gnueabi-gcc
-          elif [ "${{ matrix.platform }}" == "s390x" ]; then
-            export GOARCH=s390x
-            export CC=s390x-linux-gnu-gcc
+          if [ "${{ runner.os }}" == "macOS" ]; then
+            if [ "${{ matrix.platform }}" == "darwin-amd64" ]; then
+              export GOOS=darwin
+              export GOARCH=amd64
+            elif [ "${{ matrix.platform }}" == "darwin-arm64" ]; then
+              export GOOS=darwin
+              export GOARCH=arm64
+            fi
+          else
+            export GOOS=linux
+            export GOARCH=${{ matrix.platform }}
+            if [ "${{ matrix.platform }}" == "arm64" ]; then
+              export GOARCH=arm64
+              export CC=aarch64-linux-gnu-gcc
+            elif [ "${{ matrix.platform }}" == "armv7" ]; then
+              export GOARCH=arm
+              export GOARM=7
+              export CC=arm-linux-gnueabihf-gcc
+            elif [ "${{ matrix.platform }}" == "armv6" ]; then
+              export GOARCH=arm
+              export GOARM=6
+              export CC=arm-linux-gnueabihf-gcc
+            elif [ "${{ matrix.platform }}" == "386" ]; then
+              export GOARCH=386
+              export CC=i686-linux-gnu-gcc
+            elif [ "${{ matrix.platform }}" == "armv5" ]; then
+              export GOARCH=arm
+              export GOARM=5
+              export CC=arm-linux-gnueabi-gcc
+            elif [ "${{ matrix.platform }}" == "s390x" ]; then
+              export GOARCH=s390x
+              export CC=s390x-linux-gnu-gcc
+            fi
           fi
           go build -ldflags "-w -s" -o xui-release -v main.go
-          
+
           mkdir x-ui
           cp xui-release x-ui/
-          cp x-ui.service x-ui/
-          cp x-ui.sh x-ui/
+          cp x-ui.service x-ui/ 2>/dev/null || true
+          cp x-ui.sh x-ui/ 2>/dev/null || true
           mv x-ui/xui-release x-ui/x-ui
-          mkdir x-ui/bin
+          mkdir -p x-ui/bin
           cd x-ui/bin
-          
+
           # Download dependencies
           Xray_URL="https://github.com/XTLS/Xray-core/releases/download/v26.7.28/"
           if [ "${{ matrix.platform }}" == "amd64" ]; then
-            wget -q ${Xray_URL}Xray-linux-64.zip
-            unzip Xray-linux-64.zip
-            rm -f Xray-linux-64.zip
+            curl -sSL -O ${Xray_URL}Xray-linux-64.zip && unzip -q Xray-linux-64.zip && rm -f Xray-linux-64.zip
           elif [ "${{ matrix.platform }}" == "arm64" ]; then
-            wget -q ${Xray_URL}Xray-linux-arm64-v8a.zip
-            unzip Xray-linux-arm64-v8a.zip
-            rm -f Xray-linux-arm64-v8a.zip
+            curl -sSL -O ${Xray_URL}Xray-linux-arm64-v8a.zip && unzip -q Xray-linux-arm64-v8a.zip && rm -f Xray-linux-arm64-v8a.zip
           elif [ "${{ matrix.platform }}" == "armv7" ]; then
-            wget -q ${Xray_URL}Xray-linux-arm32-v7a.zip
-            unzip Xray-linux-arm32-v7a.zip
-            rm -f Xray-linux-arm32-v7a.zip
+            curl -sSL -O ${Xray_URL}Xray-linux-arm32-v7a.zip && unzip -q Xray-linux-arm32-v7a.zip && rm -f Xray-linux-arm32-v7a.zip
           elif [ "${{ matrix.platform }}" == "armv6" ]; then
-            wget -q ${Xray_URL}Xray-linux-arm32-v6.zip
-            unzip Xray-linux-arm32-v6.zip
-            rm -f Xray-linux-arm32-v6.zip
+            curl -sSL -O ${Xray_URL}Xray-linux-arm32-v6.zip && unzip -q Xray-linux-arm32-v6.zip && rm -f Xray-linux-arm32-v6.zip
           elif [ "${{ matrix.platform }}" == "386" ]; then
-            wget -q ${Xray_URL}Xray-linux-32.zip
-            unzip Xray-linux-32.zip
-            rm -f Xray-linux-32.zip
+            curl -sSL -O ${Xray_URL}Xray-linux-32.zip && unzip -q Xray-linux-32.zip && rm -f Xray-linux-32.zip
           elif [ "${{ matrix.platform }}" == "armv5" ]; then
-            wget -q ${Xray_URL}Xray-linux-arm32-v5.zip
-            unzip Xray-linux-arm32-v5.zip
-            rm -f Xray-linux-arm32-v5.zip
+            curl -sSL -O ${Xray_URL}Xray-linux-arm32-v5.zip && unzip -q Xray-linux-arm32-v5.zip && rm -f Xray-linux-arm32-v5.zip
           elif [ "${{ matrix.platform }}" == "s390x" ]; then
-            wget -q ${Xray_URL}Xray-linux-s390x.zip
-            unzip Xray-linux-s390x.zip
-            rm -f Xray-linux-s390x.zip
+            curl -sSL -O ${Xray_URL}Xray-linux-s390x.zip && unzip -q Xray-linux-s390x.zip && rm -f Xray-linux-s390x.zip
+          elif [ "${{ matrix.platform }}" == "darwin-amd64" ]; then
+            curl -sSL -O ${Xray_URL}Xray-macos-64.zip && unzip -q Xray-macos-64.zip && rm -f Xray-macos-64.zip
+          elif [ "${{ matrix.platform }}" == "darwin-arm64" ]; then
+            curl -sSL -O ${Xray_URL}Xray-macos-arm64-v8a.zip && unzip -q Xray-macos-arm64-v8a.zip && rm -f Xray-macos-arm64-v8a.zip
           fi
+
           rm -f geoip.dat geosite.dat
-          wget -q https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat
-          wget -q https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat
-          wget -q -O geoip_IR.dat https://github.com/chocolate4u/Iran-v2ray-rules/releases/latest/download/geoip.dat
-          wget -q -O geosite_IR.dat https://github.com/chocolate4u/Iran-v2ray-rules/releases/latest/download/geosite.dat
-          wget -q -O geoip_RU.dat https://github.com/runetfreedom/russia-v2ray-rules-dat/releases/latest/download/geoip.dat
-          wget -q -O geosite_RU.dat https://github.com/runetfreedom/russia-v2ray-rules-dat/releases/latest/download/geosite.dat
-          mv xray xray-linux-${{ matrix.platform }}
+          curl -sSL -O https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat
+          curl -sSL -O https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat
+          curl -sSL -o geoip_IR.dat https://github.com/chocolate4u/Iran-v2ray-rules/releases/latest/download/geoip.dat
+          curl -sSL -o geosite_IR.dat https://github.com/chocolate4u/Iran-v2ray-rules/releases/latest/download/geosite.dat
+          curl -sSL -o geoip_RU.dat https://github.com/runetfreedom/russia-v2ray-rules-dat/releases/latest/download/geoip.dat
+          curl -sSL -o geosite_RU.dat https://github.com/runetfreedom/russia-v2ray-rules-dat/releases/latest/download/geosite.dat
+
+          if [ "${{ runner.os }}" == "macOS" ]; then
+            if [ "${{ matrix.platform }}" == "darwin-amd64" ]; then
+              mv xray xray-darwin-amd64 2>/dev/null || true
+            elif [ "${{ matrix.platform }}" == "darwin-arm64" ]; then
+              mv xray xray-darwin-arm64 2>/dev/null || true
+            fi
+          else
+            mv xray xray-linux-${{ matrix.platform }} 2>/dev/null || true
+          fi
           cd ../..
 
       - name: Build x-ui (Windows)
-        if: matrix.platform == 'windows-amd64'
+        if: runner.os == 'Windows'
         shell: pwsh
         run: |
           $env:CGO_ENABLED="1"
           $env:GOOS="windows"
-          $env:GOARCH="amd64"
+          if ("${{ matrix.platform }}" -eq "windows-386") {
+            $env:GOARCH="386"
+            $archName="386"
+            $xrayZip="Xray-windows-32.zip"
+          } elif ("${{ matrix.platform }}" -eq "windows-arm64") {
+            $env:CGO_ENABLED="0"
+            $env:GOARCH="arm64"
+            $archName="arm64"
+            $xrayZip="Xray-windows-arm64-v8a.zip"
+          } else {
+            $env:GOARCH="amd64"
+            $archName="amd64"
+            $xrayZip="Xray-windows-64.zip"
+          }
           go build -ldflags "-w -s" -o xui-release.exe -v main.go
-          
+
           mkdir x-ui
           Copy-Item xui-release.exe x-ui\
-          # Windows-specific files (if any) can be copied here
           mkdir x-ui\bin
           cd x-ui\bin
-          
+
           # Download Xray for Windows
           $Xray_URL = "https://github.com/XTLS/Xray-core/releases/download/v26.7.28/"
-          Invoke-WebRequest -Uri "${Xray_URL}Xray-windows-64.zip" -OutFile "Xray-windows-64.zip"
-          Expand-Archive -Path "Xray-windows-64.zip" -DestinationPath .
-          Remove-Item "Xray-windows-64.zip"
+          Invoke-WebRequest -Uri "${Xray_URL}${xrayZip}" -OutFile "${xrayZip}"
+          Expand-Archive -Path "${xrayZip}" -DestinationPath .
+          Remove-Item "${xrayZip}"
           Remove-Item geoip.dat, geosite.dat -ErrorAction SilentlyContinue
           Invoke-WebRequest -Uri "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat" -OutFile "geoip.dat"
           Invoke-WebRequest -Uri "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat" -OutFile "geosite.dat"
@@ -156,50 +195,44 @@ jobs:
           Invoke-WebRequest -Uri "https://github.com/chocolate4u/Iran-v2ray-rules/releases/latest/download/geosite.dat" -OutFile "geosite_IR.dat"
           Invoke-WebRequest -Uri "https://github.com/runetfreedom/russia-v2ray-rules-dat/releases/latest/download/geoip.dat" -OutFile "geoip_RU.dat"
           Invoke-WebRequest -Uri "https://github.com/runetfreedom/russia-v2ray-rules-dat/releases/latest/download/geosite.dat" -OutFile "geosite_RU.dat"
-          Rename-Item xray.exe xray-windows-amd64.exe
+          Rename-Item xray.exe "xray-windows-${archName}.exe" -ErrorAction SilentlyContinue
           cd ../..
 
       - name: Package (Windows)
-        if: matrix.platform == 'windows-amd64'
+        if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          Compress-Archive -Path x-ui -DestinationPath x-ui-windows-amd64.zip
+          Compress-Archive -Path x-ui -DestinationPath "x-ui-${{ matrix.platform }}.zip"
 
-      - name: Package (Linux)
-        if: matrix.platform != 'windows-amd64'
+      - name: Package (Linux / macOS)
+        if: runner.os != 'Windows'
         run: |
-          tar -zcvf x-ui-linux-${{ matrix.platform }}.tar.gz x-ui
+          tar -zcvf x-ui-${{ matrix.platform }}.tar.gz x-ui
 
-      - name: Upload files to Artifacts (Windows)
-        if: matrix.platform == 'windows-amd64'
-        uses: actions/upload-artifact@v7
-        with:
-          name: x-ui-windows-amd64
-          path: ./x-ui-windows-amd64.zip
-
-      - name: Upload files to Artifacts (Linux)
-        if: matrix.platform != 'windows-amd64'
-        uses: actions/upload-artifact@v7
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
         with:
           name: x-ui-${{ matrix.platform }}
-          path: ./x-ui-linux-${{ matrix.platform }}.tar.gz
+          path: |
+            x-ui-${{ matrix.platform }}.zip
+            x-ui-${{ matrix.platform }}.tar.gz
 
       - name: Upload files to GH release (Windows)
-        if: matrix.platform == 'windows-amd64'
+        if: runner.os == 'Windows'
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref }}
-          file: x-ui-windows-amd64.zip
-          asset_name: x-ui-windows-amd64.zip
+          file: x-ui-${{ matrix.platform }}.zip
+          asset_name: x-ui-${{ matrix.platform }}.zip
           prerelease: true
 
-      - name: Upload files to GH release (Linux)
-        if: matrix.platform != 'windows-amd64'
+      - name: Upload files to GH release (Linux / macOS)
+        if: runner.os != 'Windows'
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref }}
-          file: x-ui-linux-${{ matrix.platform }}.tar.gz
-          asset_name: x-ui-linux-${{ matrix.platform }}.tar.gz
+          file: x-ui-${{ matrix.platform }}.tar.gz
+          asset_name: x-ui-${{ matrix.platform }}.tar.gz
           prerelease: true
