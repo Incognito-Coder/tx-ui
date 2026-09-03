@@ -597,9 +597,7 @@ func (s *InboundService) AddInboundClient(data *model.Inbound) (bool, error) {
 	oldClients = append(oldClients, interfaceClients...)
 
 	oldSettings["clients"] = oldClients
-	if oldInbound.Protocol == "wireguard" {
-		oldSettings["peers"] = oldClients
-	}
+	delete(oldSettings, "peers")
 
 	newSettings, err := json.MarshalIndent(oldSettings, "", "  ")
 	if err != nil {
@@ -864,9 +862,7 @@ func (s *InboundService) UpdateInboundClient(data *model.Inbound, clientId strin
 		settingsClients[clientIndex] = interfaceClients[0]
 	}
 	oldSettings["clients"] = settingsClients
-	if oldInbound.Protocol == "wireguard" {
-		oldSettings["peers"] = settingsClients
-	}
+	delete(oldSettings, "peers")
 
 	newSettings, err := json.MarshalIndent(oldSettings, "", "  ")
 	if err != nil {
@@ -913,6 +909,9 @@ func (s *InboundService) UpdateInboundClient(data *model.Inbound, clientId strin
 							}
 
 							subClients, ok := clientsSettings["clients"].([]interface{})
+							if !ok && inbound.Protocol == model.WireGuard {
+								subClients, ok = clientsSettings["peers"].([]interface{})
+							}
 							if !ok {
 								continue
 							}
@@ -931,6 +930,7 @@ func (s *InboundService) UpdateInboundClient(data *model.Inbound, clientId strin
 
 							if needsUpdate {
 								clientsSettings["clients"] = subClients
+								delete(clientsSettings, "peers")
 								newSettings, err := json.Marshal(clientsSettings)
 								if err != nil {
 									continue
@@ -1246,6 +1246,9 @@ func (s *InboundService) addClientTraffic(tx *gorm.DB, traffics []*xray.ClientTr
 				}
 
 				clientsInInbound, ok := clientsSettings["clients"].([]interface{})
+				if !ok && inbound.Protocol == model.WireGuard {
+					clientsInInbound, ok = clientsSettings["peers"].([]interface{})
+				}
 				if !ok {
 					continue
 				}
@@ -1261,6 +1264,7 @@ func (s *InboundService) addClientTraffic(tx *gorm.DB, traffics []*xray.ClientTr
 
 				if needsUpdate {
 					clientsSettings["clients"] = clientsInInbound
+					delete(clientsSettings, "peers")
 					newSettings, err := json.Marshal(clientsSettings)
 					if err != nil {
 						continue

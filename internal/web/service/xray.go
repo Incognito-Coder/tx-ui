@@ -183,13 +183,17 @@ func (s *XrayService) GetXrayConfig() (*xray.Config, error) {
 				for i := len(existingModelClients); i < len(mergedClients); i++ {
 					nc := mergedClients[i]
 					entry := map[string]interface{}{
-						"email":    nc.Email,
-						"id":       nc.ID,
-						"security": nc.Security,
-						"password": nc.Password,
-						"auth":     nc.Auth,
-						"flow":     nc.Flow,
-						"enable":   nc.Enable,
+						"email":      nc.Email,
+						"id":         nc.ID,
+						"publicKey":  nc.PublicKey,
+						"privateKey": nc.PrivateKey,
+						"allowedIPs": nc.AllowedIPs,
+						"psk":        nc.Psk,
+						"security":   nc.Security,
+						"password":   nc.Password,
+						"auth":       nc.Auth,
+						"flow":       nc.Flow,
+						"enable":     nc.Enable,
 					}
 					if inbound.Protocol == "vmess" {
 						normalizeLegacyVMessUser(entry)
