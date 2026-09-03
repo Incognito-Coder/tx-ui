@@ -840,6 +840,60 @@ a:focus-visible {
     background: var(--ui-primary);
 }
 
+/* Fix duplicate borders on collapse containers & panels across modals and pages */
+.ant-collapse,
+.dark .ant-collapse,
+#content-layout .ant-collapse {
+    border: 1px solid var(--dark-color-surface-300, #2c3950) !important;
+    border-radius: 10px !important;
+    background-color: var(--dark-color-surface-200, #151f31) !important;
+    overflow: hidden !important;
+}
+
+:not(.dark) .ant-collapse,
+html:not(.dark) #content-layout .ant-collapse {
+    border: 1px solid #e2e8f0 !important;
+    background-color: #f8fafc !important;
+}
+
+.ant-collapse > .ant-collapse-item,
+.dark .ant-collapse > .ant-collapse-item {
+    border: none !important;
+    border-bottom: 1px solid var(--dark-color-surface-300, #2c3950) !important;
+    border-radius: 0 !important;
+}
+
+.ant-collapse > .ant-collapse-item:last-child,
+.dark .ant-collapse > .ant-collapse-item:last-child {
+    border-bottom: none !important;
+}
+
+:not(.dark) .ant-collapse > .ant-collapse-item {
+    border-bottom: 1px solid #e2e8f0 !important;
+}
+
+.ant-collapse > .ant-collapse-item > .ant-collapse-header,
+.dark .ant-collapse > .ant-collapse-item > .ant-collapse-header {
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    border-radius: 0 !important;
+}
+
+.ant-collapse-content,
+.dark .ant-collapse-content {
+    border: none !important;
+    border-top: 1px solid var(--dark-color-surface-300, #2c3950) !important;
+    background-color: var(--dark-color-surface-100, #0c121e) !important;
+    border-radius: 0 !important;
+}
+
+:not(.dark) .ant-collapse-content {
+    border-top: 1px solid #e2e8f0 !important;
+    background-color: #ffffff !important;
+}
+
 .xray-table-pane {
     padding: 18px 16px 16px;
 }
