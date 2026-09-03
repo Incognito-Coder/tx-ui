@@ -375,6 +375,27 @@
                                 <setting-list-item desc='{{ i18n "pages.settings.subUIDesc"}}' title='{{ i18n "pages.settings.subUI"}}'
                                                    type="switch"
                                                    v-model="allSetting.subCustomUI"></setting-list-item>
+                                 <a-list-item style="padding: 16px 20px;">
+                                     <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; flex-wrap: wrap; gap: 12px;">
+                                         <div>
+                                             <div style="font-weight: 600; font-size: 14px;">
+                                                 <a-icon type="github" style="color: var(--ui-primary); margin-right: 6px; font-size: 16px;"></a-icon>
+                                                 GitHub Sub HTML Template Manager
+                                             </div>
+                                             <div style="font-size: 12px; color: var(--ui-text-muted); margin-top: 4px;">
+                                                 Select, download, and switch subscription HTML templates directly from GitHub repos or raw URLs.
+                                             </div>
+                                         </div>
+                                         <div style="display: flex; align-items: center; gap: 8px;">
+                                             <a-tag :color="subTemplateModal.isCustom ? 'green' : 'blue'">
+                                                 [[ subTemplateModal.isCustom ? 'Custom GitHub Template Active' : 'Default Embedded Theme' ]]
+                                             </a-tag>
+                                             <a-button type="primary" icon="setting" @click="openSubTemplateModal">
+                                                 Manage Templates
+                                             </a-button>
+                                         </div>
+                                     </div>
+                                 </a-list-item>
                                 <setting-list-item desc='{{ i18n "pages.settings.subShowInfoDesc"}}' title='{{ i18n "pages.settings.subShowInfo"}}'
                                                    type="switch"
                                                    v-model="allSetting.subShowInfo"></setting-list-item>
@@ -627,7 +648,94 @@
                     </a-tabs>
                 </a-space>
             </a-spin>
-        </a-layout-content>
+        <a-modal :class="themeSwitcher.currentTheme" :closable="true" :footer="null" :width="960"
+                 wrap-class-name="panel-modal panel-modal-lg" v-model="subTemplateModal.visible">
+            <template slot="title">
+                <div style="display: flex; align-items: center; justify-content: space-between; padding-right: 24px;">
+                    <span style="font-weight: 700; font-size: 16px;">
+                        <a-icon type="github" style="color: var(--ui-primary); margin-right: 8px; font-size: 18px;"></a-icon>
+                        GitHub Sub HTML Template Theme Manager
+                    </span>
+                    <a-button size="small" icon="sync" :spin="subTemplateModal.loading" @click="fetchSubTemplates">Refresh</a-button>
+                </div>
+            </template>
+            <a-spin :spinning="subTemplateModal.loading">
+                <div style="background: var(--ui-surface-muted); border: 1px solid var(--ui-border); border-radius: var(--ui-radius); padding: 10px 14px; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between;">
+                    <span style="font-size: 12px; color: var(--ui-text-muted);">
+                        Themes are automatically synchronized from <a href="https://github.com/Incognito-Coder/TX-ThemeHub/tree/main/themes" target="_blank" style="font-weight: 600;"><a-icon type="github"></a-icon> Incognito-Coder/TX-ThemeHub/tree/main/themes</a>
+                    </span>
+                    <a-tag color="blue">Live GitHub Sync</a-tag>
+                </div>
+                <template v-if="subTemplateModal.msg">
+                    <a-alert :message="subTemplateModal.msg" :type="subTemplateModal.msgType || 'info'" show-icon style="margin-bottom: 14px;"></a-alert>
+                </template>
+
+                <a-tabs default-active-key="catalog" size="small">
+                    <!-- Tab 1: Curated Theme Catalog -->
+                    <a-tab-pane key="catalog" tab="TX-ThemeHub Catalog" style="padding-top: 12px;">
+                        <a-row :gutter="[0, 12]">
+                            <a-col :span="24" v-for="theme in subTemplateModal.themes" :key="theme.id">
+                                <div style="background: var(--ui-surface-muted); border: 1px solid var(--ui-border); border-radius: var(--ui-radius); padding: 16px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px;">
+                                    <div style="flex: 1; min-width: 260px;">
+                                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap;">
+                                            <span style="font-weight: 700; font-size: 15px;">[[ theme.name ]]</span>
+                                            <a-tag color="purple" style="border-radius: 4px;">[[ theme.previewTag ]]</a-tag>
+                                        </div>
+                                        <p style="font-size: 12px; color: var(--ui-text-muted); margin-bottom: 6px; line-height: 1.5;">[[ theme.description ]]</p>
+                                        <span style="font-size: 11px; color: var(--ui-text-muted);">Author: <strong>[[ theme.author ]]</strong></span>
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                                        <a :href="theme.repoUrl" target="_blank" v-if="theme.repoUrl" class="ant-btn ant-btn-default ant-btn-sm" style="border-radius: var(--ui-radius); display: inline-flex; align-items: center; gap: 4px;">
+                                            <a-icon type="github"></a-icon> View Repo
+                                        </a>
+                                        <a-button size="small" type="primary" style="border-radius: var(--ui-radius);" :disabled="theme.isDefault && !subTemplateModal.isCustom" @click="applySubTemplateTheme(theme.rawUrl || '')">
+                                            [[ theme.isDefault ? 'Use Default' : 'Apply Theme' ]]
+                                        </a-button>
+                                    </div>
+                                </div>
+                            </a-col>
+                        </a-row>
+                    </a-tab-pane>
+
+                    <!-- Tab 2: Custom GitHub Raw URL -->
+                    <a-tab-pane key="custom" tab="Custom GitHub URL" style="padding-top: 12px;">
+                        <div style="background: var(--ui-surface-muted); border: 1px solid var(--ui-border); border-radius: var(--ui-radius); padding: 18px;">
+                            <div style="font-weight: 600; font-size: 14px; margin-bottom: 6px;">Install Template from GitHub URL:</div>
+                            <p style="font-size: 12px; color: var(--ui-text-muted); margin-bottom: 14px; line-height: 1.5;">
+                                Enter any direct GitHub raw HTML link or repo URL (e.g. <code>https://raw.githubusercontent.com/user/repo/main/sub.html</code> or <code>https://github.com/user/repo/blob/main/index.html</code>).
+                            </p>
+                            <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                                <a-input
+                                    placeholder="https://raw.githubusercontent.com/.../sub.html"
+                                    v-model="subTemplateModal.customUrl"
+                                    style="flex: 1; min-width: 260px; border-radius: var(--ui-radius); height: 40px;"
+                                    @pressEnter="applySubTemplateTheme(subTemplateModal.customUrl)"
+                                >
+                                    <a-icon slot="prefix" type="link" style="color: var(--ui-text-muted);" />
+                                </a-input>
+                                <a-button
+                                    type="primary"
+                                    icon="download"
+                                    style="height: 40px; border-radius: var(--ui-radius); font-weight: 600; padding: 0 20px;"
+                                    @click="applySubTemplateTheme(subTemplateModal.customUrl)"
+                                >
+                                    Download & Apply
+                                </a-button>
+                            </div>
+                        </div>
+                    </a-tab-pane>
+                </a-tabs>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 18px; border-top: 1px solid var(--ui-border); padding-top: 12px;">
+                    <span style="font-size: 12px; color: var(--ui-text-muted);">
+                        Active: <strong>[[ subTemplateModal.isCustom ? 'Custom GitHub HTML' : 'Standard Embedded' ]]</strong>
+                    </span>
+                    <a-button type="danger" size="small" icon="undo" :disabled="!subTemplateModal.isCustom" @click="resetSubTemplateTheme">
+                        Reset to Embedded Default
+                    </a-button>
+                </div>
+            </a-spin>
+        </a-modal>
     </a-layout>
 </a-layout>
 {{template "js" .}}
@@ -660,6 +768,15 @@
                 value: 'jalalian'
             }],
             remarkSample: '',
+            subTemplateModal: {
+                visible: false,
+                loading: false,
+                customUrl: '',
+                msg: '',
+                msgType: 'info',
+                isCustom: false,
+                themes: []
+            },
             defaultFragment: {
                 packets: 'tlshello',
                 length: '100-200',
@@ -899,6 +1016,78 @@
                 const newNoises = [...this.noisesArray];
                 newNoises.splice(index, 1);
                 this.noisesArray = newNoises;
+            },
+            async openSubTemplateModal() {
+                this.subTemplateModal.visible = true;
+                await this.fetchSubTemplates();
+            },
+            async fetchSubTemplates() {
+                this.subTemplateModal.loading = true;
+                this.subTemplateModal.msg = '';
+                try {
+                    const res = await HttpUtil.get('/panel/api/server/getSubTemplates');
+                    if (res.success && res.obj) {
+                        this.subTemplateModal.themes = res.obj.themes || [];
+                        this.subTemplateModal.isCustom = res.obj.isCustom || false;
+                    }
+                } catch (e) {
+                    this.subTemplateModal.msg = 'Failed to fetch template catalog: ' + e.message;
+                    this.subTemplateModal.msgType = 'error';
+                } finally {
+                    this.subTemplateModal.loading = false;
+                }
+            },
+            async applySubTemplateTheme(url) {
+                if (!url) {
+                    await this.resetSubTemplateTheme();
+                    return;
+                }
+                this.subTemplateModal.loading = true;
+                this.subTemplateModal.msg = '';
+                try {
+                    const res = await HttpUtil.post('/panel/api/server/applySubTemplate', { url: url });
+                    if (res.success) {
+                        this.subTemplateModal.msg = 'Sub HTML template applied successfully! Panel is restarting automatically...';
+                        this.subTemplateModal.msgType = 'success';
+                        this.allSetting.subCustomUI = true;
+                        this.$message.success('Template applied! Panel restarting...');
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 3000);
+                    } else {
+                        this.subTemplateModal.msg = res.msg || 'Failed to apply template';
+                        this.subTemplateModal.msgType = 'error';
+                        this.subTemplateModal.loading = false;
+                    }
+                } catch (e) {
+                    this.subTemplateModal.msg = 'Error applying template: ' + e.message;
+                    this.subTemplateModal.msgType = 'error';
+                    this.subTemplateModal.loading = false;
+                }
+            },
+            async resetSubTemplateTheme() {
+                this.subTemplateModal.loading = true;
+                this.subTemplateModal.msg = '';
+                try {
+                    const res = await HttpUtil.post('/panel/api/server/resetSubTemplate');
+                    if (res.success) {
+                        this.subTemplateModal.msg = 'Sub HTML template reset to default embedded template! Panel is restarting automatically...';
+                        this.subTemplateModal.msgType = 'success';
+                        this.allSetting.subCustomUI = false;
+                        this.$message.success('Template reset! Panel restarting...');
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 3000);
+                    } else {
+                        this.subTemplateModal.msg = res.msg || 'Failed to reset template';
+                        this.subTemplateModal.msgType = 'error';
+                        this.subTemplateModal.loading = false;
+                    }
+                } catch (e) {
+                    this.subTemplateModal.msg = 'Error resetting template: ' + e.message;
+                    this.subTemplateModal.msgType = 'error';
+                    this.subTemplateModal.loading = false;
+                }
             },
             updateNoiseApplyTo(index, value) {
                 const updatedNoises = [...this.noisesArray];

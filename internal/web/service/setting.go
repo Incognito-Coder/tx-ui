@@ -509,6 +509,10 @@ func (s *SettingService) GetSubCustomUI() (bool, error) {
 	return s.getBool("subCustomUI")
 }
 
+func (s *SettingService) SetSubCustomUI(enable bool) error {
+	return s.saveSetting("subCustomUI", strconv.FormatBool(enable))
+}
+
 func (s *SettingService) GetSubShowInfo() (bool, error) {
 	return s.getBool("subShowInfo")
 }

@@ -1,0 +1,1273 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>پنل اشتراک | {{ .sId }}</title>
+    
+    <!-- Fonts -->
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@33.003/Vazirmatn-Variable-font-face.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/jalaali-js/dist/jalaali.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #8b5cf6;
+            --accent: #06b6d4;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --dark: #0f172a;
+            --darker: #020617;
+            --light: #f8fafc;
+            --glass: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.2);
+        }
+
+        body {
+            font-family: 'Vazirmatn', sans-serif;
+            background: linear-gradient(135deg, var(--darker) 0%, var(--dark) 50%, #1e293b 100%);
+            color: var(--light);
+            min-height: 100vh;
+            overflow-x: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        /* Light Mode Styles */
+        body.light-mode {
+            background: linear-gradient(135deg, #f0f4f8 0%, #dfe7ef 50%, #e6edf5 100%);
+            color: #1e293b;
+        }
+        
+        body.light-mode .glass {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(200, 210, 230, 0.5);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+        
+        body.light-mode .title {
+            background: linear-gradient(135deg, #3b4fd8, #0597b7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 2px 10px rgba(99, 102, 241, 0.2);
+        }
+        
+        body.light-mode .subtitle {
+            color: #334155;
+            font-weight: 500;
+        }
+        
+        body.light-mode .usage-detail,
+        body.light-mode .connection-item {
+            background: rgba(59, 130, 246, 0.08);
+            border: 1px solid rgba(59, 130, 246, 0.15);
+        }
+        
+        body.light-mode .usage-meter-bg {
+            stroke: rgba(99, 102, 241, 0.15);
+        }
+        
+        body.light-mode .usage-detail-label,
+        body.light-mode .stat-label {
+            color: #334155;
+            font-weight: 500;
+        }
+        
+        body.light-mode .stat-card {
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(200, 210, 230, 0.5);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+        }
+        
+        body.light-mode .stat-value,
+        body.light-mode .usage-detail-value {
+            color: #1e293b;
+        }
+        
+        body.light-mode .usage-detail-icon {
+            color: #3b82f6;
+        }
+        
+        body.light-mode .connection-item {
+            color: #1e293b;
+            border: 1px solid rgba(59, 130, 246, 0.15);
+        }
+        
+        body.light-mode .connection-text {
+            color: #1e293b;
+        }
+        
+        body.light-mode .app-card {
+            background: rgba(59, 130, 246, 0.08);
+            border: 1px solid rgba(59, 130, 246, 0.15);
+        }
+        
+        body.light-mode .app-name {
+            color: #1e293b;
+        }
+        
+        body.light-mode .app-desc {
+            color: #334155;
+        }
+        
+        body.light-mode .usage-meter-value {
+            background: linear-gradient(135deg, #3b4fd8, #0597b7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 700;
+        }
+        
+        body.light-mode .usage-meter-label {
+            color: #334155;
+            font-weight: 500;
+        }
+        
+        /* Theme Toggle Button */
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 1.2rem;
+            color: var(--light);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .theme-toggle:hover {
+            transform: scale(1.1);
+        }
+        
+        body.light-mode .theme-toggle {
+            background: rgba(255, 255, 255, 0.8);
+            color: #1e293b;
+            border-color: rgba(0, 0, 0, 0.1);
+        }
+
+        /* Animated Background */
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.3;
+        }
+
+        .bg-animation::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 80%, var(--primary) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, var(--secondary) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, var(--accent) 0%, transparent 50%);
+            animation: float 20s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            33% { transform: translateY(-20px) rotate(120deg); }
+            66% { transform: translateY(20px) rotate(240deg); }
+        }
+
+        /* Floating Particles */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: var(--accent);
+            border-radius: 50%;
+            animation: particle-float 15s infinite linear;
+        }
+
+        @keyframes particle-float {
+            0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(-100px) rotate(360deg); opacity: 0; }
+        }
+
+        /* Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+            animation: slideDown 1s ease-out;
+        }
+
+        @keyframes slideDown {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .logo {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            font-size: 2rem;
+            color: white;
+            box-shadow: 0 10px 30px rgba(99, 102, 241, 0.3);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            color: #94a3b8;
+            font-size: 1.1rem;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .stat-card {
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            animation: fadeInUp 0.8s ease-out;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+            transition: left 0.5s;
+        }
+
+        .stat-card:hover::before {
+            left: 100%;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+
+        @keyframes fadeInUp {
+            from { transform: translateY(30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            font-size: 1.5rem;
+            color: white;
+        }
+
+        .stat-icon.download { background: linear-gradient(135deg, var(--accent), #0891b2); }
+        .stat-icon.upload { background: linear-gradient(135deg, var(--warning), #d97706); }
+        .stat-icon.expire { background: linear-gradient(135deg, var(--success), #059669); }
+        .stat-icon.status { background: linear-gradient(135deg, var(--danger), #dc2626); }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+
+        /* Usage Section */
+        .usage-section {
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 3rem;
+            animation: fadeInUp 1s ease-out 0.2s both;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .usage-section::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at center, rgba(99, 102, 241, 0.1) 0%, transparent 70%);
+            z-index: 0;
+            animation: rotate 30s linear infinite;
+        }
+        
+        @keyframes rotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .usage-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .usage-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .usage-title::before {
+            content: '';
+            display: inline-block;
+            width: 8px;
+            height: 25px;
+            background: linear-gradient(to bottom, var(--accent), var(--primary));
+            border-radius: 4px;
+        }
+
+        .usage-container {
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            z-index: 1;
+        }
+
+        .usage-visual {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 2rem;
+            position: relative;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .usage-meter {
+            width: 180px;
+            height: 180px;
+            position: relative;
+            max-width: 100%;
+        }
+
+        @media (max-width: 480px) {
+            .usage-meter {
+                width: 150px;
+                height: 150px;
+            }
+        }
+
+        .usage-meter-circle {
+            fill: none;
+            stroke-width: 12;
+            stroke-linecap: round;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+            transition: stroke-dashoffset 1s ease;
+        }
+
+        .usage-meter-bg {
+            stroke: rgba(255, 255, 255, 0.1);
+        }
+
+        .usage-meter-fill {
+            stroke: url(#usage-gradient);
+            stroke-dasharray: 440;
+        }
+
+        .usage-meter-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            width: 100%;
+        }
+
+        .usage-meter-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent), var(--primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .usage-meter-label {
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+
+        .usage-details {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        @media (max-width: 640px) {
+            .usage-details {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .usage-detail {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 1.2rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            border-left: 3px solid transparent;
+            overflow: hidden;
+            word-break: break-word;
+        }
+
+        .usage-detail:nth-child(1) {
+            border-color: var(--accent);
+        }
+
+        .usage-detail:nth-child(2) {
+            border-color: var(--primary);
+        }
+
+        .usage-detail:nth-child(3) {
+            border-color: var(--secondary);
+        }
+
+        .usage-detail:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .usage-detail-value {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        @media (max-width: 768px) {
+            .usage-detail-value {
+                font-size: 1.1rem;
+            }
+        }
+
+        .usage-detail-label {
+            color: #94a3b8;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .usage-detail-icon {
+            color: var(--accent);
+        }
+        
+        @media (max-width: 480px) {
+            .usage-section {
+                padding: 1.5rem 1rem;
+            }
+            
+            .usage-title {
+                font-size: 1.2rem;
+            }
+        }
+
+        /* QR Section */
+        .qr-section {
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 2rem;
+            text-align: center;
+            margin-bottom: 3rem;
+            animation: fadeInUp 1s ease-out 0.4s both;
+        }
+
+        .qr-container {
+            display: inline-block;
+            padding: 1rem;
+            background: white;
+            border-radius: 15px;
+            margin: 1rem 0;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        /* Connections Section */
+        .connections-section {
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 3rem;
+            animation: fadeInUp 1s ease-out 0.6s both;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            cursor: pointer;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .toggle-icon {
+            transition: transform 0.3s ease;
+        }
+
+        .toggle-icon.rotated {
+            transform: rotate(180deg);
+        }
+
+        .connections-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .connections-content.expanded {
+            max-height: 1000px;
+        }
+
+        .connection-item {
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            word-break: break-all;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .connection-item:hover {
+            background: rgba(255,255,255,0.1);
+            transform: translateX(-5px);
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: var(--primary);
+            border: none;
+            border-radius: 5px;
+            padding: 0.5rem;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .copy-btn:hover {
+            background: var(--primary-dark);
+            transform: scale(1.1);
+        }
+
+        /* Apps Section */
+        .apps-section {
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 3rem;
+            animation: fadeInUp 1s ease-out 0.8s both;
+        }
+
+        .apps-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .app-card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+            padding: 1.5rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+
+        .app-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary);
+            box-shadow: 0 10px 30px rgba(99, 102, 241, 0.2);
+        }
+
+        .app-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            font-size: 1.5rem;
+            color: white;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+        }
+
+        .app-name {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .app-desc {
+            color: #94a3b8;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        .app-btn {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 0.75rem 1.5rem;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .app-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3);
+        }
+
+        /* Support Section */
+        .support-section {
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 2rem;
+            text-align: center;
+            animation: fadeInUp 1s ease-out 1s both;
+        }
+
+        .support-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 1.5rem;
+        }
+
+        .support-btn {
+            background: linear-gradient(135deg, var(--success), #059669);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 1rem 2rem;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .support-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 30px rgba(16, 185, 129, 0.3);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            .title {
+                font-size: 2rem;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .apps-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .support-buttons {
+                flex-direction: column;
+            }
+        }
+
+        /* Loading Animation */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Toast Notification */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--success);
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 10px;
+            z-index: 1000;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+    </style>
+</head>
+<body>
+    <!-- Animated Background -->
+    <div class="bg-animation"></div>
+    
+    <!-- Floating Particles -->
+    <div class="particles" id="particles"></div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast"></div>
+    
+    <!-- Theme Toggle Button -->
+    <button class="theme-toggle" id="themeToggle">
+        <i class="fas fa-moon" id="themeIcon"></i>
+    </button>
+
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <i class="fas fa-shield-alt"></i>
+            </div>
+            <h1 class="title">پنل اشتراک</h1>
+            <p class="subtitle">شناسه: {{ .sId }}</p>
+        </header>
+
+        <!-- Stats Grid -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon download">
+                    <i class="fas fa-download"></i>
+                </div>
+                <div class="stat-value" id="downloadValue">{{ .download }}</div>
+                <div class="stat-label">دانلود</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon upload">
+                    <i class="fas fa-upload"></i>
+                </div>
+                <div class="stat-value" id="uploadValue">{{ .upload }}</div>
+                <div class="stat-label">آپلود</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon expire">
+                    <i class="fas fa-calendar-alt"></i>
+                </div>
+                <div class="stat-value" id="expireValue"></div>
+                <div class="stat-label">تاریخ انقضا</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon status">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="stat-value" id="statusValue"></div>
+                <div class="stat-label">وضعیت</div>
+            </div>
+        </div>
+
+        <!-- Usage Section -->
+        <section class="usage-section">
+            <div class="usage-header">
+                <h2 class="usage-title">میزان استفاده</h2>
+            </div>
+            <div class="usage-container">
+                <div class="usage-visual">
+                    <div class="usage-meter">
+                        <svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+                            <defs>
+                                <linearGradient id="usage-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                    <stop offset="0%" stop-color="#06b6d4" />
+                                    <stop offset="100%" stop-color="#6366f1" />
+                                </linearGradient>
+                            </defs>
+                            <circle class="usage-meter-circle usage-meter-bg" cx="80" cy="80" r="70" />
+                            <circle class="usage-meter-circle usage-meter-fill" cx="80" cy="80" r="70" id="usageMeter" />
+                        </svg>
+                        <div class="usage-meter-text">
+                            <div class="usage-meter-value" id="usagePercentage">0%</div>
+                            <div class="usage-meter-label">استفاده شده</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="usage-details">
+                    <div class="usage-detail">
+                        <div class="usage-detail-value" id="usedValue"></div>
+                        <div class="usage-detail-label">
+                            <i class="fas fa-chart-pie usage-detail-icon"></i>
+                            <span>استفاده شده</span>
+                        </div>
+                    </div>
+                    <div class="usage-detail">
+                        <div class="usage-detail-value" id="remainingValue"></div>
+                        <div class="usage-detail-label">
+                            <i class="fas fa-database usage-detail-icon"></i>
+                            <span>باقی مانده</span>
+                        </div>
+                    </div>
+                    <div class="usage-detail">
+                        <div class="usage-detail-value" id="totalValue"></div>
+                        <div class="usage-detail-label">
+                            <i class="fas fa-server usage-detail-icon"></i>
+                            <span>کل حجم</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- QR Section -->
+        <section class="qr-section">
+            <h2 class="usage-title">کد QR</h2>
+            <p style="color: #94a3b8; margin-bottom: 1rem;">برای وارد کردن پیکربندی اسکن کنید</p>
+            <div class="qr-container">
+                <canvas id="qrcode" width="200" height="200"></canvas>
+            </div>
+        </section>
+
+        <!-- Connections Section -->
+        <section class="connections-section">
+            <div class="section-header" onclick="toggleConnections()">
+                <h2 class="section-title">جزئیات اتصال</h2>
+                <i class="fas fa-chevron-down toggle-icon" id="toggleIcon"></i>
+            </div>
+            <div class="connections-content" id="connectionsContent">
+                <button class="app-btn" onclick="copyAllConnections()" style="margin-bottom: 1rem;">
+                    <i class="fas fa-copy"></i>
+                    کپی همه
+                </button>
+                {{ range .result }}
+                <div class="connection-item">
+                    <span class="connection-text">{{ . }}</span>
+                    <button class="copy-btn" onclick="copyToClipboard('{{ . }}')">
+                        <i class="fas fa-copy"></i>
+                    </button>
+                </div>
+                {{ end }}
+            </div>
+        </section>
+
+        <!-- Apps Section -->
+        <section class="apps-section">
+            <h2 class="usage-title" style="text-align: center; margin-bottom: 2rem;">برنامه های پشتیبانی شده</h2>
+            <div class="apps-grid">
+                <div class="app-card">
+                    <div class="app-icon">
+                        <i class="fab fa-android"></i>
+                    </div>
+                    <div class="app-name">V2rayNG</div>
+                    <div class="app-desc">برای اندروید</div>
+                    <div class="app-buttons" style="display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center;">
+                        <a href="v2rayng://install-config?url={{ .subUrl }}" class="app-btn">
+                            <i class="fas fa-external-link-alt"></i>
+                            باز کردن
+                        </a>
+                        <a href="https://myket.ir/app/com.v2ray.ang" target="_blank" class="app-btn" style="background: linear-gradient(135deg, #34a853, #4285f4);">
+                            <i class="fas fa-download"></i>
+                            دانلود
+                        </a>
+                    </div>
+                </div>
+
+                <div class="app-card">
+                    <div class="app-icon">
+                        <i class="fab fa-apple"></i>
+                    </div>
+                    <div class="app-name">Streisand</div>
+                    <div class="app-desc">برای iOS</div>
+                    <div class="app-buttons" style="display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center;">
+                        <a href="streisand://import/{{ .subUrl }}" class="app-btn">
+                            <i class="fas fa-external-link-alt"></i>
+                            باز کردن
+                        </a>
+                        <a href="https://apps.apple.com/us/app/streisand/id6450534064" target="_blank" class="app-btn" style="background: linear-gradient(135deg, #5856d6, #007aff);">
+                            <i class="fas fa-download"></i>
+                            دانلود
+                        </a>
+                    </div>
+                </div>
+
+                <div class="app-card">
+                    <div class="app-icon">
+                        <i class="fab fa-windows"></i>
+                    </div>
+                    <div class="app-name">V2rayN</div>
+                    <div class="app-desc">برای ویندوز</div>
+                    <a href="https://github.com/2dust/v2rayN/releases/" target="_blank" class="app-btn">
+                        <i class="fas fa-download"></i>
+                        دانلود
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Support Section -->
+        <section class="support-section">
+            <h2 class="usage-title">پشتیبانی</h2>
+            <p style="color: #94a3b8; margin-bottom: 1.5rem;">برای دریافت پشتیبانی یا خرید کانفیگ جدید با ما در ارتباط باشید</p>
+            <div class="support-buttons">
+                <a href="https://t.me/your_id" target="_blank" class="support-btn">
+                    <i class="fab fa-telegram"></i>
+                    پشتیبانی تلگرام
+                </a>
+                <a href="https://t.me/your_id" target="_blank" class="support-btn">
+                    <i class="fas fa-shopping-cart"></i>
+                    خرید کانفیگ
+                </a>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        // Create floating particles
+        function createParticles() {
+            const particlesContainer = document.getElementById('particles');
+            const particleCount = 50;
+
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 15 + 's';
+                particle.style.animationDuration = (Math.random() * 10 + 10) + 's';
+                particlesContainer.appendChild(particle);
+            }
+        }
+
+        // Format bytes
+        function formatBytes(bytes, decimals = 2) {
+            if (bytes === 0) return '0 بایت';
+            const k = 1024;
+            const sizes = ['بایت', 'کیلوبایت', 'مگابایت', 'گیگابایت', 'ترابایت'];
+            const i = Math.floor(Math.log(Math.abs(bytes)) / Math.log(k));
+            const result = (Math.abs(bytes) / Math.pow(k, i)).toFixed(decimals);
+            return parseFloat(result) * Math.sign(bytes) + ' ' + sizes[i];
+        }
+
+        // Copy to clipboard
+        async function copyToClipboard(text) {
+            try {
+                await navigator.clipboard.writeText(text);
+                showToast('کپی شد!', 'success');
+            } catch (err) {
+                showToast('خطا در کپی کردن', 'error');
+            }
+        }
+
+        // Copy all connections
+        function copyAllConnections() {
+            const texts = document.querySelectorAll('.connection-text');
+            const allText = Array.from(texts).map(el => el.innerText.trim()).join("\n");
+            copyToClipboard(allText);
+        }
+
+        // Toggle connections section
+        function toggleConnections() {
+            const content = document.getElementById('connectionsContent');
+            const icon = document.getElementById('toggleIcon');
+            
+            content.classList.toggle('expanded');
+            icon.classList.toggle('rotated');
+        }
+
+        // Show toast notification
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.style.background = type === 'success' ? '#10b981' : '#ef4444';
+            toast.classList.add('show');
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // Initialize usage meter
+        function initUsageChart() {
+            const totalByte = parseInt('{{ .totalByte }}', 10);
+            const downloadByte = parseInt('{{ .downloadByte }}', 10);
+            const uploadByte = parseInt('{{ .uploadByte }}', 10);
+            const usedBytes = downloadByte + uploadByte;
+            const remainingBytes = totalByte - usedBytes;
+            
+            // Update usage meter circle
+            const usageMeter = document.getElementById('usageMeter');
+            const circumference = 2 * Math.PI * 70; // 2πr where r=70
+            
+            let usagePercentage = 0;
+            if (totalByte === 0) {
+                // Unlimited plan - show small usage
+                usagePercentage = Math.min(5, (usedBytes / 1000000000000) * 100); // Compared to 1TB
+                const offset = circumference - (usagePercentage / 100) * circumference;
+                usageMeter.style.strokeDashoffset = offset;
+                document.getElementById('usagePercentage').textContent = '∞';
+            } else {
+                // Limited plan
+                usagePercentage = Math.min(100, (usedBytes / totalByte) * 100);
+                const offset = circumference - (usagePercentage / 100) * circumference;
+                usageMeter.style.strokeDashoffset = offset;
+                document.getElementById('usagePercentage').textContent = Math.round(usagePercentage) + '%';
+            }
+            
+            // Add animation to the meter
+            usageMeter.style.strokeDasharray = circumference;
+            usageMeter.style.strokeDashoffset = circumference;
+            
+            setTimeout(() => {
+                usageMeter.style.transition = 'stroke-dashoffset 1.5s ease-in-out';
+                if (totalByte === 0) {
+                    // For unlimited, show small usage
+                    usageMeter.style.strokeDashoffset = circumference - (0.05 * circumference);
+                } else {
+                    usageMeter.style.strokeDashoffset = circumference - ((usagePercentage / 100) * circumference);
+                }
+            }, 300);
+
+            // Update usage stats with animations
+            const usedValueEl = document.getElementById('usedValue');
+            const remainingValueEl = document.getElementById('remainingValue');
+            const totalValueEl = document.getElementById('totalValue');
+            
+            // Format and set values with a typing animation effect
+            animateValue(usedValueEl, formatBytes(usedBytes));
+            animateValue(remainingValueEl, totalByte === 0 ? 'نامحدود' : formatBytes(remainingBytes));
+            animateValue(totalValueEl, totalByte === 0 ? 'نامحدود' : formatBytes(totalByte));
+        }
+        
+        // Animate value with typing effect
+        function animateValue(element, finalValue) {
+            let displayValue = '';
+            const duration = 20; // ms per character
+            
+            function type(index) {
+                if (index < finalValue.length) {
+                    displayValue += finalValue.charAt(index);
+                    element.textContent = displayValue;
+                    setTimeout(() => type(index + 1), duration);
+                }
+            }
+            
+            setTimeout(() => type(0), 500);
+        }
+
+        // Initialize date and status
+        function initDateAndStatus() {
+            const expireValue = '{{ .expire }}';
+            const expireTimestamp = parseInt(expireValue, 10) * 1000;
+            const expireDateElement = document.getElementById('expireValue');
+            const statusElement = document.getElementById('statusValue');
+
+            if (expireValue === '0') {
+                expireDateElement.textContent = 'نامحدود';
+            } else {
+                const expireDate = new Date(expireTimestamp);
+                const gy = expireDate.getFullYear();
+                const gm = expireDate.getMonth() + 1;
+                const gd = expireDate.getDate();
+                const { jy, jm, jd } = jalaali.toJalaali(gy, gm, gd);
+                expireDateElement.textContent = `${jy}/${jm}/${jd}`;
+            }
+
+            // Set status
+            const totalByte = parseInt('{{ .totalByte }}', 10);
+            const downloadByte = parseInt('{{ .downloadByte }}', 10);
+            const uploadByte = parseInt('{{ .uploadByte }}', 10);
+            const usedBytes = downloadByte + uploadByte;
+
+            if (totalByte === 0) {
+                statusElement.textContent = 'فعال';
+                statusElement.style.color = '#10b981';
+            } else if (expireTimestamp >= Date.now() && usedBytes <= totalByte) {
+                statusElement.textContent = 'فعال';
+                statusElement.style.color = '#10b981';
+            } else {
+                statusElement.textContent = 'غیرفعال';
+                statusElement.style.color = '#ef4444';
+            }
+        }
+
+        // Initialize QR code
+        function initQRCode() {
+            try {
+                const qr = new QRious({
+                    element: document.getElementById('qrcode'),
+                    value: '{{ .subUrl }}',
+                    size: 200,
+                    level: 'H',
+                    background: '#ffffff',
+                    foreground: '#000000',
+                    padding: 16
+                });
+            } catch (error) {
+                console.error('Error generating QR code:', error);
+                const qrcodeElement = document.getElementById('qrcode');
+                if (qrcodeElement) {
+                    qrcodeElement.insertAdjacentHTML('afterend', '<p style="color: #ef4444; margin-top: 1rem;">خطا در ایجاد کد QR</p>');
+                }
+            }
+        }
+
+        // Toggle theme between light and dark mode
+        function toggleTheme() {
+            const body = document.body;
+            const themeIcon = document.getElementById('themeIcon');
+            
+            body.classList.toggle('light-mode');
+            
+            // Update icon based on current theme
+            if (body.classList.contains('light-mode')) {
+                themeIcon.classList.remove('fa-moon');
+                themeIcon.classList.add('fa-sun');
+                localStorage.setItem('theme', 'light');
+            } else {
+                themeIcon.classList.remove('fa-sun');
+                themeIcon.classList.add('fa-moon');
+                localStorage.setItem('theme', 'dark');
+            }
+        }
+        
+        // Initialize everything when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set theme based on user preference
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'light') {
+                document.body.classList.add('light-mode');
+                document.getElementById('themeIcon').classList.remove('fa-moon');
+                document.getElementById('themeIcon').classList.add('fa-sun');
+            }
+            
+            // Add event listener to theme toggle button
+            document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+            
+            createParticles();
+            initUsageChart();
+            initDateAndStatus();
+            initQRCode();
+        });
+    </script>
+</body>
+</html> 

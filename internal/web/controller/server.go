@@ -59,6 +59,9 @@ func (a *ServerController) initRouter(g *gin.RouterGroup) {
 	g.POST("/importDB", a.importDB)
 	g.POST("/getNewEchCert", a.getNewEchCert)
 	g.POST("/setTunnel/:ip/:port/:user/:password", a.setTunnel)
+	g.GET("/getSubTemplates", a.getSubTemplates)
+	g.POST("/applySubTemplate", a.applySubTemplate)
+	g.POST("/resetSubTemplate", a.resetSubTemplate)
 }
 
 func (a *ServerController) refreshStatus() {
@@ -323,4 +326,39 @@ func (a *ServerController) getNewmlkem768(c *gin.Context) {
 		return
 	}
 	jsonObj(c, out, nil)
+}
+
+func (a *ServerController) getSubTemplates(c *gin.Context) {
+	res, err := a.serverService.GetSubTemplates()
+	if err != nil {
+		jsonMsg(c, I18nWeb(c, "pages.server.loadError"), err)
+		return
+	}
+	jsonObj(c, res, nil)
+}
+
+func (a *ServerController) applySubTemplate(c *gin.Context) {
+	type form struct {
+		URL string `json:"url" form:"url"`
+	}
+	var f form
+	if err := c.ShouldBind(&f); err != nil {
+		jsonMsg(c, I18nWeb(c, "pages.server.loadError"), err)
+		return
+	}
+	err := a.serverService.ApplySubTemplateFromGithub(f.URL)
+	if err != nil {
+		jsonMsg(c, err.Error(), nil)
+		return
+	}
+	jsonMsg(c, "Sub HTML template downloaded & installed successfully!", nil)
+}
+
+func (a *ServerController) resetSubTemplate(c *gin.Context) {
+	err := a.serverService.ResetSubTemplate()
+	if err != nil {
+		jsonMsg(c, err.Error(), nil)
+		return
+	}
+	jsonMsg(c, "Sub HTML template reset to default successfully!", nil)
 }

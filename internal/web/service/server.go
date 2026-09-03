@@ -129,6 +129,7 @@ type Release struct {
 type ServerService struct {
 	xrayService    XrayService
 	inboundService InboundService
+	settingService SettingService
 }
 
 type LogEntry struct {
@@ -1393,4 +1394,270 @@ func (s *ServerService) GetXrayMetrics() (*XrayMetrics, error) {
 	metrics.Summary = extractMetricsSummary(body, parsed)
 
 	return metrics, nil
+}
+
+type SubTemplateTheme struct {
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Author      string `json:"author"`
+	RepoURL     string `json:"repoUrl"`
+	RawURL      string `json:"rawUrl"`
+	PreviewTag  string `json:"previewTag"`
+	IsDefault   bool   `json:"isDefault"`
+}
+
+type SubTemplateResult struct {
+	ActiveTheme string             `json:"activeTheme"`
+	IsCustom    bool               `json:"isCustom"`
+	Themes      []SubTemplateTheme `json:"themes"`
+}
+
+func (s *ServerService) GetSubTemplates() (*SubTemplateResult, error) {
+	customUI, _ := s.settingService.GetSubCustomUI()
+
+	themes := []SubTemplateTheme{
+		{
+			ID:          "vazirmatn-default",
+			Name:        "Standard Vazirmatn Dark (Embedded)",
+			Description: "Official RTL Iranian dark subscription theme with Vazirmatn typography, usage meters, and QR codes.",
+			Author:      "x-ui Team",
+			RepoURL:     "https://github.com/AghayeCoder/tx-ui",
+			RawURL:      "",
+			PreviewTag:  "RTL • Dark • Vazirmatn",
+			IsDefault:   true,
+		},
+	}
+
+	githubThemes, err := fetchThemeHubFromGithub()
+	if err == nil && len(githubThemes) > 0 {
+		themes = append(themes, githubThemes...)
+	} else {
+		themes = append(themes, []SubTemplateTheme{
+			{
+				ID:          "glassmorphism-cyber",
+				Name:        "Glassmorphism Cyber Theme",
+				Description: "Modern dark glassmorphic subscription UI from TX-ThemeHub repository.",
+				Author:      "Incognito-Coder",
+				RepoURL:     "https://github.com/Incognito-Coder/TX-ThemeHub/tree/main/themes/glassmorphism",
+				RawURL:      "https://raw.githubusercontent.com/Incognito-Coder/TX-ThemeHub/main/themes/glassmorphism/sub.html",
+				PreviewTag:  "TX-ThemeHub • Glassmorphism",
+				IsDefault:   false,
+			},
+			{
+				ID:          "minimal-dark",
+				Name:        "Minimalist Mobile Dark UI",
+				Description: "Ultra-lightweight mobile-first subscription template from TX-ThemeHub repository.",
+				Author:      "Incognito-Coder",
+				RepoURL:     "https://github.com/Incognito-Coder/TX-ThemeHub/tree/main/themes/minimal",
+				RawURL:      "https://raw.githubusercontent.com/Incognito-Coder/TX-ThemeHub/main/themes/minimal/sub.html",
+				PreviewTag:  "TX-ThemeHub • Minimal",
+				IsDefault:   false,
+			},
+		}...)
+	}
+
+	active := "vazirmatn-default"
+	if customUI {
+		active = "custom-github"
+	}
+
+	return &SubTemplateResult{
+		ActiveTheme: active,
+		IsCustom:    customUI,
+		Themes:      themes,
+	}, nil
+}
+
+func fetchThemeHubFromGithub() ([]SubTemplateTheme, error) {
+	apiURL := "https://api.github.com/repos/Incognito-Coder/TX-ThemeHub/contents/themes"
+	req, err := http.NewRequest("GET", apiURL, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("User-Agent", "tx-ui-themehub-fetcher/1.0")
+	req.Header.Set("Accept", "application/vnd.github.v3+json")
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("github api returned status %d", resp.StatusCode)
+	}
+
+	type ghItem struct {
+		Name        string `json:"name"`
+		Path        string `json:"path"`
+		Type        string `json:"type"`
+		DownloadURL string `json:"download_url"`
+		HTMLURL     string `json:"html_url"`
+	}
+
+	var items []ghItem
+	if err := json.NewDecoder(resp.Body).Decode(&items); err != nil {
+		return nil, err
+	}
+
+	var themes []SubTemplateTheme
+	for _, item := range items {
+		if item.Type == "dir" {
+			name := item.Name
+			cleanTitle := strings.Title(strings.ReplaceAll(name, "-", " "))
+			rawUrl := fmt.Sprintf("https://raw.githubusercontent.com/Incognito-Coder/TX-ThemeHub/main/themes/%s/sub.html", name)
+			repoUrl := fmt.Sprintf("https://github.com/Incognito-Coder/TX-ThemeHub/tree/main/themes/%s", name)
+
+			themes = append(themes, SubTemplateTheme{
+				ID:          "themehub-" + name,
+				Name:        cleanTitle + " Theme",
+				Description: fmt.Sprintf("Official TX-ThemeHub subscription template (%s).", name),
+				Author:      "Incognito-Coder",
+				RepoURL:     repoUrl,
+				RawURL:      rawUrl,
+				PreviewTag:  "TX-ThemeHub • " + cleanTitle,
+				IsDefault:   false,
+			})
+		} else if item.Type == "file" && strings.HasSuffix(item.Name, ".html") {
+			name := strings.TrimSuffix(item.Name, ".html")
+			cleanTitle := strings.Title(strings.ReplaceAll(name, "-", " "))
+			rawUrl := item.DownloadURL
+			if rawUrl == "" {
+				rawUrl = fmt.Sprintf("https://raw.githubusercontent.com/Incognito-Coder/TX-ThemeHub/main/themes/%s", item.Name)
+			}
+			themes = append(themes, SubTemplateTheme{
+				ID:          "themehub-" + name,
+				Name:        cleanTitle + " Theme",
+				Description: fmt.Sprintf("TX-ThemeHub subscription template (%s).", item.Name),
+				Author:      "Incognito-Coder",
+				RepoURL:     item.HTMLURL,
+				RawURL:      rawUrl,
+				PreviewTag:  "TX-ThemeHub • HTML",
+				IsDefault:   false,
+			})
+		}
+	}
+	return themes, nil
+}
+
+func (s *ServerService) ApplySubTemplateFromGithub(targetURL string) error {
+	targetURL = strings.TrimSpace(targetURL)
+	if targetURL == "" {
+		return common.NewError("Template URL cannot be empty")
+	}
+
+	// Normalize GitHub tree or blob links to Raw URLs
+	// e.g. https://github.com/Incognito-Coder/TX-ThemeHub/tree/main/themes/dark-cyber
+	// -> https://raw.githubusercontent.com/Incognito-Coder/TX-ThemeHub/main/themes/dark-cyber/sub.html
+	if strings.Contains(targetURL, "github.com/") {
+		if strings.Contains(targetURL, "/tree/") || strings.Contains(targetURL, "/blob/") {
+			targetURL = strings.Replace(targetURL, "github.com/", "raw.githubusercontent.com/", 1)
+			targetURL = strings.Replace(targetURL, "/tree/", "/", 1)
+			targetURL = strings.Replace(targetURL, "/blob/", "/", 1)
+		}
+		if !strings.HasSuffix(targetURL, ".html") {
+			targetURL = strings.TrimSuffix(targetURL, "/") + "/sub.html"
+		}
+	}
+
+	if !strings.HasPrefix(targetURL, "http://") && !strings.HasPrefix(targetURL, "https://") {
+		return common.NewError("Invalid URL protocol. Must start with http:// or https://")
+	}
+
+	req, err := http.NewRequest("GET", targetURL, nil)
+	if err != nil {
+		return common.NewErrorf("Failed to create HTTP request: %v", err)
+	}
+	req.Header.Set("User-Agent", "tx-ui-sub-template-installer/1.0")
+
+	client := &http.Client{Timeout: 15 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return common.NewErrorf("Failed to fetch template from GitHub: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusNotFound && strings.HasSuffix(targetURL, "/sub.html") {
+		// Fallback to index.html if sub.html returns 404
+		altURL := strings.TrimSuffix(targetURL, "/sub.html") + "/index.html"
+		reqAlt, _ := http.NewRequest("GET", altURL, nil)
+		reqAlt.Header.Set("User-Agent", "tx-ui-sub-template-installer/1.0")
+		respAlt, errAlt := client.Do(reqAlt)
+		if errAlt == nil && respAlt.StatusCode == http.StatusOK {
+			resp.Body.Close()
+			resp = respAlt
+		}
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return common.NewErrorf("GitHub returned HTTP status %d for URL (%s)", resp.StatusCode, targetURL)
+	}
+
+	bodyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return common.NewErrorf("Failed to read template content: %v", err)
+	}
+
+	content := string(bodyBytes)
+	if len(strings.TrimSpace(content)) < 20 {
+		return common.NewError("Downloaded template content is too short or invalid")
+	}
+
+	targetDirs := []string{
+		"sub/html",
+		"/etc/x-ui/html",
+	}
+
+	written := false
+	for _, dir := range targetDirs {
+		if err := os.MkdirAll(dir, 0755); err == nil {
+			subPath := filepath.Join(dir, "sub.html")
+			indexPath := filepath.Join(dir, "index.html")
+			_ = os.WriteFile(subPath, bodyBytes, 0644)
+			_ = os.WriteFile(indexPath, bodyBytes, 0644)
+			written = true
+		}
+	}
+
+	if !written {
+		return common.NewError("Failed to write sub template to filesystem")
+	}
+
+	// Update setting subCustomUI to true
+	err = s.settingService.SetSubCustomUI(true)
+	if err != nil {
+		logger.Error("Failed to set subCustomUI setting:", err)
+	}
+
+	// Trigger panel restart after 1 second so new template loads immediately
+	panelService := PanelService{}
+	_ = panelService.RestartPanel(time.Second * 1)
+
+	return nil
+}
+
+func (s *ServerService) ResetSubTemplate() error {
+	targetDirs := []string{
+		"sub/html",
+		"/etc/x-ui/html",
+	}
+
+	for _, dir := range targetDirs {
+		_ = os.Remove(filepath.Join(dir, "sub.html"))
+		_ = os.Remove(filepath.Join(dir, "index.html"))
+	}
+
+	// Reset subCustomUI setting to false
+	err := s.settingService.SetSubCustomUI(false)
+	if err != nil {
+		logger.Error("Failed to reset subCustomUI setting:", err)
+	}
+
+	// Trigger panel restart after 1 second so default template loads immediately
+	panelService := PanelService{}
+	_ = panelService.RestartPanel(time.Second * 1)
+
+	return nil
 }
