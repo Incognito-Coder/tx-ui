@@ -66,7 +66,7 @@
     }
 
     #login {
-        animation: charge 0.5s both;
+        animation: charge 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
         background-color: #fff;
         border-radius: 15px;
         padding: 3rem;
@@ -82,11 +82,11 @@
 
     @keyframes charge {
         from {
-            transform: translateY(5rem);
+            transform: translateY(32px) scale(0.97);
             opacity: 0;
         }
         to {
-            transform: translateY(0);
+            transform: translateY(0) scale(1);
             opacity: 1;
         }
     }

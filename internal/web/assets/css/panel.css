@@ -2257,3 +2257,25 @@ html[data-theme="ultra-dark"] body.dark {
     cursor: pointer;
 }
 
+/* Smooth Page Load Entrance Animation */
+.list-enter-active {
+    transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    will-change: transform, opacity;
+}
+
+.list-leave-active {
+    transition: transform 0.25s cubic-bezier(0.7, 0, 0.84, 0), opacity 0.25s ease-in !important;
+}
+
+.list-enter {
+    opacity: 0 !important;
+    transform: translateY(24px) scale(0.98) !important;
+}
+
+.list-leave-to,
+.list-leave-active {
+    opacity: 0 !important;
+    transform: translateY(-16px) scale(0.99) !important;
+}
+
+
