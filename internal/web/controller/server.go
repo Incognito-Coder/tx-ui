@@ -109,7 +109,7 @@ func (a *ServerController) status(c *gin.Context) {
 func (a *ServerController) getXrayMetrics(c *gin.Context) {
 	metrics, err := a.serverService.GetXrayMetrics()
 	if err != nil {
-		jsonMsg(c, "Failed to retrieve Xray metrics", err)
+		jsonMsg(c, I18nWeb(c, "pages.xray.metrics.fetchError"), err)
 		return
 	}
 	jsonObj(c, metrics, nil)

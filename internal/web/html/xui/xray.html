@@ -304,7 +304,7 @@
                                     </template>
                                     <div style="margin-top: 18px; margin-bottom: 14px; padding: 0 20px;">
                                         <a-button icon="dashboard" type="primary" style="border-radius: var(--ui-radius);" @click="fetchXrayMetrics">
-                                            Access Live Xray Metrics
+                                            {{ i18n "pages.xray.metrics.accessBtn" }}
                                         </a-button>
                                     </div>
                                     </a-list-item>
@@ -1020,14 +1020,14 @@
             <div style="display: flex; align-items: center; justify-content: space-between; padding-right: 24px; flex-wrap: wrap; gap: 8px;">
                 <span style="font-weight: 700; font-size: 16px;">
                     <a-icon type="dashboard" style="color: var(--ui-primary); margin-right: 8px; font-size: 18px;"></a-icon>
-                    [[ isMobile ? 'Xray Telemetry' : 'Live Xray Telemetry & Metrics Dashboard' ]]
+                    [[ isMobile ? '{{ i18n "pages.xray.metrics.modalTitleMobile" }}' : '{{ i18n "pages.xray.metrics.modalTitle" }}' ]]
                 </span>
                 <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                     <a-tag :color="metricsModal.data && metricsModal.data.enabled ? 'green' : 'red'">
                         <a-badge :status="metricsModal.autoRefresh ? 'processing' : 'default'"></a-badge>
-                        [[ metricsModal.data && metricsModal.data.enabled ? (isMobile ? 'Live' : 'Live Listener Active') : 'Offline' ]]
+                        [[ metricsModal.data && metricsModal.data.enabled ? (isMobile ? '{{ i18n "pages.xray.metrics.statusLiveMobile" }}' : '{{ i18n "pages.xray.metrics.statusLive" }}') : '{{ i18n "pages.xray.metrics.statusOffline" }}' ]]
                     </a-tag>
-                    <a-button size="small" icon="sync" :spin="metricsModal.loading" type="primary" @click="fetchXrayMetrics">Sync</a-button>
+                    <a-button size="small" icon="sync" :spin="metricsModal.loading" type="primary" @click="fetchXrayMetrics">{{ i18n "pages.xray.metrics.syncBtn" }}</a-button>
                 </div>
             </div>
         </template>
@@ -1038,73 +1038,73 @@
 
             <a-tabs default-active-key="overview" size="small">
                 <!-- Tab 1: Telemetry Overview & Gauges -->
-                <a-tab-pane key="overview" tab="Overview & Load" style="padding-top: 14px;">
+                <a-tab-pane key="overview" tab='{{ i18n "pages.xray.metrics.tabOverview" }}' style="padding-top: 14px;">
                     <a-row :gutter="[12, 12]" style="margin-bottom: 18px;">
                         <a-col :xs="12" :sm="12" :lg="6">
                             <div style="background: var(--ui-surface-muted); border: 1px solid var(--ui-border); border-radius: var(--ui-radius); padding: 12px 10px; text-align: center; box-shadow: var(--ui-shadow-sm);">
                                 <div style="display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 12px; color: var(--ui-text-muted); font-weight: 600;">
                                     <a-icon type="database" style="color: var(--ui-primary);"></a-icon>
-                                    Allocated Memory
+                                    {{ i18n "pages.xray.metrics.allocMem" }}
                                 </div>
                                 <div style="font-size: 18px; font-weight: 700; color: var(--ui-primary); margin: 6px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                                     [[ formatMetricsBytes(getMetricsVal('allocBytes')) ]]
                                 </div>
                                 <a-progress :percent="getMemUsagePercent()" size="small" :stroke-color="'var(--ui-primary)'" :show-info="false"></a-progress>
-                                <div style="font-size: 11px; color: var(--ui-text-muted); margin-top: 6px;">Total Sys: [[ formatMetricsBytes(getMetricsVal('sysBytes')) ]]</div>
+                                <div style="font-size: 11px; color: var(--ui-text-muted); margin-top: 6px;">{{ i18n "pages.xray.metrics.totalSys" }}: [[ formatMetricsBytes(getMetricsVal('sysBytes')) ]]</div>
                             </div>
                         </a-col>
                         <a-col :xs="12" :sm="12" :lg="6">
                             <div style="background: var(--ui-surface-muted); border: 1px solid var(--ui-border); border-radius: var(--ui-radius); padding: 12px 10px; text-align: center; box-shadow: var(--ui-shadow-sm);">
                                 <div style="display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 12px; color: var(--ui-text-muted); font-weight: 600;">
                                     <a-icon type="appstore" style="color: var(--ui-success);"></a-icon>
-                                    Heap Allocation
+                                    {{ i18n "pages.xray.metrics.heapAlloc" }}
                                 </div>
                                 <div style="font-size: 18px; font-weight: 700; color: var(--ui-success); margin: 6px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                                     [[ formatMetricsBytes(getMetricsVal('heapAlloc')) ]]
                                 </div>
                                 <a-progress :percent="getHeapUsagePercent()" size="small" :stroke-color="'var(--ui-success)'" :show-info="false"></a-progress>
-                                <div style="font-size: 11px; color: var(--ui-text-muted); margin-top: 6px;">Heap Sys: [[ formatMetricsBytes(getMetricsVal('heapSys')) ]]</div>
+                                <div style="font-size: 11px; color: var(--ui-text-muted); margin-top: 6px;">{{ i18n "pages.xray.metrics.heapSys" }}: [[ formatMetricsBytes(getMetricsVal('heapSys')) ]]</div>
                             </div>
                         </a-col>
                         <a-col :xs="12" :sm="12" :lg="6">
                             <div style="background: var(--ui-surface-muted); border: 1px solid var(--ui-border); border-radius: var(--ui-radius); padding: 12px 10px; text-align: center; box-shadow: var(--ui-shadow-sm);">
                                 <div style="display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 12px; color: var(--ui-text-muted); font-weight: 600;">
                                     <a-icon type="branches" style="color: #8b5cf6;"></a-icon>
-                                    Goroutines Threads
+                                    {{ i18n "pages.xray.metrics.goroutines" }}
                                 </div>
                                 <div style="font-size: 18px; font-weight: 700; color: #8b5cf6; margin: 6px 0;">
                                     [[ getMetricsVal('goroutines') || 0 ]]
                                 </div>
-                                <div style="font-size: 11px; color: var(--ui-text-muted); margin-top: 6px;">Active Workers</div>
+                                <div style="font-size: 11px; color: var(--ui-text-muted); margin-top: 6px;">{{ i18n "pages.xray.metrics.activeWorkers" }}</div>
                             </div>
                         </a-col>
                         <a-col :xs="12" :sm="12" :lg="6">
                             <div style="background: var(--ui-surface-muted); border: 1px solid var(--ui-border); border-radius: var(--ui-radius); padding: 12px 10px; text-align: center; box-shadow: var(--ui-shadow-sm);">
                                 <div style="display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 12px; color: var(--ui-text-muted); font-weight: 600;">
                                     <a-icon type="sync" style="color: var(--ui-warning);"></a-icon>
-                                    GC / Objects
+                                    {{ i18n "pages.xray.metrics.gcObjects" }}
                                 </div>
                                 <div style="font-size: 18px; font-weight: 700; color: var(--ui-warning); margin: 6px 0;">
                                     [[ getMetricsVal('numGC') || 0 ]]
                                 </div>
-                                <div style="font-size: 11px; color: var(--ui-text-muted); margin-top: 6px;">Obj: [[ getMetricsVal('heapObjects') || 0 ]]</div>
+                                <div style="font-size: 11px; color: var(--ui-text-muted); margin-top: 6px;">{{ i18n "pages.xray.metrics.objects" }}: [[ getMetricsVal('heapObjects') || 0 ]]</div>
                             </div>
                         </a-col>
                     </a-row>
 
                     <!-- Auto Refresh Bar -->
                     <div style="display: flex; align-items: center; justify-content: space-between; background: var(--ui-surface-muted); padding: 10px 16px; border-radius: var(--ui-radius); margin-bottom: 12px; border: 1px solid var(--ui-border);">
-                        <span><a-icon type="clock-circle" style="margin-right: 6px; color: var(--ui-primary);"></a-icon> Realtime Auto-Polling Stream (Every 3s)</span>
+                        <span><a-icon type="clock-circle" style="margin-right: 6px; color: var(--ui-primary);"></a-icon> {{ i18n "pages.xray.metrics.autoStream" }}</span>
                         <a-switch size="small" v-model="metricsModal.autoRefresh" @change="toggleMetricsAutoRefresh"></a-switch>
                     </div>
                 </a-tab-pane>
 
                 <!-- Tab 2: Realtime SVG Sparkline Charts -->
-                <a-tab-pane key="charts" tab="Realtime Telemetry Charts" style="padding-top: 14px;">
+                <a-tab-pane key="charts" tab='{{ i18n "pages.xray.metrics.tabCharts" }}' style="padding-top: 14px;">
                     <div style="margin-bottom: 16px;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                            <strong><a-icon type="area-chart" style="color: var(--ui-primary); margin-right: 6px;"></a-icon> Memory Alloc Trend (Bytes)</strong>
-                            <span style="font-size: 12px; color: var(--ui-primary); font-weight: 600;">Latest: [[ formatMetricsBytes(getMetricsVal('allocBytes')) ]]</span>
+                            <strong><a-icon type="area-chart" style="color: var(--ui-primary); margin-right: 6px;"></a-icon> {{ i18n "pages.xray.metrics.memTrend" }}</strong>
+                            <span style="font-size: 12px; color: var(--ui-primary); font-weight: 600;">{{ i18n "pages.xray.metrics.latest" }}: [[ formatMetricsBytes(getMetricsVal('allocBytes')) ]]</span>
                         </div>
                         <div style="background: var(--ui-surface-muted); border: 1px solid var(--ui-border); border-radius: var(--ui-radius); padding: 10px; height: 170px; position: relative;">
                             <svg width="100%" height="100%" viewBox="0 0 1300 150" preserveAspectRatio="none">
@@ -1122,8 +1122,8 @@
 
                     <div>
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                            <strong><a-icon type="branches" style="color: #8b5cf6; margin-right: 6px;"></a-icon> Active Goroutines Thread Trend</strong>
-                            <span style="font-size: 12px; color: #8b5cf6; font-weight: 600;">Threads: [[ getMetricsVal('goroutines') ]]</span>
+                            <strong><a-icon type="branches" style="color: #8b5cf6; margin-right: 6px;"></a-icon> {{ i18n "pages.xray.metrics.goroutinesTrend" }}</strong>
+                            <span style="font-size: 12px; color: #8b5cf6; font-weight: 600;">{{ i18n "pages.xray.metrics.threads" }}: [[ getMetricsVal('goroutines') ]]</span>
                         </div>
                         <div style="background: var(--ui-surface-muted); border: 1px solid var(--ui-border); border-radius: var(--ui-radius); padding: 10px; height: 170px; position: relative;">
                             <svg width="100%" height="100%" viewBox="0 0 1300 150" preserveAspectRatio="none">
@@ -1141,7 +1141,7 @@
                 </a-tab-pane>
 
                 <!-- Tab 3: Traffic Stats -->
-                <a-tab-pane key="traffic" tab="Stats Breakdown" style="padding-top: 14px;">
+                <a-tab-pane key="traffic" tab='{{ i18n "pages.xray.metrics.tabStats" }}' style="padding-top: 14px;">
                     <div v-if="metricsModal.data && metricsModal.data.summary && Object.keys(metricsModal.data.summary.statsTraffic).length > 0">
                         <a-row :gutter="[10, 10]">
                             <a-col :xs="24" :sm="12" v-for="(val, key) in metricsModal.data.summary.statsTraffic" :key="key">
@@ -1152,19 +1152,19 @@
                             </a-col>
                         </a-row>
                     </div>
-                    <a-empty v-else description="No inbound/outbound traffic stats counters exposed by Xray metrics listener"></a-empty>
+                    <a-empty v-else description='{{ i18n "pages.xray.metrics.noStatsDesc" }}'></a-empty>
                 </a-tab-pane>
 
                 <!-- Tab 4: Raw Inspector -->
-                <a-tab-pane key="raw" tab="Raw Inspector" style="padding-top: 14px;">
+                <a-tab-pane key="raw" tab='{{ i18n "pages.xray.metrics.tabRaw" }}' style="padding-top: 14px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; gap: 10px;">
-                        <a-input placeholder="Filter metrics output..." v-model="metricsModal.filterKeyword" size="small" allow-clear icon="search"></a-input>
+                        <a-input placeholder='{{ i18n "pages.xray.metrics.filterPlaceholder" }}' v-model="metricsModal.filterKeyword" size="small" allow-clear icon="search"></a-input>
                         <a-button icon="snippets" size="small" id="copy-metrics-btn" @click="copyToClipboard('copy-metrics-btn', getFilteredRawMetrics())">
-                            Copy Raw
+                            {{ i18n "pages.xray.metrics.copyRaw" }}
                         </a-button>
                     </div>
                     <div class="client-table-odd-row" style="border-radius: var(--ui-radius); padding: 12px; font-family: monospace; white-space: pre-wrap; word-break: break-all; max-height: 340px; overflow-y: auto; font-size: 12px;">
-                        [[ getFilteredRawMetrics() || 'No metrics data available' ]]
+                        [[ getFilteredRawMetrics() || '{{ i18n "pages.xray.metrics.noData" }}' ]]
                     </div>
                 </a-tab-pane>
             </a-tabs>
@@ -1664,10 +1664,10 @@
                         }
                         this.recordMetricsHistory();
                     } else {
-                        this.metricsModal.error = res.msg || 'Failed to fetch Xray metrics';
+                        this.metricsModal.error = res.msg || '{{ i18n "pages.xray.metrics.fetchError" }}';
                     }
                 } catch (e) {
-                    this.metricsModal.error = e.message || 'Error communicating with server';
+                    this.metricsModal.error = e.message || '{{ i18n "pages.xray.metrics.serverError" }}';
                 } finally {
                     this.metricsModal.loading = false;
                 }
