@@ -1655,16 +1655,28 @@ li.ant-calendar-time-picker-select-option-selected {
     border-radius: var(--ui-radius-sm);
 }
 
-.ant-back-top-content {
+.ant-back-top-content,
+.dark .ant-back-top-content {
     border-radius: 12px;
-    background: rgb(37 99 235 / 88%);
+    background: var(--ui-primary) !important;
+    color: #ffffff !important;
     box-shadow: none;
+}
+
+.ant-back-top-content:hover,
+.dark .ant-back-top-content:hover {
+    background: var(--ui-primary-hover) !important;
+    color: #ffffff !important;
 }
 
 /* Dashboard and login polish */
 #content-layout .ant-progress-text {
     color: var(--ui-text);
     font-weight: 650;
+}
+
+.ant-progress:not(.ant-progress-status-exception):not(.ant-progress-status-success) .ant-progress-bg {
+    background-color: var(--ui-primary);
 }
 
 #content-layout .ant-progress-circle-trail {

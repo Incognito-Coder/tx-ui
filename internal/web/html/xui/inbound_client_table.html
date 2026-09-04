@@ -92,7 +92,7 @@
                                 :stroke-color="clientStatsColor(record, client.email)"/>
                 </td>
                 <td class="infinite-bar tr-table-bar" v-else>
-                    <a-progress :percent="100" :show-info="false"></a-progress>
+                    <a-progress :percent="100" :show-info="false" stroke-color="var(--ui-primary)"></a-progress>
                 </td>
                 <td class="tr-table-lt">
                     <template v-if="client.totalGB > 0">[[ client._totalGB + "GB" ]]</template>
@@ -122,7 +122,8 @@
                     <td class="tr-table-rt"> [[ remainedDays(client.expiryTime) ]]</td>
                     <td class="infinite-bar tr-table-bar">
                         <a-progress :percent="expireProgress(client.expiryTime, client.reset)" :show-info="false"
-                                    :status="isClientEnabled(record, client.email)? 'exception' : ''"/>
+                                    :status="isClientEnabled(record, client.email)? 'exception' : ''"
+                                    :stroke-color="userExpiryColor(app.expireDiff, client, themeSwitcher.isDarkTheme)"/>
                     </td>
                     <td class="tr-table-lt">[[ client.reset + "d" ]]</td>
                 </tr>
@@ -225,7 +226,7 @@
                     </td>
                     <td class="infinite-bar" v-else width="120px">
                         <a-progress :percent="100" :show-info="false"
-                                    stroke-color="var(--ui-primary-soft)"></a-progress>
+                                    stroke-color="var(--ui-primary)"></a-progress>
                     </td>
                     <td width="80px">
                         <template v-if="client.totalGB > 0">[[ client._totalGB + "GB" ]]</template>
@@ -259,7 +260,8 @@
                                 </template>
                                 <a-progress :percent="expireProgress(client.expiryTime, client.reset)"
                                             :show-info="false"
-                                            :status="isClientEnabled(record, client.email)? 'exception' : ''"/>
+                                            :status="isClientEnabled(record, client.email)? 'exception' : ''"
+                                            :stroke-color="userExpiryColor(app.expireDiff, client, themeSwitcher.isDarkTheme)"/>
                             </a-popover>
                         </td>
                         <td width="60px">[[ client.reset + "d" ]]</td>
