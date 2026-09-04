@@ -1657,7 +1657,7 @@ li.ant-calendar-time-picker-select-option-selected {
     font-weight: 500;
     background: var(--ui-primary);
     color: #ffffff;
-    box-shadow: 0 4px 12px rgb(37 99 235 / 20%);
+    box-shadow: 0 4px 12px var(--ui-primary-soft);
     transition: all 0.2s ease;
 }
 
@@ -1666,7 +1666,7 @@ li.ant-calendar-time-picker-select-option-selected {
     width: 100%;
     background: var(--ui-primary-hover);
     color: #ffffff;
-    box-shadow: 0 6px 16px rgb(37 99 235 / 30%);
+    box-shadow: 0 6px 16px var(--ui-primary-soft);
 }
 
 #login .ant-btn-primary-login:active {
@@ -1679,7 +1679,7 @@ body.dark #login .ant-btn-primary-login,
 #app.dark #login .ant-btn-primary-login {
     background: var(--ui-primary);
     color: #ffffff;
-    box-shadow: 0 4px 12px rgb(79 140 255 / 20%);
+    box-shadow: 0 4px 12px var(--ui-primary-soft);
 }
 
 body.dark #login .ant-btn-primary-login:hover,
@@ -1688,7 +1688,7 @@ body.dark #login .ant-btn-primary-login:focus,
 #app.dark #login .ant-btn-primary-login:focus {
     background: var(--ui-primary-hover);
     color: #ffffff;
-    box-shadow: 0 6px 16px rgb(79 140 255 / 30%);
+    box-shadow: 0 6px 16px var(--ui-primary-soft);
 }
 
 body.light #login,

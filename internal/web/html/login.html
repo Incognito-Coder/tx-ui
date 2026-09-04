@@ -92,12 +92,12 @@
     }
 
     .under {
-        background-color: #c7ebe2;
+        background-color: transparent;
         z-index: 0;
     }
 
     .dark .under {
-        background-color: var(--dark-color-login-wave);
+        background-color: transparent;
     }
 
     .dark #login {
@@ -121,7 +121,7 @@
         font-weight: 500;
         background: var(--ui-primary);
         color: #ffffff;
-        box-shadow: 0 4px 12px rgb(37 99 235 / 20%);
+        box-shadow: 0 4px 12px var(--ui-primary-soft);
         transition: all 0.2s ease;
     }
 
@@ -131,7 +131,7 @@
         background: var(--ui-primary-hover);
         color: #ffffff;
         border: 0;
-        box-shadow: 0 6px 16px rgb(37 99 235 / 30%);
+        box-shadow: 0 6px 16px var(--ui-primary-soft);
     }
 
     .ant-btn-primary-login.active,
@@ -145,74 +145,77 @@
     .dark .ant-btn-primary-login {
         background: var(--ui-primary);
         color: #ffffff;
-        box-shadow: 0 4px 12px rgb(79 140 255 / 20%);
+        box-shadow: 0 4px 12px var(--ui-primary-soft);
     }
 
     .dark .ant-btn-primary-login:focus,
     .dark .ant-btn-primary-login:hover {
         background: var(--ui-primary-hover);
         color: #ffffff;
-        box-shadow: 0 6px 16px rgb(79 140 255 / 30%);
+        box-shadow: 0 6px 16px var(--ui-primary-soft);
     }
 
-    .waves-header {
-        position: fixed;
-        width: 100%;
-        text-align: center;
-        background-color: #dbf5ed;
+    html body .waves-header,
+    html body .dark .waves-header {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        width: 100% !important;
+        height: 100vh !important;
+        height: 100dvh !important;
+        background-color: var(--ui-login-wave-header, rgba(37, 99, 235, 0.08)) !important;
         color: white;
         z-index: -1;
+        overflow: hidden;
     }
 
-    .dark .waves-header {
-        background-color: var(--dark-color-login-background);
-    }
-
-    .waves-inner-header {
-        height: 50vh;
-        width: 100%;
-        margin: 0;
-        padding: 0;
-    }
-
-    .waves {
-        position: relative;
-        width: 100%;
-        height: 15vh;
-        margin-bottom: -8px; /*Fix for safari gap*/
-        min-height: 100px;
-        max-height: 150px;
+    html body .waves {
+        display: block !important;
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        height: 100vh !important;
+        height: 100dvh !important;
+        min-height: 100vh !important;
     }
 
     .parallax > use {
         animation: move-forever 25s cubic-bezier(0.55, 0.5, 0.45, 0.5) infinite;
     }
 
-    .dark .parallax > use {
-        fill: var(--dark-color-login-wave);
+    .parallax > use.wave-layer-1 {
+        fill: var(--ui-login-wave-1, rgba(37, 99, 235, 0.07));
     }
 
-    .parallax > use:nth-child(1) {
-        animation-delay: -2s;
-        animation-duration: 4s;
-        opacity: 0.2;
+    .parallax > use.wave-layer-2 {
+        fill: var(--ui-login-wave-2, rgba(37, 99, 235, 0.11));
     }
 
-    .parallax > use:nth-child(2) {
-        animation-delay: -3s;
-        animation-duration: 7s;
-        opacity: 0.4;
+    .parallax > use.wave-layer-3 {
+        fill: var(--ui-login-wave-3, rgba(37, 99, 235, 0.15));
     }
 
-    .parallax > use:nth-child(3) {
-        animation-delay: -4s;
-        animation-duration: 10s;
-        opacity: 0.6;
+    .parallax > use.wave-layer-4 {
+        fill: var(--ui-login-wave-4, rgba(37, 99, 235, 0.22));
     }
 
-    .parallax > use:nth-child(4) {
-        animation-delay: -5s;
-        animation-duration: 13s;
+    .dark .parallax > use.wave-layer-1 {
+        fill: var(--ui-login-wave-1, rgba(79, 140, 255, 0.05));
+    }
+
+    .dark .parallax > use.wave-layer-2 {
+        fill: var(--ui-login-wave-2, rgba(79, 140, 255, 0.09));
+    }
+
+    .dark .parallax > use.wave-layer-3 {
+        fill: var(--ui-login-wave-3, rgba(79, 140, 255, 0.13));
+    }
+
+    .dark .parallax > use.wave-layer-4 {
+        fill: var(--ui-login-wave-4, rgba(79, 140, 255, 0.18));
     }
 
     @keyframes move-forever {
@@ -225,9 +228,10 @@
     }
 
     @media (max-width: 768px) {
-        .waves {
-            height: 40px;
-            min-height: 40px;
+        html body .waves {
+            height: 100vh !important;
+            height: 100dvh !important;
+            min-height: 100vh !important;
         }
     }
 
@@ -383,12 +387,13 @@
                               id="gentle-wave"/>
                     </defs>
                     <g class="parallax">
-                        <use fill="rgba(0, 135, 113, 0.08)" x="48" xlink:href="#gentle-wave" y="0"/>
-                        <use fill="rgba(0, 135, 113, 0.08)" x="48" xlink:href="#gentle-wave" y="3"/>
-                        <use fill="rgba(0, 135, 113, 0.08)" x="48" xlink:href="#gentle-wave" y="5"/>
-                        <use fill="#c7ebe2" x="48" xlink:href="#gentle-wave" y="7"/>
+                        <use class="wave-layer-1" x="48" xlink:href="#gentle-wave" y="0"/>
+                        <use class="wave-layer-2" x="48" xlink:href="#gentle-wave" y="3"/>
+                        <use class="wave-layer-3" x="48" xlink:href="#gentle-wave" y="5"/>
+                        <use class="wave-layer-4" x="48" xlink:href="#gentle-wave" y="7"/>
                     </g>
                 </svg>
+                <div class="waves-bottom-fill"></div>
             </div>
             <a-row align="middle" justify="center" style="height: 100%; overflow: auto; overflow-x: hidden;"
                    type="flex">

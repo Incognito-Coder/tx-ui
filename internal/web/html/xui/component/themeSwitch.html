@@ -21,20 +21,24 @@
                     <div class="panel-color-picker-title">{{ i18n "menu.themeColor" }}</div>
                     <div class="panel-color-picker-grid">
                         <button v-for="(colorObj, key) in themeSwitcher.colorPresets"
+                                type="button"
                                 :key="key"
                                 :class="['panel-color-swatch', { active: themeSwitcher.currentColorKey === key }]"
                                 :style="{ backgroundColor: themeSwitcher.isDarkTheme ? colorObj.dark.primary : colorObj.light.primary }"
                                 :title="colorObj.name"
-                                @click="themeSwitcher.setColorScheme(key)">
+                                @click.stop.prevent="themeSwitcher.setColorScheme(key)">
                             <a-icon v-if="themeSwitcher.currentColorKey === key" type="check" style="font-size: 11px;"></a-icon>
                         </button>
                         <label :class="['panel-color-swatch', 'custom-picker', { active: themeSwitcher.currentColorKey === 'custom' }]"
                                :style="{ backgroundColor: themeSwitcher.customColor }"
+                               @click.stop
+                               @mousedown.stop
                                title="Custom Color">
                             <input type="color"
                                    :value="themeSwitcher.customColor"
                                    @change="themeSwitcher.setCustomColor($event.target.value)"
                                    @input="themeSwitcher.setCustomColor($event.target.value)"
+                                   @click.stop
                                    class="panel-color-input" />
                             <a-icon v-if="themeSwitcher.currentColorKey === 'custom'" type="check" style="font-size: 11px;"></a-icon>
                             <a-icon v-else type="bg-colors" style="font-size: 11px;"></a-icon>
@@ -66,20 +70,24 @@
                 <div class="panel-color-picker-title" style="text-align: center;">{{ i18n "menu.themeColor" }}</div>
                 <div class="panel-color-picker-grid" style="justify-content: center;">
                     <button v-for="(colorObj, key) in themeSwitcher.colorPresets"
+                            type="button"
                             :key="key"
                             :class="['panel-color-swatch', { active: themeSwitcher.currentColorKey === key }]"
                             :style="{ backgroundColor: themeSwitcher.isDarkTheme ? colorObj.dark.primary : colorObj.light.primary }"
                             :title="colorObj.name"
-                            @click="themeSwitcher.setColorScheme(key)">
+                            @click.stop.prevent="themeSwitcher.setColorScheme(key)">
                         <a-icon v-if="themeSwitcher.currentColorKey === key" type="check" style="font-size: 11px;"></a-icon>
                     </button>
                     <label :class="['panel-color-swatch', 'custom-picker', { active: themeSwitcher.currentColorKey === 'custom' }]"
                            :style="{ backgroundColor: themeSwitcher.customColor }"
+                           @click.stop
+                           @mousedown.stop
                            title="Custom Color">
                         <input type="color"
                                :value="themeSwitcher.customColor"
                                @change="themeSwitcher.setCustomColor($event.target.value)"
                                @input="themeSwitcher.setCustomColor($event.target.value)"
+                               @click.stop
                                class="panel-color-input" />
                         <a-icon v-if="themeSwitcher.currentColorKey === 'custom'" type="check" style="font-size: 11px;"></a-icon>
                         <a-icon v-else type="bg-colors" style="font-size: 11px;"></a-icon>
@@ -290,11 +298,7 @@
                 document.head.appendChild(styleEl);
             }
 
-            if (!key || key === 'default') {
-                styleEl.innerHTML = '';
-                return;
-            }
-
+            let presetKey = (key && COLOR_PRESETS[key]) ? key : 'default';
             let theme, tagGreen, tagPurple;
             if (key === 'custom' && customHex) {
                 theme = generateCustomTheme(customHex, isDark);
@@ -302,8 +306,8 @@
                 tagGreen = getTagStyle(greenHex, isDark ? adjustColor(greenHex, 1.2) : adjustColor(greenHex, 0.8), null, isDark);
                 const purpleHex = setHue(customHex, 275);
                 tagPurple = getTagStyle(purpleHex, isDark ? adjustColor(purpleHex, 1.2) : adjustColor(purpleHex, 0.8), null, isDark);
-            } else if (COLOR_PRESETS[key]) {
-                const preset = COLOR_PRESETS[key];
+            } else {
+                const preset = COLOR_PRESETS[presetKey] || COLOR_PRESETS.default;
                 theme = isDark ? preset.dark : preset.light;
                 if (preset.tagGreen) {
                     tagGreen = isDark ? preset.tagGreen.dark : preset.tagGreen.light;
@@ -323,7 +327,15 @@
             }
 
             if (theme) {
+                const { r, g, b } = hexToRgb(theme.primary);
                 const tagBlue = getTagStyle(theme.primary, theme.hover, theme.soft, isDark);
+
+                const waveHeader = isDark ? `rgba(${r}, ${g}, ${b}, 0.08)` : `rgba(${r}, ${g}, ${b}, 0.08)`;
+                const waveUnder  = isDark ? `rgba(${r}, ${g}, ${b}, 0.18)` : `rgba(${r}, ${g}, ${b}, 0.16)`;
+                const wave1      = isDark ? `rgba(${r}, ${g}, ${b}, 0.05)` : `rgba(${r}, ${g}, ${b}, 0.06)`;
+                const wave2      = isDark ? `rgba(${r}, ${g}, ${b}, 0.09)` : `rgba(${r}, ${g}, ${b}, 0.10)`;
+                const wave3      = isDark ? `rgba(${r}, ${g}, ${b}, 0.13)` : `rgba(${r}, ${g}, ${b}, 0.14)`;
+                const wave4      = waveUnder;
 
                 styleEl.innerHTML = `
                     :root, body, #app, .dark, html[data-theme="ultra-dark"] #app.dark, html[data-theme="ultra-dark"] body.dark {
@@ -332,6 +344,13 @@
                         --ui-primary-soft: ${theme.soft} !important;
                         --ui-focus: 0 0 0 3px ${theme.focus} !important;
                         --color-primary-100: ${theme.primary} !important;
+
+                        --ui-login-wave-header: ${waveHeader} !important;
+                        --ui-login-wave-under: ${waveUnder} !important;
+                        --ui-login-wave-1: ${wave1} !important;
+                        --ui-login-wave-2: ${wave2} !important;
+                        --ui-login-wave-3: ${wave3} !important;
+                        --ui-login-wave-4: ${wave4} !important;
 
                         --ui-tag-blue-color: ${tagBlue.color} !important;
                         --ui-tag-blue-border: ${tagBlue.border} !important;
@@ -344,6 +363,112 @@
                         --ui-tag-purple-color: ${tagPurple.color} !important;
                         --ui-tag-purple-border: ${tagPurple.border} !important;
                         --ui-tag-purple-bg: ${tagPurple.bg} !important;
+                    }
+
+                    .ant-menu-item-selected,
+                    .ant-menu-item-selected a,
+                    .ant-menu-item-selected span,
+                    .ant-menu-item-selected b,
+                    .ant-menu-item-selected .anticon,
+                    #sider .ant-menu-item-selected,
+                    #sider .ant-menu-item-selected a,
+                    #sider .ant-menu-item-selected span,
+                    #sider .ant-menu-item-selected b,
+                    #sider .ant-menu-item-selected .anticon,
+                    #sider-drawer .ant-menu-item-selected,
+                    #sider-drawer .ant-menu-item-selected a,
+                    #sider-drawer .ant-menu-item-selected span,
+                    #sider-drawer .ant-menu-item-selected b,
+                    #sider-drawer .ant-menu-item-selected .anticon,
+                    .ant-menu:not(.ant-menu-horizontal) .ant-menu-item-selected,
+                    .ant-menu-dark .ant-menu-item-selected,
+                    .ant-menu-dark.ant-menu-inline .ant-menu-item-selected {
+                        background: ${theme.primary} !important;
+                        background-color: ${theme.primary} !important;
+                        background-image: none !important;
+                        color: #ffffff !important;
+                    }
+
+                    .ant-menu-item-active,
+                    .ant-menu-item:hover,
+                    .ant-menu-submenu-active,
+                    .ant-menu-submenu-title:hover {
+                        color: ${theme.primary} !important;
+                    }
+
+                    .ant-btn-primary {
+                        background: ${theme.primary} !important;
+                        background-color: ${theme.primary} !important;
+                        border-color: ${theme.primary} !important;
+                        color: #ffffff !important;
+                        box-shadow: 0 4px 12px ${theme.soft} !important;
+                    }
+
+                    .ant-btn-primary:hover,
+                    .ant-btn-primary:focus {
+                        background: ${theme.hover} !important;
+                        background-color: ${theme.hover} !important;
+                        border-color: ${theme.hover} !important;
+                        color: #ffffff !important;
+                        box-shadow: 0 6px 16px ${theme.soft} !important;
+                    }
+
+                    .ant-btn-primary:active,
+                    .ant-btn-primary.active {
+                        background: ${theme.primary} !important;
+                        background-color: ${theme.primary} !important;
+                        border-color: ${theme.primary} !important;
+                        color: #ffffff !important;
+                    }
+
+                    .ant-switch-checked {
+                        background-color: ${theme.primary} !important;
+                    }
+
+                    .ant-checkbox-checked .ant-checkbox-inner {
+                        background-color: ${theme.primary} !important;
+                        border-color: ${theme.primary} !important;
+                    }
+
+                    .ant-radio-button-wrapper-checked,
+                    .ant-radio-button-wrapper-checked:first-child,
+                    .ant-radio-button-wrapper-checked:not(.ant-radio-button-wrapper-disabled) {
+                        background-color: ${theme.primary} !important;
+                        border-color: ${theme.primary} !important;
+                        color: #ffffff !important;
+                        box-shadow: -1px 0 0 0 ${theme.primary} !important;
+                    }
+
+                    .ant-radio-checked .ant-radio-inner {
+                        border-color: ${theme.primary} !important;
+                    }
+
+                    .ant-radio-checked .ant-radio-inner::after {
+                        background-color: ${theme.primary} !important;
+                    }
+
+                    .ant-pagination-item-active,
+                    .ant-pagination-item-active a,
+                    .ant-pagination-item-active:focus a,
+                    .ant-pagination-item-active:hover a {
+                        border-color: ${theme.primary} !important;
+                        color: ${theme.primary} !important;
+                    }
+
+                    .ant-tabs-ink-bar {
+                        background-color: ${theme.primary} !important;
+                    }
+
+                    .ant-tabs-nav .ant-tabs-tab-active {
+                        color: ${theme.primary} !important;
+                    }
+
+                    .ant-slider-track {
+                        background-color: ${theme.primary} !important;
+                    }
+
+                    .ant-slider-handle {
+                        border-color: ${theme.primary} !important;
                     }
                 `;
             }

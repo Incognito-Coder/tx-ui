@@ -29,6 +29,178 @@
             'Segoe UI Emoji', 'Segoe UI Symbol';
         }
     </style>
+    <script>
+        (function() {
+            var isDark = localStorage.getItem('dark-mode') === 'true';
+            var isUltra = localStorage.getItem('isUltraDarkThemeEnabled') === 'true';
+            if (isDark) {
+                document.documentElement.classList.add('dark');
+                if (document.body) document.body.classList.add('dark');
+                if (isUltra) document.documentElement.setAttribute('data-theme', 'ultra-dark');
+            }
+
+            var key = localStorage.getItem('panel-theme-color') || 'default';
+            var customHex = localStorage.getItem('panel-custom-color') || '#2563eb';
+            
+            var COLOR_PRESETS = {
+                default: { light: { primary: '#2563eb', hover: '#1d4ed8', soft: 'rgba(37, 99, 235, 0.12)', focus: 'rgba(37, 99, 235, 0.20)' }, dark: { primary: '#4f8cff', hover: '#74a4ff', soft: 'rgba(79, 140, 255, 0.16)', focus: 'rgba(79, 140, 255, 0.24)' } },
+                emerald: { light: { primary: '#059669', hover: '#047857', soft: 'rgba(5, 150, 105, 0.12)', focus: 'rgba(5, 150, 105, 0.20)' }, dark: { primary: '#10b981', hover: '#34d399', soft: 'rgba(16, 185, 129, 0.16)', focus: 'rgba(16, 185, 129, 0.24)' } },
+                purple: { light: { primary: '#7c3aed', hover: '#6d28d9', soft: 'rgba(124, 58, 237, 0.12)', focus: 'rgba(124, 58, 237, 0.20)' }, dark: { primary: '#8b5cf6', hover: '#a78bfa', soft: 'rgba(139, 92, 246, 0.16)', focus: 'rgba(139, 92, 246, 0.24)' } },
+                rose: { light: { primary: '#e11d48', hover: '#be123c', soft: 'rgba(225, 29, 72, 0.12)', focus: 'rgba(225, 29, 72, 0.20)' }, dark: { primary: '#f43f5e', hover: '#fb7185', soft: 'rgba(244, 63, 94, 0.16)', focus: 'rgba(244, 63, 94, 0.24)' } },
+                amber: { light: { primary: '#d97706', hover: '#b45309', soft: 'rgba(217, 119, 6, 0.12)', focus: 'rgba(217, 119, 6, 0.20)' }, dark: { primary: '#f59e0b', hover: '#fbbf24', soft: 'rgba(245, 158, 11, 0.16)', focus: 'rgba(245, 158, 11, 0.24)' } },
+                teal: { light: { primary: '#0891b2', hover: '#0e7490', soft: 'rgba(8, 145, 178, 0.12)', focus: 'rgba(8, 145, 178, 0.20)' }, dark: { primary: '#06b6d4', hover: '#22d3ee', soft: 'rgba(6, 182, 212, 0.16)', focus: 'rgba(6, 182, 212, 0.24)' } },
+                violet: { light: { primary: '#c026d3', hover: '#a21caf', soft: 'rgba(192, 38, 211, 0.12)', focus: 'rgba(192, 38, 211, 0.20)' }, dark: { primary: '#d946ef', hover: '#e879f9', soft: 'rgba(217, 70, 239, 0.16)', focus: 'rgba(217, 70, 239, 0.24)' } }
+            };
+
+            function hexToRgb(hex) {
+                if (!hex) return { r: 37, g: 99, b: 235 };
+                hex = hex.replace(/^#/, '');
+                if (hex.length === 3) hex = hex.split('').map(function(c) { return c + c; }).join('');
+                var num = parseInt(hex, 16);
+                if (isNaN(num)) return { r: 37, g: 99, b: 235 };
+                return { r: (num >> 16) & 255, g: (num >> 8) & 255, b: num & 255 };
+            }
+
+            function adjustColor(hex, factor) {
+                var rgb = hexToRgb(hex);
+                var clamp = function(val) { return Math.min(255, Math.max(0, Math.round(val))); };
+                return '#' + [clamp(rgb.r * factor), clamp(rgb.g * factor), clamp(rgb.b * factor)].map(function(x) { return x.toString(16).padStart(2, '0'); }).join('');
+            }
+
+            var theme;
+            if (key === 'custom' && customHex) {
+                var rgb = hexToRgb(customHex);
+                if (isDark) {
+                    theme = { primary: adjustColor(customHex, 1.1), hover: adjustColor(customHex, 1.25), soft: 'rgba(' + rgb.r + ',' + rgb.g + ',' + rgb.b + ',0.18)', focus: 'rgba(' + rgb.r + ',' + rgb.g + ',' + rgb.b + ',0.26)' };
+                } else {
+                    theme = { primary: customHex, hover: adjustColor(customHex, 0.82), soft: 'rgba(' + rgb.r + ',' + rgb.g + ',' + rgb.b + ',0.12)', focus: 'rgba(' + rgb.r + ',' + rgb.g + ',' + rgb.b + ',0.20)' };
+                }
+            } else {
+                var preset = COLOR_PRESETS[key] || COLOR_PRESETS.default;
+                theme = isDark ? preset.dark : preset.light;
+            }
+
+            if (theme) {
+                var rgb = hexToRgb(theme.primary);
+                var waveHeader = 'rgba(' + rgb.r + ',' + rgb.g + ',' + rgb.b + ',0.08)';
+                var waveUnder  = isDark ? 'rgba(' + rgb.r + ',' + rgb.g + ',' + rgb.b + ',0.18)' : 'rgba(' + rgb.r + ',' + rgb.g + ',' + rgb.b + ',0.16)';
+                var wave1      = isDark ? 'rgba(' + rgb.r + ',' + rgb.g + ',' + rgb.b + ',0.05)' : 'rgba(' + rgb.r + ',' + rgb.g + ',' + rgb.b + ',0.06)';
+                var wave2      = isDark ? 'rgba(' + rgb.r + ',' + rgb.g + ',' + rgb.b + ',0.09)' : 'rgba(' + rgb.r + ',' + rgb.g + ',' + rgb.b + ',0.10)';
+                var wave3      = isDark ? 'rgba(' + rgb.r + ',' + rgb.g + ',' + rgb.b + ',0.13)' : 'rgba(' + rgb.r + ',' + rgb.g + ',' + rgb.b + ',0.14)';
+                var wave4      = waveUnder;
+
+                var styleEl = document.createElement('style');
+                styleEl.id = 'tx-theme-color-style';
+                styleEl.innerHTML = '\
+                    :root, body, #app, .dark, html[data-theme="ultra-dark"] #app.dark, html[data-theme="ultra-dark"] body.dark {\
+                        --ui-primary: ' + theme.primary + ' !important;\
+                        --ui-primary-hover: ' + theme.hover + ' !important;\
+                        --ui-primary-soft: ' + theme.soft + ' !important;\
+                        --ui-focus: 0 0 0 3px ' + theme.focus + ' !important;\
+                        --color-primary-100: ' + theme.primary + ' !important;\
+                        --ui-login-wave-header: ' + waveHeader + ' !important;\
+                        --ui-login-wave-under: ' + waveUnder + ' !important;\
+                        --ui-login-wave-1: ' + wave1 + ' !important;\
+                        --ui-login-wave-2: ' + wave2 + ' !important;\
+                        --ui-login-wave-3: ' + wave3 + ' !important;\
+                        --ui-login-wave-4: ' + wave4 + ' !important;\
+                    }\
+                    .ant-menu-item-selected,\
+                    .ant-menu-item-selected a,\
+                    .ant-menu-item-selected span,\
+                    .ant-menu-item-selected b,\
+                    .ant-menu-item-selected .anticon,\
+                    #sider .ant-menu-item-selected,\
+                    #sider .ant-menu-item-selected a,\
+                    #sider .ant-menu-item-selected span,\
+                    #sider .ant-menu-item-selected b,\
+                    #sider .ant-menu-item-selected .anticon,\
+                    #sider-drawer .ant-menu-item-selected,\
+                    #sider-drawer .ant-menu-item-selected a,\
+                    #sider-drawer .ant-menu-item-selected span,\
+                    #sider-drawer .ant-menu-item-selected b,\
+                    #sider-drawer .ant-menu-item-selected .anticon,\
+                    .ant-menu:not(.ant-menu-horizontal) .ant-menu-item-selected,\
+                    .ant-menu-dark .ant-menu-item-selected,\
+                    .ant-menu-dark.ant-menu-inline .ant-menu-item-selected {\
+                        background: ' + theme.primary + ' !important;\
+                        background-color: ' + theme.primary + ' !important;\
+                        background-image: none !important;\
+                        color: #ffffff !important;\
+                    }\
+                    .ant-menu-item-active,\
+                    .ant-menu-item:hover,\
+                    .ant-menu-submenu-active,\
+                    .ant-menu-submenu-title:hover {\
+                        color: ' + theme.primary + ' !important;\
+                    }\
+                    .ant-btn-primary {\
+                        background: ' + theme.primary + ' !important;\
+                        background-color: ' + theme.primary + ' !important;\
+                        border-color: ' + theme.primary + ' !important;\
+                        color: #ffffff !important;\
+                        box-shadow: 0 4px 12px ' + theme.soft + ' !important;\
+                    }\
+                    .ant-btn-primary:hover,\
+                    .ant-btn-primary:focus {\
+                        background: ' + theme.hover + ' !important;\
+                        background-color: ' + theme.hover + ' !important;\
+                        border-color: ' + theme.hover + ' !important;\
+                        color: #ffffff !important;\
+                        box-shadow: 0 6px 16px ' + theme.soft + ' !important;\
+                    }\
+                    .ant-btn-primary:active,\
+                    .ant-btn-primary.active {\
+                        background: ' + theme.primary + ' !important;\
+                        background-color: ' + theme.primary + ' !important;\
+                        border-color: ' + theme.primary + ' !important;\
+                        color: #ffffff !important;\
+                    }\
+                    .ant-switch-checked {\
+                        background-color: ' + theme.primary + ' !important;\
+                    }\
+                    .ant-checkbox-checked .ant-checkbox-inner {\
+                        background-color: ' + theme.primary + ' !important;\
+                        border-color: ' + theme.primary + ' !important;\
+                    }\
+                    .ant-radio-button-wrapper-checked,\
+                    .ant-radio-button-wrapper-checked:first-child,\
+                    .ant-radio-button-wrapper-checked:not(.ant-radio-button-wrapper-disabled) {\
+                        background-color: ' + theme.primary + ' !important;\
+                        border-color: ' + theme.primary + ' !important;\
+                        color: #ffffff !important;\
+                        box-shadow: -1px 0 0 0 ' + theme.primary + ' !important;\
+                    }\
+                    .ant-radio-checked .ant-radio-inner {\
+                        border-color: ' + theme.primary + ' !important;\
+                    }\
+                    .ant-radio-checked .ant-radio-inner::after {\
+                        background-color: ' + theme.primary + ' !important;\
+                    }\
+                    .ant-pagination-item-active,\
+                    .ant-pagination-item-active a,\
+                    .ant-pagination-item-active:focus a,\
+                    .ant-pagination-item-active:hover a {\
+                        border-color: ' + theme.primary + ' !important;\
+                        color: ' + theme.primary + ' !important;\
+                    }\
+                    .ant-tabs-ink-bar {\
+                        background-color: ' + theme.primary + ' !important;\
+                    }\
+                    .ant-tabs-nav .ant-tabs-tab-active {\
+                        color: ' + theme.primary + ' !important;\
+                    }\
+                    .ant-slider-track {\
+                        background-color: ' + theme.primary + ' !important;\
+                    }\
+                    .ant-slider-handle {\
+                        border-color: ' + theme.primary + ' !important;\
+                    }\
+                ';
+                document.head.appendChild(styleEl);
+            }
+        })();
+    </script>
     <title>{{ .host }}-{{ i18n .title}}</title>
 </head>
 <div id="message"></div>
