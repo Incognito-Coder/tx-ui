@@ -14,19 +14,19 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: amd64
+          - platform: linux-amd64
             os: ubuntu-22.04
-          - platform: arm64
+          - platform: linux-arm64
             os: ubuntu-22.04
-          - platform: armv7
+          - platform: linux-armv7
             os: ubuntu-22.04
-          - platform: armv6
+          - platform: linux-armv6
             os: ubuntu-22.04
-          - platform: 386
+          - platform: linux-386
             os: ubuntu-22.04
-          - platform: armv5
+          - platform: linux-armv5
             os: ubuntu-22.04
-          - platform: s390x
+          - platform: linux-s390x
             os: ubuntu-22.04
           - platform: windows-amd64
             os: windows-latest
@@ -53,17 +53,17 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          if [ "${{ matrix.platform }}" == "arm64" ]; then
+          if [ "${{ matrix.platform }}" == "linux-arm64" ]; then
             sudo apt install -y gcc-aarch64-linux-gnu
-          elif [ "${{ matrix.platform }}" == "armv7" ]; then
+          elif [ "${{ matrix.platform }}" == "linux-armv7" ]; then
             sudo apt install -y gcc-arm-linux-gnueabihf
-          elif [ "${{ matrix.platform }}" == "armv6" ]; then
+          elif [ "${{ matrix.platform }}" == "linux-armv6" ]; then
             sudo apt install -y gcc-arm-linux-gnueabihf
-          elif [ "${{ matrix.platform }}" == "386" ]; then
+          elif [ "${{ matrix.platform }}" == "linux-386" ]; then
             sudo apt install -y gcc-i686-linux-gnu
-          elif [ "${{ matrix.platform }}" == "armv5" ]; then
+          elif [ "${{ matrix.platform }}" == "linux-armv5" ]; then
             sudo apt install -y gcc-arm-linux-gnueabi
-          elif [ "${{ matrix.platform }}" == "s390x" ]; then
+          elif [ "${{ matrix.platform }}" == "linux-s390x" ]; then
             sudo apt install -y gcc-s390x-linux-gnu
           fi
 
@@ -81,26 +81,27 @@ jobs:
             fi
           else
             export GOOS=linux
-            export GOARCH=${{ matrix.platform }}
-            if [ "${{ matrix.platform }}" == "arm64" ]; then
+            if [ "${{ matrix.platform }}" == "linux-amd64" ]; then
+              export GOARCH=amd64
+            elif [ "${{ matrix.platform }}" == "linux-arm64" ]; then
               export GOARCH=arm64
               export CC=aarch64-linux-gnu-gcc
-            elif [ "${{ matrix.platform }}" == "armv7" ]; then
+            elif [ "${{ matrix.platform }}" == "linux-armv7" ]; then
               export GOARCH=arm
               export GOARM=7
               export CC=arm-linux-gnueabihf-gcc
-            elif [ "${{ matrix.platform }}" == "armv6" ]; then
+            elif [ "${{ matrix.platform }}" == "linux-armv6" ]; then
               export GOARCH=arm
               export GOARM=6
               export CC=arm-linux-gnueabihf-gcc
-            elif [ "${{ matrix.platform }}" == "386" ]; then
+            elif [ "${{ matrix.platform }}" == "linux-386" ]; then
               export GOARCH=386
               export CC=i686-linux-gnu-gcc
-            elif [ "${{ matrix.platform }}" == "armv5" ]; then
+            elif [ "${{ matrix.platform }}" == "linux-armv5" ]; then
               export GOARCH=arm
               export GOARM=5
               export CC=arm-linux-gnueabi-gcc
-            elif [ "${{ matrix.platform }}" == "s390x" ]; then
+            elif [ "${{ matrix.platform }}" == "linux-s390x" ]; then
               export GOARCH=s390x
               export CC=s390x-linux-gnu-gcc
             fi
@@ -117,19 +118,19 @@ jobs:
 
           # Download dependencies
           Xray_URL="https://github.com/XTLS/Xray-core/releases/download/v26.7.28/"
-          if [ "${{ matrix.platform }}" == "amd64" ]; then
+          if [ "${{ matrix.platform }}" == "linux-amd64" ]; then
             curl -sSL -O ${Xray_URL}Xray-linux-64.zip && unzip -q Xray-linux-64.zip && rm -f Xray-linux-64.zip
-          elif [ "${{ matrix.platform }}" == "arm64" ]; then
+          elif [ "${{ matrix.platform }}" == "linux-arm64" ]; then
             curl -sSL -O ${Xray_URL}Xray-linux-arm64-v8a.zip && unzip -q Xray-linux-arm64-v8a.zip && rm -f Xray-linux-arm64-v8a.zip
-          elif [ "${{ matrix.platform }}" == "armv7" ]; then
+          elif [ "${{ matrix.platform }}" == "linux-armv7" ]; then
             curl -sSL -O ${Xray_URL}Xray-linux-arm32-v7a.zip && unzip -q Xray-linux-arm32-v7a.zip && rm -f Xray-linux-arm32-v7a.zip
-          elif [ "${{ matrix.platform }}" == "armv6" ]; then
+          elif [ "${{ matrix.platform }}" == "linux-armv6" ]; then
             curl -sSL -O ${Xray_URL}Xray-linux-arm32-v6.zip && unzip -q Xray-linux-arm32-v6.zip && rm -f Xray-linux-arm32-v6.zip
-          elif [ "${{ matrix.platform }}" == "386" ]; then
+          elif [ "${{ matrix.platform }}" == "linux-386" ]; then
             curl -sSL -O ${Xray_URL}Xray-linux-32.zip && unzip -q Xray-linux-32.zip && rm -f Xray-linux-32.zip
-          elif [ "${{ matrix.platform }}" == "armv5" ]; then
+          elif [ "${{ matrix.platform }}" == "linux-armv5" ]; then
             curl -sSL -O ${Xray_URL}Xray-linux-arm32-v5.zip && unzip -q Xray-linux-arm32-v5.zip && rm -f Xray-linux-arm32-v5.zip
-          elif [ "${{ matrix.platform }}" == "s390x" ]; then
+          elif [ "${{ matrix.platform }}" == "linux-s390x" ]; then
             curl -sSL -O ${Xray_URL}Xray-linux-s390x.zip && unzip -q Xray-linux-s390x.zip && rm -f Xray-linux-s390x.zip
           elif [ "${{ matrix.platform }}" == "darwin-amd64" ]; then
             curl -sSL -O ${Xray_URL}Xray-macos-64.zip && unzip -q Xray-macos-64.zip && rm -f Xray-macos-64.zip
@@ -152,7 +153,7 @@ jobs:
               mv xray xray-darwin-arm64 2>/dev/null || true
             fi
           else
-            mv xray xray-linux-${{ matrix.platform }} 2>/dev/null || true
+            mv xray xray-${{ matrix.platform }} 2>/dev/null || true
           fi
           cd ../..
 
@@ -166,7 +167,7 @@ jobs:
             $env:GOARCH="386"
             $archName="386"
             $xrayZip="Xray-windows-32.zip"
-          } elif ("${{ matrix.platform }}" -eq "windows-arm64") {
+          } elseif ("${{ matrix.platform }}" -eq "windows-arm64") {
             $env:CGO_ENABLED="0"
             $env:GOARCH="arm64"
             $archName="arm64"
