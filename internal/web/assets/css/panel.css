@@ -224,6 +224,33 @@ body {
     width: 76px !important;
 }
 
+/* Early inline styling for collapsed sider before Vue hydration to prevent layout shift */
+@media (min-width: 769px) {
+    html.sider-collapsed-init #sider {
+        flex: 0 0 76px !important;
+        width: 76px !important;
+        min-width: 76px !important;
+        max-width: 76px !important;
+        transition: none !important;
+    }
+
+    html.sider-collapsed-init #sider .ant-layout-sider-children {
+        padding: 10px 8px !important;
+    }
+
+    html.sider-collapsed-init #sider .panel-brand-copy,
+    html.sider-collapsed-init #sider .ant-menu-title-content,
+    html.sider-collapsed-init #sider .ant-menu-item > span > b,
+    html.sider-collapsed-init #sider .panel-color-picker-title,
+    html.sider-collapsed-init #sider .ant-menu-submenu-title > span > span {
+        display: none !important;
+    }
+
+    html.sider-collapsed-init #sider .ant-layout-sider-trigger {
+        width: 76px !important;
+    }
+}
+
 .panel-navigation {
     display: flex;
     flex: 1 1 auto;

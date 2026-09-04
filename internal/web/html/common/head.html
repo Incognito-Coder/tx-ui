@@ -39,6 +39,11 @@
                 if (isUltra) document.documentElement.setAttribute('data-theme', 'ultra-dark');
             }
 
+            var isSiderCollapsed = localStorage.getItem('sider-collapsed') === 'true';
+            if (isSiderCollapsed) {
+                document.documentElement.classList.add('sider-collapsed-init');
+            }
+
             var key = localStorage.getItem('panel-theme-color') || 'default';
             var customHex = localStorage.getItem('panel-custom-color') || '#2563eb';
             
