@@ -3,7 +3,9 @@ package controller
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 	"regexp"
+	"strings"
 	"time"
 
 	"x-ui/internal/web/global"
@@ -346,12 +348,27 @@ func (a *ServerController) applySubTemplate(c *gin.Context) {
 		jsonMsg(c, I18nWeb(c, "pages.server.loadError"), err)
 		return
 	}
+	if !isAllowedSubTemplateURL(f.URL) {
+		jsonMsg(c, I18nWeb(c, "pages.server.loadError"), fmt.Errorf("only github.com and raw.githubusercontent.com URLs are allowed"))
+		return
+	}
 	err := a.serverService.ApplySubTemplateFromGithub(f.URL)
 	if err != nil {
 		jsonMsg(c, err.Error(), nil)
 		return
 	}
 	jsonMsg(c, "Sub HTML template downloaded & installed successfully!", nil)
+}
+
+// isAllowedSubTemplateURL restricts sub-template downloads to GitHub hosts only,
+// preventing SSRF via arbitrary or redirect-controlled destinations.
+func isAllowedSubTemplateURL(rawURL string) bool {
+	u, err := url.Parse(rawURL)
+	if err != nil || (u.Scheme != "http" && u.Scheme != "https") {
+		return false
+	}
+	host := strings.ToLower(u.Hostname())
+	return host == "github.com" || host == "raw.githubusercontent.com"
 }
 
 func (a *ServerController) resetSubTemplate(c *gin.Context) {
