@@ -349,7 +349,7 @@ func (a *ServerController) applySubTemplate(c *gin.Context) {
 		return
 	}
 	if !isAllowedSubTemplateURL(f.URL) {
-		jsonMsg(c, I18nWeb(c, "pages.server.loadError"), fmt.Errorf("only github.com and raw.githubusercontent.com URLs are allowed"))
+		jsonMsg(c, I18nWeb(c, "pages.server.loadError"), fmt.Errorf("%s", I18nWeb(c, "pages.settings.subTemplateModalAllowedUrlsOnly")))
 		return
 	}
 	err := a.serverService.ApplySubTemplateFromGithub(f.URL)
@@ -357,7 +357,7 @@ func (a *ServerController) applySubTemplate(c *gin.Context) {
 		jsonMsg(c, err.Error(), nil)
 		return
 	}
-	jsonMsg(c, "Sub HTML template downloaded & installed successfully!", nil)
+	jsonMsg(c, I18nWeb(c, "pages.settings.subTemplateModalDownloadSuccess"), nil)
 }
 
 // isAllowedSubTemplateURL restricts sub-template downloads to GitHub hosts only,
@@ -377,5 +377,5 @@ func (a *ServerController) resetSubTemplate(c *gin.Context) {
 		jsonMsg(c, err.Error(), nil)
 		return
 	}
-	jsonMsg(c, "Sub HTML template reset to default successfully!", nil)
+	jsonMsg(c, I18nWeb(c, "pages.settings.subTemplateModalResetSuccessMsg"), nil)
 }
