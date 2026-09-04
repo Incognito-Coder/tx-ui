@@ -1244,39 +1244,94 @@ type XrayMetrics struct {
 	Error      string                 `json:"error,omitempty"`
 }
 
+func parseUint64Val(v interface{}) (uint64, bool) {
+	if v == nil {
+		return 0, false
+	}
+	switch val := v.(type) {
+	case float64:
+		return uint64(val), true
+	case float32:
+		return uint64(val), true
+	case int:
+		return uint64(val), true
+	case int64:
+		return uint64(val), true
+	case uint64:
+		return val, true
+	case uint:
+		return uint64(val), true
+	case json.Number:
+		if i, err := val.Int64(); err == nil {
+			return uint64(i), true
+		}
+		if f, err := val.Float64(); err == nil {
+			return uint64(f), true
+		}
+	case string:
+		clean := strings.TrimSpace(val)
+		if i, err := strconv.ParseUint(clean, 10, 64); err == nil {
+			return i, true
+		}
+		if f, err := strconv.ParseFloat(clean, 64); err == nil {
+			return uint64(f), true
+		}
+	}
+	return 0, false
+}
+
 func extractMetricsSummary(body []byte, parsed map[string]interface{}) *MetricsSummary {
 	summary := &MetricsSummary{
 		StatsTraffic: make(map[string]int64),
 	}
 
 	if parsed != nil {
-		if g, ok := parsed["goroutines"].(float64); ok {
-			summary.Goroutines = uint64(g)
+		for _, gKey := range []string{"goroutines", "goroutine", "num_goroutine", "NumGoroutine", "go_goroutines", "goroutines_count"} {
+			if v, ok := parsed[gKey]; ok {
+				if n, valid := parseUint64Val(v); valid && n > 0 {
+					summary.Goroutines = n
+					break
+				}
+			}
 		}
+
 		if ms, ok := parsed["memstats"].(map[string]interface{}); ok {
-			if v, ok := ms["Alloc"].(float64); ok {
-				summary.AllocBytes = uint64(v)
+			if v, ok := ms["Alloc"]; ok {
+				if n, valid := parseUint64Val(v); valid {
+					summary.AllocBytes = n
+				}
 			}
-			if v, ok := ms["Sys"].(float64); ok {
-				summary.SysBytes = uint64(v)
+			if v, ok := ms["Sys"]; ok {
+				if n, valid := parseUint64Val(v); valid {
+					summary.SysBytes = n
+				}
 			}
-			if v, ok := ms["HeapAlloc"].(float64); ok {
-				summary.HeapAlloc = uint64(v)
+			if v, ok := ms["HeapAlloc"]; ok {
+				if n, valid := parseUint64Val(v); valid {
+					summary.HeapAlloc = n
+				}
 			}
-			if v, ok := ms["HeapSys"].(float64); ok {
-				summary.HeapSys = uint64(v)
+			if v, ok := ms["HeapSys"]; ok {
+				if n, valid := parseUint64Val(v); valid {
+					summary.HeapSys = n
+				}
 			}
-			if v, ok := ms["HeapObjects"].(float64); ok {
-				summary.HeapObjects = uint64(v)
+			if v, ok := ms["HeapObjects"]; ok {
+				if n, valid := parseUint64Val(v); valid {
+					summary.HeapObjects = n
+				}
 			}
-			if v, ok := ms["NumGC"].(float64); ok {
-				summary.NumGC = uint64(v)
+			if v, ok := ms["NumGC"]; ok {
+				if n, valid := parseUint64Val(v); valid {
+					summary.NumGC = n
+				}
 			}
 		}
+
 		for k, v := range parsed {
-			if strings.HasPrefix(k, "stats.") || strings.HasPrefix(k, "stat.") {
-				if num, ok := v.(float64); ok {
-					summary.StatsTraffic[k] = int64(num)
+			if strings.HasPrefix(k, "stats.") || strings.HasPrefix(k, "stat.") || strings.HasPrefix(k, "xray.") || strings.HasPrefix(k, "stats_") || strings.HasPrefix(k, "xray_") {
+				if n, valid := parseUint64Val(v); valid {
+					summary.StatsTraffic[k] = int64(n)
 				}
 			}
 		}
@@ -1288,33 +1343,70 @@ func extractMetricsSummary(body []byte, parsed map[string]interface{}) *MetricsS
 		if strings.HasPrefix(line, "#") || line == "" {
 			continue
 		}
-		parts := strings.Fields(line)
-		if len(parts) < 2 {
-			continue
+
+		cleanLine := strings.TrimSuffix(line, ",")
+		var key string
+		var valStr string
+
+		if idx := strings.Index(cleanLine, ":"); idx != -1 && !strings.HasPrefix(cleanLine, "http") {
+			key = strings.Trim(cleanLine[:idx], "\" \t")
+			valStr = strings.Trim(cleanLine[idx+1:], "\" \t")
+		} else {
+			parts := strings.Fields(cleanLine)
+			if len(parts) >= 2 {
+				key = parts[0]
+				valStr = parts[1]
+			}
 		}
-		key := parts[0]
-		val, err := strconv.ParseFloat(parts[1], 64)
+
+		if idx := strings.Index(key, "{"); idx != -1 {
+			key = key[:idx]
+		}
+
+		valStr = strings.Trim(valStr, "\" \t")
+		val, err := strconv.ParseFloat(valStr, 64)
 		if err != nil {
 			continue
 		}
+		uVal := uint64(val)
 
-		if summary.Goroutines == 0 && (key == "go_goroutines" || strings.Contains(key, "goroutines")) {
-			summary.Goroutines = uint64(val)
-		} else if summary.AllocBytes == 0 && (key == "go_memstats_alloc_bytes" || strings.Contains(key, "alloc_bytes")) {
-			summary.AllocBytes = uint64(val)
-		} else if summary.SysBytes == 0 && (key == "go_memstats_sys_bytes" || strings.Contains(key, "sys_bytes")) {
-			summary.SysBytes = uint64(val)
-		} else if summary.HeapAlloc == 0 && (key == "go_memstats_heap_alloc_bytes" || strings.Contains(key, "heap_alloc_bytes")) {
-			summary.HeapAlloc = uint64(val)
-		} else if summary.HeapSys == 0 && (key == "go_memstats_heap_sys_bytes" || strings.Contains(key, "heap_sys_bytes")) {
-			summary.HeapSys = uint64(val)
-		} else if summary.HeapObjects == 0 && (key == "go_memstats_heap_objects" || strings.Contains(key, "heap_objects")) {
-			summary.HeapObjects = uint64(val)
-		} else if summary.NumGC == 0 && (key == "go_memstats_gc_sys_bytes" || key == "go_gc_duration_seconds_count") {
-			summary.NumGC = uint64(val)
+		if key == "go_goroutines" || key == "goroutines" || strings.HasSuffix(key, "_goroutines") {
+			if summary.Goroutines == 0 {
+				summary.Goroutines = uVal
+			}
+		}
+		if key == "go_memstats_alloc_bytes" || key == "alloc_bytes" || key == "Alloc" {
+			if summary.AllocBytes == 0 {
+				summary.AllocBytes = uVal
+			}
+		}
+		if key == "go_memstats_sys_bytes" || key == "sys_bytes" || key == "Sys" {
+			if summary.SysBytes == 0 {
+				summary.SysBytes = uVal
+			}
+		}
+		if key == "go_memstats_heap_alloc_bytes" || key == "heap_alloc_bytes" || key == "HeapAlloc" {
+			if summary.HeapAlloc == 0 {
+				summary.HeapAlloc = uVal
+			}
+		}
+		if key == "go_memstats_heap_sys_bytes" || key == "heap_sys_bytes" || key == "HeapSys" {
+			if summary.HeapSys == 0 {
+				summary.HeapSys = uVal
+			}
+		}
+		if key == "go_memstats_heap_objects" || key == "heap_objects" || key == "HeapObjects" {
+			if summary.HeapObjects == 0 {
+				summary.HeapObjects = uVal
+			}
+		}
+		if key == "go_memstats_gc_sys_bytes" || key == "go_gc_duration_seconds_count" || key == "num_gc" || key == "NumGC" {
+			if summary.NumGC == 0 {
+				summary.NumGC = uVal
+			}
 		}
 
-		if strings.HasPrefix(key, "xray_") || strings.HasPrefix(key, "stats_") {
+		if strings.HasPrefix(key, "xray_") || strings.HasPrefix(key, "stats_") || strings.HasPrefix(key, "stat_") {
 			summary.StatsTraffic[key] = int64(val)
 		}
 	}
@@ -1368,13 +1460,21 @@ func (s *ServerService) GetXrayMetrics() (*XrayMetrics, error) {
 
 	metricsUrl := "http://" + addr + "/debug/vars"
 	resp, err := client.Get(metricsUrl)
-	if err != nil {
+	if err != nil || (resp != nil && resp.StatusCode != http.StatusOK) {
+		if resp != nil {
+			resp.Body.Close()
+		}
 		metricsUrl = "http://" + addr + "/metrics"
 		resp, err = client.Get(metricsUrl)
 	}
 
-	if err != nil {
-		metrics.Error = fmt.Sprintf("Failed to connect to Xray metrics listener (%s): %v", addr, err)
+	if err != nil || (resp != nil && resp.StatusCode != http.StatusOK) {
+		statusStr := ""
+		if resp != nil {
+			statusStr = fmt.Sprintf(" (HTTP %d)", resp.StatusCode)
+			resp.Body.Close()
+		}
+		metrics.Error = fmt.Sprintf("Failed to connect to Xray metrics listener (%s)%s: %v", addr, statusStr, err)
 		return metrics, nil
 	}
 	defer resp.Body.Close()
