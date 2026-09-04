@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v0.8.1] - 2026-09-04
+
+### 🚀 Features
+- **Internationalization (i18n)**: Added full i18n translation support across 15 languages for GitHub Sub HTML Template Manager (`1abed0bf`) and Live Xray Metrics Telemetry Dashboard (`0901227f`).
+
+### 🐛 Bug Fixes
+- **Goroutine & Telemetry Metrics Parsing**: Fixed zero goroutines thread count and memory stats parsing in `extractMetricsSummary()`; added HTTP status check and fallback from `/debug/vars` to `/metrics`. (`d4814fcc`)
+- **V-002 Security Vulnerability**: Resolved V-002 security vulnerability issue. (`8e5fcb87`)
+- **Windows CGO Build Pipeline**: Set `CGO_ENABLED=0` for Windows release binaries in GitHub CI workflow to resolve `windows-386` compilation failures. (`1832b4b2`)
+
+### 🎨 Styling & Theme Enhancements
+- **Dynamic Theme Accent Synchronization**: Synchronized system progress bars, usage meters, and back-to-top floating buttons with the active panel theme color. (`3afdaaa0`)
+
+### 📦 Dependencies & Maintenance
+- **Dependency Upgrades**: Upgraded Go module dependencies in `go.mod` (`gopsutil/v4`, `fasthttp`, `gorm`, `grpc`, `golang.org/x/crypto`, etc.) while preserving pinned `gvisor` version. (`41a4a260`)
+- **Workspace Cleaning**: Ignored local `sub/` directory in `.gitignore` and removed obsolete asset references. (`58249aa2`, `f1424aff`)
+
+---
+
 ## [v0.8.0] - 2026-09-04
 
 ### 🚀 Features
