@@ -118,8 +118,7 @@
                     <a-tabs :class="themeSwitcher.currentTheme" @change="(activeKey) => { this.changePage(activeKey); }"
                             class="ant-card-dark-box-nohover"
                             default-active-key="1">
-                        <a-tab-pane key="tpl-basic" style="padding-top: 20px;"
-                                    tab='{{ i18n "pages.xray.basicTemplate"}}'>
+                        <a-tab-pane key="tpl-basic" tab='{{ i18n "pages.xray.basicTemplate"}}'>
                             <a-collapse>
                                 <a-collapse-panel header='{{ i18n "pages.xray.generalConfigs"}}'>
                                     <a-row :lg="12" :sm="24" :xs="24">
@@ -960,7 +959,7 @@
                                 </a-table>
                             </template>
                         </a-tab-pane>
-                        <a-tab-pane force-render="true" key="tpl-tunnel" style="padding-top: 20px;" tab='Tunnel'>
+                        <a-tab-pane force-render="true" key="tpl-tunnel" tab='Tunnel'>
                             <setting-list-item desc='{{ i18n "pages.xray.tunnel.enableDesc" }}'
                                                title='{{ i18n "pages.xray.tunnel.enable" }}'
                                                type="switch"

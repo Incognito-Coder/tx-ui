@@ -59,13 +59,13 @@ body {
     background: var(--ui-bg);
 }
 
-#content-layout > .ant-layout-content {
+#content-layout>.ant-layout-content {
     width: min(100%, 1680px);
     margin: 0 auto !important;
     padding: 24px;
 }
 
-#content-layout .ant-row > [class*="ant-col-"] {
+#content-layout .ant-row>[class*="ant-col-"] {
     min-width: 0;
 }
 
@@ -196,16 +196,16 @@ body {
     width: 60px;
 }
 
-#sider.ant-layout-sider-collapsed .ant-menu-inline-collapsed > .ant-menu-item,
-#sider.ant-layout-sider-collapsed .ant-menu-inline-collapsed > .ant-menu-submenu > .ant-menu-submenu-title {
+#sider.ant-layout-sider-collapsed .ant-menu-inline-collapsed>.ant-menu-item,
+#sider.ant-layout-sider-collapsed .ant-menu-inline-collapsed>.ant-menu-submenu>.ant-menu-submenu-title {
     width: 52px;
     margin: 4px;
     padding: 0 17px !important;
     border-radius: 12px;
 }
 
-#sider.ant-layout-sider-collapsed .ant-menu-inline-collapsed > .ant-menu-item .anticon,
-#sider.ant-layout-sider-collapsed .ant-menu-inline-collapsed > .ant-menu-submenu > .ant-menu-submenu-title .anticon {
+#sider.ant-layout-sider-collapsed .ant-menu-inline-collapsed>.ant-menu-item .anticon,
+#sider.ant-layout-sider-collapsed .ant-menu-inline-collapsed>.ant-menu-submenu>.ant-menu-submenu-title .anticon {
     margin: 0;
     font-size: 18px;
     line-height: 1;
@@ -224,6 +224,19 @@ body {
     width: 76px !important;
 }
 
+/* Disable all transitions and animations on common sider */
+#sider,
+#sider *,
+#sider::before,
+#sider::after,
+.ant-layout-sider,
+.ant-layout-sider *,
+.ant-layout-sider-trigger,
+.ant-menu-inline-collapsed {
+    transition: none !important;
+    animation: none !important;
+}
+
 /* Early inline styling for collapsed sider before Vue hydration to prevent layout shift */
 @media (min-width: 769px) {
     html.sider-collapsed-init #sider {
@@ -240,9 +253,9 @@ body {
 
     html.sider-collapsed-init #sider .panel-brand-copy,
     html.sider-collapsed-init #sider .ant-menu-title-content,
-    html.sider-collapsed-init #sider .ant-menu-item > span > b,
+    html.sider-collapsed-init #sider .ant-menu-item>span>b,
     html.sider-collapsed-init #sider .panel-color-picker-title,
-    html.sider-collapsed-init #sider .ant-menu-submenu-title > span > span {
+    html.sider-collapsed-init #sider .ant-menu-submenu-title>span>span {
         display: none !important;
     }
 
@@ -258,8 +271,8 @@ body {
     min-height: 0;
 }
 
-.panel-navigation > .ant-menu,
-.panel-navigation > .ant-menu + .ant-menu {
+.panel-navigation>.ant-menu,
+.panel-navigation>.ant-menu+.ant-menu {
     border: 0;
 }
 
@@ -386,8 +399,8 @@ body {
     padding: 20px;
 }
 
-#content-layout .ant-card + .ant-card,
-#content-layout .ant-space-item + .ant-space-item {
+#content-layout .ant-card+.ant-card,
+#content-layout .ant-space-item+.ant-space-item {
     margin-top: 16px;
 }
 
@@ -398,19 +411,19 @@ body {
 .ant-divider-inner-text,
 .ant-typography,
 .ant-form,
-.ant-form-item-label > label,
+.ant-form-item-label>label,
 .ant-list-item,
-.ant-collapse > .ant-collapse-item > .ant-collapse-header {
+.ant-collapse>.ant-collapse-item>.ant-collapse-header {
     color: var(--ui-text);
 }
 
-.ant-form-item-label > label {
+.ant-form-item-label>label {
     font-weight: 550;
 }
 
 .ant-list-split .ant-list-item,
 .ant-collapse,
-.ant-collapse > .ant-collapse-item,
+.ant-collapse>.ant-collapse-item,
 .ant-collapse-content {
     border-color: var(--ui-border);
 }
@@ -459,8 +472,8 @@ body {
     margin: 0;
 }
 
-.panel-action-row > .anticon,
-.panel-action-row > span {
+.panel-action-row>.anticon,
+.panel-action-row>span {
     display: inline-flex;
     align-items: center;
 }
@@ -568,8 +581,8 @@ body {
     justify-content: center;
 }
 
-.ant-btn > .anticon + span,
-.ant-btn > span + .anticon {
+.ant-btn>.anticon+span,
+.ant-btn>span+.anticon {
     margin-left: 0;
 }
 
@@ -670,24 +683,24 @@ body {
     display: inline-flex;
 }
 
-.ant-btn-group > .ant-btn {
+.ant-btn-group>.ant-btn {
     border-radius: 0;
 }
 
-.ant-btn-group > .ant-btn:first-child {
+.ant-btn-group>.ant-btn:first-child {
     border-start-start-radius: 9px;
     border-end-start-radius: 9px;
 }
 
-.ant-btn-group > .ant-btn:last-child {
+.ant-btn-group>.ant-btn:last-child {
     border-start-end-radius: 9px;
     border-end-end-radius: 9px;
 }
 
 .ant-btn:focus-visible,
 .ant-switch:focus-visible,
-.ant-checkbox-input:focus-visible + .ant-checkbox-inner,
-.ant-radio-input:focus-visible + .ant-radio-inner,
+.ant-checkbox-input:focus-visible+.ant-checkbox-inner,
+.ant-radio-input:focus-visible+.ant-radio-inner,
 a:focus-visible {
     outline: 2px solid var(--ui-primary);
     outline-offset: 2px;
@@ -717,14 +730,14 @@ a:focus-visible {
     border-radius: 0 !important;
 }
 
-#content-layout .ant-table-bordered .ant-table-body > table,
+#content-layout .ant-table-bordered .ant-table-body>table,
 #content-layout .ant-table-bordered .ant-table-fixed-left table,
 #content-layout .ant-table-bordered .ant-table-fixed-right table,
-#content-layout .ant-table-bordered .ant-table-header > table {
+#content-layout .ant-table-bordered .ant-table-header>table {
     border: 0;
 }
 
-#content-layout .ant-table-thead > tr > th {
+#content-layout .ant-table-thead>tr>th {
     padding: 13px 10px;
     color: var(--ui-text);
     font-size: 12px;
@@ -736,18 +749,18 @@ a:focus-visible {
     white-space: nowrap;
 }
 
-#content-layout .ant-table-tbody > tr > td {
+#content-layout .ant-table-tbody>tr>td {
     padding: 12px 10px;
     border-color: var(--ui-border);
     word-break: normal;
 }
 
-#content-layout .ant-table-bordered .ant-table-thead > tr > th,
-#content-layout .ant-table-bordered .ant-table-tbody > tr > td {
+#content-layout .ant-table-bordered .ant-table-thead>tr>th,
+#content-layout .ant-table-bordered .ant-table-tbody>tr>td {
     border-right: 0;
 }
 
-#content-layout .ant-table-expanded-row > td {
+#content-layout .ant-table-expanded-row>td {
     padding: 0 10px 10px !important;
     background: var(--ui-surface) !important;
 }
@@ -759,20 +772,20 @@ a:focus-visible {
     background: var(--ui-surface);
 }
 
-#content-layout .ant-table-expanded-row .ant-table-thead > tr > th {
+#content-layout .ant-table-expanded-row .ant-table-thead>tr>th {
     background: var(--ui-surface-muted);
 }
 
 #content-layout .ant-table-expanded-row .ant-table-tbody,
-#content-layout .ant-table-expanded-row .ant-table-tbody > tr {
+#content-layout .ant-table-expanded-row .ant-table-tbody>tr {
     background: var(--ui-surface);
 }
 
-#content-layout .ant-table-expanded-row .ant-table-tbody > tr > td {
+#content-layout .ant-table-expanded-row .ant-table-tbody>tr>td {
     background: transparent;
 }
 
-#content-layout .inbounds-table .ant-table-expanded-row > td {
+#content-layout .inbounds-table .ant-table-expanded-row>td {
     padding: 0 !important;
 }
 
@@ -788,7 +801,7 @@ a:focus-visible {
     width: 100%;
 }
 
-#content-layout .ant-table-tbody > tr:hover:not(.ant-table-expanded-row) > td {
+#content-layout .ant-table-tbody>tr:hover:not(.ant-table-expanded-row)>td {
     background: var(--ui-primary-soft);
 }
 
@@ -885,34 +898,36 @@ a:focus-visible {
     max-width: 1400px !important;
 }
 
-/* Ensure ant-collapse top and bottom border radius are identical across single and multi-item collapse panels */
+/* Ensure ant-collapse top and bottom border radius and borders are identical across single and multi-item collapse panels */
 .ant-collapse {
     border-radius: var(--ui-radius) !important;
     overflow: hidden !important;
+    margin-top: 10px;
+    margin-bottom: 10px;
 }
 
-.ant-collapse > .ant-collapse-item {
+.ant-collapse>.ant-collapse-item {
     border-radius: 0 !important;
 }
 
-.ant-collapse > .ant-collapse-item:first-child,
-.ant-collapse > .ant-collapse-item:first-child > .ant-collapse-header {
+.ant-collapse>.ant-collapse-item:first-child,
+.ant-collapse>.ant-collapse-item:first-child>.ant-collapse-header {
     border-top-left-radius: var(--ui-radius) !important;
     border-top-right-radius: var(--ui-radius) !important;
 }
 
-.ant-collapse > .ant-collapse-item:last-child,
-.ant-collapse > .ant-collapse-item:last-child > .ant-collapse-header,
-.ant-collapse > .ant-collapse-item:last-child > .ant-collapse-content {
+.ant-collapse>.ant-collapse-item:last-child,
+.ant-collapse>.ant-collapse-item:last-child>.ant-collapse-header,
+.ant-collapse>.ant-collapse-item:last-child>.ant-collapse-content {
     border-bottom-left-radius: var(--ui-radius) !important;
     border-bottom-right-radius: var(--ui-radius) !important;
 }
 
-.ant-collapse > .ant-collapse-item:only-child > .ant-collapse-header {
+.ant-collapse>.ant-collapse-item:only-child>.ant-collapse-header {
     border-radius: var(--ui-radius) !important;
 }
 
-.ant-collapse > .ant-collapse-item:only-child.ant-collapse-item-active > .ant-collapse-header {
+.ant-collapse>.ant-collapse-item:only-child.ant-collapse-item-active>.ant-collapse-header {
     border-bottom-left-radius: 0 !important;
     border-bottom-right-radius: 0 !important;
 }
@@ -1622,8 +1637,8 @@ li.ant-calendar-time-picker-select-option-selected {
     line-height: 36px;
 }
 
-.ant-modal-footer .ant-btn + .ant-btn,
-.ant-modal-confirm-btns .ant-btn + .ant-btn {
+.ant-modal-footer .ant-btn+.ant-btn,
+.ant-modal-confirm-btns .ant-btn+.ant-btn {
     margin-left: 10px !important;
     margin-inline-start: 10px !important;
 }
@@ -1851,8 +1866,8 @@ body.dark .ant-btn[disabled]:focus,
 }
 
 #app.dark .ant-collapse,
-#app.dark .ant-collapse > .ant-collapse-item,
-#app.dark .ant-collapse > .ant-collapse-item > .ant-collapse-header {
+#app.dark .ant-collapse>.ant-collapse-item,
+#app.dark .ant-collapse>.ant-collapse-item>.ant-collapse-header {
     color: var(--ui-text);
     border-color: var(--ui-border);
     background: var(--ui-surface-muted);
@@ -1941,19 +1956,19 @@ body.dark .ant-tag-red,
     background: #2b171d;
 }
 
-#app.dark .ant-table-tbody > tr:hover:not(.ant-table-expanded-row) > td {
+#app.dark .ant-table-tbody>tr:hover:not(.ant-table-expanded-row)>td {
     background: var(--ui-primary-soft) !important;
 }
 
 #app.dark #content-layout .ant-table-expanded-row,
-#app.dark #content-layout .ant-table-expanded-row > td,
+#app.dark #content-layout .ant-table-expanded-row>td,
 #app.dark #content-layout .ant-table-expanded-row .ant-table,
 #app.dark #content-layout .ant-table-expanded-row .ant-table-tbody,
-#app.dark #content-layout .ant-table-expanded-row .ant-table-tbody > tr {
+#app.dark #content-layout .ant-table-expanded-row .ant-table-tbody>tr {
     background: var(--ui-surface) !important;
 }
 
-#app.dark #content-layout .ant-table-expanded-row .ant-table-tbody > tr > td {
+#app.dark #content-layout .ant-table-expanded-row .ant-table-tbody>tr>td {
     background: transparent !important;
 }
 
@@ -2024,7 +2039,7 @@ html[data-theme="ultra-dark"] body.dark {
 
 /* Responsive behavior */
 @media (max-width: 992px) {
-    #content-layout > .ant-layout-content {
+    #content-layout>.ant-layout-content {
         padding: 18px;
     }
 
@@ -2034,7 +2049,7 @@ html[data-theme="ultra-dark"] body.dark {
 }
 
 @media (max-width: 768px) {
-    #content-layout > .ant-layout-content {
+    #content-layout>.ant-layout-content {
         padding: 64px 10px 18px;
     }
 
@@ -2094,8 +2109,8 @@ html[data-theme="ultra-dark"] body.dark {
         white-space: nowrap;
     }
 
-    #content-layout .ant-table-thead > tr > th,
-    #content-layout .ant-table-tbody > tr > td {
+    #content-layout .ant-table-thead>tr>th,
+    #content-layout .ant-table-tbody>tr>td {
         padding: 10px 8px;
     }
 
@@ -2135,8 +2150,8 @@ html[data-theme="ultra-dark"] body.dark {
         padding: 0 16px !important;
     }
 
-    .ant-modal-footer .ant-btn + .ant-btn,
-    .ant-modal-confirm-btns .ant-btn + .ant-btn {
+    .ant-modal-footer .ant-btn+.ant-btn,
+    .ant-modal-confirm-btns .ant-btn+.ant-btn {
         margin-left: 8px !important;
         margin-inline-start: 8px !important;
     }
@@ -2156,7 +2171,7 @@ html[data-theme="ultra-dark"] body.dark {
 }
 
 @media (max-width: 480px) {
-    #content-layout > .ant-layout-content {
+    #content-layout>.ant-layout-content {
         padding-inline: 8px;
     }
 
@@ -2194,6 +2209,7 @@ html[data-theme="ultra-dark"] body.dark {
 }
 
 @media (prefers-reduced-motion: reduce) {
+
     *,
     *::before,
     *::after {
@@ -2304,5 +2320,3 @@ html[data-theme="ultra-dark"] body.dark {
     opacity: 0 !important;
     transform: translateY(-16px) scale(0.99) !important;
 }
-
-

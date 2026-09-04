@@ -15188,7 +15188,7 @@ form:not(.ant-form-vertical) .ant-input-group-wrapper,form:not(.ant-form-vertica
 .ant-form-inline .ant-form-item {
     display: inline-block;
     margin-right: 16px;
-    margin-bottom: 0
+    margin-bottom: 0;
 }
 
 .ant-form-inline .ant-form-item-with-help {

@@ -113,18 +113,15 @@
         },
         setCollapsed(collapsed, type) {
             this.collapsed = collapsed;
-            document.documentElement.classList.remove('sider-collapsed-init');
+            if (collapsed) {
+                document.documentElement.classList.add('sider-collapsed-init');
+            } else {
+                document.documentElement.classList.remove('sider-collapsed-init');
+            }
             if (type !== 'responsive') {
                 localStorage.setItem('sider-collapsed', collapsed.toString());
             }
         },
     };
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => {
-            requestAnimationFrame(() => document.documentElement.classList.remove('sider-collapsed-init'));
-        });
-    } else {
-        requestAnimationFrame(() => document.documentElement.classList.remove('sider-collapsed-init'));
-    }
 </script>
 {{end}}
