@@ -161,14 +161,13 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          $env:CGO_ENABLED="1"
+          $env:CGO_ENABLED="0"
           $env:GOOS="windows"
           if ("${{ matrix.platform }}" -eq "windows-386") {
             $env:GOARCH="386"
             $archName="386"
             $xrayZip="Xray-windows-32.zip"
           } elseif ("${{ matrix.platform }}" -eq "windows-arm64") {
-            $env:CGO_ENABLED="0"
             $env:GOARCH="arm64"
             $archName="arm64"
             $xrayZip="Xray-windows-arm64-v8a.zip"
