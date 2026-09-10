@@ -1,5 +1,6 @@
 {{define "form/realitySettings"}}
 <template>
+    <a-alert message="Security Note: Using non-443 ports or Apple/iCloud domains with REALITY is strongly discouraged as it increases risk of server IP blocking." type="warning" show-icon style="margin-bottom: 12px;" v-if="inbound.port !== 443 || (inbound.stream.reality.serverNames && (inbound.stream.reality.serverNames.includes('apple') || inbound.stream.reality.serverNames.includes('icloud')))"></a-alert>
     <a-form-item label='Show'>
         <a-switch v-model="inbound.stream.reality.show"></a-switch>
     </a-form-item>

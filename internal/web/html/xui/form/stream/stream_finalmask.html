@@ -14,8 +14,13 @@
                         @click="() => inbound.stream.delTcpMask(tcpIndex)" type="delete"></a-icon>
             </a-divider>
             <a-form-item label='{{ i18n "pages.xray.finalmask.type" }}'>
-                <a-select :dropdown-class-name="themeSwitcher.currentTheme" v-model="mask.type">
+                <a-select :dropdown-class-name="themeSwitcher.currentTheme"
+                          @change="(type) => { mask.settings = mask._getDefaultSettings ? mask._getDefaultSettings(type, {}) : {}; }"
+                          v-model="mask.type">
                     <a-select-option value="xmc">XMC (Minecraft)</a-select-option>
+                    <a-select-option value="sudoku">Sudoku</a-select-option>
+                    <a-select-option value="fragment">Fragment</a-select-option>
+                    <a-select-option value="header-custom">Header Custom</a-select-option>
                 </a-select>
             </a-form-item>
             <template v-if="mask.type === 'xmc'">
@@ -53,10 +58,34 @@
                     </a-form-item>
                 </a-form>
             </template>
+            <template v-if="mask.type === 'fragment'">
+                <a-form-item label="Length">
+                    <a-input placeholder="e.g. 10-20" v-model.trim="mask.settings.length"></a-input>
+                </a-form-item>
+                <a-form-item label="Interval">
+                    <a-input placeholder="e.g. 10-20" v-model.trim="mask.settings.interval"></a-input>
+                </a-form-item>
+            </template>
+            <template v-if="mask.type === 'sudoku'">
+                <a-form-item label="ASCII Table">
+                    <a-input placeholder="ASCII Mapping string" v-model.trim="mask.settings.ascii"></a-input>
+                </a-form-item>
+                <a-form-item label="Padding Min">
+                    <a-input-number :min="0" v-model.number="mask.settings.paddingMin"></a-input-number>
+                </a-form-item>
+                <a-form-item label="Padding Max">
+                    <a-input-number :min="0" v-model.number="mask.settings.paddingMax"></a-input-number>
+                </a-form-item>
+            </template>
+            <template v-if="mask.type === 'header-custom'">
+                <a-form-item label="Rand Range">
+                    <a-input placeholder="e.g. 100-200" v-model.trim="mask.settings.randRange"></a-input>
+                </a-form-item>
+            </template>
         </a-form>
     </template>
     <a-form-item label="UDP Masks">
-        <a-button @click="inbound.stream.addUdpMask(inbound.stream.network === 'kcp' ? 'mkcp-aes128gcm' : 'xdns')" icon="plus" size="small"
+        <a-button @click="inbound.stream.addUdpMask(inbound.stream.network === 'kcp' ? 'mkcp-aes128gcm' : 'salamander')" icon="plus" size="small"
                   type="primary"></a-button>
     </a-form-item>
     <template
@@ -71,8 +100,12 @@
             </a-divider>
             <a-form-item label='Type'>
                 <a-select :dropdown-class-name="themeSwitcher.currentTheme"
-                          @change="(type) => { mask.settings = mask._getDefaultSettings(type, {}); if(inbound.stream.network === 'kcp') { inbound.stream.kcp.mtu = type === 'xdns' ? 900 : 1350; } }"
+                          @change="(type) => { mask.settings = mask._getDefaultSettings ? mask._getDefaultSettings(type, {}) : {}; if(inbound.stream.network === 'kcp') { inbound.stream.kcp.mtu = type === 'xdns' ? 900 : 1350; } }"
                           v-model="mask.type">
+                    <a-select-option value="salamander">Salamander</a-select-option>
+                    <a-select-option value="sudoku">Sudoku</a-select-option>
+                    <a-select-option value="noise">Noise</a-select-option>
+                    <a-select-option value="header-custom">Header Custom</a-select-option>
                     <!-- mKCP-specific masks -->
                     <a-select-option v-if="inbound.stream.network === 'kcp'"
                                      value="mkcp-aes128gcm">
@@ -120,7 +153,7 @@
             </a-form-item>
             <!-- Settings for password-based masks -->
             <a-form-item label='Password'
-                         v-if="['mkcp-aes128gcm'].includes(mask.type)">
+                         v-if="['salamander', 'mkcp-aes128gcm'].includes(mask.type)">
                 <a-input placeholder="Obfuscation password"
                          v-model.trim="mask.settings.password"></a-input>
             </a-form-item>
@@ -137,6 +170,24 @@
                             :token-separators="[',']"
                             placeholder="e.g., www.example.com"
                     ></a-select>
+                </a-form-item>
+            </template>
+            <!-- Settings for Sudoku -->
+            <template v-if="mask.type === 'sudoku'">
+                <a-form-item label="ASCII Table">
+                    <a-input placeholder="ASCII Mapping string" v-model.trim="mask.settings.ascii"></a-input>
+                </a-form-item>
+                <a-form-item label="Padding Min">
+                    <a-input-number :min="0" v-model.number="mask.settings.paddingMin"></a-input-number>
+                </a-form-item>
+                <a-form-item label="Padding Max">
+                    <a-input-number :min="0" v-model.number="mask.settings.paddingMax"></a-input-number>
+                </a-form-item>
+            </template>
+            <!-- Settings for Noise / Header-Custom -->
+            <template v-if="['noise', 'header-custom'].includes(mask.type)">
+                <a-form-item label="Rand Range">
+                    <a-input placeholder="e.g. 100-200" v-model.trim="mask.settings.randRange"></a-input>
                 </a-form-item>
             </template>
             <!-- Settings for xICMP -->

@@ -600,6 +600,12 @@ class UdpMask extends CommonClass {
                 return {domain: settings.domain || ''};
             case 'xdns':
                 return { resolvers: Array.isArray(settings.resolvers) ? settings.resolvers : [] };
+            case 'header-custom':
+                return { randRange: settings.randRange || '', client: Array.isArray(settings.client) ? settings.client : [], server: Array.isArray(settings.server) ? settings.server : [] };
+            case 'noise':
+                return { randRange: settings.randRange || '', reset: settings.reset || 0, noise: Array.isArray(settings.noise) ? settings.noise : [] };
+            case 'sudoku':
+                return { ascii: settings.ascii || '', customTable: settings.customTable || '', customTables: Array.isArray(settings.customTables) ? settings.customTables : [], paddingMin: settings.paddingMin || 0, paddingMax: settings.paddingMax || 0 };
             case 'mkcp-original':
             case 'header-dtls':
             case 'header-srtp':
@@ -632,17 +638,38 @@ class TcpMask extends CommonClass {
     }
 
     _getDefaultSettings(type, settings = {}) {
-        if (type !== 'xmc') return settings;
-        return {
-            hostname: settings.hostname || '',
-            password: settings.password || '',
-            profiles: Array.isArray(settings.profiles) ? settings.profiles.map(profile => ({
-                username: profile.username || '',
-                uuid: profile.uuid || '',
-                texturesValue: profile.texturesValue || '',
-                texturesSignature: profile.texturesSignature || '',
-            })) : [],
-        };
+        if (type === 'xmc') {
+            return {
+                hostname: settings.hostname || '',
+                password: settings.password || '',
+                profiles: Array.isArray(settings.profiles) ? settings.profiles.map(profile => ({
+                    username: profile.username || '',
+                    uuid: profile.uuid || '',
+                    texturesValue: profile.texturesValue || '',
+                    texturesSignature: profile.texturesSignature || '',
+                })) : [],
+            };
+        } else if (type === 'fragment') {
+            return {
+                length: settings.length || '',
+                interval: settings.interval || ''
+            };
+        } else if (type === 'sudoku') {
+            return {
+                ascii: settings.ascii || '',
+                customTable: settings.customTable || '',
+                customTables: Array.isArray(settings.customTables) ? settings.customTables : [],
+                paddingMin: settings.paddingMin || 0,
+                paddingMax: settings.paddingMax || 0
+            };
+        } else if (type === 'header-custom') {
+            return {
+                randRange: settings.randRange || '',
+                client: Array.isArray(settings.client) ? settings.client : [],
+                server: Array.isArray(settings.server) ? settings.server : []
+            };
+        }
+        return settings;
     }
 
     addProfile() {

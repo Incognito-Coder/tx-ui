@@ -6,7 +6,7 @@
                         v-model.number="inbound.stream.kcp.mtu"></a-input-number>
     </a-form-item>
     <a-form-item label='TTI (ms)'>
-        <a-input-number :max="100" :min="10"
+        <a-input-number :max="5000" :min="10"
                         v-model.number="inbound.stream.kcp.tti"></a-input-number>
     </a-form-item>
     <a-form-item label='Uplink (MB/s)'>
