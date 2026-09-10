@@ -1,12 +1,12 @@
 # ========================================================
 # Stage: Builder
 # ========================================================
-FROM golang:1.26-alpine AS builder
+FROM golang:1.27-bookworm AS builder
 WORKDIR /app
 ARG TARGETARCH
 
-RUN apk --no-cache --update add \
-  build-base \
+RUN apt-get update && apt-get install -y \
+  build-essential \
   gcc \
   wget \
   unzip
@@ -21,11 +21,11 @@ RUN ./DockerInit.sh "$TARGETARCH"
 # ========================================================
 # Stage: Final Image of tx-ui
 # ========================================================
-FROM alpine
+FROM bookworm
 ENV TZ=Asia/Tehran
 WORKDIR /app
 
-RUN apk add --no-cache --update \
+RUN apt-get update && apt-get install -y \
   ca-certificates \
   tzdata \
   fail2ban \
