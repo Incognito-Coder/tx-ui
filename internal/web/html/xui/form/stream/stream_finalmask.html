@@ -106,6 +106,7 @@
                     <a-select-option value="sudoku">Sudoku</a-select-option>
                     <a-select-option value="noise">Noise</a-select-option>
                     <a-select-option value="header-custom">Header Custom</a-select-option>
+                    <a-select-option value="udpHop">udpHop</a-select-option>
                     <!-- mKCP-specific masks -->
                     <a-select-option v-if="inbound.stream.network === 'kcp'"
                                      value="mkcp-aes128gcm">
@@ -188,6 +189,15 @@
             <template v-if="['noise', 'header-custom'].includes(mask.type)">
                 <a-form-item label='{{ i18n "pages.xray.finalmask.randRange" }}'>
                     <a-input placeholder="e.g. 100-200" v-model.trim="mask.settings.randRange"></a-input>
+                </a-form-item>
+            </template>
+            <!-- Settings for udpHop -->
+            <template v-if="mask.type === 'udpHop'">
+                <a-form-item label="Ports">
+                    <a-input placeholder="e.g. 10000-20000,30000" v-model.trim="mask.settings.ports"></a-input>
+                </a-form-item>
+                <a-form-item label='{{ i18n "pages.xray.finalmask.interval" }}'>
+                    <a-input placeholder="e.g. 10-30" v-model.trim="mask.settings.interval"></a-input>
                 </a-form-item>
             </template>
             <!-- Settings for xICMP -->

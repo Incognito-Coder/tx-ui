@@ -606,6 +606,8 @@ class UdpMask extends CommonClass {
                 return { randRange: settings.randRange || '', reset: settings.reset || 0, noise: Array.isArray(settings.noise) ? settings.noise : [] };
             case 'sudoku':
                 return { ascii: settings.ascii || '', customTable: settings.customTable || '', customTables: Array.isArray(settings.customTables) ? settings.customTables : [], paddingMin: settings.paddingMin || 0, paddingMax: settings.paddingMax || 0 };
+            case 'udpHop':
+                return { ports: settings.ports || '', interval: settings.interval || '' };
             case 'mkcp-original':
             case 'header-dtls':
             case 'header-srtp':

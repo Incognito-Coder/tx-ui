@@ -1096,6 +1096,8 @@ class UdpMask extends XrayCommonClass {
                 return { randRange: settings.randRange || '', reset: settings.reset || 0, noise: Array.isArray(settings.noise) ? settings.noise : [] };
             case 'sudoku':
                 return { ascii: settings.ascii || '', customTable: settings.customTable || '', customTables: Array.isArray(settings.customTables) ? settings.customTables : [], paddingMin: settings.paddingMin || 0, paddingMax: settings.paddingMax || 0 };
+            case 'udpHop':
+                return { ports: settings.ports || '', interval: settings.interval || '' };
             default:
                 return settings;
         }
