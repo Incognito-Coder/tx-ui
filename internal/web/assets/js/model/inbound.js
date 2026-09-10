@@ -1711,6 +1711,14 @@ class Inbound extends XrayCommonClass {
             params.set("security", "none");
         }
 
+        if (!ObjectUtil.isEmpty(settings.encryption) && settings.encryption !== 'none') {
+            params.set("encryption", settings.encryption);
+        } else if (!ObjectUtil.isEmpty(settings.decryption) && settings.decryption !== 'none') {
+            params.set("encryption", settings.decryption);
+        } else {
+            params.set("encryption", "none");
+        }
+
         const link = `vless://${uuid}@${address}:${port}`;
         const url = new URL(link);
         for (const [key, value] of params) {

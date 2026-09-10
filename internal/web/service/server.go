@@ -123,7 +123,9 @@ type Status struct {
 }
 
 type Release struct {
-	TagName string `json:"tag_name"`
+	TagName    string `json:"tag_name"`
+	Draft      bool   `json:"draft"`
+	Prerelease bool   `json:"prerelease"`
 }
 
 type ServerService struct {
@@ -337,44 +339,52 @@ func (s *ServerService) CheckForUpdate(owner, repo, currentVersion string) (bool
 }
 
 func (s *ServerService) GetXrayVersions() ([]string, error) {
-	const (
-		XrayURL    = "https://api.github.com/repos/XTLS/Xray-core/releases"
-		bufferSize = 8192
-	)
+	const XrayURL = "https://api.github.com/repos/XTLS/Xray-core/releases?per_page=30"
 
-	resp, err := http.Get(XrayURL)
+	req, err := http.NewRequest("GET", XrayURL, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("User-Agent", "tx-ui/1.0")
+
+	client := &http.Client{Timeout: 15 * time.Second}
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
-	buffer := bytes.NewBuffer(make([]byte, bufferSize))
-	buffer.Reset()
-	if _, err := buffer.ReadFrom(resp.Body); err != nil {
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("GitHub API returned HTTP %d", resp.StatusCode)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
 		return nil, err
 	}
 
 	var releases []Release
-	if err := json.Unmarshal(buffer.Bytes(), &releases); err != nil {
+	if err := json.Unmarshal(body, &releases); err != nil {
 		return nil, err
 	}
 
 	var versions []string
 	for _, release := range releases {
+		if release.Draft {
+			continue
+		}
 		tagVersion := strings.TrimPrefix(release.TagName, "v")
 		tagParts := strings.Split(tagVersion, ".")
-		if len(tagParts) != 3 {
+		if len(tagParts) < 2 {
 			continue
 		}
 
 		major, err1 := strconv.Atoi(tagParts[0])
-		minor, err2 := strconv.Atoi(tagParts[1])
-		patch, err3 := strconv.Atoi(tagParts[2])
-		if err1 != nil || err2 != nil || err3 != nil {
+		if err1 != nil {
 			continue
 		}
 
-		if major > 26 || (major == 26 && minor > 3) || (major == 26 && minor == 3 && patch >= 27) {
+		if major >= 1 {
 			versions = append(versions, release.TagName)
 		}
 	}

@@ -117,7 +117,7 @@ jobs:
           cd x-ui/bin
 
           # Download dependencies
-          Xray_URL="https://github.com/XTLS/Xray-core/releases/download/v26.7.28/"
+          Xray_URL="https://github.com/XTLS/Xray-core/releases/download/v26.9.9/"
           if [ "${{ matrix.platform }}" == "linux-amd64" ]; then
             curl -sSL -O ${Xray_URL}Xray-linux-64.zip && unzip -q Xray-linux-64.zip && rm -f Xray-linux-64.zip
           elif [ "${{ matrix.platform }}" == "linux-arm64" ]; then
@@ -184,7 +184,7 @@ jobs:
           cd x-ui\bin
 
           # Download Xray for Windows
-          $Xray_URL = "https://github.com/XTLS/Xray-core/releases/download/v26.7.28/"
+          $Xray_URL = "https://github.com/XTLS/Xray-core/releases/download/v26.9.9/"
           Invoke-WebRequest -Uri "${Xray_URL}${xrayZip}" -OutFile "${xrayZip}"
           Expand-Archive -Path "${xrayZip}" -DestinationPath .
           Remove-Item "${xrayZip}"

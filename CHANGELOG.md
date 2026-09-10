@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v0.8.2] - 2026-09-10
+
+### 🚀 Features & Xray-core Integration
+- **Xray-core v26.9.9 Upgrade**: Updated `xray-core` dependency to latest `v26.9.9` release tag across `go.mod`, `DockerInit.sh`, and GitHub Actions release workflow (`release.yml`).
+- **VLESS Post-Quantum Encryption (VLESS ENC)**: Refined `GetNewVlessEnc()` in `server.go` to support `ML-KEM-768` (Post-Quantum) and `X25519` keypair generation, added selection UI in `vless.html`, and updated subscription URL generation in `inbound.js`.
+- **Routing Rules Enhancement**: Added `localIP` and `localPort` inputs to `xray_rule_modal.html` alongside `vlessRoute` and `sourceIP`.
+
+### 🐛 Bug Fixes & Improvements
+- **Xray Release Fetching**: Fixed `GetXrayVersions()` in `server.go` by sending `User-Agent: tx-ui/1.0` header and using full stream reader to prevent truncated JSON response syntax errors from GitHub API.
+
+---
+
 ## [v0.8.1] - 2026-09-04
 
 ### 🚀 Features

@@ -21,6 +21,30 @@
                     <template slot="title">
                         <span>{{ i18n "pages.xray.rules.useComma" }}</span>
                     </template>
+                    Local IPs
+                    <a-icon type="question-circle"></a-icon>
+                </a-tooltip>
+            </template>
+            <a-input placeholder="e.g. 127.0.0.1, 10.0.0.1" v-model.trim="ruleModal.rule.localIP"></a-input>
+        </a-form-item>
+        <a-form-item>
+            <template slot="label">
+                <a-tooltip>
+                    <template slot="title">
+                        <span>{{ i18n "pages.xray.rules.useComma" }}</span>
+                    </template>
+                    Local Port
+                    <a-icon type="question-circle"></a-icon>
+                </a-tooltip>
+            </template>
+            <a-input placeholder="e.g. 53,443,1000-2000" v-model.trim="ruleModal.rule.localPort"></a-input>
+        </a-form-item>
+        <a-form-item>
+            <template slot="label">
+                <a-tooltip>
+                    <template slot="title">
+                        <span>{{ i18n "pages.xray.rules.useComma" }}</span>
+                    </template>
                     Source Port
                     <a-icon type="question-circle"></a-icon>
                 </a-tooltip>
@@ -37,7 +61,7 @@
                     <a-icon type="question-circle"></a-icon>
                 </a-tooltip>
             </template>
-            <a-input placeholder="e.g. 53,443,1000-2000" v-model.trim="ruleModal.rule.vlessRoute"></a-input>
+            <a-input placeholder="e.g. 0-255" v-model.trim="ruleModal.rule.vlessRoute"></a-input>
         </a-form-item>
         <a-form-item label='Network'>
             <a-select :dropdown-class-name="themeSwitcher.currentTheme" v-model="ruleModal.rule.network">
@@ -155,6 +179,8 @@
             domain: "",
             ip: "",
             port: "",
+            localIP: "",
+            localPort: "",
             sourcePort: "",
             vlessRoute: "",
             network: "",
@@ -190,6 +216,8 @@
                 this.rule.domain = rule.domain ? rule.domain.join(',') : [];
                 this.rule.ip = rule.ip ? rule.ip.join(',') : [];
                 this.rule.port = rule.port;
+                this.rule.localIP = rule.localIP ? rule.localIP.join(',') : [];
+                this.rule.localPort = rule.localPort;
                 this.rule.sourcePort = rule.sourcePort;
                 this.rule.vlessRoute = rule.vlessRoute;
                 this.rule.network = rule.network;
@@ -205,6 +233,8 @@
                     domain: "",
                     ip: "",
                     port: "",
+                    localIP: "",
+                    localPort: "",
                     sourcePort: "",
                     vlessRoute: "",
                     network: "",
@@ -252,6 +282,8 @@
             rule.domain = value.domain.length > 0 ? value.domain.split(',').map(s => s.trim()) : [];
             rule.ip = value.ip.length > 0 ? value.ip.split(',').map(s => s.trim()) : [];
             rule.port = value.port;
+            rule.localIP = value.localIP.length > 0 ? value.localIP.split(',').map(s => s.trim()) : [];
+            rule.localPort = value.localPort;
             rule.sourcePort = value.sourcePort;
             rule.vlessRoute = value.vlessRoute;
             rule.network = value.network;
