@@ -575,6 +575,14 @@
 "uuid" = "UUID"
 "texturesValue" = "Значение текстур"
 "texturesSignature" = "Подпись текстур"
+"udpMasks" = "UDP маски"
+"udpMask" = "UDP маска"
+"length" = "Длина"
+"interval" = "Интервал"
+"asciiTable" = "Таблица ASCII"
+"paddingMin" = "Мин. паддинг"
+"paddingMax" = "Макс. паддинг"
+"randRange" = "Случайный диапазон"
 
 [pages.xray.dns]
 "enable" = "Включить DNS"

@@ -575,6 +575,14 @@
 "uuid" = "UUID"
 "texturesValue" = "مقدار تکسچرها"
 "texturesSignature" = "امضای تکسچرها"
+"udpMasks" = "ماسک‌های UDP"
+"udpMask" = "ماسک UDP"
+"length" = "طول"
+"interval" = "بازه زمانی"
+"asciiTable" = "جدول ASCII"
+"paddingMin" = "حداقل پدینگ"
+"paddingMax" = "حداکثر پدینگ"
+"randRange" = "محدوده تصادفی"
 
 [pages.xray.dns]
 "enable" = "فعال کردن حل دامنه"

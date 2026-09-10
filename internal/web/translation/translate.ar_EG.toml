@@ -604,6 +604,14 @@
 "uuid" = "UUID"
 "texturesValue" = "قيمة الأنسجة"
 "texturesSignature" = "توقيع الأنسجة"
+"udpMasks" = "أقنعة UDP"
+"udpMask" = "قناع UDP"
+"length" = "الطول"
+"interval" = "الفاصل الزمني"
+"asciiTable" = "جدول ASCII"
+"paddingMin" = "الحد الأدنى للحشو"
+"paddingMax" = "الحد الأقصى للحشو"
+"randRange" = "نطاق عشوائي"
 
 [pages.xray.dns]
 "enable" = "فعل DNS"

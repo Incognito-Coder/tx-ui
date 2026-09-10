@@ -575,6 +575,14 @@
 "uuid" = "UUID"
 "texturesValue" = "Giá trị texture"
 "texturesSignature" = "Chữ ký texture"
+"udpMasks" = "Mặt nạ UDP"
+"udpMask" = "Mặt nạ UDP"
+"length" = "Độ dài"
+"interval" = "Khoảng thời gian"
+"asciiTable" = "Bảng ASCII"
+"paddingMin" = "Đệm tối thiểu"
+"paddingMax" = "Đệm tối đa"
+"randRange" = "Phạm vi ngẫu nhiên"
 
 [pages.xray.dns]
 "enable" = "Kích hoạt DNS"

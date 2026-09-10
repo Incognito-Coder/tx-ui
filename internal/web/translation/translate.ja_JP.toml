@@ -575,6 +575,14 @@
 "uuid" = "UUID"
 "texturesValue" = "テクスチャ値"
 "texturesSignature" = "テクスチャ署名"
+"udpMasks" = "UDP マスク"
+"udpMask" = "UDP マスク"
+"length" = "長さ"
+"interval" = "間隔"
+"asciiTable" = "ASCII テーブル"
+"paddingMin" = "最小パディング"
+"paddingMax" = "最大パディング"
+"randRange" = "ランダム範囲"
 
 [pages.xray.dns]
 "enable" = "DNSを有効にする"

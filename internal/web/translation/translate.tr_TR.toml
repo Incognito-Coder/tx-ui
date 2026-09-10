@@ -575,6 +575,14 @@
 "uuid" = "UUID"
 "texturesValue" = "Doku Değeri"
 "texturesSignature" = "Doku İmzası"
+"udpMasks" = "UDP Maskeleri"
+"udpMask" = "UDP Maskesi"
+"length" = "Uzunluk"
+"interval" = "Aralık"
+"asciiTable" = "ASCII Tablosu"
+"paddingMin" = "Min Doldurma"
+"paddingMax" = "Maks Doldurma"
+"randRange" = "Rastgele Aralık"
 
 [pages.xray.dns]
 "enable" = "DNS'yi Etkinleştir"

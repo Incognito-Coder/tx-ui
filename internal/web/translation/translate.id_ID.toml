@@ -576,6 +576,14 @@
 "uuid" = "UUID"
 "texturesValue" = "Nilai Tekstur"
 "texturesSignature" = "Tanda Tangan Tekstur"
+"udpMasks" = "Masker UDP"
+"udpMask" = "Masker UDP"
+"length" = "Panjang"
+"interval" = "Interval"
+"asciiTable" = "Tabel ASCII"
+"paddingMin" = "Padding Min"
+"paddingMax" = "Padding Maks"
+"randRange" = "Rentang Acak"
 
 [pages.xray.dns]
 "enable" = "Aktifkan DNS"

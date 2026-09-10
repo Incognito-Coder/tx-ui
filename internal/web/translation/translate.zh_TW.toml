@@ -576,6 +576,14 @@
 "uuid" = "UUID"
 "texturesValue" = "紋理值"
 "texturesSignature" = "紋理簽章"
+"udpMasks" = "UDP 偽裝"
+"udpMask" = "UDP 偽裝"
+"length" = "分片長度"
+"interval" = "分片間隔"
+"asciiTable" = "ASCII 映射表"
+"paddingMin" = "最小填充"
+"paddingMax" = "最大填充"
+"randRange" = "隨機範圍"
 
 [pages.xray.dns]
 "enable" = "啟用 DNS"

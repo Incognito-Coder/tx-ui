@@ -575,6 +575,14 @@
 "uuid" = "UUID"
 "texturesValue" = "Textures Value"
 "texturesSignature" = "Textures Signature"
+"udpMasks" = "UDP Masks"
+"udpMask" = "UDP Mask"
+"length" = "Length"
+"interval" = "Interval"
+"asciiTable" = "ASCII Table"
+"paddingMin" = "Padding Min"
+"paddingMax" = "Padding Max"
+"randRange" = "Random Range"
 
 [pages.xray.dns]
 "enable" = "Enable DNS"

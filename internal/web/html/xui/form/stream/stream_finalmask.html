@@ -59,32 +59,32 @@
                 </a-form>
             </template>
             <template v-if="mask.type === 'fragment'">
-                <a-form-item label="Length">
+                <a-form-item label='{{ i18n "pages.xray.finalmask.length" }}'>
                     <a-input placeholder="e.g. 10-20" v-model.trim="mask.settings.length"></a-input>
                 </a-form-item>
-                <a-form-item label="Interval">
+                <a-form-item label='{{ i18n "pages.xray.finalmask.interval" }}'>
                     <a-input placeholder="e.g. 10-20" v-model.trim="mask.settings.interval"></a-input>
                 </a-form-item>
             </template>
             <template v-if="mask.type === 'sudoku'">
-                <a-form-item label="ASCII Table">
+                <a-form-item label='{{ i18n "pages.xray.finalmask.asciiTable" }}'>
                     <a-input placeholder="ASCII Mapping string" v-model.trim="mask.settings.ascii"></a-input>
                 </a-form-item>
-                <a-form-item label="Padding Min">
+                <a-form-item label='{{ i18n "pages.xray.finalmask.paddingMin" }}'>
                     <a-input-number :min="0" v-model.number="mask.settings.paddingMin"></a-input-number>
                 </a-form-item>
-                <a-form-item label="Padding Max">
+                <a-form-item label='{{ i18n "pages.xray.finalmask.paddingMax" }}'>
                     <a-input-number :min="0" v-model.number="mask.settings.paddingMax"></a-input-number>
                 </a-form-item>
             </template>
             <template v-if="mask.type === 'header-custom'">
-                <a-form-item label="Rand Range">
+                <a-form-item label='{{ i18n "pages.xray.finalmask.randRange" }}'>
                     <a-input placeholder="e.g. 100-200" v-model.trim="mask.settings.randRange"></a-input>
                 </a-form-item>
             </template>
         </a-form>
     </template>
-    <a-form-item label="UDP Masks">
+    <a-form-item label='{{ i18n "pages.xray.finalmask.udpMasks" }}'>
         <a-button @click="inbound.stream.addUdpMask(inbound.stream.network === 'kcp' ? 'mkcp-aes128gcm' : 'salamander')" icon="plus" size="small"
                   type="primary"></a-button>
     </a-form-item>
@@ -93,12 +93,12 @@
         <a-form :colon="false"
                 :key="index" :label-col="{ md: {span:8} }"
                 :wrapper-col="{ md: {span:14} }" v-for="(mask, index) in inbound.stream.finalmask.udp">
-            <a-divider :style="{ margin: '0' }"> UDP Mask [[ index + 1 ]]
+            <a-divider :style="{ margin: '0' }">{{ i18n "pages.xray.finalmask.udpMask" }} [[ index + 1 ]]
                 <a-icon :style="{ color: 'rgb(255, 77, 79)', cursor: 'pointer' }"
                         @click="() => inbound.stream.delUdpMask(index)"
                         type="delete"></a-icon>
             </a-divider>
-            <a-form-item label='Type'>
+            <a-form-item label='{{ i18n "pages.xray.finalmask.type" }}'>
                 <a-select :dropdown-class-name="themeSwitcher.currentTheme"
                           @change="(type) => { mask.settings = mask._getDefaultSettings ? mask._getDefaultSettings(type, {}) : {}; if(inbound.stream.network === 'kcp') { inbound.stream.kcp.mtu = type === 'xdns' ? 900 : 1350; } }"
                           v-model="mask.type">
@@ -152,7 +152,7 @@
                 </a-select>
             </a-form-item>
             <!-- Settings for password-based masks -->
-            <a-form-item label='Password'
+            <a-form-item label='{{ i18n "password" }}'
                          v-if="['salamander', 'mkcp-aes128gcm'].includes(mask.type)">
                 <a-input placeholder="Obfuscation password"
                          v-model.trim="mask.settings.password"></a-input>
@@ -174,19 +174,19 @@
             </template>
             <!-- Settings for Sudoku -->
             <template v-if="mask.type === 'sudoku'">
-                <a-form-item label="ASCII Table">
+                <a-form-item label='{{ i18n "pages.xray.finalmask.asciiTable" }}'>
                     <a-input placeholder="ASCII Mapping string" v-model.trim="mask.settings.ascii"></a-input>
                 </a-form-item>
-                <a-form-item label="Padding Min">
+                <a-form-item label='{{ i18n "pages.xray.finalmask.paddingMin" }}'>
                     <a-input-number :min="0" v-model.number="mask.settings.paddingMin"></a-input-number>
                 </a-form-item>
-                <a-form-item label="Padding Max">
+                <a-form-item label='{{ i18n "pages.xray.finalmask.paddingMax" }}'>
                     <a-input-number :min="0" v-model.number="mask.settings.paddingMax"></a-input-number>
                 </a-form-item>
             </template>
             <!-- Settings for Noise / Header-Custom -->
             <template v-if="['noise', 'header-custom'].includes(mask.type)">
-                <a-form-item label="Rand Range">
+                <a-form-item label='{{ i18n "pages.xray.finalmask.randRange" }}'>
                     <a-input placeholder="e.g. 100-200" v-model.trim="mask.settings.randRange"></a-input>
                 </a-form-item>
             </template>
