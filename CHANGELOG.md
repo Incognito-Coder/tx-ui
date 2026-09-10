@@ -11,10 +11,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 🚀 Features & Xray-core Integration
 - **Xray-core v26.9.9 Upgrade**: Updated `xray-core` dependency to latest `v26.9.9` release tag across `go.mod`, `DockerInit.sh`, and GitHub Actions release workflow (`release.yml`).
+- **Xray-core v26.3.27 - v26.9.9 Feature Alignment**:
+  - **Finalmask Obfuscation Engine**: Full panel support for Finalmask TCP & UDP masks including `udpHop` (`ports`, `interval`), `Sudoku` (`ascii`, `paddingMin/Max`), `fragment` (`length`, `interval`), `noise`, `header-custom`, and `salamander` in both inbound and outbound form models.
+  - **mKCP TTI Extension**: Expanded mKCP Transmission Time Interval (TTI) max range from 100 ms up to 5000 ms for XDNS and high-latency connections.
+  - **REALITY Security Hints**: Added real-time security warning alert on REALITY configuration forms for non-443 target ports or Apple/iCloud SNI domains.
 - **VLESS Post-Quantum Encryption (VLESS ENC)**: Refined `GetNewVlessEnc()` in `server.go` to support `ML-KEM-768` (Post-Quantum) and `X25519` keypair generation, added selection UI in `vless.html`, and updated subscription URL generation in `inbound.js`.
 - **Routing Rules Enhancement**: Added `localIP` and `localPort` inputs to `xray_rule_modal.html` alongside `vlessRoute` and `sourceIP`.
+- **Docker Infrastructure Modernization**: Upgraded Docker base image to Debian Bookworm (`debian:bookworm-slim`), migrating package management from `apk` to `apt-get` for improved stability and glibc binary compatibility.
+
+### 🌐 Internationalization (i18n)
+- **100% Translation Coverage**: Audited 572 template i18n keys and added missing translation strings across all 13 supported locales (`ar_EG`, `en_US`, `es_ES`, `fa_IR`, `id_ID`, `ja_JP`, `pt_BR`, `ru_RU`, `tr_TR`, `uk_UA`, `vi_VN`, `zh_CN`, `zh_TW`).
 
 ### 🐛 Bug Fixes & Improvements
+- **VLESS Link Generation Fix**: Resolved `ReferenceError: settings is not defined` bug in `genVLESSLink()` in `inbound.js`.
 - **Xray Release Fetching**: Fixed `GetXrayVersions()` in `server.go` by sending `User-Agent: tx-ui/1.0` header and using full stream reader to prevent truncated JSON response syntax errors from GitHub API.
 
 ---
