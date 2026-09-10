@@ -1624,12 +1624,13 @@ class Inbound extends XrayCommonClass {
     }
 
     genVLESSLink(address = '', port = this.port, forceTls, remark = '', clientId, flow) {
+        const settings = this.settings;
         const uuid = clientId;
         const type = this.stream.network;
         const security = forceTls == 'same' ? this.stream.security : forceTls;
         const params = new Map();
         params.set("type", this.stream.network);
-        params.set("encryption", this.settings.encryption);
+        params.set("encryption", settings.encryption);
         switch (type) {
             case "tcp":
                 const tcp = this.stream.tcp;
