@@ -14,7 +14,7 @@ bin/
 dist/
 release/
 vendor/
-sub/
+/sub/
 /release.sh
 /x-ui
 

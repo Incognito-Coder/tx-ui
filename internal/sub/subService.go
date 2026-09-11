@@ -2,8 +2,11 @@ package sub
 
 import (
 	"encoding/base64"
+	"errors"
 	"fmt"
+	"net"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 
@@ -132,6 +135,183 @@ func (s *SubService) getInboundsBySubId(subId string) ([]*model.Inbound, error) 
 	}
 	return inbounds, nil
 }
+
+func (s *SubService) getInboundsByEmail(email string) ([]*model.Inbound, error) {
+	db := database.GetDB()
+	var inbounds []*model.Inbound
+	err := db.Model(model.Inbound{}).Preload("ClientStats").Where(`id in (
+		SELECT DISTINCT inbounds.id
+		FROM inbounds,
+			JSON_EACH(JSON_EXTRACT(inbounds.settings, '$.clients')) AS client
+		WHERE
+			protocol in ('vmess','vless','trojan','shadowsocks','hysteria','wireguard')
+			AND LOWER(JSON_EXTRACT(client.value, '$.email')) = LOWER(?) AND enable = ?
+		UNION
+		SELECT DISTINCT node_client_links.inbound_id
+		FROM node_client_links
+			JOIN node_clients ON node_clients.id = node_client_links.node_client_id
+			JOIN inbounds ON inbounds.id = node_client_links.inbound_id
+		WHERE LOWER(node_clients.email) = LOWER(?)
+			AND inbounds.protocol in ('vmess','vless','trojan','shadowsocks','hysteria','wireguard')
+			AND inbounds.enable = ?
+	)`, email, true, email, true).Find(&inbounds).Error
+	if err != nil {
+		return nil, err
+	}
+	if len(inbounds) == 0 {
+		_ = db.Model(model.Inbound{}).Preload("ClientStats").Where(`id in (
+			SELECT DISTINCT inbounds.id
+			FROM inbounds,
+				JSON_EACH(JSON_EXTRACT(inbounds.settings, '$.clients')) AS client
+			WHERE
+				protocol in ('vmess','vless','trojan','shadowsocks','hysteria','wireguard')
+				AND LOWER(JSON_EXTRACT(client.value, '$.email')) = LOWER(?)
+			UNION
+			SELECT DISTINCT node_client_links.inbound_id
+			FROM node_client_links
+				JOIN node_clients ON node_clients.id = node_client_links.node_client_id
+				JOIN inbounds ON inbounds.id = node_client_links.inbound_id
+			WHERE LOWER(node_clients.email) = LOWER(?)
+				AND inbounds.protocol in ('vmess','vless','trojan','shadowsocks','hysteria','wireguard')
+		)`, email, email).Find(&inbounds).Error
+	}
+	return inbounds, nil
+}
+
+func (s *SubService) GetConfigLinksByEmail(email string) (string, []string, error) {
+	email = strings.TrimSpace(email)
+	if email == "" {
+		return "", nil, errors.New("empty email")
+	}
+
+	// 1. Resolve host / address
+	subDomain, _ := s.settingService.GetSubDomain()
+	if subDomain == "" {
+		subDomain, _ = s.settingService.GetWebDomain()
+	}
+	if subDomain == "" {
+		status := (&service.ServerService{}).GetStatus(nil)
+		if status != nil && status.PublicIP.IPv4 != "" {
+			subDomain = status.PublicIP.IPv4
+		} else {
+			subDomain, _ = os.Hostname()
+		}
+	}
+	if strings.Contains(subDomain, "://") {
+		if u, err := url.Parse(subDomain); err == nil {
+			subDomain = u.Hostname()
+		}
+	} else if host, _, err := net.SplitHostPort(subDomain); err == nil {
+		subDomain = host
+	}
+	s.address = strings.TrimSpace(subDomain)
+
+	// 2. Set remark model and datepicker
+	remarkModel, err := s.settingService.GetRemarkModel()
+	if err != nil || remarkModel == "" {
+		remarkModel = "-ieo"
+	}
+	s.remarkModel = remarkModel
+	s.datepicker, _ = s.settingService.GetDatepicker()
+	if s.datepicker == "" {
+		s.datepicker = "gregorian"
+	}
+
+	// 3. Find client canonical email and subId (if any)
+	canonicalEmail := email
+	subId := ""
+	_, client, err := s.inboundService.GetClientByEmail(email)
+	if err == nil && client != nil {
+		canonicalEmail = client.Email
+		subId = client.SubID
+	} else {
+		if nc, err := s.nodeClientService.GetByEmail(email); err == nil && nc != nil {
+			canonicalEmail = nc.Email
+			subId = nc.SubID
+		}
+	}
+
+	// 4. Collect inbounds for this client
+	var inbounds []*model.Inbound
+	inboundMap := make(map[int]*model.Inbound)
+
+	if subId != "" {
+		subInbounds, _ := s.getInboundsBySubId(subId)
+		for _, ib := range subInbounds {
+			inboundMap[ib.Id] = ib
+		}
+	}
+	emailInbounds, _ := s.getInboundsByEmail(canonicalEmail)
+	for _, ib := range emailInbounds {
+		inboundMap[ib.Id] = ib
+	}
+
+	for _, ib := range inboundMap {
+		inbounds = append(inbounds, ib)
+	}
+
+	var result []string
+
+	// 5. If subscription is enabled and client has subId, include subscription link
+	subEnable, _ := s.settingService.GetSubEnable()
+	if subEnable && subId != "" {
+		subURI := ""
+		subPort, _ := s.settingService.GetSubPort()
+		subPath, _ := s.settingService.GetSubPath()
+		subKeyFile, _ := s.settingService.GetSubKeyFile()
+		subCertFile, _ := s.settingService.GetSubCertFile()
+		subTLS := subKeyFile != "" && subCertFile != ""
+		domain := s.address
+		if subTLS {
+			subURI = "https://"
+		} else {
+			subURI = "http://"
+		}
+		if (subPort == 443 && subTLS) || (subPort == 80 && !subTLS) {
+			subURI += domain
+		} else {
+			subURI += fmt.Sprintf("%s:%d", domain, subPort)
+		}
+		if !strings.HasPrefix(subPath, "/") {
+			subPath = "/" + subPath
+		}
+		if !strings.HasSuffix(subPath, "/") {
+			subPath = subPath + "/"
+		}
+		result = append(result, subURI+subPath+subId)
+	}
+
+	// 6. Generate direct proxy links for each inbound
+	for _, inbound := range inbounds {
+		clients, err := s.getClients(inbound)
+		if err != nil || len(clients) == 0 {
+			continue
+		}
+		if len(inbound.Listen) > 0 && inbound.Listen[0] == '@' {
+			listen, port, streamSettings, err := s.getFallbackMaster(inbound.Listen, inbound.StreamSettings)
+			if err == nil {
+				inbound.Listen = listen
+				inbound.Port = port
+				inbound.StreamSettings = streamSettings
+			}
+		}
+		for _, c := range clients {
+			if strings.EqualFold(c.Email, canonicalEmail) {
+				link := s.getLink(inbound, c.Email)
+				if link != "" {
+					result = append(result, link)
+				}
+			}
+		}
+	}
+
+	if len(result) == 0 {
+		return canonicalEmail, nil, errors.New("no config links found for client")
+	}
+
+	return canonicalEmail, result, nil
+}
+
 
 // getClients returns the inbound's own clients merged with clients synthesised
 // from node clients linked to this inbound, so subscription links can be

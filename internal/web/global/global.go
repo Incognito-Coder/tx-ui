@@ -8,9 +8,10 @@ import (
 )
 
 var (
-	webServer   WebServer
-	subServer   SubServer
-	RestartChan = make(chan struct{}, 1)
+	webServer         WebServer
+	subServer         SubServer
+	configLinkService ConfigLinkService
+	RestartChan       = make(chan struct{}, 1)
 )
 
 func TriggerRestart() {
@@ -27,6 +28,11 @@ type WebServer interface {
 
 type SubServer interface {
 	GetCtx() context.Context
+	GetConfigLinksByEmail(email string) (string, []string, error)
+}
+
+type ConfigLinkService interface {
+	GetConfigLinksByEmail(email string) (string, []string, error)
 }
 
 func SetWebServer(s WebServer) {
@@ -44,3 +50,12 @@ func SetSubServer(s SubServer) {
 func GetSubServer() SubServer {
 	return subServer
 }
+
+func SetConfigLinkService(s ConfigLinkService) {
+	configLinkService = s
+}
+
+func GetConfigLinkService() ConfigLinkService {
+	return configLinkService
+}
+

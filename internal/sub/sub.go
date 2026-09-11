@@ -14,6 +14,7 @@ import (
 	"x-ui/config"
 	"x-ui/internal/logger"
 	"x-ui/internal/util/common"
+	"x-ui/internal/web/global"
 	"x-ui/internal/web/middleware"
 	"x-ui/internal/web/network"
 	"x-ui/internal/web/service"
@@ -21,6 +22,10 @@ import (
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
 )
+
+func init() {
+	global.SetConfigLinkService(NewSubService(true, ""))
+}
 
 //go:embed html/*
 var htmlFS embed.FS
@@ -30,6 +35,7 @@ type Server struct {
 	listener   net.Listener
 
 	sub            *SUBController
+	subService     *SubService
 	settingService service.SettingService
 
 	ctx    context.Context
@@ -38,10 +44,13 @@ type Server struct {
 
 func NewServer() *Server {
 	ctx, cancel := context.WithCancel(context.Background())
-	return &Server{
-		ctx:    ctx,
-		cancel: cancel,
+	s := &Server{
+		ctx:        ctx,
+		cancel:     cancel,
+		subService: NewSubService(true, ""),
 	}
+	global.SetConfigLinkService(s.subService)
+	return s
 }
 
 func (s *Server) getHtmlFiles(customFolder string) ([]string, error) {
@@ -327,3 +336,11 @@ func (s *Server) Stop() error {
 func (s *Server) GetCtx() context.Context {
 	return s.ctx
 }
+
+func (s *Server) GetConfigLinksByEmail(email string) (string, []string, error) {
+	if s.subService == nil {
+		s.subService = NewSubService(true, "")
+	}
+	return s.subService.GetConfigLinksByEmail(email)
+}
+

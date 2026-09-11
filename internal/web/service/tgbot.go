@@ -3,15 +3,11 @@ package service
 import (
 	"context"
 	"crypto/rand"
-	"crypto/tls"
 	"embed"
 	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net"
-	"net/http"
 	"net/url"
 	"os"
 	"strconv"
@@ -34,6 +30,7 @@ import (
 	"github.com/mymmrac/telego"
 	th "github.com/mymmrac/telego/telegohandler"
 	tu "github.com/mymmrac/telego/telegoutil"
+	"github.com/skip2/go-qrcode"
 	"github.com/valyala/fasthttp"
 	"github.com/valyala/fasthttp/fasthttpproxy"
 )
@@ -2089,139 +2086,19 @@ func (t *Tgbot) editMessageTgBot(chatId int64, messageID int, text string, inlin
 }
 
 func (t *Tgbot) getClientConfigLinksByEmail(email string) (string, []string, error) {
-	_, client, err := t.inboundService.GetClientByEmail(email)
-	if err != nil {
-		return "", nil, err
+	if linkService := global.GetConfigLinkService(); linkService != nil {
+		return linkService.GetConfigLinksByEmail(email)
 	}
-	if client == nil {
-		return "", nil, common.NewError("client not found")
+	if subServer := global.GetSubServer(); subServer != nil {
+		return subServer.GetConfigLinksByEmail(email)
 	}
-	if client.SubID == "" {
-		return client.Email, nil, common.NewError("client subId not found")
-	}
-
-	subPort, err := t.settingService.GetSubPort()
-	if err != nil {
-		return client.Email, nil, err
-	}
-	subPath, err := t.settingService.GetSubPath()
-	if err != nil {
-		return client.Email, nil, err
-	}
-	subEncrypt, err := t.settingService.GetSubEncrypt()
-	if err != nil {
-		return client.Email, nil, err
-	}
-	subKeyFile, err := t.settingService.GetSubKeyFile()
-	if err != nil {
-		return client.Email, nil, err
-	}
-	subCertFile, err := t.settingService.GetSubCertFile()
-	if err != nil {
-		return client.Email, nil, err
-	}
-	subTLS := subKeyFile != "" && subCertFile != ""
-
-	scheme := "http"
-	if subTLS {
-		scheme = "https"
-	}
-	if !strings.HasPrefix(subPath, "/") {
-		subPath = "/" + subPath
-	}
-	subURL := fmt.Sprintf("%s://127.0.0.1:%d%s%s", scheme, subPort, subPath, client.SubID)
-
-	httpClient := &http.Client{Timeout: 10 * time.Second}
-	if subTLS {
-		httpClient.Transport = &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-		}
-	}
-
-	resp, err := httpClient.Get(subURL)
-	if err != nil {
-		return client.Email, nil, err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return client.Email, nil, common.NewErrorf("subscription endpoint returned status %d", resp.StatusCode)
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return client.Email, nil, err
-	}
-	content := strings.TrimSpace(string(body))
-	if content == "" {
-		return client.Email, nil, common.NewError("empty subscription response")
-	}
-	if subEncrypt {
-		if decoded, err := base64.StdEncoding.DecodeString(content); err == nil {
-			content = strings.TrimSpace(string(decoded))
-		}
-	}
-
-	lines := strings.Split(content, "\n")
-	links := make([]string, 0, len(lines))
-	for _, line := range lines {
-		line = strings.TrimSpace(line)
-		if line == "" {
-			continue
-		}
-		if strings.Contains(line, "://") {
-			links = append(links, line)
-		}
-	}
-	if len(links) == 0 {
-		return client.Email, nil, common.NewError("no config links found in subscription response")
-	}
-
-	// Try to keep only this email's configs. If not detectable, return all links.
-	filtered := make([]string, 0, len(links))
-	for _, link := range links {
-		if t.linkMatchesEmail(link, client.Email) {
-			filtered = append(filtered, link)
-		}
-	}
-	if len(filtered) > 0 {
-		return client.Email, filtered, nil
-	}
-	return client.Email, links, nil
-}
-
-func (t *Tgbot) linkMatchesEmail(link string, email string) bool {
-	if email == "" {
-		return false
-	}
-
-	if strings.HasPrefix(link, "vmess://") {
-		raw := strings.TrimPrefix(link, "vmess://")
-		decoded, err := base64.StdEncoding.DecodeString(raw)
-		if err != nil {
-			return false
-		}
-		obj := map[string]any{}
-		if err := json.Unmarshal(decoded, &obj); err != nil {
-			return false
-		}
-		ps, _ := obj["ps"].(string)
-		return strings.Contains(ps, email)
-	}
-
-	u, err := url.Parse(link)
-	if err != nil {
-		return false
-	}
-	frag, err := url.QueryUnescape(u.Fragment)
-	if err != nil {
-		frag = u.Fragment
-	}
-	return strings.Contains(frag, email)
+	return "", nil, common.NewError("subscription service not available")
 }
 
 func (t *Tgbot) sendClientConfigs(chatId int64, email string) {
 	clientEmail, links, err := t.getClientConfigLinksByEmail(email)
 	if err != nil {
+		logger.Warningf("Failed to get client config links for %s: %v", email, err)
 		t.SendMsgToTgbot(chatId, t.I18nBot("tgbot.answers.getClientConfigsFailed", "Email=="+email))
 		return
 	}
@@ -2258,20 +2135,23 @@ func (t *Tgbot) sendClientConfigsByTgUser(chatId int64, tgUserID int64, email st
 func (t *Tgbot) sendClientQRCodes(chatId int64, email string) {
 	clientEmail, links, err := t.getClientConfigLinksByEmail(email)
 	if err != nil {
+		logger.Warningf("Failed to get client QR codes for %s: %v", email, err)
 		t.SendMsgToTgbot(chatId, t.I18nBot("tgbot.answers.getClientQRCodesFailed", "Email=="+email))
 		return
 	}
 
 	for _, link := range links {
-		qrURL := "https://api.qrserver.com/v1/create-qr-code/?size=512x512&format=png&data=" + url.QueryEscape(link)
-		photo := &telego.SendPhotoParams{
-			ChatID:    tu.ID(chatId),
-			Photo:     telego.InputFile{URL: qrURL},
-			Caption:   t.I18nBot("tgbot.answers.clientQRCode", "Email=="+clientEmail),
-			ParseMode: "HTML",
-		}
-		if _, err := bot.SendPhoto(context.Background(), photo); err != nil {
-			logger.Warning("Error sending Telegram QR code:", err)
+		pngBytes, err := qrcode.Encode(link, qrcode.Medium, 512)
+		if err != nil {
+			logger.Warning("Error generating QR code:", err)
+		} else {
+			photo := tu.Photo(
+				tu.ID(chatId),
+				tu.FileFromBytes(pngBytes, "qrcode.png"),
+			).WithCaption(t.I18nBot("tgbot.answers.clientQRCode", "Email=="+clientEmail)).WithParseMode("HTML")
+			if _, err := bot.SendPhoto(context.Background(), photo); err != nil {
+				logger.Warning("Error sending Telegram QR code:", err)
+			}
 		}
 		t.SendMsgToTgbot(chatId, "<code>"+link+"</code>")
 	}

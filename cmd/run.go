@@ -58,15 +58,17 @@ func RunWebServer() {
 	var server *web.Server
 	server = web.NewServer()
 	global.SetWebServer(server)
+
+	var subServer *sub.Server
+	subServer = sub.NewServer()
+	global.SetSubServer(subServer)
+
 	err = server.Start()
 	if err != nil {
 		log.Fatalf("Error starting web server: %v", err)
 		return
 	}
 
-	var subServer *sub.Server
-	subServer = sub.NewServer()
-	global.SetSubServer(subServer)
 	err = subServer.Start()
 	if err != nil {
 		log.Fatalf("Error starting sub server: %v", err)
@@ -89,6 +91,10 @@ func RunWebServer() {
 
 		server = web.NewServer()
 		global.SetWebServer(server)
+
+		subServer = sub.NewServer()
+		global.SetSubServer(subServer)
+
 		err = server.Start()
 		if err != nil {
 			log.Fatalf("Error restarting web server: %v", err)
@@ -96,8 +102,6 @@ func RunWebServer() {
 		}
 		log.Println("Web server restarted successfully.")
 
-		subServer = sub.NewServer()
-		global.SetSubServer(subServer)
 		err = subServer.Start()
 		if err != nil {
 			log.Fatalf("Error restarting sub server: %v", err)
