@@ -65,6 +65,220 @@
     .ant-list-item > li {
         padding: 10px 20px !important;
     }
+
+    /* Telemetry Stat Cards & Badges */
+    .telemetry-grid {
+        display: grid;
+        gap: 12px;
+        width: 100%;
+    }
+    .telemetry-grid-3 {
+        grid-template-columns: repeat(3, 1fr);
+    }
+    .telemetry-grid-2 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    @media (max-width: 640px) {
+        .telemetry-grid-3, .telemetry-grid-2 {
+            grid-template-columns: 1fr;
+        }
+    }
+    .telemetry-stat-card {
+        background: var(--ui-surface-muted);
+        border: 1px solid var(--ui-border);
+        border-radius: var(--ui-radius);
+        padding: 12px 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .telemetry-stat-card:hover {
+        border-color: var(--ui-primary);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+    .telemetry-stat-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+        color: var(--ui-text-muted);
+        font-weight: 500;
+    }
+    .telemetry-stat-value {
+        font-size: 19px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        font-family: var(--font-mono, monospace);
+    }
+
+    /* Telemetry Parsed Traffic Items */
+    .telemetry-stats-toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 12px;
+    }
+    .telemetry-parsed-stat-item {
+        background: var(--ui-surface-muted);
+        border: 1px solid var(--ui-border);
+        border-radius: var(--ui-radius);
+        padding: 10px 14px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        transition: border-color 0.2s;
+    }
+    .telemetry-parsed-stat-item:hover {
+        border-color: var(--ui-primary);
+    }
+    .telemetry-stat-left {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        min-width: 0;
+        flex: 1;
+    }
+    .telemetry-stat-tags {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+    .telemetry-category-tag {
+        margin: 0 !important;
+        font-size: 11px !important;
+        line-height: 18px !important;
+        padding: 0 6px !important;
+        font-weight: 600;
+    }
+    .telemetry-badge-down {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 11px;
+        color: #10b981;
+        background: rgba(16, 185, 129, 0.12);
+        padding: 1px 7px;
+        border-radius: 4px;
+        font-weight: 600;
+    }
+    .telemetry-badge-up {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 11px;
+        color: #3b82f6;
+        background: rgba(59, 130, 246, 0.12);
+        padding: 1px 7px;
+        border-radius: 4px;
+        font-weight: 600;
+    }
+    .telemetry-badge-neutral {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 11px;
+        color: var(--ui-text-muted);
+        background: rgba(150, 150, 150, 0.12);
+        padding: 1px 7px;
+        border-radius: 4px;
+    }
+    .telemetry-stat-target {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--ui-text);
+        word-break: break-all;
+    }
+    .telemetry-stat-raw-key {
+        font-size: 10px;
+        color: var(--ui-text-muted);
+        word-break: break-all;
+        font-family: var(--font-mono, monospace);
+    }
+    .telemetry-stat-right {
+        text-align: right;
+        flex-shrink: 0;
+    }
+    .telemetry-stat-bytes {
+        font-size: 14px;
+        font-weight: 700;
+        font-family: var(--font-mono, monospace);
+        color: var(--ui-primary);
+    }
+    .telemetry-stat-bytes.down-bytes {
+        color: #10b981;
+    }
+    .telemetry-stat-bytes.up-bytes {
+        color: #3b82f6;
+    }
+
+    /* Clean Inspector Traffic List */
+    .telemetry-clean-traffic-list {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+    .telemetry-clean-traffic-row {
+        background: var(--ui-surface-muted);
+        border: 1px solid var(--ui-border);
+        border-radius: 6px;
+        padding: 7px 12px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+    }
+    .telemetry-clean-traffic-left {
+        display: flex;
+        align-items: center;
+        min-width: 0;
+        flex: 1;
+        gap: 6px;
+    }
+    .telemetry-clean-traffic-target {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--ui-text);
+        word-break: break-all;
+    }
+    .telemetry-arrow-down {
+        color: #10b981;
+    }
+    .telemetry-arrow-up {
+        color: #3b82f6;
+    }
+    .telemetry-clean-traffic-val {
+        font-size: 12px;
+        font-weight: 700;
+        font-family: var(--font-mono, monospace);
+        color: var(--ui-primary);
+        flex-shrink: 0;
+    }
+    .telemetry-clean-traffic-val.down-val {
+        color: #10b981;
+    }
+    .telemetry-clean-traffic-val.up-val {
+        color: #3b82f6;
+    }
+
+    /* Ant Descriptions bordered theme fix */
+    .ant-descriptions-bordered .ant-descriptions-item-label {
+        background-color: var(--ui-surface-muted) !important;
+        color: var(--ui-text-muted) !important;
+        border-color: var(--ui-border) !important;
+    }
+    .ant-descriptions-bordered .ant-descriptions-item-content {
+        background-color: transparent !important;
+        color: var(--ui-text) !important;
+        border-color: var(--ui-border) !important;
+    }
+    .ant-descriptions-bordered {
+        border-color: var(--ui-border) !important;
+    }
 </style>
 <body>
 <a-layout :class="themeSwitcher.currentTheme" id="app" v-cloak>
@@ -1141,14 +1355,57 @@
                 <!-- Tab 3: Traffic Stats -->
                 <a-tab-pane key="traffic" tab='{{ i18n "pages.xray.metrics.tabStats" }}' style="padding-top: 14px;">
                     <div v-if="hasStatsTraffic()">
-                        <a-row :gutter="[10, 10]">
-                            <a-col :xs="24" :sm="12" v-for="(val, key) in getStatsTraffic()" :key="key">
-                                <div style="background: var(--ui-surface-muted); padding: 8px 12px; border-radius: var(--ui-radius); border: 1px solid var(--ui-border); display: flex; justify-content: space-between; align-items: center;">
-                                    <span style="font-size: 12px; word-break: break-all;">[[ key ]]</span>
-                                    <strong style="color: var(--ui-primary)">[[ formatMetricsBytes(val) ]]</strong>
+                        <div class="telemetry-stats-toolbar">
+                            <div style="flex: 1; min-width: 200px; max-width: 360px;">
+                                <a-input placeholder='{{ i18n "pages.xray.metrics.filterPlaceholder" }}' v-model="metricsModal.statsFilterKeyword" allow-clear size="small"></a-input>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                <a-radio-group v-model="metricsModal.statsCategory" size="small" button-style="solid">
+                                    <a-radio-button value="all">All</a-radio-button>
+                                    <a-radio-button value="inbound">Inbound</a-radio-button>
+                                    <a-radio-button value="outbound">Outbound</a-radio-button>
+                                    <a-radio-button value="user">User</a-radio-button>
+                                </a-radio-group>
+                                <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ui-text-muted); margin-left: 4px;">
+                                    <span>Raw Keys:</span>
+                                    <a-switch size="small" v-model="metricsModal.showRawKeys"></a-switch>
+                                </div>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
+                            <a-tag color="green" style="margin: 0;">
+                                <a-icon type="arrow-down" style="margin-right: 4px;" />Down Total: [[ formatMetricsBytes(getTotalTraffic('downlink')) ]]
+                            </a-tag>
+                            <a-tag color="blue" style="margin: 0;">
+                                <a-icon type="arrow-up" style="margin-right: 4px;" />Up Total: [[ formatMetricsBytes(getTotalTraffic('uplink')) ]]
+                            </a-tag>
+                            <a-tag style="margin: 0;">
+                                <a-icon type="bars" style="margin-right: 4px;" />Items: [[ getParsedStatsTraffic().length ]]
+                            </a-tag>
+                        </div>
+                        <a-row :gutter="[10, 10]" v-if="getParsedStatsTraffic().length > 0">
+                            <a-col :xs="24" :sm="12" v-for="item in getParsedStatsTraffic()" :key="item.raw">
+                                <div class="telemetry-parsed-stat-item">
+                                    <div class="telemetry-stat-left">
+                                        <div class="telemetry-stat-tags">
+                                            <a-tag :color="item.categoryColor" class="telemetry-category-tag">[[ item.categoryLabel ]]</a-tag>
+                                            <span :class="item.isDownlink ? 'telemetry-badge-down' : (item.isUplink ? 'telemetry-badge-up' : 'telemetry-badge-neutral')">
+                                                <a-icon :type="item.isDownlink ? 'arrow-down' : (item.isUplink ? 'arrow-up' : 'swap')" />
+                                                [[ item.directionLabel ]]
+                                            </span>
+                                        </div>
+                                        <div class="telemetry-stat-target" :title="item.raw">[[ item.target ]]</div>
+                                        <div class="telemetry-stat-raw-key" v-if="metricsModal.showRawKeys">[[ item.raw ]]</div>
+                                    </div>
+                                    <div class="telemetry-stat-right">
+                                        <div class="telemetry-stat-bytes" :class="{'down-bytes': item.isDownlink, 'up-bytes': item.isUplink}">
+                                            [[ formatMetricsBytes(item.value) ]]
+                                        </div>
+                                    </div>
                                 </div>
                             </a-col>
                         </a-row>
+                        <a-empty v-else description="No matching traffic statistics found"></a-empty>
                     </div>
                     <a-empty v-else description='{{ i18n "pages.xray.metrics.noStatsDesc" }}'></a-empty>
                 </a-tab-pane>
@@ -1168,30 +1425,96 @@
                     <!-- Categorized Clean View -->
                     <a-collapse :default-active-key="['runtime', 'memstats', 'traffic']" :bordered="false">
                         <a-collapse-panel key="runtime" header="Runtime & Goroutines">
-                            <a-descriptions size="small" :column="isMobile ? 1 : 3" bordered>
-                                <a-descriptions-item label="Goroutines">[[ getMetricsVal('goroutines') || 0 ]]</a-descriptions-item>
-                                <a-descriptions-item label="GC Cycles">[[ getMetricsVal('numGC') || 0 ]]</a-descriptions-item>
-                                <a-descriptions-item label="Heap Objects">[[ getMetricsVal('heapObjects') || 0 ]]</a-descriptions-item>
-                            </a-descriptions>
+                            <div class="telemetry-grid telemetry-grid-3">
+                                <div class="telemetry-stat-card">
+                                    <div class="telemetry-stat-header">
+                                        <a-icon type="branches" style="color: #8b5cf6; font-size: 15px;"></a-icon>
+                                        <span>Goroutines</span>
+                                    </div>
+                                    <div class="telemetry-stat-value" style="color: #8b5cf6;">
+                                        [[ Number(getMetricsVal('goroutines') || 0).toLocaleString() ]]
+                                    </div>
+                                </div>
+                                <div class="telemetry-stat-card">
+                                    <div class="telemetry-stat-header">
+                                        <a-icon type="sync" style="color: #f59e0b; font-size: 15px;"></a-icon>
+                                        <span>GC Cycles</span>
+                                    </div>
+                                    <div class="telemetry-stat-value" style="color: #f59e0b;">
+                                        [[ Number(getMetricsVal('numGC') || 0).toLocaleString() ]]
+                                    </div>
+                                </div>
+                                <div class="telemetry-stat-card">
+                                    <div class="telemetry-stat-header">
+                                        <a-icon type="appstore" style="color: #10b981; font-size: 15px;"></a-icon>
+                                        <span>Heap Objects</span>
+                                    </div>
+                                    <div class="telemetry-stat-value" style="color: #10b981;">
+                                        [[ Number(getMetricsVal('heapObjects') || 0).toLocaleString() ]]
+                                    </div>
+                                </div>
+                            </div>
                         </a-collapse-panel>
                         <a-collapse-panel key="memstats" header="Memory Overview">
-                            <a-descriptions size="small" :column="isMobile ? 1 : 2" bordered>
-                                <a-descriptions-item label="Allocated Memory">[[ formatMetricsBytes(getMetricsVal('allocBytes')) ]]</a-descriptions-item>
-                                <a-descriptions-item label="System Memory">[[ formatMetricsBytes(getMetricsVal('sysBytes')) ]]</a-descriptions-item>
-                                <a-descriptions-item label="Heap Allocated">[[ formatMetricsBytes(getMetricsVal('heapAlloc')) ]]</a-descriptions-item>
-                                <a-descriptions-item label="Heap System">[[ formatMetricsBytes(getMetricsVal('heapSys')) ]]</a-descriptions-item>
-                            </a-descriptions>
+                            <div class="telemetry-grid telemetry-grid-2">
+                                <div class="telemetry-stat-card">
+                                    <div class="telemetry-stat-header">
+                                        <a-icon type="database" style="color: var(--ui-primary); font-size: 15px;"></a-icon>
+                                        <span>Allocated Memory</span>
+                                    </div>
+                                    <div class="telemetry-stat-value" style="color: var(--ui-primary);">
+                                        [[ formatMetricsBytes(getMetricsVal('allocBytes')) ]]
+                                    </div>
+                                </div>
+                                <div class="telemetry-stat-card">
+                                    <div class="telemetry-stat-header">
+                                        <a-icon type="dashboard" style="color: #06b6d4; font-size: 15px;"></a-icon>
+                                        <span>System Memory</span>
+                                    </div>
+                                    <div class="telemetry-stat-value" style="color: #06b6d4;">
+                                        [[ formatMetricsBytes(getMetricsVal('sysBytes')) ]]
+                                    </div>
+                                </div>
+                                <div class="telemetry-stat-card">
+                                    <div class="telemetry-stat-header">
+                                        <a-icon type="inbox" style="color: #10b981; font-size: 15px;"></a-icon>
+                                        <span>Heap Allocated</span>
+                                    </div>
+                                    <div class="telemetry-stat-value" style="color: #10b981;">
+                                        [[ formatMetricsBytes(getMetricsVal('heapAlloc')) ]]
+                                    </div>
+                                </div>
+                                <div class="telemetry-stat-card">
+                                    <div class="telemetry-stat-header">
+                                        <a-icon type="cloud" style="color: #8b5cf6; font-size: 15px;"></a-icon>
+                                        <span>Heap System</span>
+                                    </div>
+                                    <div class="telemetry-stat-value" style="color: #8b5cf6;">
+                                        [[ formatMetricsBytes(getMetricsVal('heapSys')) ]]
+                                    </div>
+                                </div>
+                            </div>
                         </a-collapse-panel>
                         <a-collapse-panel key="traffic" header="Traffic Counters" v-if="hasStatsTraffic()">
-                            <div style="max-height: 220px; overflow-y: auto;">
-                                <a-row :gutter="[8, 8]">
-                                    <a-col :xs="24" :sm="12" v-for="(val, key) in getFilteredStatsTraffic()" :key="key">
-                                        <div style="background: var(--ui-surface-muted); padding: 6px 10px; border-radius: 6px; border: 1px solid var(--ui-border); display: flex; justify-content: space-between; align-items: center; font-size: 11px;">
-                                            <span style="word-break: break-all;">[[ key ]]</span>
-                                            <strong style="color: var(--ui-primary)">[[ formatMetricsBytes(val) ]]</strong>
+                            <div style="max-height: 280px; overflow-y: auto; padding-right: 2px;">
+                                <div class="telemetry-clean-traffic-list" v-if="getParsedFilteredStatsTraffic().length > 0">
+                                    <div class="telemetry-clean-traffic-row" v-for="item in getParsedFilteredStatsTraffic()" :key="item.raw">
+                                        <div class="telemetry-clean-traffic-left">
+                                            <a-tag :color="item.categoryColor" style="margin-right: 6px; font-size: 11px; padding: 0 6px; line-height: 20px; font-weight: 600;">
+                                                [[ item.categoryLabel ]]
+                                            </a-tag>
+                                            <span class="telemetry-clean-traffic-target" :title="item.raw">[[ item.target ]]</span>
+                                            <span :class="item.isDownlink ? 'telemetry-arrow-down' : (item.isUplink ? 'telemetry-arrow-up' : '')" style="margin-left: 6px; font-size: 11px; font-weight: 600;">
+                                                <a-icon :type="item.isDownlink ? 'arrow-down' : (item.isUplink ? 'arrow-up' : 'swap')" />
+                                                [[ item.directionLabel ]]
+                                            </span>
                                         </div>
-                                    </a-col>
-                                </a-row>
+                                        <div class="telemetry-clean-traffic-val" :class="{'down-val': item.isDownlink, 'up-val': item.isUplink}">
+                                            [[ formatMetricsBytes(item.value) ]]
+                                        </div>
+                                    </div>
+                                </div>
+                                <a-empty v-else description='{{ i18n "pages.xray.metrics.noData" }}'></a-empty>
                             </div>
                         </a-collapse-panel>
                         <a-collapse-panel key="parsedTree" header="Structured Data Tree">
@@ -1393,6 +1716,9 @@
                 raw: '',
                 error: '',
                 filterKeyword: '',
+                statsFilterKeyword: '',
+                statsCategory: 'all',
+                showRawKeys: false,
                 showFormattedJson: false,
                 autoRefresh: false,
                 timer: null,
@@ -1789,6 +2115,158 @@
             getStatsTraffic() {
                 if (!this.hasStatsTraffic()) return {};
                 return this.metricsModal.data.summary.statsTraffic;
+            },
+            parseTrafficStatKey(rawKey) {
+                if (!rawKey) return { raw: '', category: 'other', target: 'Unknown', direction: '', isDownlink: false, isUplink: false };
+                let clean = String(rawKey).trim();
+                if (clean.startsWith('stat.')) clean = clean.substring(5);
+                clean = clean.replace(/>>>/g, '.');
+                clean = clean.replace(/\.traffic\./g, '.');
+
+                let direction = '';
+                let isDownlink = false;
+                let isUplink = false;
+
+                if (clean.endsWith('.downlink') || clean.endsWith('.down')) {
+                    direction = 'downlink';
+                    isDownlink = true;
+                    clean = clean.replace(/\.(downlink|down)$/i, '');
+                } else if (clean.endsWith('.uplink') || clean.endsWith('.up')) {
+                    direction = 'uplink';
+                    isUplink = true;
+                    clean = clean.replace(/\.(uplink|up)$/i, '');
+                }
+
+                let category = 'other';
+                let target = clean;
+
+                if (clean.startsWith('inbound.')) {
+                    category = 'inbound';
+                    target = clean.substring(8);
+                } else if (clean.startsWith('outbound.')) {
+                    category = 'outbound';
+                    target = clean.substring(9);
+                } else if (clean.startsWith('user.')) {
+                    category = 'user';
+                    target = clean.substring(5);
+                }
+
+                return {
+                    raw: rawKey,
+                    category,
+                    target: target || rawKey,
+                    direction,
+                    isDownlink,
+                    isUplink
+                };
+            },
+            getParsedStatsTraffic() {
+                const rawTraffic = this.getStatsTraffic();
+                const kw = (this.metricsModal.statsFilterKeyword || '').toLowerCase().trim();
+                const cat = this.metricsModal.statsCategory || 'all';
+
+                const items = [];
+                for (const [key, val] of Object.entries(rawTraffic)) {
+                    const parsed = this.parseTrafficStatKey(key);
+                    parsed.value = val;
+
+                    if (parsed.category === 'inbound') {
+                        parsed.categoryLabel = 'Inbound';
+                        parsed.categoryColor = 'blue';
+                    } else if (parsed.category === 'outbound') {
+                        parsed.categoryLabel = 'Outbound';
+                        parsed.categoryColor = 'cyan';
+                    } else if (parsed.category === 'user') {
+                        parsed.categoryLabel = 'User';
+                        parsed.categoryColor = 'purple';
+                    } else {
+                        parsed.categoryLabel = 'Other';
+                        parsed.categoryColor = 'default';
+                    }
+
+                    if (parsed.isDownlink) {
+                        parsed.directionLabel = 'Downlink';
+                    } else if (parsed.isUplink) {
+                        parsed.directionLabel = 'Uplink';
+                    } else {
+                        parsed.directionLabel = 'Traffic';
+                    }
+
+                    if (cat !== 'all' && parsed.category !== cat) {
+                        continue;
+                    }
+
+                    if (kw) {
+                        const matchesTarget = parsed.target.toLowerCase().includes(kw);
+                        const matchesRaw = parsed.raw.toLowerCase().includes(kw);
+                        const matchesCat = parsed.category.toLowerCase().includes(kw);
+                        const matchesDir = parsed.direction.toLowerCase().includes(kw);
+                        if (!matchesTarget && !matchesRaw && !matchesCat && !matchesDir) {
+                            continue;
+                        }
+                    }
+
+                    items.push(parsed);
+                }
+
+                items.sort((a, b) => {
+                    if (a.category !== b.category) {
+                        return a.category.localeCompare(b.category);
+                    }
+                    if (a.target !== b.target) {
+                        return a.target.localeCompare(b.target);
+                    }
+                    return (b.isDownlink ? 1 : 0) - (a.isDownlink ? 1 : 0);
+                });
+
+                return items;
+            },
+            getParsedFilteredStatsTraffic() {
+                const traffic = this.getStatsTraffic();
+                const kw = (this.metricsModal.filterKeyword || '').toLowerCase().trim();
+                const items = [];
+                for (const [key, val] of Object.entries(traffic)) {
+                    if (kw && !key.toLowerCase().includes(kw)) continue;
+                    const parsed = this.parseTrafficStatKey(key);
+                    parsed.value = val;
+                    if (parsed.category === 'inbound') {
+                        parsed.categoryLabel = 'IN';
+                        parsed.categoryColor = 'blue';
+                    } else if (parsed.category === 'outbound') {
+                        parsed.categoryLabel = 'OUT';
+                        parsed.categoryColor = 'cyan';
+                    } else if (parsed.category === 'user') {
+                        parsed.categoryLabel = 'USER';
+                        parsed.categoryColor = 'purple';
+                    } else {
+                        parsed.categoryLabel = 'OTHER';
+                        parsed.categoryColor = 'default';
+                    }
+                    if (parsed.isDownlink) {
+                        parsed.directionLabel = 'Down';
+                    } else if (parsed.isUplink) {
+                        parsed.directionLabel = 'Up';
+                    } else {
+                        parsed.directionLabel = '';
+                    }
+                    items.push(parsed);
+                }
+                return items;
+            },
+            getTotalTraffic(direction) {
+                const rawTraffic = this.getStatsTraffic();
+                let total = 0;
+                for (const [key, val] of Object.entries(rawTraffic)) {
+                    const parsed = this.parseTrafficStatKey(key);
+                    if (direction === 'downlink' && parsed.isDownlink) {
+                        total += Number(val) || 0;
+                    } else if (direction === 'uplink' && parsed.isUplink) {
+                        total += Number(val) || 0;
+                    } else if (!direction) {
+                        total += Number(val) || 0;
+                    }
+                }
+                return total;
             },
             getFilteredStatsTraffic() {
                 const traffic = this.getStatsTraffic();

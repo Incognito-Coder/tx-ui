@@ -1061,24 +1061,14 @@
                             const linkClient = Object.assign({}, nc, {
                                 id: nc.uuid || nc.id,
                             });
-                            if (inbound.protocol === Protocols.WIREGUARD) {
-                                inbound.genInboundLinks(dbInbound.remark).split('\r\n').forEach((l, idx) => {
-                                    if (!l) return;
-                                    this.nodeClientQrModal.qrcodes.push({
-                                        title: `${prefix} / Peer ${idx + 1}`,
-                                        link: l,
-                                        originalLink: l,
-                                    });
+                            inbound.genAllLinks(dbInbound.remark, this.remarkModel, linkClient).forEach((item) => {
+                                const linkVal = (inbound.protocol === Protocols.WIREGUARD && item.url) ? item.url : item.link;
+                                this.nodeClientQrModal.qrcodes.push({
+                                    title: `${prefix} / ${item.remark}`,
+                                    link: linkVal,
+                                    originalLink: linkVal,
                                 });
-                            } else {
-                                inbound.genAllLinks(dbInbound.remark, this.remarkModel, linkClient).forEach((item) => {
-                                    this.nodeClientQrModal.qrcodes.push({
-                                        title: `${prefix} / ${item.remark}`,
-                                        link: item.link,
-                                        originalLink: item.link,
-                                    });
-                                });
-                            }
+                            });
                         });
 
                         if (this.subSettings.enable && nc.subId) {

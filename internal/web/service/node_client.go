@@ -852,7 +852,9 @@ func (s *NodeClientService) MergeIntoInboundConfig(inboundId int, existingClient
 		Reset      int
 		Comment    string
 	}
-
+	if db == nil {
+		return existingClients, nil
+	}
 	var rows []linkWithNC
 	err := db.Table("node_client_links").
 		Select(`

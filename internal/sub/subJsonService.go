@@ -467,13 +467,18 @@ func (s *SubJsonService) genWireguard(inbound *model.Inbound, client model.Clien
 	json.Unmarshal([]byte(inbound.Settings), &settings)
 
 	serverPubKey, _ := settings["pubKey"].(string)
+	if serverPubKey == "" {
+		if secKey, ok := settings["secretKey"].(string); ok && secKey != "" {
+			serverPubKey = getWireguardPubKey(secKey)
+		}
+	}
 	privKey := client.PrivateKey
 	if privKey == "" {
 		privKey = client.Password
 	}
-	allowedIp := "10.0.0.2/32"
+	allowedIps := []string{"10.0.0.2/32"}
 	if len(client.AllowedIPs) > 0 {
-		allowedIp = client.AllowedIPs[0]
+		allowedIps = client.AllowedIPs
 	}
 
 	address := s.SubService.address
@@ -491,11 +496,17 @@ func (s *SubJsonService) genWireguard(inbound *model.Inbound, client model.Clien
 	if client.KeepAlive > 0 {
 		peer["keepAlive"] = client.KeepAlive
 	}
+	if reserved, ok := settings["reserved"].([]interface{}); ok && len(reserved) > 0 {
+		peer["reserved"] = reserved
+	}
 
 	wgSettings := map[string]interface{}{
 		"secretKey": privKey,
-		"address":   []string{allowedIp},
+		"address":   allowedIps,
 		"peers":     []interface{}{peer},
+	}
+	if mtu, ok := settings["mtu"].(float64); ok && mtu > 0 {
+		wgSettings["mtu"] = int(mtu)
 	}
 
 	outbound := map[string]interface{}{

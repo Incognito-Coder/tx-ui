@@ -1,6 +1,7 @@
 package sub
 
 import (
+	"crypto/ecdh"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -386,6 +387,19 @@ func (s *SubService) getLink(inbound *model.Inbound, email string) string {
 	return ""
 }
 
+func getWireguardPubKey(privKeyB64 string) string {
+	privBytes, err := base64.StdEncoding.DecodeString(privKeyB64)
+	if err != nil || len(privBytes) != 32 {
+		return ""
+	}
+	curve := ecdh.X25519()
+	key, err := curve.NewPrivateKey(privBytes)
+	if err != nil {
+		return ""
+	}
+	return base64.StdEncoding.EncodeToString(key.PublicKey().Bytes())
+}
+
 func (s *SubService) genWireguardLink(inbound *model.Inbound, email string) string {
 	if inbound.Protocol != model.WireGuard {
 		return ""
@@ -407,6 +421,11 @@ func (s *SubService) genWireguardLink(inbound *model.Inbound, email string) stri
 	json.Unmarshal([]byte(inbound.Settings), &settings)
 
 	serverPubKey, _ := settings["pubKey"].(string)
+	if serverPubKey == "" {
+		if secKey, ok := settings["secretKey"].(string); ok && secKey != "" {
+			serverPubKey = getWireguardPubKey(secKey)
+		}
+	}
 	mtu := 1420
 	if m, ok := settings["mtu"].(float64); ok && m > 0 {
 		mtu = int(m)
@@ -418,7 +437,7 @@ func (s *SubService) genWireguardLink(inbound *model.Inbound, email string) stri
 	}
 	allowedIp := "10.0.0.2/32"
 	if len(targetClient.AllowedIPs) > 0 {
-		allowedIp = targetClient.AllowedIPs[0]
+		allowedIp = strings.Join(targetClient.AllowedIPs, ",")
 	}
 
 	address := s.address
@@ -427,29 +446,45 @@ func (s *SubService) genWireguardLink(inbound *model.Inbound, email string) stri
 	}
 
 	params := url.Values{}
-	params.Set("publickey", serverPubKey)
+	if serverPubKey != "" {
+		params.Set("peer_public_key", serverPubKey)
+		params.Set("public_key", serverPubKey)
+	}
+	if privKey != "" {
+		params.Set("private_key", privKey)
+	}
 	params.Set("address", allowedIp)
+	params.Set("dns", "1.1.1.1,1.0.0.1")
 	if mtu > 0 {
 		params.Set("mtu", strconv.Itoa(mtu))
 	}
+	params.Set("allowed_ips", "0.0.0.0/0,::/0")
 	if targetClient.Psk != "" {
-		params.Set("presharedkey", targetClient.Psk)
+		params.Set("pre_shared_key", targetClient.Psk)
 	}
 	if targetClient.KeepAlive > 0 {
-		params.Set("persistentkeepalive", strconv.Itoa(targetClient.KeepAlive))
+		params.Set("keepalive", strconv.Itoa(targetClient.KeepAlive))
 	}
-	params.Set("allowedips", "0.0.0.0/0,::/0")
+	var resList []string
 	if reserved, ok := settings["reserved"].([]interface{}); ok && len(reserved) > 0 {
-		var resList []string
 		for _, r := range reserved {
 			if rf, ok := r.(float64); ok {
 				resList = append(resList, strconv.Itoa(int(rf)))
+			} else if rs, ok := r.(string); ok {
+				resList = append(resList, strings.TrimSpace(rs))
 			}
 		}
-		if len(resList) > 0 {
-			params.Set("reserved", strings.Join(resList, ","))
+	} else if reservedStr, ok := settings["reserved"].(string); ok && strings.TrimSpace(reservedStr) != "" {
+		for _, r := range strings.Split(reservedStr, ",") {
+			if trimmed := strings.TrimSpace(r); trimmed != "" {
+				resList = append(resList, trimmed)
+			}
 		}
 	}
+	if len(resList) == 0 {
+		resList = []string{"0", "0", "0"}
+	}
+	params.Set("reserved", strings.Join(resList, ","))
 
 	var stream map[string]interface{}
 	json.Unmarshal([]byte(inbound.StreamSettings), &stream)

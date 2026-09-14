@@ -1943,23 +1943,35 @@ class Inbound extends XrayCommonClass {
     }
 
     getWireguardLink(address, port, remark, peerId) {
+        let peer = this.settings.peers[peerId];
+        let privKey = peer.privateKey || peer.password || '';
+        let allowedIp = (peer.allowedIPs && peer.allowedIPs.length > 0) ? peer.allowedIPs.join(', ') : '10.0.0.2/32';
+        let pubKey = this.settings.pubKey || '';
+        if (!pubKey && this.settings.secretKey) {
+            try {
+                pubKey = Wireguard.generateKeypair(this.settings.secretKey).publicKey;
+            } catch (e) {}
+        }
         let txt = `[Interface]\n`
-        txt += `PrivateKey = ${this.settings.peers[peerId].privateKey}\n`
-        txt += `Address = ${this.settings.peers[peerId].allowedIPs[0]}\n`
+        txt += `PrivateKey = ${privKey}\n`
+        txt += `Address = ${allowedIp}\n`
         txt += `DNS = 1.1.1.1, 1.0.0.1\n`
         if (this.settings.mtu) {
             txt += `MTU = ${this.settings.mtu}\n`
         }
         txt += `\n# ${remark}\n`
         txt += `[Peer]\n`
-        txt += `PublicKey = ${this.settings.pubKey}\n`
+        txt += `PublicKey = ${pubKey}\n`
         txt += `AllowedIPs = 0.0.0.0/0, ::/0\n`
         txt += `Endpoint = ${address}:${port}`
-        if (this.settings.peers[peerId].psk) {
-            txt += `\nPresharedKey = ${this.settings.peers[peerId].psk}`
+        if (peer.psk) {
+            txt += `\nPresharedKey = ${peer.psk}`
         }
-        if (this.settings.peers[peerId].keepAlive) {
-            txt += `\nPersistentKeepalive = ${this.settings.peers[peerId].keepAlive}\n`
+        if (peer.keepAlive) {
+            txt += `\nPersistentKeepalive = ${peer.keepAlive}\n`
+        }
+        if (Array.isArray(this.settings.reserved) && this.settings.reserved.length > 0) {
+            txt += `\nReserved = ${this.settings.reserved.join(', ')}\n`
         }
         return txt;
     }
@@ -1967,7 +1979,13 @@ class Inbound extends XrayCommonClass {
     genWireguardClientLink(address, port, remark, client) {
         if (!client) return '';
         let privKey = client.privateKey || client.password || '';
-        let allowedIp = (client.allowedIPs && client.allowedIPs.length > 0) ? client.allowedIPs[0] : '10.0.0.2/32';
+        let allowedIp = (client.allowedIPs && client.allowedIPs.length > 0) ? client.allowedIPs.join(', ') : '10.0.0.2/32';
+        let pubKey = this.settings ? (this.settings.pubKey || '') : '';
+        if (!pubKey && this.settings && this.settings.secretKey) {
+            try {
+                pubKey = Wireguard.generateKeypair(this.settings.secretKey).publicKey;
+            } catch (e) {}
+        }
         let txt = `[Interface]\n`;
         txt += `PrivateKey = ${privKey}\n`;
         txt += `Address = ${allowedIp}\n`;
@@ -1977,7 +1995,7 @@ class Inbound extends XrayCommonClass {
         }
         txt += `\n# ${remark}\n`;
         txt += `[Peer]\n`;
-        txt += `PublicKey = ${this.settings ? this.settings.pubKey : ''}\n`;
+        txt += `PublicKey = ${pubKey}\n`;
         txt += `AllowedIPs = 0.0.0.0/0, ::/0\n`;
         txt += `Endpoint = ${address}:${port}`;
         if (client.psk) {
@@ -1985,6 +2003,9 @@ class Inbound extends XrayCommonClass {
         }
         if (client.keepAlive) {
             txt += `\nPersistentKeepalive = ${client.keepAlive}\n`;
+        }
+        if (this.settings && Array.isArray(this.settings.reserved) && this.settings.reserved.length > 0) {
+            txt += `\nReserved = ${this.settings.reserved.join(', ')}\n`;
         }
         return txt;
     }
@@ -1994,20 +2015,46 @@ class Inbound extends XrayCommonClass {
         let privKey = client.privateKey || client.password || '';
         let allowedIp = (client.allowedIPs && client.allowedIPs.length > 0) ? client.allowedIPs.join(',') : '10.0.0.2/32';
         let pubKey = this.settings ? (this.settings.pubKey || '') : '';
+        if (!pubKey && this.settings && this.settings.secretKey) {
+            try {
+                pubKey = Wireguard.generateKeypair(this.settings.secretKey).publicKey;
+            } catch (e) {}
+        }
         let mtu = (this.settings && this.settings.mtu) ? this.settings.mtu : 1420;
 
-        let link = `wireguard://${encodeURIComponent(privKey)}@${address}:${port}?publickey=${encodeURIComponent(pubKey)}&address=${encodeURIComponent(allowedIp)}&mtu=${mtu}`;
+        const params = new URLSearchParams();
+        if (pubKey) {
+            params.set('peer_public_key', pubKey);
+            params.set('public_key', pubKey);
+        }
+        if (privKey) {
+            params.set('private_key', privKey);
+        }
+        params.set('address', allowedIp);
+        params.set('dns', '1.1.1.1,1.0.0.1');
+        params.set('mtu', mtu.toString());
+        params.set('allowed_ips', '0.0.0.0/0,::/0');
         if (client.psk) {
-            link += `&presharedkey=${encodeURIComponent(client.psk)}`;
+            params.set('pre_shared_key', client.psk);
         }
         if (client.keepAlive) {
-            link += `&persistentkeepalive=${client.keepAlive}`;
+            params.set('keepalive', client.keepAlive.toString());
         }
-        link += `&allowedips=${encodeURIComponent('0.0.0.0/0,::/0')}`;
+        let reservedStr = '0,0,0';
         if (this.settings && Array.isArray(this.settings.reserved) && this.settings.reserved.length > 0) {
-            link += `&reserved=${encodeURIComponent(this.settings.reserved.join(','))}`;
+            reservedStr = this.settings.reserved.join(',');
+        } else if (this.settings && typeof this.settings.reserved === 'string' && this.settings.reserved.trim().length > 0) {
+            reservedStr = this.settings.reserved.trim();
+        } else if (client.reserved && Array.isArray(client.reserved) && client.reserved.length > 0) {
+            reservedStr = client.reserved.join(',');
         }
-        link += `#${encodeURIComponent(remark)}`;
+        params.set('reserved', reservedStr);
+
+        let userPart = privKey ? `${encodeURIComponent(privKey)}@` : '';
+        let link = `wireguard://${userPart}${address}:${port}?${params.toString()}`;
+        if (remark) {
+            link += `#${encodeURIComponent(remark)}`;
+        }
         return link;
     }
 
