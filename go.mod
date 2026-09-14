@@ -15,13 +15,14 @@ require (
 	github.com/pelletier/go-toml/v2 v2.4.3
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/shirou/gopsutil/v4 v4.26.8
+	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e
 	github.com/spf13/cobra v1.10.2
 	github.com/tcnksm/go-latest v0.0.0-20170313132115-e3007ae9052e
 	github.com/valyala/fasthttp v1.73.0
 	github.com/xtls/xray-core v1.260327.1-0.20260908222543-52a412d9e2f5
 	go.uber.org/atomic v1.11.0
 	golang.org/x/crypto v0.56.0
-	golang.org/x/text v0.41.0
+	golang.org/x/text v0.42.0
 	google.golang.org/grpc v1.83.2
 	gorm.io/driver/sqlite v1.6.0
 	gorm.io/gorm v1.31.2
@@ -84,7 +85,6 @@ require (
 	github.com/rogpeppe/go-internal v1.15.0 // indirect
 	github.com/sagernet/sing v0.9.0 // indirect
 	github.com/sagernet/sing-shadowsocks v0.2.9 // indirect
-	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/tklauser/go-sysconf v0.4.0 // indirect
 	github.com/tklauser/numcpus v0.12.0 // indirect
@@ -102,7 +102,7 @@ require (
 	golang.org/x/arch v0.28.0 // indirect
 	golang.org/x/exp v0.0.0-20260824195058-e88cd73687aa // indirect
 	golang.org/x/net v0.58.0 // indirect
-	golang.org/x/sync v0.22.0 // indirect
+	golang.org/x/sync v0.23.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect
 	golang.org/x/time v0.15.0 // indirect
 	golang.zx2c4.com/wintun v0.0.0-20230126152724-0fa3db229ce2 // indirect
