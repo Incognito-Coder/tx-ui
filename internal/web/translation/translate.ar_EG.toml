@@ -41,6 +41,7 @@
 "depletingSoon" = "هينتهي قريب"
 "offline" = "أوفلاين"
 "online" = "أونلاين"
+"running" = "قيد التشغيل"
 "domainName" = "اسم الدومين"
 "monitor" = "المسمع IP"
 "certificate" = "شهادة رقمية"
@@ -121,6 +122,7 @@
 "xraySwitchVersionDialogDesc" = "متأكد إنك عايز تغير نسخة Xray لـ"
 "dontRefresh" = "التثبيت شغال، متعملش Refresh للصفحة"
 "logs" = "السجلات"
+"xrayLogs" = "سجلات Xray"
 "config" = "الإعدادات"
 "backup" = "نسخة احتياطية"
 "backupTitle" = "نسخة احتياطية واسترجاع قاعدة البيانات"
@@ -133,6 +135,7 @@
 "systemHost" = "اسم المضيف"
 "geoData" = "بيانات جيو"
 "geoUpdate" = "تحديث"
+"geoSelectRelease" = "حدد الإصدار المطلوب لملفات geo (geoip.dat و geosite.dat):"
 "geoMissing" = "مفقود"
 "geoUnknown" = "غير معروف"
 "geoVersion" = "الإصدار"
@@ -614,6 +617,7 @@
 "randRange" = "نطاق عشوائي"
 
 [pages.xray.dns]
+"title" = "DNS"
 "enable" = "فعل DNS"
 "enableDesc" = "فعل سيرفر DNS المدمج"
 "tag" = "تاج إدخال DNS"
@@ -674,12 +678,14 @@
 "serverError" = "خطأ في الاتصال بالخادم"
 
 [pages.xray.fakedns]
+"title" = "Fake DNS"
 "add" = "أضف Fake DNS"
 "edit" = "عدل Fake DNS"
 "ipPool" = "نطاق IP Pool"
 "poolSize" = "حجم المجموعة"
 
 [pages.xray.tunnel]
+"title" = "النفق"
 "enable" = "تفعيل النفق"
 "enableDesc" = "تفعيل نفق 6TO4"
 "ip" = "عنوان IP"

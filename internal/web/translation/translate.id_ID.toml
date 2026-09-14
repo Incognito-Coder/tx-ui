@@ -41,6 +41,7 @@
 "depletingSoon" = "Akan Habis"
 "offline" = "Offline"
 "online" = "Online"
+"running" = "Berjalan"
 "domainName" = "Nama Domain"
 "monitor" = "IP Pemantauan"
 "certificate" = "Sertifikat Digital"
@@ -117,6 +118,7 @@
 "xraySwitchVersionDialogDesc" = "Apakah Anda yakin ingin mengubah versi Xray menjadi"
 "dontRefresh" = "Instalasi sedang berlangsung, harap jangan menyegarkan halaman ini"
 "logs" = "Log"
+"xrayLogs" = "Log Xray"
 "config" = "Konfigurasi"
 "backup" = "Cadangan & Pulihkan"
 "backupTitle" = "Cadangan & Pulihkan Database"
@@ -129,6 +131,7 @@
 "systemHost" = "Hostname"
 "geoData" = "Data Geo"
 "geoUpdate" = "Perbarui"
+"geoSelectRelease" = "Pilih rilis aset geo yang diinginkan (geoip.dat & geosite.dat):"
 "geoMissing" = "Tidak ada"
 "geoUnknown" = "tidak diketahui"
 "geoVersion" = "Versi"
@@ -586,6 +589,7 @@
 "randRange" = "Rentang Acak"
 
 [pages.xray.dns]
+"title" = "DNS"
 "enable" = "Aktifkan DNS"
 "enableDesc" = "Aktifkan server DNS bawaan"
 "tag" = "Tanda DNS Masuk"
@@ -644,12 +648,14 @@
 "serverError" = "Gagal berkomunikasi dengan server"
 
 [pages.xray.fakedns]
+"title" = "DNS Palsu"
 "add" = "Tambahkan DNS Palsu"
 "edit" = "Edit DNS Palsu"
 "ipPool" = "Subnet Kumpulan IP"
 "poolSize" = "Ukuran Kolam"
 
 [pages.xray.tunnel]
+"title" = "Terowongan"
 "enable" = "Aktifkan Terowongan"
 "enableDesc" = "Aktifkan terowongan 6TO4"
 "ip" = "Alamat IP Terowongan"

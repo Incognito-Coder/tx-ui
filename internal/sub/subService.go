@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -55,6 +56,12 @@ func (s *SubService) GetSubs(subId string, host string) ([]string, string, []str
 		return nil, "", nil, common.NewError("No inbounds found with ", subId)
 	}
 
+	if s.remarkModel == "" {
+		s.remarkModel, _ = s.settingService.GetRemarkModel()
+		if s.remarkModel == "" {
+			s.remarkModel = "-ieo"
+		}
+	}
 	s.datepicker, err = s.settingService.GetDatepicker()
 	if err != nil {
 		s.datepicker = "gregorian"
@@ -419,28 +426,62 @@ func (s *SubService) genWireguardLink(inbound *model.Inbound, email string) stri
 		address = inbound.Listen
 	}
 
-	remark := s.genRemark(inbound, email, "")
-
-	var conf strings.Builder
-	conf.WriteString("[Interface]\n")
-	conf.WriteString(fmt.Sprintf("PrivateKey = %s\n", privKey))
-	conf.WriteString(fmt.Sprintf("Address = %s\n", allowedIp))
-	conf.WriteString("DNS = 1.1.1.1, 1.0.0.1\n")
+	params := url.Values{}
+	params.Set("publickey", serverPubKey)
+	params.Set("address", allowedIp)
 	if mtu > 0 {
-		conf.WriteString(fmt.Sprintf("MTU = %d\n", mtu))
+		params.Set("mtu", strconv.Itoa(mtu))
 	}
-	conf.WriteString(fmt.Sprintf("\n# %s\n", remark))
-	conf.WriteString("[Peer]\n")
-	conf.WriteString(fmt.Sprintf("PublicKey = %s\n", serverPubKey))
-	conf.WriteString("AllowedIPs = 0.0.0.0/0, ::/0\n")
-	conf.WriteString(fmt.Sprintf("Endpoint = %s:%d\n", address, inbound.Port))
 	if targetClient.Psk != "" {
-		conf.WriteString(fmt.Sprintf("PresharedKey = %s\n", targetClient.Psk))
+		params.Set("presharedkey", targetClient.Psk)
 	}
 	if targetClient.KeepAlive > 0 {
-		conf.WriteString(fmt.Sprintf("PersistentKeepalive = %d\n", targetClient.KeepAlive))
+		params.Set("persistentkeepalive", strconv.Itoa(targetClient.KeepAlive))
 	}
-	return conf.String()
+	params.Set("allowedips", "0.0.0.0/0,::/0")
+	if reserved, ok := settings["reserved"].([]interface{}); ok && len(reserved) > 0 {
+		var resList []string
+		for _, r := range reserved {
+			if rf, ok := r.(float64); ok {
+				resList = append(resList, strconv.Itoa(int(rf)))
+			}
+		}
+		if len(resList) > 0 {
+			params.Set("reserved", strings.Join(resList, ","))
+		}
+	}
+
+	var stream map[string]interface{}
+	json.Unmarshal([]byte(inbound.StreamSettings), &stream)
+	if externalProxies, ok := stream["externalProxy"].([]interface{}); ok && len(externalProxies) > 0 {
+		var links string
+		for index, externalProxy := range externalProxies {
+			ep, _ := externalProxy.(map[string]interface{})
+			dest, _ := ep["dest"].(string)
+			port := int(ep["port"].(float64))
+			u := &url.URL{
+				Scheme:   "wireguard",
+				User:     url.User(privKey),
+				Host:     net.JoinHostPort(dest, strconv.Itoa(port)),
+				RawQuery: params.Encode(),
+				Fragment: s.genRemark(inbound, email, ep["remark"].(string)),
+			}
+			if index > 0 {
+				links += "\n"
+			}
+			links += u.String()
+		}
+		return links
+	}
+
+	u := &url.URL{
+		Scheme:   "wireguard",
+		User:     url.User(privKey),
+		Host:     net.JoinHostPort(address, strconv.Itoa(inbound.Port)),
+		RawQuery: params.Encode(),
+		Fragment: s.genRemark(inbound, email, ""),
+	}
+	return u.String()
 }
 
 func (s *SubService) genHysteriaLink(inbound *model.Inbound, email string) string {

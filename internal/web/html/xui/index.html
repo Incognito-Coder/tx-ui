@@ -163,7 +163,7 @@
                             <a-card hoverable>
                                 <b>{{ i18n "pages.index.xrayStatus" }}:</b>
                                 <a-tag :color="status.xray.color" style="text-transform: capitalize;">[[
-                                    status.xray.state ]]
+                                    status.xray.state == 'running' ? '{{ i18n "running" }}' : status.xray.state ]]
                                 </a-tag>
                                 <a-popover :overlay-class-name="themeSwitcher.currentTheme"
                                            v-if="status.xray.state === State.Error">
@@ -193,7 +193,7 @@
                                 <a-tag @click="openLogs()" color="purple" style="cursor: pointer;">{{ i18n
                                     "pages.index.logs" }}
                                 </a-tag>
-                                <a-tag @click="openXrayLogs()" color="purple" style="cursor: pointer;">Xray Logs</a-tag>
+                                <a-tag @click="openXrayLogs()" color="purple" style="cursor: pointer;">{{ i18n "pages.index.xrayLogs" }}</a-tag>
                                 <a-tag @click="openConfig" color="purple" style="cursor: pointer;" :style="isMobile ? 'margin-bottom: 10px;' : ''">{{ i18n
                                     "pages.index.config" }}
                                 </a-tag>
@@ -205,7 +205,7 @@
                         <a-col :lg="12" :sm="24">
                             <a-card hoverable>
                                 <b>{{ i18n "pages.index.geoData" }}:</b>
-                                <a-tag @click="updateGeoFiles" color="purple" style="cursor: pointer;" :style="isMobile ? 'margin-bottom: 10px;' : ''">{{ i18n "pages.index.geoUpdate" }}</a-tag>
+                                <a-tag @click="openSelectGeoVersion" color="purple" style="cursor: pointer;" :style="isMobile ? 'margin-bottom: 10px;' : ''">{{ i18n "pages.index.geoUpdate" }}</a-tag>
                                 <a-tag color="green">
                                     <a-tooltip>
                                         geoip.dat & geosite.dat [[ geoVersion(status.geoFiles.geoip) ]]
@@ -366,6 +366,19 @@
             </a-tag>
         </template>
     </a-modal>
+    <a-modal :class="themeSwitcher.currentTheme" :closable="true" @ok="() => geoModal.visible = false"
+             footer=""
+             id="geo-modal" title='{{ i18n "pages.index.geoUpdate" }}' v-model="geoModal.visible"
+             wrap-class-name="panel-modal panel-modal-md">
+        <a-alert message='{{ i18n "pages.index.geoSelectRelease" }}' show-icon
+                 style="margin-bottom: 12px; width: fit-content" type="info"></a-alert>
+        <template v-for="version, index in geoModal.versions">
+            <a-tag :color="index % 2 == 0 ? 'purple' : 'green'" @click="switchGeoVersion(version)"
+                   style="margin-right: 12px; margin-bottom: 12px; cursor: pointer;">
+                [[ version ]]
+            </a-tag>
+        </template>
+    </a-modal>
     <a-modal :class="themeSwitcher.currentTheme" :closable="true"
              @cancel="() => logModal.visible = false" footer=""
              id="log-modal"
@@ -410,7 +423,7 @@
                 </a-button>
             </a-form-item>
         </a-form>
-        <div class="ant-input" style="height: auto; max-height: 500px; overflow: auto; margin-top: 0.5rem;"
+        <div class="ant-input" style="height: auto; max-height: 500px; overflow: auto; overflow-x: auto; white-space: pre; word-break: normal; margin-top: 0.5rem;"
              v-html="logModal.formattedLogs"></div>
     </a-modal>
     <a-modal :class="themeSwitcher.currentTheme"
@@ -420,7 +433,7 @@
              v-model="xraylogModal.visible"
              width="80vw" wrap-class-name="panel-modal panel-modal-fluid">
         <template slot="title">
-            {{ i18n "pages.index.logs" }}
+            {{ i18n "pages.index.xrayLogs" }}
             <a-icon :disabled="xraylogModal.loading"
                     :spin="xraylogModal.loading"
                     :style="{ verticalAlign: 'middle', marginLeft: '10px' }"
@@ -454,7 +467,7 @@
                 <a-button @click="downloadXrayLogs" icon="download" type="primary"></a-button>
             </a-form-item>
         </a-form>
-        <div :style="{ height: 'auto', maxHeight: '500px', overflow: 'auto', marginTop: '0.5rem' }" class="ant-input"
+        <div :style="{ height: 'auto', maxHeight: '500px', overflow: 'auto', overflowX: 'auto', whiteSpace: 'nowrap', marginTop: '0.5rem' }" class="ant-input"
              v-html="xraylogModal.formattedLogs"></div>
     </a-modal>
     <a-modal :class="themeSwitcher.currentTheme" :closable="true" :title="backupModal.title"
@@ -587,6 +600,18 @@
         },
     };
 
+    const geoModal = {
+        visible: false,
+        versions: [],
+        show(versions) {
+            this.visible = true;
+            this.versions = versions;
+        },
+        hide() {
+            this.visible = false;
+        },
+    };
+
     const logModal = {
         visible: false,
         logs: [],
@@ -666,10 +691,12 @@
   table {
     border-collapse: collapse;
     width: auto;
+    white-space: nowrap;
   }
 
   table td, table th {
     padding: 2px 15px;
+    white-space: nowrap;
   }
 </style>
 
@@ -747,6 +774,7 @@
             themeSwitcher,
             status: new Status(),
             versionModal,
+            geoModal,
             logModal,
             xraylogModal,
             backupModal,
@@ -842,6 +870,31 @@
                     await PromiseUtil.sleep(5000);
                     location.reload();
                 }
+            },
+            async openSelectGeoVersion() {
+                this.loading(true);
+                const msg = await HttpUtil.get('/panel/api/server/getGeoVersions');
+                this.loading(false);
+                if (!msg.success) {
+                    return;
+                }
+                geoModal.show(msg.obj);
+            },
+            switchGeoVersion(version) {
+                this.$confirm({
+                    title: '{{ i18n "pages.index.geoUpdate" }}',
+                    content: `Update geo assets to release ${version}?`,
+                    okText: '{{ i18n "confirm"}}',
+                    class: themeSwitcher.currentTheme,
+                    cancelText: '{{ i18n "cancel"}}',
+                    onOk: async () => {
+                        geoModal.hide();
+                        this.loading(true, '{{ i18n "pages.index.dontRefresh"}}');
+                        await HttpUtil.post(`/panel/api/server/updateGeoFiles/${version}`);
+                        this.loading(false);
+                        await this.getStatus();
+                    },
+                });
             },
             async updateGeoFiles() {
                 this.loading(true, '{{ i18n "pages.index.dontRefresh"}}');

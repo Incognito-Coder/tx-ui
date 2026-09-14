@@ -41,6 +41,7 @@
 "depletingSoon" = "Depleting..."
 "offline" = "Ngoại tuyến"
 "online" = "Trực tuyến"
+"running" = "Đang chạy"
 "domainName" = "Tên miền"
 "monitor" = "Listening IP"
 "certificate" = "Chứng chỉ số"
@@ -117,6 +118,7 @@
 "xraySwitchVersionDialogDesc" = "Bạn có chắc chắn muốn chuyển đổi phiên bản Xray sang"
 "dontRefresh" = "Đang tiến hành cài đặt, vui lòng không làm mới trang này."
 "logs" = "Nhật ký"
+"xrayLogs" = "Nhật ký Xray"
 "config" = "Cấu hình"
 "backup" = "Sao lưu & Khôi phục"
 "backupTitle" = "Sao lưu & Khôi phục Cơ sở dữ liệu"
@@ -129,6 +131,7 @@
 "systemHost" = "Hostname"
 "geoData" = "Dữ liệu Geo"
 "geoUpdate" = "Cập nhật"
+"geoSelectRelease" = "Chọn bản phát hành tài nguyên geo mong muốn (geoip.dat & geosite.dat):"
 "geoMissing" = "Thiếu"
 "geoUnknown" = "không xác định"
 "geoVersion" = "Phiên bản"
@@ -585,6 +588,7 @@
 "randRange" = "Phạm vi ngẫu nhiên"
 
 [pages.xray.dns]
+"title" = "DNS"
 "enable" = "Kích hoạt DNS"
 "enableDesc" = "Kích hoạt máy chủ DNS tích hợp"
 "tag" = "Thẻ gửi đến DNS"
@@ -643,12 +647,14 @@
 "serverError" = "Lỗi giao tiếp với máy chủ"
 
 [pages.xray.fakedns]
+"title" = "DNS giả"
 "add" = "Thêm DNS giả"
 "edit" = "Chỉnh sửa DNS giả"
 "ipPool" = "Mạng con nhóm IP"
 "poolSize" = "Kích thước bể bơi"
 
 [pages.xray.tunnel]
+"title" = "Đường hầm"
 "port" = "Cổng"
 "serverPort" = "Cổng SSH máy chủ"
 "enable" = "Bật đường hầm"

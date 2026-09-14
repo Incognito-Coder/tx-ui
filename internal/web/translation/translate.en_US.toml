@@ -41,6 +41,7 @@
 "depletingSoon" = "Depleting"
 "offline" = "Offline"
 "online" = "Online"
+"running" = "Running"
 "domainName" = "Domain Name"
 "monitor" = "Listen IP"
 "certificate" = "Digital Certificate"
@@ -117,6 +118,7 @@
 "xraySwitchVersionDialogDesc" = "Are you sure you want to change the Xray version to"
 "dontRefresh" = "Installation is in progress, please do not refresh this page"
 "logs" = "Logs"
+"xrayLogs" = "Xray Logs"
 "config" = "Config"
 "backup" = "Backup & Restore"
 "backupTitle" = "Database Backup & Restore"
@@ -129,6 +131,7 @@
 "systemHost" = "Hostname"
 "geoData" = "Geo Data"
 "geoUpdate" = "Update"
+"geoSelectRelease" = "Select desired release of geo assets (geoip.dat & geosite.dat):"
 "geoMissing" = "Missing"
 "geoUnknown" = "unknown"
 "geoVersion" = "Version"
@@ -585,6 +588,7 @@
 "randRange" = "Random Range"
 
 [pages.xray.dns]
+"title" = "DNS"
 "enable" = "Enable DNS"
 "enableDesc" = "Enable built-in DNS server"
 "tag" = "DNS Inbound Tag"
@@ -643,12 +647,14 @@
 "serverError" = "Error communicating with server"
 
 [pages.xray.fakedns]
+"title" = "Fake DNS"
 "add" = "Add Fake DNS"
 "edit" = "Edit Fake DNS"
 "ipPool" = "IP Pool Subnet"
 "poolSize" = "Pool Size"
 
 [pages.xray.tunnel]
+"title" = "Tunnel"
 "enable" = "Enable Tunnel"
 "enableDesc" = "Enable 6TO4 Tunnel"
 "ip" = "IP Address"

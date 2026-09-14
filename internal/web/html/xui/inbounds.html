@@ -42,9 +42,14 @@
 
         .inbounds-table .ant-table-tbody > tr:not(.ant-table-expanded-row) > td:first-child {
             white-space: nowrap;
+            text-align: center;
         }
 
         .inbounds-table .ant-table-tbody > tr:not(.ant-table-expanded-row) > td:nth-child(2) {
+            white-space: nowrap;
+        }
+
+        .inbounds-table .ant-table-tbody > tr:not(.ant-table-expanded-row) > td:nth-child(3) {
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
@@ -549,6 +554,10 @@
                                     <template slot="content">
                                         <table cellpadding="2">
                                             <tr>
+                                                <td>ID</td>
+                                                <td><a-tag color="blue">[[ dbInbound.id ]]</a-tag></td>
+                                            </tr>
+                                            <tr>
                                                 <td>{{ i18n "pages.inbounds.protocol" }}</td>
                                                 <td>
                                                     <a-tag color="purple" style="margin:0;">[[ dbInbound.protocol ]]
@@ -772,9 +781,14 @@
     }];
 
     const mobileColumns = [{
+        title: "ID",
+        align: 'center',
+        dataIndex: "id",
+        width: 32,
+    }, {
         title: '{{ i18n "pages.inbounds.operate" }}',
         align: 'center',
-        width: 74,
+        width: 60,
         scopedSlots: {customRender: 'action'},
     }, {
         title: '{{ i18n "pages.inbounds.remark" }}',

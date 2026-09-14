@@ -540,19 +540,81 @@ func (s *ServerService) UpdateXray(version string) error {
 	return nil
 }
 
-func (s *ServerService) UpdateGeoFiles() error {
+func (s *ServerService) GetGeoVersions() ([]string, error) {
+	const GeoURL = "https://api.github.com/repos/Loyalsoldier/v2ray-rules-dat/releases?per_page=10"
+
+	req, err := http.NewRequest("GET", GeoURL, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("User-Agent", "tx-ui/1.0")
+
+	client := &http.Client{Timeout: 15 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("GitHub API returned HTTP %d", resp.StatusCode)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var releases []Release
+	if err := json.Unmarshal(body, &releases); err != nil {
+		return nil, err
+	}
+
+	var versions []string
+	for _, release := range releases {
+		if release.Draft {
+			continue
+		}
+		if release.TagName != "" {
+			versions = append(versions, release.TagName)
+		}
+		if len(versions) >= 10 {
+			break
+		}
+	}
+	return versions, nil
+}
+
+func (s *ServerService) UpdateGeoFiles(targetVersion ...string) error {
+	versionTag := ""
+	if len(targetVersion) > 0 {
+		versionTag = strings.TrimSpace(targetVersion[0])
+	}
+	if versionTag == "latest" {
+		versionTag = ""
+	}
+
+	var geoipURL, geositeURL string
+	if versionTag != "" {
+		geoipURL = fmt.Sprintf("https://github.com/Loyalsoldier/v2ray-rules-dat/releases/download/%s/geoip.dat", versionTag)
+		geositeURL = fmt.Sprintf("https://github.com/Loyalsoldier/v2ray-rules-dat/releases/download/%s/geosite.dat", versionTag)
+	} else {
+		geoipURL = "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat"
+		geositeURL = "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat"
+	}
+
 	files := []struct {
 		url  string
 		path string
 		name string
 	}{
 		{
-			url:  "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat",
+			url:  geoipURL,
 			path: xray.GetGeoipPath(),
 			name: "geoip.dat",
 		},
 		{
-			url:  "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat",
+			url:  geositeURL,
 			path: xray.GetGeositePath(),
 			name: "geosite.dat",
 		},
@@ -560,10 +622,14 @@ func (s *ServerService) UpdateGeoFiles() error {
 
 	client := &http.Client{Timeout: 2 * time.Minute}
 	for _, file := range files {
-		version, err := getLatestReleaseTag(file.url, file.name)
-		if err != nil {
-			logger.Warningf("failed to detect %s version: %v", file.name, err)
-			version = ""
+		version := versionTag
+		if version == "" {
+			var err error
+			version, err = getLatestReleaseTag(file.url, file.name)
+			if err != nil {
+				logger.Warningf("failed to detect %s version: %v", file.name, err)
+				version = ""
+			}
 		}
 
 		req, err := http.NewRequest(http.MethodGet, file.url, nil)
@@ -1338,6 +1404,26 @@ func extractMetricsSummary(body []byte, parsed map[string]interface{}) *MetricsS
 			}
 		}
 
+		if statsMap, ok := parsed["stats"].(map[string]interface{}); ok {
+			for catName, catVal := range statsMap {
+				if tagMap, ok := catVal.(map[string]interface{}); ok {
+					for tagName, tagVal := range tagMap {
+						if dirMap, ok := tagVal.(map[string]interface{}); ok {
+							for dirName, val := range dirMap {
+								if n, valid := parseUint64Val(val); valid {
+									metricKey := fmt.Sprintf("%s.%s.%s", catName, tagName, dirName)
+									summary.StatsTraffic[metricKey] = int64(n)
+								}
+							}
+						} else if n, valid := parseUint64Val(tagVal); valid {
+							metricKey := fmt.Sprintf("%s.%s", catName, tagName)
+							summary.StatsTraffic[metricKey] = int64(n)
+						}
+					}
+				}
+			}
+		}
+
 		for k, v := range parsed {
 			if strings.HasPrefix(k, "stats.") || strings.HasPrefix(k, "stat.") || strings.HasPrefix(k, "xray.") || strings.HasPrefix(k, "stats_") || strings.HasPrefix(k, "xray_") {
 				if n, valid := parseUint64Val(v); valid {
@@ -1502,6 +1588,32 @@ func (s *ServerService) GetXrayMetrics() (*XrayMetrics, error) {
 	}
 
 	metrics.Summary = extractMetricsSummary(body, parsed)
+
+	if metrics.Summary.Goroutines == 0 {
+		pprofUrl := "http://" + addr + "/debug/pprof/goroutine?debug=1"
+		if pprofResp, err := client.Get(pprofUrl); err == nil && pprofResp != nil {
+			if pprofResp.StatusCode == http.StatusOK {
+				bodyPprof, _ := io.ReadAll(pprofResp.Body)
+				pprofResp.Body.Close()
+				pprofStr := string(bodyPprof)
+				if idx := strings.Index(pprofStr, "\n"); idx != -1 {
+					firstLine := strings.TrimSpace(pprofStr[:idx])
+					const prefix = "goroutine profile: total "
+					if strings.HasPrefix(firstLine, prefix) {
+						countStr := strings.TrimSpace(strings.TrimPrefix(firstLine, prefix))
+						if count, err := strconv.ParseUint(countStr, 10, 64); err == nil && count > 0 {
+							metrics.Summary.Goroutines = count
+						}
+					}
+				}
+			} else {
+				pprofResp.Body.Close()
+			}
+		}
+	}
+	if metrics.Summary.Goroutines == 0 {
+		metrics.Summary.Goroutines = uint64(runtime.NumGoroutine())
+	}
 
 	return metrics, nil
 }

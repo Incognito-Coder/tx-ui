@@ -41,6 +41,7 @@
 "depletingSoon" = "در‌حال‌انقضا"
 "offline" = "آفلاین"
 "online" = "آنلاین"
+"running" = "در حال اجرا"
 "domainName" = "آدرس دامنه"
 "monitor" = "آی‌پی اتصال"
 "certificate" = "گواهی دیجیتال"
@@ -117,6 +118,7 @@
 "xraySwitchVersionDialogDesc" = "آیا از تغییر نسخه‌ مطمئن هستید؟"
 "dontRefresh" = "در حال نصب، لطفا صفحه را رفرش نکنید"
 "logs" = "گزارش‌ها"
+"xrayLogs" = "گزارش‌های Xray"
 "config" = "پیکربندی"
 "backup" = "پشتیبان‌گیری"
 "backupTitle" = "پشتیبان‌گیری دیتابیس"
@@ -129,6 +131,7 @@
 "systemHost" = "میزبان"
 "geoData" = "داده‌های جئو"
 "geoUpdate" = "به‌روزرسانی"
+"geoSelectRelease" = "انتخاب نسخه مورد نظر فایل‌های ژئو (geoip.dat و geosite.dat):"
 "geoMissing" = "موجود نیست"
 "geoUnknown" = "نامشخص"
 "geoVersion" = "نسخه"
@@ -585,6 +588,7 @@
 "randRange" = "محدوده تصادفی"
 
 [pages.xray.dns]
+"title" = "DNS"
 "enable" = "فعال کردن حل دامنه"
 "enableDesc" = "سرور حل دامنه داخلی را فعال کنید"
 "tag" = "برچسب"
@@ -643,12 +647,14 @@
 "serverError" = "خطا در ارتباط با سرور"
 
 [pages.xray.fakedns]
+"title" = "دی‌ان‌اس جعلی"
 "add" = "افزودن دی‌ان‌اس جعلی"
 "edit" = "ویرایش دی‌ان‌اس جعلی"
 "ipPool" = "زیرشبکه استخر آی‌پی"
 "poolSize" = "اندازه استخر"
 
 [pages.xray.tunnel]
+"title" = "تانل"
 "enable" = "فعال کردن تانل"
 "enableDesc" = "فعالسازی تانل از نوع لوکال"
 "ip" = "آدرس IP"

@@ -55,7 +55,9 @@ func (a *ServerController) initRouter(g *gin.RouterGroup) {
 	g.POST("/restartXrayService", a.restartXrayService)
 	g.POST("/installPanel", a.installPanel)
 	g.POST("/installXray/:version", a.installXray)
+	g.GET("/getGeoVersions", a.getGeoVersions)
 	g.POST("/updateGeoFiles", a.updateGeoFiles)
+	g.POST("/updateGeoFiles/:version", a.updateGeoFiles)
 	g.POST("/logs/:count", a.getLogs)
 	g.POST("/xraylogs/:count", a.getXrayLogs)
 	g.POST("/importDB", a.importDB)
@@ -140,8 +142,21 @@ func (a *ServerController) installXray(c *gin.Context) {
 	jsonMsg(c, I18nWeb(c, "install")+" xray", err)
 }
 
+func (a *ServerController) getGeoVersions(c *gin.Context) {
+	versions, err := a.serverService.GetGeoVersions()
+	if err != nil {
+		jsonMsg(c, I18nWeb(c, "getVersion"), err)
+		return
+	}
+	jsonObj(c, versions, nil)
+}
+
 func (a *ServerController) updateGeoFiles(c *gin.Context) {
-	err := a.serverService.UpdateGeoFiles()
+	version := c.Param("version")
+	if version == "" {
+		version = c.Query("version")
+	}
+	err := a.serverService.UpdateGeoFiles(version)
 	jsonMsg(c, "update geo files", err)
 }
 

@@ -41,6 +41,7 @@
 "depletingSoon" = "Agotándose"
 "offline" = "fuera de línea"
 "online" = "en línea"
+"running" = "En ejecución"
 "domainName" = "Nombre de dominio"
 "monitor" = "Listening IP"
 "certificate" = "Certificado Digital"
@@ -117,6 +118,7 @@
 "xraySwitchVersionDialogDesc" = "¿Estás seguro de que deseas cambiar la versión de Xray a"
 "dontRefresh" = "La instalación está en progreso, por favor no actualices esta página."
 "logs" = "Registros"
+"xrayLogs" = "Registros de Xray"
 "config" = "Configuración"
 "backup" = "Copia de Seguridad y Restauración"
 "backupTitle" = "Copia de Seguridad y Restauración de la Base de Datos"
@@ -129,6 +131,7 @@
 "systemHost" = "Hostname"
 "geoData" = "Datos Geo"
 "geoUpdate" = "Actualizar"
+"geoSelectRelease" = "Seleccione la versión deseada de archivos geo (geoip.dat y geosite.dat):"
 "geoMissing" = "Falta"
 "geoUnknown" = "desconocido"
 "geoVersion" = "Versión"
@@ -586,6 +589,7 @@
 "randRange" = "Rango aleatorio"
 
 [pages.xray.dns]
+"title" = "DNS"
 "enable" = "Habilitar DNS"
 "enableDesc" = "Habilitar servidor DNS incorporado"
 "tag" = "Etiqueta de Entrada DNS"
@@ -644,12 +648,14 @@
 "serverError" = "Error al comunicarse con el servidor"
 
 [pages.xray.fakedns]
+"title" = "DNS Falso"
 "add" = "Agregar DNS Falso"
 "edit" = "Editar DNS Falso"
 "ipPool" = "Subred del grupo de IP"
 "poolSize" = "Tamaño del grupo"
 
 [pages.xray.tunnel]
+"title" = "Túnel"
 "port" = "Puerto"
 "serverPort" = "Puerto SSH del servidor"
 "enable" = "Habilitar túnel"

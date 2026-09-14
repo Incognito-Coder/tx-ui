@@ -41,6 +41,7 @@
 "depletingSoon" = "Bitmek Üzere"
 "offline" = "Çevrimdışı"
 "online" = "Çevrimiçi"
+"running" = "Çalışıyor"
 "domainName" = "Alan Adı"
 "monitor" = "Dinleme IP"
 "certificate" = "Dijital Sertifika"
@@ -117,6 +118,7 @@
 "xraySwitchVersionDialogDesc" = "Xray sürümünü değiştirmek istediğinizden emin misiniz"
 "dontRefresh" = "Kurulum devam ediyor, lütfen bu sayfayı yenilemeyin"
 "logs" = "Günlükler"
+"xrayLogs" = "Xray Günlükleri"
 "config" = "Yapılandırma"
 "backup" = "Yedekle & Geri Yükle"
 "backupTitle" = "Veritabanı Yedekleme & Geri Yükleme"
@@ -129,6 +131,7 @@
 "systemHost" = "Hostname"
 "geoData" = "Geo Verisi"
 "geoUpdate" = "Güncelle"
+"geoSelectRelease" = "İstenen geo varlık sürümünü seçin (geoip.dat & geosite.dat):"
 "geoMissing" = "Eksik"
 "geoUnknown" = "bilinmiyor"
 "geoVersion" = "Sürüm"
@@ -585,6 +588,7 @@
 "randRange" = "Rastgele Aralık"
 
 [pages.xray.dns]
+"title" = "DNS"
 "enable" = "DNS'yi Etkinleştir"
 "enableDesc" = "Dahili DNS sunucusunu etkinleştir"
 "tag" = "DNS Gelen Etiketi"
@@ -643,12 +647,14 @@
 "serverError" = "Sunucu ile iletişim hatası"
 
 [pages.xray.fakedns]
+"title" = "Sahte DNS"
 "add" = "Sahte DNS Ekle"
 "edit" = "Sahte DNS'i Düzenle"
 "ipPool" = "IP Havuzu Alt Ağı"
 "poolSize" = "Havuz Boyutu"
 
 [pages.xray.tunnel]
+"title" = "Tünel"
 "port" = "Port"
 "serverPort" = "Sunucu SSH Portu"
 "enable" = "Tüneli Etkinleştir"

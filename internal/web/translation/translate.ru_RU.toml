@@ -41,6 +41,7 @@
 "depletingSoon" = "Почти исчерпано"
 "offline" = "Офлайн"
 "online" = "Онлайн"
+"running" = "Работает"
 "domainName" = "Домен"
 "monitor" = "IP-адрес для прослушивания"
 "certificate" = "Цифровой сертификат"
@@ -117,6 +118,7 @@
 "xraySwitchVersionDialogDesc" = "Вы точно хотите сменить версию Xray?"
 "dontRefresh" = "Установка в процессе... Пожалуйста, не обновляйте эту страницу"
 "logs" = "Логи"
+"xrayLogs" = "Логи Xray"
 "config" = "Конфигурация"
 "backup" = "Резервное копирование и восстановление"
 "backupTitle" = "База данных резервных копий"
@@ -129,6 +131,7 @@
 "systemHost" = "Hostname"
 "geoData" = "Геоданные"
 "geoUpdate" = "Обновить"
+"geoSelectRelease" = "Выберите нужный релиз geo-файлов (geoip.dat и geosite.dat):"
 "geoMissing" = "Отсутствует"
 "geoUnknown" = "неизвестно"
 "geoVersion" = "Версия"
@@ -585,6 +588,7 @@
 "randRange" = "Случайный диапазон"
 
 [pages.xray.dns]
+"title" = "DNS"
 "enable" = "Включить DNS"
 "enableDesc" = "Включить встроенный DNS-сервер"
 "tag" = "Входящий тег DNS"
@@ -643,12 +647,14 @@
 "serverError" = "Ошибка связь с сервером"
 
 [pages.xray.fakedns]
+"title" = "Поддельный DNS"
 "add" = "Добавить поддельный DNS"
 "edit" = "Редактировать поддельный DNS"
 "ipPool" = "Подсеть пула IP"
 "poolSize" = "Размер пула"
 
 [pages.xray.tunnel]
+"title" = "Туннель"
 "enable" = "Включить туннель"
 "enableDesc" = "Включить 6TO4 туннель"
 "ip" = "IP-адрес туннеля"

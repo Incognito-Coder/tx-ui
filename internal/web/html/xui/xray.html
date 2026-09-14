@@ -452,7 +452,6 @@
                                     </a-row>
                                     <a-list-item>
                                         <template v-if="WarpExist">
-                                            <a-list-item>
                                                 <a-row style="padding: 0 20px">
                                                     <a-col :lg="24" :xl="12">
                                                         <a-list-item-meta
@@ -472,7 +471,6 @@
                                                         </template>
                                                     </a-col>
                                                 </a-row>
-                                            </a-list-item>
                                         </template>
                                         <a-button @click="showWarp()" icon="cloud" style="margin-left: 20px;"
                                                   type="primary"
@@ -844,7 +842,7 @@
                             </a-radio-group>
                             <textarea id="obsSetting" style="position:absolute; left: -800px;"></textarea>
                         </a-tab-pane>
-                        <a-tab-pane class="xray-table-pane" force-render="true" key="tpl-dns" tab='DNS'>
+                        <a-tab-pane class="xray-table-pane" force-render="true" key="tpl-dns" tab='{{ i18n "pages.xray.dns.title" }}'>
                             <setting-list-item desc='{{ i18n "pages.xray.dns.enableDesc" }}'
                                                title='{{ i18n "pages.xray.dns.enable" }}'
                                                type="switch"
@@ -927,7 +925,7 @@
                                         <span v-if="typeof dns == 'object'">[[ dns.expectIPs.join(",") ]]</span>
                                     </template>
                                 </a-table>
-                                <a-divider>Fake DNS</a-divider>
+                                <a-divider>{{ i18n "pages.xray.fakedns.title" }}</a-divider>
                                 <a-button @click="addFakedns()" class="xray-section-action" icon="plus" type="primary">
                                     {{ i18n
                                     "pages.xray.fakedns.add" }}
@@ -959,7 +957,7 @@
                                 </a-table>
                             </template>
                         </a-tab-pane>
-                        <a-tab-pane force-render="true" key="tpl-tunnel" tab='Tunnel'>
+                        <a-tab-pane force-render="true" key="tpl-tunnel" tab='{{ i18n "pages.xray.tunnel.title" }}'>
                             <setting-list-item desc='{{ i18n "pages.xray.tunnel.enableDesc" }}'
                                                title='{{ i18n "pages.xray.tunnel.enable" }}'
                                                type="switch"
@@ -1142,9 +1140,9 @@
 
                 <!-- Tab 3: Traffic Stats -->
                 <a-tab-pane key="traffic" tab='{{ i18n "pages.xray.metrics.tabStats" }}' style="padding-top: 14px;">
-                    <div v-if="metricsModal.data && metricsModal.data.summary && Object.keys(metricsModal.data.summary.statsTraffic).length > 0">
+                    <div v-if="hasStatsTraffic()">
                         <a-row :gutter="[10, 10]">
-                            <a-col :xs="24" :sm="12" v-for="(val, key) in metricsModal.data.summary.statsTraffic" :key="key">
+                            <a-col :xs="24" :sm="12" v-for="(val, key) in getStatsTraffic()" :key="key">
                                 <div style="background: var(--ui-surface-muted); padding: 8px 12px; border-radius: var(--ui-radius); border: 1px solid var(--ui-border); display: flex; justify-content: space-between; align-items: center;">
                                     <span style="font-size: 12px; word-break: break-all;">[[ key ]]</span>
                                     <strong style="color: var(--ui-primary)">[[ formatMetricsBytes(val) ]]</strong>
@@ -1155,13 +1153,71 @@
                     <a-empty v-else description='{{ i18n "pages.xray.metrics.noStatsDesc" }}'></a-empty>
                 </a-tab-pane>
 
-                <!-- Tab 4: Raw Inspector -->
-                <a-tab-pane key="raw" tab='{{ i18n "pages.xray.metrics.tabRaw" }}' style="padding-top: 14px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; gap: 10px;">
-                        <a-input placeholder='{{ i18n "pages.xray.metrics.filterPlaceholder" }}' v-model="metricsModal.filterKeyword" size="small" allow-clear icon="search"></a-input>
-                        <a-button icon="snippets" size="small" id="copy-metrics-btn" @click="copyToClipboard('copy-metrics-btn', getFilteredRawMetrics())">
-                            {{ i18n "pages.xray.metrics.copyRaw" }}
-                        </a-button>
+                <!-- Tab 4: Clean Inspector -->
+                <a-tab-pane key="clean" tab="Clean Inspector" style="padding-top: 14px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px;">
+                        <div style="flex: 1; min-width: 240px; max-width: 440px;">
+                            <a-input placeholder='{{ i18n "pages.xray.metrics.filterPlaceholder" }}' v-model="metricsModal.filterKeyword" allow-clear></a-input>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 13px; color: var(--ui-text-muted);">Watch:</span>
+                            <a-switch v-model="metricsModal.autoRefresh" @change="toggleMetricsAutoRefresh"></a-switch>
+                            <a-tag :color="metricsModal.autoRefresh ? 'green' : 'default'">[[ metricsModal.autoRefresh ? 'Watching' : 'Paused' ]]</a-tag>
+                        </div>
+                    </div>
+                    <!-- Categorized Clean View -->
+                    <a-collapse :default-active-key="['runtime', 'memstats', 'traffic']" :bordered="false">
+                        <a-collapse-panel key="runtime" header="Runtime & Goroutines">
+                            <a-descriptions size="small" :column="isMobile ? 1 : 3" bordered>
+                                <a-descriptions-item label="Goroutines">[[ getMetricsVal('goroutines') || 0 ]]</a-descriptions-item>
+                                <a-descriptions-item label="GC Cycles">[[ getMetricsVal('numGC') || 0 ]]</a-descriptions-item>
+                                <a-descriptions-item label="Heap Objects">[[ getMetricsVal('heapObjects') || 0 ]]</a-descriptions-item>
+                            </a-descriptions>
+                        </a-collapse-panel>
+                        <a-collapse-panel key="memstats" header="Memory Overview">
+                            <a-descriptions size="small" :column="isMobile ? 1 : 2" bordered>
+                                <a-descriptions-item label="Allocated Memory">[[ formatMetricsBytes(getMetricsVal('allocBytes')) ]]</a-descriptions-item>
+                                <a-descriptions-item label="System Memory">[[ formatMetricsBytes(getMetricsVal('sysBytes')) ]]</a-descriptions-item>
+                                <a-descriptions-item label="Heap Allocated">[[ formatMetricsBytes(getMetricsVal('heapAlloc')) ]]</a-descriptions-item>
+                                <a-descriptions-item label="Heap System">[[ formatMetricsBytes(getMetricsVal('heapSys')) ]]</a-descriptions-item>
+                            </a-descriptions>
+                        </a-collapse-panel>
+                        <a-collapse-panel key="traffic" header="Traffic Counters" v-if="hasStatsTraffic()">
+                            <div style="max-height: 220px; overflow-y: auto;">
+                                <a-row :gutter="[8, 8]">
+                                    <a-col :xs="24" :sm="12" v-for="(val, key) in getFilteredStatsTraffic()" :key="key">
+                                        <div style="background: var(--ui-surface-muted); padding: 6px 10px; border-radius: 6px; border: 1px solid var(--ui-border); display: flex; justify-content: space-between; align-items: center; font-size: 11px;">
+                                            <span style="word-break: break-all;">[[ key ]]</span>
+                                            <strong style="color: var(--ui-primary)">[[ formatMetricsBytes(val) ]]</strong>
+                                        </div>
+                                    </a-col>
+                                </a-row>
+                            </div>
+                        </a-collapse-panel>
+                        <a-collapse-panel key="parsedTree" header="Structured Data Tree">
+                            <div class="client-table-odd-row" style="border-radius: var(--ui-radius); padding: 10px; font-family: monospace; white-space: pre-wrap; word-break: break-all; max-height: 260px; overflow-y: auto; font-size: 11px;">
+                                [[ getCleanFormattedJson() ]]
+                            </div>
+                        </a-collapse-panel>
+                    </a-collapse>
+                </a-tab-pane>
+
+                <!-- Tab 5: Raw Inspector & Watch -->
+                <a-tab-pane key="raw" tab="Raw Inspector & Watch" style="padding-top: 14px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 10px;">
+                        <div style="flex: 1; min-width: 240px; max-width: 440px;">
+                            <a-input placeholder='{{ i18n "pages.xray.metrics.filterPlaceholder" }}' v-model="metricsModal.filterKeyword" allow-clear></a-input>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                            <a-button @click="metricsModal.showFormattedJson = !metricsModal.showFormattedJson">
+                                [[ metricsModal.showFormattedJson ? 'Show Raw String' : 'Format JSON' ]]
+                            </a-button>
+                            <a-button icon="snippets" id="copy-metrics-btn" @click="copyToClipboard('copy-metrics-btn', getFilteredRawMetrics())">
+                                {{ i18n "pages.xray.metrics.copyRaw" }}
+                            </a-button>
+                            <span style="font-size: 13px; color: var(--ui-text-muted); margin-left: 4px;">Watch:</span>
+                            <a-switch v-model="metricsModal.autoRefresh" @change="toggleMetricsAutoRefresh"></a-switch>
+                        </div>
                     </div>
                     <div class="client-table-odd-row" style="border-radius: var(--ui-radius); padding: 12px; font-family: monospace; white-space: pre-wrap; word-break: break-all; max-height: 340px; overflow-y: auto; font-size: 12px;">
                         [[ getFilteredRawMetrics() || '{{ i18n "pages.xray.metrics.noData" }}' ]]
@@ -1337,6 +1393,7 @@
                 raw: '',
                 error: '',
                 filterKeyword: '',
+                showFormattedJson: false,
                 autoRefresh: false,
                 timer: null,
                 history: {
@@ -1721,19 +1778,65 @@
                 const sys = this.getMetricsVal('heapSys') || 1;
                 return Math.min(100, Math.round((alloc / sys) * 100));
             },
+            hasStatsTraffic() {
+                if (!this.metricsModal.data || !this.metricsModal.data.summary || !this.metricsModal.data.summary.statsTraffic) return false;
+                try {
+                    return Object.keys(this.metricsModal.data.summary.statsTraffic).length > 0;
+                } catch {
+                    return false;
+                }
+            },
+            getStatsTraffic() {
+                if (!this.hasStatsTraffic()) return {};
+                return this.metricsModal.data.summary.statsTraffic;
+            },
+            getFilteredStatsTraffic() {
+                const traffic = this.getStatsTraffic();
+                const kw = (this.metricsModal.filterKeyword || '').toLowerCase().trim();
+                if (!kw) return traffic;
+                const filtered = {};
+                for (const [k, v] of Object.entries(traffic)) {
+                    if (k.toLowerCase().includes(kw)) {
+                        filtered[k] = v;
+                    }
+                }
+                return filtered;
+            },
+            getCleanFormattedJson() {
+                if (!this.metricsModal.parsed) return this.metricsModal.raw || 'No Data';
+                const kw = (this.metricsModal.filterKeyword || '').toLowerCase().trim();
+                if (!kw) return JSON.stringify(this.metricsModal.parsed, null, 2);
+                try {
+                    const filtered = {};
+                    for (const [k, v] of Object.entries(this.metricsModal.parsed)) {
+                        if (k.toLowerCase().includes(kw) || JSON.stringify(v).toLowerCase().includes(kw)) {
+                            filtered[k] = v;
+                        }
+                    }
+                    return JSON.stringify(filtered, null, 2);
+                } catch {
+                    return JSON.stringify(this.metricsModal.parsed, null, 2);
+                }
+            },
             getFilteredRawMetrics() {
-                const raw = this.metricsModal.raw || '';
+                let raw = this.metricsModal.raw || '';
+                if (this.metricsModal.showFormattedJson && this.metricsModal.parsed) {
+                    try {
+                        raw = JSON.stringify(this.metricsModal.parsed, null, 2);
+                    } catch {}
+                }
                 const kw = (this.metricsModal.filterKeyword || '').toLowerCase().trim();
                 if (!kw) return raw;
                 return raw.split('\n').filter(line => line.toLowerCase().includes(kw)).join('\n');
             },
             getSvgPath(data, width = 1300, height = 150) {
                 if (!data || data.length < 2) return `M 0,${height/2} L ${width},${height/2}`;
-                const max = Math.max(...data, 1);
-                const min = Math.min(...data, 0);
+                const validData = data.map(v => (typeof v === 'number' && !isNaN(v) ? v : 0));
+                const max = Math.max(...validData, 1);
+                const min = Math.min(...validData, 0);
                 const range = max - min || 1;
-                const step = width / (data.length - 1);
-                return data.reduce((acc, val, idx) => {
+                const step = width / (validData.length - 1);
+                return validData.reduce((acc, val, idx) => {
                     const x = (idx * step).toFixed(1);
                     const y = (height - ((val - min) / range) * (height - 20) - 10).toFixed(1);
                     return `${acc} ${idx === 0 ? 'M' : 'L'} ${x},${y}`;

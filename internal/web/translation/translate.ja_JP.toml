@@ -41,6 +41,7 @@
 "depletingSoon" = "間もなく消耗"
 "offline" = "オフライン"
 "online" = "オンライン"
+"running" = "実行中"
 "domainName" = "ドメイン名"
 "monitor" = "監視"
 "certificate" = "証明書"
@@ -117,6 +118,7 @@
 "xraySwitchVersionDialogDesc" = "Xrayのバージョンを切り替えますか？"
 "dontRefresh" = "インストール中、このページをリロードしないでください"
 "logs" = "ログ"
+"xrayLogs" = "Xray ログ"
 "config" = "設定"
 "backup" = "バックアップと復元"
 "backupTitle" = "データベースのバックアップと復元"
@@ -129,6 +131,7 @@
 "systemHost" = "Hostname"
 "geoData" = "ジオデータ"
 "geoUpdate" = "更新"
+"geoSelectRelease" = "Geo アセットの目的のリリースを選択 (geoip.dat & geosite.dat):"
 "geoMissing" = "未検出"
 "geoUnknown" = "不明"
 "geoVersion" = "バージョン"
@@ -585,6 +588,7 @@
 "randRange" = "ランダム範囲"
 
 [pages.xray.dns]
+"title" = "DNS"
 "enable" = "DNSを有効にする"
 "enableDesc" = "組み込みDNSサーバーを有効にする"
 "tag" = "DNSインバウンドタグ"
@@ -643,12 +647,14 @@
 "serverError" = "サーバーとの通信エラー"
 
 [pages.xray.fakedns]
+"title" = "フェイクDNS"
 "add" = "フェイクDNS追加"
 "edit" = "フェイクDNS編集"
 "ipPool" = "IPプールサブネット"
 "poolSize" = "プールサイズ"
 
 [pages.xray.tunnel]
+"title" = "トンネル"
 "port" = "ポート"
 "serverPort" = "サーバー SSH ポート"
 "enable" = "トンネルを有効にする"

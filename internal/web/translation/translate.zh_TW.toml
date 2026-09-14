@@ -40,6 +40,7 @@
 "depletingSoon" = "即將耗盡"
 "offline" = "離線"
 "online" = "線上"
+"running" = "運行中"
 "domainName" = "域名"
 "monitor" = "監聽"
 "certificate" = "憑證"
@@ -118,6 +119,7 @@
 "xraySwitchVersionDialogDesc" = "是否切換 Xray 版本至"
 "dontRefresh" = "安裝中，請勿重新整理此頁面"
 "logs" = "日誌"
+"xrayLogs" = "Xray 日誌"
 "config" = "配置"
 "backup" = "備份和恢復"
 "backupTitle" = "備份和恢復資料庫"
@@ -130,6 +132,7 @@
 "systemHost" = "Hostname"
 "geoData" = "地理資料"
 "geoUpdate" = "更新"
+"geoSelectRelease" = "選擇所需的 Geo 資源版本 (geoip.dat 和 geosite.dat)："
 "geoMissing" = "缺失"
 "geoUnknown" = "未知"
 "geoVersion" = "版本"
@@ -586,6 +589,7 @@
 "randRange" = "隨機範圍"
 
 [pages.xray.dns]
+"title" = "DNS"
 "enable" = "啟用 DNS"
 "enableDesc" = "啟用內建 DNS 伺服器"
 "tag" = "DNS 入站標籤"
@@ -644,12 +648,14 @@
 "serverError" = "與伺服器通訊錯誤"
 
 [pages.xray.fakedns]
+"title" = "假 DNS"
 "add" = "新增假 DNS"
 "edit" = "編輯假 DNS"
 "ipPool" = "IP 池子網"
 "poolSize" = "池大小"
 
 [pages.xray.tunnel]
+"title" = "隧道"
 "port" = "連接埠"
 "serverPort" = "伺服器 SSH 連接埠"
 "enable" = "啟用隧道"

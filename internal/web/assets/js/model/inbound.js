@@ -7,10 +7,15 @@ const Protocols = {
     MIXED: 'mixed',
     HTTP: 'http',
     WIREGUARD: 'wireguard',
-    Wireguard: 'wireguard',
     TUN: 'tun',
     HYSTERIA: 'hysteria',
 };
+Object.defineProperty(Protocols, 'Wireguard', {
+    value: 'wireguard',
+    enumerable: false,
+    writable: true,
+    configurable: true
+});
 
 const SSMethods = {
     AES_256_GCM: 'aes-256-gcm',
@@ -1984,6 +1989,28 @@ class Inbound extends XrayCommonClass {
         return txt;
     }
 
+    genWireguardUrl(address = '', port = this.port, remark = '', client) {
+        if (!client) return '';
+        let privKey = client.privateKey || client.password || '';
+        let allowedIp = (client.allowedIPs && client.allowedIPs.length > 0) ? client.allowedIPs.join(',') : '10.0.0.2/32';
+        let pubKey = this.settings ? (this.settings.pubKey || '') : '';
+        let mtu = (this.settings && this.settings.mtu) ? this.settings.mtu : 1420;
+
+        let link = `wireguard://${encodeURIComponent(privKey)}@${address}:${port}?publickey=${encodeURIComponent(pubKey)}&address=${encodeURIComponent(allowedIp)}&mtu=${mtu}`;
+        if (client.psk) {
+            link += `&presharedkey=${encodeURIComponent(client.psk)}`;
+        }
+        if (client.keepAlive) {
+            link += `&persistentkeepalive=${client.keepAlive}`;
+        }
+        link += `&allowedips=${encodeURIComponent('0.0.0.0/0,::/0')}`;
+        if (this.settings && Array.isArray(this.settings.reserved) && this.settings.reserved.length > 0) {
+            link += `&reserved=${encodeURIComponent(this.settings.reserved.join(','))}`;
+        }
+        link += `#${encodeURIComponent(remark)}`;
+        return link;
+    }
+
     genLink(address = '', port = this.port, forceTls = 'same', remark = '', client) {
         if (!client) {
             return '';
@@ -2025,7 +2052,8 @@ class Inbound extends XrayCommonClass {
             let r = orderChars.split('').map(char => orders[char]).filter(x => x.length > 0).join(separationChar);
             result.push({
                 remark: r,
-                link: this.genLink(addr, port, 'same', r, client)
+                link: this.genLink(addr, port, 'same', r, client),
+                url: this.protocol === Protocols.WIREGUARD ? this.genWireguardUrl(addr, port, r, client) : this.genLink(addr, port, 'same', r, client)
             });
         } else {
             this.stream.externalProxy.forEach((ep) => {
@@ -2033,7 +2061,8 @@ class Inbound extends XrayCommonClass {
                 let r = orderChars.split('').map(char => orders[char]).filter(x => x.length > 0).join(separationChar);
                 result.push({
                     remark: r,
-                    link: this.genLink(ep.dest, ep.port, ep.forceTls, r, client)
+                    link: this.genLink(ep.dest, ep.port, ep.forceTls, r, client),
+                    url: this.protocol === Protocols.WIREGUARD ? this.genWireguardUrl(ep.dest, ep.port, r, client) : this.genLink(ep.dest, ep.port, ep.forceTls, r, client)
                 });
             });
         }

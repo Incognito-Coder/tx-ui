@@ -41,6 +41,7 @@
 "depletingSoon" = "Вичерпується"
 "offline" = "Офлайн"
 "online" = "Онлайн"
+"running" = "Працює"
 "domainName" = "Доменне ім`я"
 "monitor" = "Слухати IP"
 "certificate" = "Цифровий сертифікат"
@@ -117,6 +118,7 @@
 "xraySwitchVersionDialogDesc" = "Ви впевнені, що бажаєте змінити версію Xray на"
 "dontRefresh" = "Інсталяція триває, будь ласка, не оновлюйте цю сторінку"
 "logs" = "Журнали"
+"xrayLogs" = "Журнали Xray"
 "config" = "Конфігурація"
 "backup" = "Резервне копіювання та відновлення"
 "backupTitle" = "Резервне копіювання та відновлення бази даних"
@@ -129,6 +131,7 @@
 "systemHost" = "Hostname"
 "geoData" = "Геодані"
 "geoUpdate" = "Оновити"
+"geoSelectRelease" = "Виберіть потрібний реліз geo-файлів (geoip.dat та geosite.dat):"
 "geoMissing" = "Відсутні"
 "geoUnknown" = "невідомо"
 "geoVersion" = "Версія"
@@ -585,6 +588,7 @@
 "randRange" = "Випадковий діапазон"
 
 [pages.xray.dns]
+"title" = "DNS"
 "enable" = "Увімкнути DNS"
 "enableDesc" = "Увімкнути вбудований DNS-сервер"
 "tag" = "Мітка вхідного DNS"
@@ -643,12 +647,14 @@
 "serverError" = "Помилка зв'язку з сервером"
 
 [pages.xray.fakedns]
+"title" = "Підроблений DNS"
 "add" = "Додати підроблений DNS"
 "edit" = "Редагувати підроблений DNS"
 "ipPool" = "Підмережа IP-пулу"
 "poolSize" = "Розмір пулу"
 
 [pages.xray.tunnel]
+"title" = "Тунель"
 "port" = "Порт"
 "serverPort" = "SSH-порт сервера"
 "enable" = "Увімкнути тунель"

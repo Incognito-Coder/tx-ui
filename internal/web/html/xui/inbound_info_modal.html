@@ -365,7 +365,19 @@
                         </a-tooltip>
                     </tr-info-title>
                     <template v-if="dbInbound.isWireguard">
-                        <div class="client-table-odd-row" style="border-radius: 7px; padding: 0.75rem; font-family: monospace; white-space: pre-wrap; word-break: break-all; margin-top: 6px;">[[ getLinkString(item) ]]</div>
+                        <div style="margin-top: 6px;" v-if="item.url">
+                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                                <span style="font-size: 12px; color: var(--ui-text-muted); font-weight: 600;">Share URL</span>
+                                <a-tooltip title='{{ i18n "copy" }}'>
+                                    <a-button :id="'copy-wg-url-'+index" @click="copyToClipboard('copy-wg-url-'+index, item.url)" icon="snippets" size="small" style="min-width: 24px;"></a-button>
+                                </a-tooltip>
+                            </div>
+                            <code>[[ item.url ]]</code>
+                        </div>
+                        <div style="margin-top: 8px;">
+                            <div style="font-size: 12px; color: var(--ui-text-muted); font-weight: 600; margin-bottom: 4px;">Configuration (.conf)</div>
+                            <div class="client-table-odd-row" style="border-radius: 7px; padding: 0.75rem; font-family: monospace; white-space: pre-wrap; word-break: break-all;">[[ getLinkString(item) ]]</div>
+                        </div>
                     </template>
                     <template v-else>
                         <code>[[ item.link ]]</code>

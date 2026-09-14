@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v0.8.3] - 2026-09-14
+
+### 🚀 Features & Enhancements
+- **WireGuard Inbounds**:
+  - Standard `wireguard://` URI link generation for subscription feeds, ensuring remark preservation and seamless import in modern clients (Sing-box, v2rayNG, MahsaNG, NekoBox).
+  - Added one-click WireGuard Share URL in the inbound details modal.
+- **Geo Assets Release Picker**:
+  - Interactive version selector modal previewing and selecting from the latest 10 releases of `Loyalsoldier/v2ray-rules-dat` (`geoip.dat` & `geosite.dat`).
+- **Xray Metrics & Telemetry**:
+  - Added **Clean Inspector** tab with categorized sections (Runtime, Memory, Traffic Counters).
+  - Added **Raw Inspector & Watch** mode with live polling and formatted JSON inspection.
+  - Modernized search inputs to match panel dark theme aesthetic.
+- **UI & UX Polish**:
+  - Added numeric inbound ID column to mobile table view and info popover.
+  - Enforced non-wrapping horizontal-scroll view (`white-space: pre`) in System Logs and Xray Logs modals.
+
+### 🌐 Internationalization (i18n)
+- Added native translations across all 13 supported locales (`ar_EG`, `en_US`, `es_ES`, `fa_IR`, `id_ID`, `ja_JP`, `pt_BR`, `ru_RU`, `tr_TR`, `uk_UA`, `vi_VN`, `zh_CN`, `zh_TW`) for Running state, Xray Logs, Geo asset release selection, DNS, Tunnel, and Fake DNS.
+- Added automated `TestI18nTranslations` unit test ensuring complete translation coverage.
+
+### 🐛 Bug Fixes
+- **Duplicate Protocol**: Fixed duplicate `wireguard` entry in Add/Edit Inbound protocol dropdown.
+- **Metrics Crash**: Resolved client-side crash when Xray traffic stats are empty or uninitialized.
+- **Goroutines Zero Value**: Fixed goroutines count always reporting zero by parsing `pprof` goroutine header.
+
+---
+
 ## [v0.8.2] - 2026-09-10
 
 ### 🚀 Features & Xray-core Integration
