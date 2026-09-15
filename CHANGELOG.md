@@ -7,6 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v0.8.4] - 2026-09-15
+
+### 🚀 Features & Enhancements
+- **Progressive Web App (PWA) Support**:
+  - Full PWA integration allowing native standalone app installation across mobile (Android, iOS) and desktop (Chrome, Edge, macOS, Windows).
+  - Web App Manifest (`manifest.json`) supporting standalone display mode, dynamic theme color (`#2563eb`), dark background (`#0a1222`), and orientation flexibility.
+  - Smart Service Worker (`sw.js`) with cache management: strictly network-only for authentication and API endpoints (`/api/*`, `/login`, `/logout`), stale-while-revalidate for static assets, and network-first navigation with custom dark-themed offline fallback (`offline.html`).
+  - Generated comprehensive PWA app icon suite derived from `media/tx-ui-dark.png`: standard 192x192 & 512x512 icons, Android maskable icons with safe zone margins, Apple touch icon (180x180), and multi-resolution favicon.
+- **Built-in Panel Updater & Version Selector**:
+  - Enhanced `UpdatePanel` API and settings modal to fetch, compare, and display all available newer panel releases directly from GitHub.
+  - Interactive release version selector modal allowing one-click upgrades to specific panel releases.
+  - Optimized release checking routine to prevent background CPU leakage on panel start or restart.
+- **Inbound Clients Sorting**:
+  - Added ascending and descending sort options for inbounds client list, enabling flexible ordering by traffic, expiry, or email.
+
+### 🐛 Bug Fixes & Stability
+- **Node Client Traffic Accounting & Volume Unification**:
+  - Unified traffic quota calculation across all linked inbounds: total volume now strictly adheres to the configured client limit instead of summing up separate quotas per inbound.
+  - Synchronized upstream and downstream usage across all linked inbounds for Node Clients, ensuring accurate quota enforcement and simultaneous deactivation when the total volume limit is exhausted.
+- **Node Client QR Links Modal UI**:
+  - Fixed modal card margins, centered layout alignment, and resolved previous right-side alignment caused by `.qr-modal { align-items: flex-end }`.
+  - Added responsive modal sizing (`panel-modal-auto panel-modal-qr`) preventing unwanted 100vw stretch on mobile.
+  - Styled full-width matching Copy buttons with rounded corners and centered icons.
+- **Geo Assets Version Persistence**:
+  - Resolved issue where geodata version displayed as "Unknown" following panel updates or reinstalls.
+  - Added automatic detection and version preservation across reinstallations.
+- **Docker Infrastructure & Buildx**:
+  - Fixed Docker container build error by updating base image to `debian:bookworm-slim`.
+  - Improved entrypoint script POSIX compatibility for containerized deployments.
+- **Xray Telemetry & Metrics UI**:
+  - Fixed missing telemetry icon assets and improved traffic metric counters parsing and formatting.
+
+### 🌐 Internationalization (i18n)
+- Added `pages.index.latestVersion` translation key across all supported locales (`ar_EG`, `en_US`, `es_ES`, `fa_IR`, `id_ID`, `ja_JP`, `pt_BR`, `ru_RU`, `tr_TR`, `uk_UA`, `vi_VN`, `zh_CN`, `zh_TW`).
+
+### 📦 Dependencies & Maintenance
+- Updated project Go dependencies to latest versions in `go.mod` and `go.sum`.
+- Updated release action versions and project documentation wallet addresses.
+
+---
+
 ## [v0.8.3] - 2026-09-14
 
 ### 🚀 Features & Enhancements
