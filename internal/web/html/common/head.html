@@ -4,6 +4,16 @@
     <meta content="webkit" name="renderer">
     <meta content="IE=edge,chrome=1" http-equiv="X-UA-Compatible">
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <link rel="manifest" href="{{ .base_path }}manifest.json">
+    <meta name="theme-color" content="#2563eb">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="tx-ui">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ .base_path }}assets/img/icons/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ .base_path }}assets/img/icons/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ .base_path }}assets/img/icons/favicon-16x16.png">
+    <link rel="shortcut icon" href="{{ .base_path }}assets/img/icons/favicon.ico">
     <link href="{{ .base_path }}assets/ant-design-vue/antd.min.css" rel="stylesheet">
     <link href="{{ .base_path }}assets/element-ui/theme-chalk/display.css" rel="stylesheet">
     <link href="{{ .base_path }}assets/css/custom.min.css?{{ .cur_ver }}" rel="stylesheet">
@@ -204,7 +214,22 @@
                 ';
                 document.head.appendChild(styleEl);
             }
+
+            var themeMeta = document.querySelector('meta[name="theme-color"]');
+            if (themeMeta) {
+                themeMeta.setAttribute('content', isDark ? '#0a1222' : (theme ? theme.primary : '#2563eb'));
+            }
         })();
+    </script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('{{ .base_path }}sw.js', { scope: '{{ .base_path }}' })
+                    .catch(function(err) {
+                        console.warn('tx-ui PWA ServiceWorker registration failed: ', err);
+                    });
+            });
+        }
     </script>
     <title>{{ .host }}-{{ i18n .title}}</title>
 </head>

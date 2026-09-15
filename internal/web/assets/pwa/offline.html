@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>tx-ui - Offline</title>
+    <style>
+        :root {
+            --bg-color: #0a1222;
+            --surface-color: #151f31;
+            --border-color: #2c3950;
+            --text-primary: rgba(255, 255, 255, 0.88);
+            --text-muted: rgba(255, 255, 255, 0.55);
+            --primary-color: #2563eb;
+            --primary-hover: #1d4ed8;
+        }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .offline-card {
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 36px 28px;
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 12px 36px rgba(0, 0, 0, 0.4);
+        }
+        .app-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 20px auto;
+            display: block;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.04);
+            padding: 8px;
+        }
+        h1 {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--text-primary);
+        }
+        p {
+            font-size: 14px;
+            line-height: 1.6;
+            color: var(--text-muted);
+            margin-bottom: 24px;
+        }
+        .retry-btn {
+            background: var(--primary-color);
+            color: #ffffff;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 28px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            width: 100%;
+        }
+        .retry-btn:hover {
+            background: var(--primary-hover);
+        }
+        .retry-btn:active {
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+<body>
+    <div class="offline-card">
+        <img src="assets/img/icons/icon-192x192.png" alt="tx-ui" class="app-icon">
+        <h1>Offline / No Connection</h1>
+        <p>Unable to connect to the tx-ui panel. Please verify your network connection or server status and try again.</p>
+        <button class="retry-btn" onclick="window.location.reload()">Retry Connection</button>
+    </div>
+</body>
+</html>

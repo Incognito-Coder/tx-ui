@@ -242,6 +242,65 @@ func (s *Server) initRouter() (*gin.Engine, error) {
 
 	g := engine.Group(basePath)
 
+	// PWA routes: manifest.json, sw.js, and favicon.ico
+	g.GET("/manifest.json", func(c *gin.Context) {
+		var content []byte
+		var err error
+		if config.IsDebug() {
+			content, err = os.ReadFile("web/assets/pwa/manifest.json")
+		} else {
+			content, err = assetsFS.ReadFile("assets/pwa/manifest.json")
+		}
+		if err != nil {
+			c.Status(http.StatusNotFound)
+			return
+		}
+		c.Header("Content-Type", "application/manifest+json; charset=utf-8")
+		c.Header("Cache-Control", "no-cache")
+		c.Data(http.StatusOK, "application/manifest+json; charset=utf-8", content)
+	})
+
+	g.GET("/sw.js", func(c *gin.Context) {
+		var content []byte
+		var err error
+		if config.IsDebug() {
+			content, err = os.ReadFile("web/assets/pwa/sw.js")
+		} else {
+			content, err = assetsFS.ReadFile("assets/pwa/sw.js")
+		}
+		if err != nil {
+			c.Status(http.StatusNotFound)
+			return
+		}
+		c.Header("Content-Type", "application/javascript; charset=utf-8")
+		c.Header("Service-Worker-Allowed", basePath)
+		c.Header("Cache-Control", "no-cache, no-store, must-revalidate")
+		c.Data(http.StatusOK, "application/javascript; charset=utf-8", content)
+	})
+
+	g.GET("/favicon.ico", func(c *gin.Context) {
+		var content []byte
+		var err error
+		if config.IsDebug() {
+			content, err = os.ReadFile("web/assets/img/icons/favicon.ico")
+		} else {
+			content, err = assetsFS.ReadFile("assets/img/icons/favicon.ico")
+		}
+		if err != nil {
+			c.Status(http.StatusNotFound)
+			return
+		}
+		c.Header("Content-Type", "image/x-icon")
+		c.Header("Cache-Control", "public, max-age=86400")
+		c.Data(http.StatusOK, "image/x-icon", content)
+	})
+
+	if basePath != "/" {
+		engine.GET("/favicon.ico", func(c *gin.Context) {
+			c.Redirect(http.StatusTemporaryRedirect, basePath+"favicon.ico")
+		})
+	}
+
 	s.index = controller.NewIndexController(g)
 	s.server = controller.NewServerController(g)
 	s.panel = controller.NewXUIController(g)
