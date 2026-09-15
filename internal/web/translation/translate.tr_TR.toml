@@ -56,6 +56,8 @@
 "remained" = "Kalan"
 "default" = "varsayılan"
 "alphabet" = "Alfabetik"
+"ascending" = "Artan"
+"descending" = "Azalan"
 "security" = "Güvenlik"
 "secAlertTitle" = "Güvenlik Uyarısı"
 "secAlertSsl" = "Bu bağlantı güvenli değil. Verilerin korunması için TLS etkinleştirilene kadar hassas bilgiler girmekten kaçının."

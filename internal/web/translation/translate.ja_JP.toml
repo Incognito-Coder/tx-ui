@@ -56,6 +56,8 @@
 "remained" = "残り"
 "default" = "デフォルト"
 "alphabet" = "アルファベット順"
+"ascending" = "昇順"
+"descending" = "降順"
 "security" = "セキュリティ"
 "secAlertTitle" = "セキュリティアラート"
 "secAlertSsl" = "この接続は安全ではありません。TLSを有効にしてデータ保護を行うまで、機密情報を入力しないでください。"

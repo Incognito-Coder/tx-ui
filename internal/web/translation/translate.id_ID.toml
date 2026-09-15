@@ -56,6 +56,8 @@
 "remained" = "Tersisa"
 "default" = "default"
 "alphabet" = "Alfabet"
+"ascending" = "Menaik"
+"descending" = "Menurun"
 "security" = "Keamanan"
 "secAlertTitle" = "Peringatan keamanan"
 "secAlertSsl" = "Koneksi ini tidak aman. Harap hindari memasukkan informasi sensitif sampai TLS diaktifkan untuk perlindungan data."

@@ -56,6 +56,8 @@
 "remained" = "Còn lại"
 "default" = "mặc định"
 "alphabet" = "Theo thứ tự chữ cái"
+"ascending" = "Tăng dần"
+"descending" = "Giảm dần"
 "security" = "Bảo vệ"
 "secAlertTitle" = "Cảnh báo an ninh-Tiếng Việt by Ohoang7"
 "secAlertSsl" = "Kết nối này không an toàn; Vui lòng không nhập thông tin nhạy cảm cho đến khi TLS được kích hoạt để bảo vệ dữ liệu của Bạn"

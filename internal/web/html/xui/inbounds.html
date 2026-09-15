@@ -274,13 +274,22 @@
                                         </a-menu>
                                     </a-dropdown>
                                     <a-dropdown :trigger="['click']">
-                                        <a-button icon="sort-ascending" type="primary"></a-button>
-                                        <a-menu :selected-keys="[clientSortBy]" :theme="themeSwitcher.currentTheme"
+                                        <a-button :icon="clientSortOrder === 'desc' ? 'sort-descending' : 'sort-ascending'" type="primary"></a-button>
+                                        <a-menu :selected-keys="[clientSortBy, clientSortOrder]" :theme="themeSwitcher.currentTheme"
                                                 @click="a => sortClients(a.key)" slot="overlay">
                                             <a-menu-item key="default">{{ i18n "default" }}</a-menu-item>
                                             <a-menu-item key="alphabet">{{ i18n "alphabet" }}</a-menu-item>
                                             <a-menu-item key="remainingTime">{{ i18n "remained" }}</a-menu-item>
                                             <a-menu-item key="usage">{{ i18n "usage" }}</a-menu-item>
+                                            <a-menu-divider></a-menu-divider>
+                                            <a-menu-item key="asc">
+                                                <a-icon type="sort-ascending"></a-icon>
+                                                {{ i18n "ascending" }}
+                                            </a-menu-item>
+                                            <a-menu-item key="desc">
+                                                <a-icon type="sort-descending"></a-icon>
+                                                {{ i18n "descending" }}
+                                            </a-menu-item>
                                         </a-menu>
                                     </a-dropdown>
                                 </a-col>
@@ -868,11 +877,24 @@
             pageSize: 50,
             isMobile: window.innerWidth <= 768,
             clientSortBy: 'default',
+            clientSortOrder: 'asc',
         },
         methods: {
             sortClients(key) {
-                this.clientSortBy = key;
+                if (key === 'asc' || key === 'desc') {
+                    this.clientSortOrder = key;
+                } else if (this.clientSortBy === key) {
+                    this.clientSortOrder = this.clientSortOrder === 'asc' ? 'desc' : 'asc';
+                } else {
+                    this.clientSortBy = key;
+                    if (key === 'usage' || key === 'remainingTime') {
+                        this.clientSortOrder = 'desc';
+                    } else {
+                        this.clientSortOrder = 'asc';
+                    }
+                }
                 localStorage.setItem('clientSortBy', this.clientSortBy);
+                localStorage.setItem('clientSortOrder', this.clientSortOrder);
                 this.$forceUpdate();
             },
             loading(spinning = true) {
@@ -1427,10 +1449,14 @@
                 }
             },
             getInboundClients(dbInbound) {
-                const clients = dbInbound.toInbound().clients;
+                const clients = (dbInbound.toInbound().clients || []).slice();
                 const sortBy = this.clientSortBy || 'default';
+                const isDesc = this.clientSortOrder === 'desc';
                 if (sortBy === 'alphabet') {
-                    return clients.sort((a, b) => a.email.localeCompare(b.email));
+                    return clients.sort((a, b) => {
+                        const cmp = (a.email || '').localeCompare(b.email || '');
+                        return isDesc ? -cmp : cmp;
+                    });
                 } else if (sortBy === 'usage') {
                     return clients.sort((a, b) => {
                         const aStat = dbInbound.clientStats.find(s => s.email === a.email) || {up: 0, down: 0};
@@ -1438,18 +1464,25 @@
                         const aUsage = (aStat.up || 0) + (aStat.down || 0);
                         const bUsage = (bStat.up || 0) + (bStat.down || 0);
                         if (bUsage !== aUsage) {
-                            return bUsage - aUsage;
+                            return isDesc ? (bUsage - aUsage) : (aUsage - bUsage);
                         }
-                        return (a.email || '').localeCompare(b.email || '');
+                        const emailCmp = (a.email || '').localeCompare(b.email || '');
+                        return isDesc ? -emailCmp : emailCmp;
                     });
                 } else if (sortBy === 'remainingTime') {
                     return clients.sort((a, b) => {
                         const aStat = dbInbound.clientStats.find(s => s.email === a.email) || {expiryTime: 0};
                         const bStat = dbInbound.clientStats.find(s => s.email === b.email) || {expiryTime: 0};
-                        return bStat.expiryTime - aStat.expiryTime;
+                        const aExp = aStat.expiryTime || 0;
+                        const bExp = bStat.expiryTime || 0;
+                        if (bExp !== aExp) {
+                            return isDesc ? (bExp - aExp) : (aExp - bExp);
+                        }
+                        const emailCmp = (a.email || '').localeCompare(b.email || '');
+                        return isDesc ? -emailCmp : emailCmp;
                     });
                 }
-                return clients;
+                return isDesc ? clients.reverse() : clients;
             },
             resetClientTraffic(client, dbInboundId, confirmation = true) {
                 if (confirmation) {
@@ -1739,6 +1772,12 @@
             const clientSortBy = localStorage.getItem('clientSortBy');
             if (clientSortBy) {
                 this.clientSortBy = clientSortBy;
+            }
+            const clientSortOrder = localStorage.getItem('clientSortOrder');
+            if (clientSortOrder) {
+                this.clientSortOrder = clientSortOrder;
+            } else if (this.clientSortBy === 'usage' || this.clientSortBy === 'remainingTime') {
+                this.clientSortOrder = 'desc';
             }
             window.addEventListener('resize', this.onResize);
             this.onResize();

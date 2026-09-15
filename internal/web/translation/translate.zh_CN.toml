@@ -55,6 +55,8 @@
 "remained" = "剩余"
 "default" = "默认"
 "alphabet" = "按字母顺序"
+"ascending" = "升序"
+"descending" = "降序"
 "security" = "安全"
 "secAlertTitle" = "安全警报"
 "secAlertSsl" = "此连接不安全。在激活 TLS 进行数据保护之前，请勿输入敏感信息。"

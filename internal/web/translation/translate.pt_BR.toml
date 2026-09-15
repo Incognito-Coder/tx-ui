@@ -56,6 +56,8 @@
 "remained" = "Restante"
 "default" = "padrão"
 "alphabet" = "Alfabética"
+"ascending" = "Crescente"
+"descending" = "Decrescente"
 "security" = "Segurança"
 "secAlertTitle" = "Alerta de Segurança"
 "secAlertSsl" = "Esta conexão não é segura. Evite inserir informações confidenciais até que o TLS seja ativado para proteção de dados."
