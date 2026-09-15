@@ -702,6 +702,11 @@ func (s *NodeClientService) DisableExhausted(txs ...*gorm.DB) (bool, error) {
 		return false, err
 	}
 
+	// Also disable all linked client_traffics rows so every inbound reflects the exhaustion
+	if err := db.Model(&xray.ClientTraffic{}).Where("node_client_id IN ?", idsToDisable).Update("enable", false).Error; err != nil {
+		return false, err
+	}
+
 	logger.Debugf("Disabled %d exhausted node clients", len(idsToDisable))
 	return true, nil
 }

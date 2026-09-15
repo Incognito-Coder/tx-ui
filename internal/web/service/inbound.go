@@ -1171,6 +1171,26 @@ func (s *InboundService) addClientTraffic(tx *gorm.DB, traffics []*xray.ClientTr
 		logger.Warning("AddClientTraffic update data ", err)
 	}
 
+	// For node clients, sync the traffic counters to all linked client_traffics rows
+	// so volume is shared globally across all inbounds rather than calculated separately per inbound.
+	syncedNodeClients := make(map[int]struct{})
+	for _, dbTraffic := range dbClientTraffics {
+		if dbTraffic.NodeClientId != nil && *dbTraffic.NodeClientId > 0 {
+			ncId := *dbTraffic.NodeClientId
+			if _, done := syncedNodeClients[ncId]; !done {
+				syncedNodeClients[ncId] = struct{}{}
+				if err := tx.Model(&xray.ClientTraffic{}).
+					Where("node_client_id = ?", ncId).
+					Updates(map[string]interface{}{
+						"up":   dbTraffic.Up,
+						"down": dbTraffic.Down,
+					}).Error; err != nil {
+					logger.Warningf("AddClientTraffic sync node client %d traffic: %v", ncId, err)
+				}
+			}
+		}
+	}
+
 	for email := range onlineClientsSet {
 		onlineClients = append(onlineClients, email)
 	}
@@ -2206,6 +2226,21 @@ func (s *InboundService) ResetClientTraffic(id int, clientEmail string) (bool, e
 				}
 			}
 		}
+	}
+
+	if traffic.NodeClientId != nil && *traffic.NodeClientId > 0 {
+		ncId := *traffic.NodeClientId
+		if err := db.Model(&xray.ClientTraffic{}).
+			Where("node_client_id = ?", ncId).
+			Updates(map[string]interface{}{"enable": true, "up": 0, "down": 0}).Error; err != nil {
+			return false, err
+		}
+		if err := db.Model(&model.NodeClient{}).
+			Where("id = ?", ncId).
+			Update("enable", true).Error; err != nil {
+			return false, err
+		}
+		return needRestart, nil
 	}
 
 	// Fallback: reset single client traffic

@@ -20,7 +20,7 @@
 
 **Si este proyecto te es útil, podrías considerar darle una**:star2:
 
-**USDT(TON):** ```UQDnwbvFLTm1cUWeUn3FFAKgC35wTno9-zOa_ib6STUVSgYf```
+**USDT(TON):** ```UQD6dwK0jcZuJfH-xMPu4HcnXru9xMKVIzTy_2oZZm-HZzCl```
 
 ## Instalar y Actualizar
 

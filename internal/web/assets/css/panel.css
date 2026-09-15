@@ -1546,6 +1546,111 @@ li.ant-calendar-time-picker-select-option-selected {
     max-width: calc(100vw - 40px);
 }
 
+.panel-modal-auto .qr-modal {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+}
+
+.panel-modal-qr .ant-modal {
+    top: 36px;
+    width: fit-content !important;
+    min-width: min(290px, calc(100vw - 32px)) !important;
+    max-width: min(580px, calc(100vw - 32px)) !important;
+    margin: 0 auto !important;
+    padding-bottom: 24px;
+}
+
+.panel-modal-qr .ant-modal-body {
+    max-height: calc(100vh - 120px) !important;
+    max-height: calc(100dvh - 120px) !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+    padding: 20px 24px !important;
+}
+
+.panel-modal-qr .qr-modal {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 16px !important;
+    row-gap: 20px !important;
+    margin: 0 auto !important;
+    width: 100% !important;
+    padding: 0 !important;
+}
+
+.panel-modal-qr .qr-box {
+    width: 220px !important;
+    margin: 0 auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-shrink: 0 !important;
+}
+
+.panel-modal-qr .qr-box .qr-tag {
+    width: 100% !important;
+    margin: 0 0 10px 0 !important;
+    text-align: center !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    height: 28px !important;
+    line-height: 28px !important;
+    border-radius: 6px !important;
+    box-sizing: border-box !important;
+}
+
+.panel-modal-qr .qr-box .qr-bg,
+.panel-modal-qr .qr-box .qr-bg-sub {
+    width: 220px !important;
+    height: 220px !important;
+    margin: 0 auto !important;
+    box-sizing: border-box !important;
+}
+
+.panel-modal-qr .qr-box .qr-copy-btn {
+    width: 100% !important;
+    margin: 10px 0 0 0 !important;
+    border-radius: 6px !important;
+    height: 32px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 13px !important;
+}
+
+.panel-modal-qr .ant-tabs {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+}
+
+.panel-modal-qr .ant-tabs-bar {
+    margin-bottom: 16px !important;
+    border-bottom: 1px solid var(--ui-border);
+}
+
+.node-client-qr-title {
+    display: flex;
+    align-items: center;
+    padding-right: 36px;
+    width: 100%;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.node-client-qr-title span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: inline-block;
+}
+
 .ant-modal-header,
 .ant-drawer-header {
     padding: 17px 22px;
@@ -2140,6 +2245,27 @@ html[data-theme="ultra-dark"] body.dark {
     .panel-modal-auto .ant-modal {
         top: 8px;
         width: fit-content !important;
+    }
+
+    .panel-modal-qr .ant-modal {
+        top: 14px !important;
+        width: fit-content !important;
+        min-width: min(280px, calc(100vw - 20px)) !important;
+        max-width: calc(100vw - 20px) !important;
+        margin: 0 auto !important;
+        padding-bottom: 14px;
+    }
+
+    .panel-modal-qr .ant-modal-body {
+        max-height: calc(100vh - 80px) !important;
+        max-height: calc(100dvh - 80px) !important;
+        padding: 16px 14px !important;
+    }
+
+    .panel-modal-qr .qr-modal {
+        flex-direction: column !important;
+        align-items: center !important;
+        gap: 16px !important;
     }
 
     .panel-modal .ant-modal-body {

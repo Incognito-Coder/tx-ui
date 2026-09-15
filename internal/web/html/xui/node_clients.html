@@ -33,6 +33,128 @@
         }
     }
 
+    .panel-modal-qr .ant-modal {
+        top: 36px;
+        width: fit-content !important;
+        min-width: min(290px, calc(100vw - 32px)) !important;
+        max-width: min(580px, calc(100vw - 32px)) !important;
+        margin: 0 auto !important;
+        padding-bottom: 24px;
+    }
+
+    .panel-modal-qr .ant-modal-body {
+        max-height: calc(100vh - 120px) !important;
+        max-height: calc(100dvh - 120px) !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch;
+        padding: 20px 24px !important;
+    }
+
+    .panel-modal-qr .qr-modal {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: wrap !important;
+        justify-content: center !important;
+        align-items: center !important;
+        gap: 16px !important;
+        row-gap: 20px !important;
+        margin: 0 auto !important;
+        width: 100% !important;
+        padding: 0 !important;
+    }
+
+    .panel-modal-qr .qr-box {
+        width: 220px !important;
+        margin: 0 auto !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        flex-shrink: 0 !important;
+    }
+
+    .panel-modal-qr .qr-box .qr-tag {
+        width: 100% !important;
+        margin: 0 0 10px 0 !important;
+        text-align: center !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        height: 28px !important;
+        line-height: 28px !important;
+        border-radius: 6px !important;
+        box-sizing: border-box !important;
+    }
+
+    .panel-modal-qr .qr-box .qr-bg,
+    .panel-modal-qr .qr-box .qr-bg-sub {
+        width: 220px !important;
+        height: 220px !important;
+        margin: 0 auto !important;
+        box-sizing: border-box !important;
+    }
+
+    .panel-modal-qr .qr-box .qr-copy-btn {
+        width: 100% !important;
+        margin: 10px 0 0 0 !important;
+        border-radius: 6px !important;
+        height: 32px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        font-size: 13px !important;
+    }
+
+    .panel-modal-qr .ant-tabs {
+        margin: 0 !important;
+        padding: 0 !important;
+        background: transparent !important;
+    }
+
+    .panel-modal-qr .ant-tabs-bar {
+        margin-bottom: 16px !important;
+        border-bottom: 1px solid var(--ui-border);
+    }
+
+    .node-client-qr-title {
+        display: flex;
+        align-items: center;
+        padding-right: 36px;
+        width: 100%;
+        overflow: hidden;
+        white-space: nowrap;
+    }
+
+    .node-client-qr-title span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        display: inline-block;
+    }
+
+    @media (max-width: 768px) {
+        .panel-modal-qr .ant-modal {
+            top: 14px !important;
+            width: fit-content !important;
+            min-width: min(280px, calc(100vw - 20px)) !important;
+            max-width: calc(100vw - 20px) !important;
+            margin: 0 auto !important;
+            padding-bottom: 14px;
+        }
+
+        .panel-modal-qr .ant-modal-body {
+            max-height: calc(100vh - 80px) !important;
+            max-height: calc(100dvh - 80px) !important;
+            padding: 16px 14px !important;
+        }
+
+        .panel-modal-qr .qr-modal {
+            flex-direction: column !important;
+            align-items: center !important;
+            gap: 16px !important;
+        }
+    }
+
     .infinite-tag {
         padding: 0 5px;
         min-width: 50px;
@@ -488,49 +610,107 @@
             </a-spin>
         </a-drawer>
 
-        <a-modal :class="themeSwitcher.currentTheme" :closable="true" :dialog-style="isMobileQr ? { top: '18px' } : {}"
-            :footer="null" :title="nodeClientQrModal.title" width="fit-content" v-model="nodeClientQrModal.visible"
-            wrap-class-name="panel-modal panel-modal-auto">
-            <tr-qr-modal class="qr-modal">
-                <template v-if="subSettings.enable && nodeClientQrModal.subLink">
-                    <tr-qr-box class="qr-box">
-                        <a-tag class="qr-tag" color="purple"><span>{{ i18n "pages.node_clients.subscriptionUrl"
-                                }}</span></a-tag>
-                        <tr-qr-bg class="qr-bg-sub">
-                            <tr-qr-bg-inner class="qr-bg-sub-inner">
-                                <canvas id="nodeClientSubQr" class="qr-cv"
-                                    @click="copyToClipboard('nodeClientSubQr', nodeClientQrModal.subLink)"></canvas>
-                            </tr-qr-bg-inner>
-                        </tr-qr-bg>
-                    </tr-qr-box>
-                    <tr-qr-box class="qr-box">
-                        <a-tag class="qr-tag" color="purple"><span>{{ i18n "pages.node_clients.subscriptionUrlJson"
-                                }}</span></a-tag>
-                        <tr-qr-bg class="qr-bg-sub">
-                            <tr-qr-bg-inner class="qr-bg-sub-inner">
-                                <canvas id="nodeClientSubJsonQr" class="qr-cv"
-                                    @click="copyToClipboard('nodeClientSubJsonQr', nodeClientQrModal.subJsonLink)"></canvas>
-                            </tr-qr-bg-inner>
-                        </tr-qr-bg>
-                    </tr-qr-box>
-                </template>
-                <template v-if="nodeClientQrModal.qrcodes.length === 0 && !nodeClientQrModal.subLink">
-                    <div style="padding: 16px; color: #888; text-align: center;">
-                        {{ i18n "pages.node_clients.noLinks" }}
-                    </div>
-                </template>
-                <template v-for="(row, index) in nodeClientQrModal.qrcodes">
-                    <tr-qr-box class="qr-box">
-                        <a-tag class="qr-tag" color="green"><span>[[ row.title ]]</span></a-tag>
-                        <tr-qr-bg class="qr-bg">
-                            <canvas :id="'nodeClientQr-' + index" class="qr-cv"
-                                @click="copyToClipboard('nodeClientQr-' + index, row.link)"></canvas>
-                        </tr-qr-bg>
-                    </tr-qr-box>
-                </template>
-            </tr-qr-modal>
+        <a-modal :class="themeSwitcher.currentTheme" :closable="true"
+            :dialog-style="{ margin: '0 auto' }"
+            :footer="null" width="fit-content" v-model="nodeClientQrModal.visible"
+            wrap-class-name="panel-modal panel-modal-auto panel-modal-qr">
+            <template slot="title">
+                <div class="node-client-qr-title" :title="nodeClientQrModal.title">
+                    <a-icon type="qrcode" style="margin-right: 8px; color: var(--ui-primary); font-size: 17px; flex-shrink: 0;"></a-icon>
+                    <span>[[ nodeClientQrModal.title ]]</span>
+                </div>
+            </template>
+            <template v-if="subSettings.enable && nodeClientQrModal.subLink && nodeClientQrModal.qrcodes.length > 0">
+                <a-tabs v-model="nodeClientQrModal.tab" @change="onQrTabChange" :animated="false">
+                    <a-tab-pane key="sub" tab='{{ i18n "pages.settings.subSettings" }}'>
+                        <tr-qr-modal class="qr-modal">
+                            <tr-qr-box class="qr-box">
+                                <a-tag class="qr-tag" color="purple"><span>{{ i18n "pages.node_clients.subscriptionUrl" }}</span></a-tag>
+                                <tr-qr-bg class="qr-bg-sub">
+                                    <tr-qr-bg-inner class="qr-bg-sub-inner">
+                                        <canvas id="nodeClientSubQr" class="qr-cv"
+                                            @click="copyToClipboard('nodeClientSubQr', nodeClientQrModal.subLink)"></canvas>
+                                    </tr-qr-bg-inner>
+                                </tr-qr-bg>
+                                <a-button id="nodeClientSubQrBtn" size="small" type="dashed" class="qr-copy-btn" icon="copy"
+                                    @click="copyToClipboard('nodeClientSubQrBtn', nodeClientQrModal.subLink)">{{ i18n "copy" }}</a-button>
+                            </tr-qr-box>
+                            <tr-qr-box class="qr-box">
+                                <a-tag class="qr-tag" color="purple"><span>{{ i18n "pages.node_clients.subscriptionUrlJson" }}</span></a-tag>
+                                <tr-qr-bg class="qr-bg-sub">
+                                    <tr-qr-bg-inner class="qr-bg-sub-inner">
+                                        <canvas id="nodeClientSubJsonQr" class="qr-cv"
+                                            @click="copyToClipboard('nodeClientSubJsonQr', nodeClientQrModal.subJsonLink)"></canvas>
+                                    </tr-qr-bg-inner>
+                                </tr-qr-bg>
+                                <a-button id="nodeClientSubJsonQrBtn" size="small" type="dashed" class="qr-copy-btn" icon="copy"
+                                    @click="copyToClipboard('nodeClientSubJsonQrBtn', nodeClientQrModal.subJsonLink)">{{ i18n "copy" }}</a-button>
+                            </tr-qr-box>
+                        </tr-qr-modal>
+                    </a-tab-pane>
+                    <a-tab-pane key="inbounds">
+                        <span slot="tab">{{ i18n "pages.inbounds.title" }} ([[ nodeClientQrModal.qrcodes.length ]])</span>
+                        <tr-qr-modal class="qr-modal">
+                            <template v-for="(row, index) in nodeClientQrModal.qrcodes">
+                                <tr-qr-box class="qr-box">
+                                    <a-tag class="qr-tag" color="green"><span>[[ row.title ]]</span></a-tag>
+                                    <tr-qr-bg class="qr-bg">
+                                        <canvas :id="'nodeClientQr-' + index" class="qr-cv"
+                                            @click="copyToClipboard('nodeClientQr-' + index, row.link)"></canvas>
+                                    </tr-qr-bg>
+                                    <a-button :id="'nodeClientQrBtn-' + index" size="small" type="dashed" class="qr-copy-btn" icon="copy"
+                                        @click="copyToClipboard('nodeClientQrBtn-' + index, row.link)">{{ i18n "copy" }}</a-button>
+                                </tr-qr-box>
+                            </template>
+                        </tr-qr-modal>
+                    </a-tab-pane>
+                </a-tabs>
+            </template>
+            <template v-else>
+                <tr-qr-modal class="qr-modal">
+                    <template v-if="subSettings.enable && nodeClientQrModal.subLink">
+                        <tr-qr-box class="qr-box">
+                            <a-tag class="qr-tag" color="purple"><span>{{ i18n "pages.node_clients.subscriptionUrl" }}</span></a-tag>
+                            <tr-qr-bg class="qr-bg-sub">
+                                <tr-qr-bg-inner class="qr-bg-sub-inner">
+                                    <canvas id="nodeClientSubQr" class="qr-cv"
+                                        @click="copyToClipboard('nodeClientSubQr', nodeClientQrModal.subLink)"></canvas>
+                                </tr-qr-bg-inner>
+                            </tr-qr-bg>
+                            <a-button id="nodeClientSubQrBtn" size="small" type="dashed" class="qr-copy-btn" icon="copy"
+                                @click="copyToClipboard('nodeClientSubQrBtn', nodeClientQrModal.subLink)">{{ i18n "copy" }}</a-button>
+                        </tr-qr-box>
+                        <tr-qr-box class="qr-box">
+                            <a-tag class="qr-tag" color="purple"><span>{{ i18n "pages.node_clients.subscriptionUrlJson" }}</span></a-tag>
+                            <tr-qr-bg class="qr-bg-sub">
+                                <tr-qr-bg-inner class="qr-bg-sub-inner">
+                                    <canvas id="nodeClientSubJsonQr" class="qr-cv"
+                                        @click="copyToClipboard('nodeClientSubJsonQr', nodeClientQrModal.subJsonLink)"></canvas>
+                                </tr-qr-bg-inner>
+                            </tr-qr-bg>
+                            <a-button id="nodeClientSubJsonQrBtn" size="small" type="dashed" class="qr-copy-btn" icon="copy"
+                                @click="copyToClipboard('nodeClientSubJsonQrBtn', nodeClientQrModal.subJsonLink)">{{ i18n "copy" }}</a-button>
+                        </tr-qr-box>
+                    </template>
+                    <template v-if="nodeClientQrModal.qrcodes.length === 0 && !nodeClientQrModal.subLink">
+                        <div style="padding: 16px; color: #888; text-align: center; width: 100%;">
+                            {{ i18n "pages.node_clients.noLinks" }}
+                        </div>
+                    </template>
+                    <template v-for="(row, index) in nodeClientQrModal.qrcodes">
+                        <tr-qr-box class="qr-box">
+                            <a-tag class="qr-tag" color="green"><span>[[ row.title ]]</span></a-tag>
+                            <tr-qr-bg class="qr-bg">
+                                <canvas :id="'nodeClientQr-' + index" class="qr-cv"
+                                    @click="copyToClipboard('nodeClientQr-' + index, row.link)"></canvas>
+                            </tr-qr-bg>
+                            <a-button :id="'nodeClientQrBtn-' + index" size="small" type="dashed" class="qr-copy-btn" icon="copy"
+                                @click="copyToClipboard('nodeClientQrBtn-' + index, row.link)">{{ i18n "copy" }}</a-button>
+                        </tr-qr-box>
+                    </template>
+                </tr-qr-modal>
+            </template>
         </a-modal>
-
     </a-layout>
     {{template "js" .}}
     <script src="{{ .base_path }}assets/base64/base64.min.js?{{ .cur_ver }}"></script>
@@ -647,6 +827,7 @@
                     qrcodes: [],
                     clipboard: null,
                     loading: false,
+                    tab: 'sub',
                 },
                 linkDrawer: {
                     visible: false,
@@ -1074,19 +1255,14 @@
                         if (this.subSettings.enable && nc.subId) {
                             this.nodeClientQrModal.subLink = this.subSettings.subURI + nc.subId;
                             this.nodeClientQrModal.subJsonLink = this.subSettings.subJsonURI + nc.subId;
+                            this.nodeClientQrModal.tab = 'sub';
+                        } else {
+                            this.nodeClientQrModal.tab = 'inbounds';
                         }
 
                         this.nodeClientQrModal.visible = true;
                         this.$nextTick(() => {
-                            if (this.nodeClientQrModal.subLink) {
-                                this.setQrCode('nodeClientSubQr', this.nodeClientQrModal.subLink);
-                            }
-                            if (this.nodeClientQrModal.subJsonLink) {
-                                this.setQrCode('nodeClientSubJsonQr', this.nodeClientQrModal.subJsonLink);
-                            }
-                            this.nodeClientQrModal.qrcodes.forEach((row, index) => {
-                                this.setQrCode(`nodeClientQr-${index}`, row.link);
-                            });
+                            this.renderAllNodeClientQrs();
                         });
                     } catch (error) {
                         this.$message.error('Error loading node client links: ' + error.message);
@@ -1094,13 +1270,43 @@
                         this.nodeClientQrModal.loading = false;
                     }
                 },
+                renderAllNodeClientQrs() {
+                    if (this.nodeClientQrModal.subLink) {
+                        this.setQrCode('nodeClientSubQr', this.nodeClientQrModal.subLink);
+                    }
+                    if (this.nodeClientQrModal.subJsonLink) {
+                        this.setQrCode('nodeClientSubJsonQr', this.nodeClientQrModal.subJsonLink);
+                    }
+                    this.nodeClientQrModal.qrcodes.forEach((row, index) => {
+                        this.setQrCode(`nodeClientQr-${index}`, row.link);
+                    });
+                },
+                onQrTabChange() {
+                    this.$nextTick(() => {
+                        this.renderAllNodeClientQrs();
+                    });
+                },
                 copyToClipboard(elementId, content) {
-                    this.nodeClientQrModal.clipboard = new ClipboardJS('#' + elementId, {
+                    if (navigator.clipboard && window.isSecureContext) {
+                        navigator.clipboard.writeText(content).then(() => {
+                            this.$message.success('{{ i18n "copied" }}');
+                        }).catch(() => {
+                            this.fallbackCopy(elementId, content);
+                        });
+                    } else {
+                        this.fallbackCopy(elementId, content);
+                    }
+                },
+                fallbackCopy(elementId, content) {
+                    const clipboard = new ClipboardJS('#' + elementId, {
                         text: () => content,
                     });
-                    this.nodeClientQrModal.clipboard.on('success', () => {
+                    clipboard.on('success', () => {
                         this.$message.success('{{ i18n "copied" }}');
-                        this.nodeClientQrModal.clipboard.destroy();
+                        clipboard.destroy();
+                    });
+                    clipboard.on('error', () => {
+                        clipboard.destroy();
                     });
                 },
                 setQrCode(elementId, content) {

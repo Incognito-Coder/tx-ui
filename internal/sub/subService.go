@@ -94,6 +94,55 @@ func (s *SubService) GetSubs(subId string, host string) ([]string, string, []str
 	}
 
 	// Prepare statistics
+	traffic = s.prepareSubscriptionTraffic(subId, clientTraffics)
+	header = fmt.Sprintf("upload=%d; download=%d; total=%d; expire=%d", traffic.Up, traffic.Down, traffic.Total, traffic.ExpiryTime/1000)
+	return result, header, emails, nil
+}
+
+func (s *SubService) prepareSubscriptionTraffic(subId string, clientTraffics []xray.ClientTraffic) xray.ClientTraffic {
+	var traffic xray.ClientTraffic
+	db := database.GetDB()
+	var nodeClient model.NodeClient
+	if db != nil && db.Where("sub_id = ?", subId).First(&nodeClient).Error == nil && nodeClient.Id > 0 {
+		var rows []xray.ClientTraffic
+		db.Where("node_client_id = ?", nodeClient.Id).Find(&rows)
+		var maxUp, maxDown int64
+		for _, r := range rows {
+			if r.Up+r.Down > maxUp+maxDown {
+				maxUp = r.Up
+				maxDown = r.Down
+			}
+		}
+		traffic.Up = maxUp
+		traffic.Down = maxDown
+		traffic.Total = nodeClient.TotalGB
+		traffic.ExpiryTime = nodeClient.ExpiryTime
+		return traffic
+	}
+
+	if len(clientTraffics) == 0 {
+		return traffic
+	}
+
+	// Check if all clientTraffics have identical non-zero Total (shared quota across inbounds)
+	isSameTotal := true
+	firstTotal := clientTraffics[0].Total
+	for _, ct := range clientTraffics {
+		if ct.Total != firstTotal {
+			isSameTotal = false
+			break
+		}
+	}
+
+	allSameEmail := true
+	firstEmail := clientTraffics[0].Email
+	for _, ct := range clientTraffics {
+		if ct.Email == "" || ct.Email != firstEmail {
+			allSameEmail = false
+			break
+		}
+	}
+
 	for index, clientTraffic := range clientTraffics {
 		if index == 0 {
 			traffic.Up = clientTraffic.Up
@@ -103,20 +152,30 @@ func (s *SubService) GetSubs(subId string, host string) ([]string, string, []str
 				traffic.ExpiryTime = clientTraffic.ExpiryTime
 			}
 		} else {
-			traffic.Up += clientTraffic.Up
-			traffic.Down += clientTraffic.Down
-			if traffic.Total == 0 || clientTraffic.Total == 0 {
-				traffic.Total = 0
+			if !allSameEmail {
+				traffic.Up += clientTraffic.Up
+				traffic.Down += clientTraffic.Down
 			} else {
-				traffic.Total += clientTraffic.Total
+				if clientTraffic.Up+clientTraffic.Down > traffic.Up+traffic.Down {
+					traffic.Up = clientTraffic.Up
+					traffic.Down = clientTraffic.Down
+				}
+			}
+
+			if !isSameTotal {
+				if traffic.Total == 0 || clientTraffic.Total == 0 {
+					traffic.Total = 0
+				} else {
+					traffic.Total += clientTraffic.Total
+				}
 			}
 			if clientTraffic.ExpiryTime != traffic.ExpiryTime {
 				traffic.ExpiryTime = 0
 			}
 		}
 	}
-	header = fmt.Sprintf("upload=%d; download=%d; total=%d; expire=%d", traffic.Up, traffic.Down, traffic.Total, traffic.ExpiryTime/1000)
-	return result, header, emails, nil
+
+	return traffic
 }
 
 func (s *SubService) getInboundsBySubId(subId string) ([]*model.Inbound, error) {
