@@ -9,12 +9,22 @@ import (
 	"os/exec"
 	"regexp"
 	"sort"
+	"sync"
 	"time"
 
 	"x-ui/internal/database"
 	"x-ui/internal/database/model"
 	"x-ui/internal/logger"
 	"x-ui/xray"
+)
+
+var (
+	clientIPRegex    = regexp.MustCompile(`from (?:tcp:|udp:)?\[?([0-9a-fA-F\.:]+)\]?:\d+ accepted`)
+	clientEmailRegex = regexp.MustCompile(`email: (.+)$`)
+
+	cachedF2bInstalled bool
+	lastF2bCheck       time.Time
+	f2bCheckMutex      sync.RWMutex
 )
 
 type CheckClientIpJob struct {
@@ -105,10 +115,6 @@ func (j *CheckClientIpJob) hasLimitIp() bool {
 }
 
 func (j *CheckClientIpJob) processLogFile() bool {
-
-	ipRegex := regexp.MustCompile(`from (?:tcp:|udp:)?\[?([0-9a-fA-F\.:]+)\]?:\d+ accepted`)
-	emailRegex := regexp.MustCompile(`email: (.+)$`)
-
 	accessLogPath, _ := xray.GetAccessLogPath()
 	file, _ := os.Open(accessLogPath)
 	defer file.Close()
@@ -119,7 +125,7 @@ func (j *CheckClientIpJob) processLogFile() bool {
 	for scanner.Scan() {
 		line := scanner.Text()
 
-		ipMatches := ipRegex.FindStringSubmatch(line)
+		ipMatches := clientIPRegex.FindStringSubmatch(line)
 		if len(ipMatches) < 2 {
 			continue
 		}
@@ -130,7 +136,7 @@ func (j *CheckClientIpJob) processLogFile() bool {
 			continue
 		}
 
-		emailMatches := emailRegex.FindStringSubmatch(line)
+		emailMatches := clientEmailRegex.FindStringSubmatch(line)
 		if len(emailMatches) < 2 {
 			continue
 		}
@@ -164,10 +170,24 @@ func (j *CheckClientIpJob) processLogFile() bool {
 }
 
 func (j *CheckClientIpJob) checkFail2BanInstalled() bool {
-	cmd := "fail2ban-client"
-	args := []string{"-h"}
-	err := exec.Command(cmd, args...).Run()
-	return err == nil
+	f2bCheckMutex.RLock()
+	if time.Since(lastF2bCheck) < 5*time.Minute {
+		installed := cachedF2bInstalled
+		f2bCheckMutex.RUnlock()
+		return installed
+	}
+	f2bCheckMutex.RUnlock()
+
+	f2bCheckMutex.Lock()
+	defer f2bCheckMutex.Unlock()
+	if time.Since(lastF2bCheck) < 5*time.Minute {
+		return cachedF2bInstalled
+	}
+
+	_, err := exec.LookPath("fail2ban-client")
+	cachedF2bInstalled = (err == nil)
+	lastF2bCheck = time.Now()
+	return cachedF2bInstalled
 }
 
 func (j *CheckClientIpJob) checkAccessLogAvailable(iplimitActive bool) bool {

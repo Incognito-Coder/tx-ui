@@ -127,9 +127,7 @@
                         <a-col :lg="12" :sm="24">
                             <a-card hoverable>
                                 <b>TX-UI:</b>
-                                <a href="https://github.com/Incognito-Coder/tx-ui/releases" rel="noopener" target="_blank">
-                                    <a-tag color="green">v{{ .cur_ver }}</a-tag>
-                                </a>
+                                <a-tag @click="openSelectPanelVersion" color="green" style="cursor: pointer;">v{{ .cur_ver }}</a-tag>
                                 <a href="https://t.me/TxUiPanel" rel="noopener" target="_blank">
                                     <a-tag color="green">@TxUiPanel</a-tag>
                                 </a>
@@ -139,11 +137,11 @@
                                     <span slot="title"
                                           style="font-size: 12pt">{{ i18n "pages.index.upgradeAvail" }}</span>
                                     <template slot="content">
-                                        <a-tag @click="installPanel()" color="purple"
+                                        <a-tag @click="openSelectPanelVersion" color="purple"
                                                style="cursor: pointer; float: right;">[[ status.appStats.tx_update ]]
                                         </a-tag>
                                     </template>
-                                    <a-tag color="purple" style="cursor: pointer;">{{ i18n "pages.index.upgrade" }}
+                                    <a-tag @click="openSelectPanelVersion" color="purple" style="cursor: pointer;">{{ i18n "pages.index.upgrade" }}
                                     </a-tag>
                                 </a-popover>
                                 <a-tag @click="restartPanel" color="purple" style="cursor: pointer;" :style="isMobile ? 'margin-top: 10px;' : ''">{{ i18n
@@ -374,6 +372,23 @@
                  style="margin-bottom: 12px; width: fit-content" type="info"></a-alert>
         <template v-for="version, index in geoModal.versions">
             <a-tag :color="index % 2 == 0 ? 'purple' : 'green'" @click="switchGeoVersion(version)"
+                   style="margin-right: 12px; margin-bottom: 12px; cursor: pointer;">
+                [[ version ]]
+            </a-tag>
+        </template>
+    </a-modal>
+    <a-modal :class="themeSwitcher.currentTheme" :closable="true" @ok="() => panelVersionModal.visible = false"
+             footer=""
+             id="panel-version-modal" title='{{ i18n "pages.index.upgrade" }}' v-model="panelVersionModal.visible"
+             wrap-class-name="panel-modal panel-modal-md">
+        <a-alert v-if="panelVersionModal.versions && panelVersionModal.versions.length > 0"
+                 message='{{ i18n "pages.index.upgradeAvail" }}' show-icon
+                 style="margin-bottom: 12px; width: fit-content" type="info"></a-alert>
+        <a-alert v-else
+                 message="You are using the latest version of TX-UI" show-icon
+                 style="margin-bottom: 12px; width: fit-content" type="success"></a-alert>
+        <template v-for="version, index in panelVersionModal.versions">
+            <a-tag :color="index % 2 == 0 ? 'purple' : 'green'" @click="switchPanelVersion(version)"
                    style="margin-right: 12px; margin-bottom: 12px; cursor: pointer;">
                 [[ version ]]
             </a-tag>
@@ -612,6 +627,18 @@
         },
     };
 
+    const panelVersionModal = {
+        visible: false,
+        versions: [],
+        show(versions) {
+            this.visible = true;
+            this.versions = versions;
+        },
+        hide() {
+            this.visible = false;
+        },
+    };
+
     const logModal = {
         visible: false,
         logs: [],
@@ -775,6 +802,7 @@
             status: new Status(),
             versionModal,
             geoModal,
+            panelVersionModal,
             logModal,
             xraylogModal,
             backupModal,
@@ -860,16 +888,46 @@
                     return;
                 }
             },
-            async installPanel() {
+            async openSelectPanelVersion() {
                 this.loading(true);
-                await HttpUtil.post('/panel/api/server/installPanel');
-                const restartMsg = await HttpUtil.post("/panel/setting/restartPanel");
+                const msg = await HttpUtil.get('/panel/api/server/getPanelVersions');
                 this.loading(false);
-                if (restartMsg.success) {
-                    this.loading(true);
-                    await PromiseUtil.sleep(5000);
-                    location.reload();
+                if (!msg.success) {
+                    return;
                 }
+                if (!msg.obj || msg.obj.length === 0) {
+                    this.$message.info('{{ i18n "pages.index.latestVersion" }}' || 'You are using the latest version');
+                    return;
+                }
+                panelVersionModal.show(msg.obj);
+            },
+            switchPanelVersion(version) {
+                this.$confirm({
+                    title: '{{ i18n "pages.index.upgrade" }}',
+                    content: `Install panel version ${version}? The panel will restart automatically.`,
+                    okText: '{{ i18n "confirm"}}',
+                    class: themeSwitcher.currentTheme,
+                    cancelText: '{{ i18n "cancel"}}',
+                    onOk: async () => {
+                        panelVersionModal.hide();
+                        this.loading(true, '{{ i18n "pages.index.installingPanel"}}');
+                        const res = await HttpUtil.post(`/panel/api/server/installPanel/${version}`);
+                        if (res.success) {
+                            this.loading(true, '{{ i18n "pages.index.installingPanel"}}' + ' - Restarting...');
+                            await PromiseUtil.sleep(6000);
+                            location.reload();
+                        } else {
+                            this.loading(false);
+                        }
+                    },
+                });
+            },
+            async installPanel(version) {
+                if (!version) {
+                    await this.openSelectPanelVersion();
+                    return;
+                }
+                this.switchPanelVersion(version);
             },
             async openSelectGeoVersion() {
                 this.loading(true);

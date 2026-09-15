@@ -69,3 +69,51 @@ xray_traffic_inbound_uplink{tag="proxy"} 4096
 		t.Errorf("Expected traffic stat 4096, got %d", summary.StatsTraffic["xray_traffic_inbound_uplink"])
 	}
 }
+
+func TestFilterNewerPanelVersions(t *testing.T) {
+	releases := []Release{
+		{TagName: "v0.8.2", Draft: false},
+		{TagName: "v0.8.3", Draft: false},
+		{TagName: "v0.8.4", Draft: false},
+		{TagName: "v0.9.0", Draft: false},
+		{TagName: "v1.0.0", Draft: true},  // draft must be omitted
+		{TagName: "invalid-tag", Draft: false},
+		{TagName: "v0.8.1", Draft: false},
+	}
+
+	// Test with current version 0.8.3
+	newer := filterNewerPanelVersions(releases, "0.8.3")
+	expected := []string{"v0.9.0", "v0.8.4"}
+	if len(newer) != len(expected) {
+		t.Fatalf("Expected %d newer versions, got %d: %v", len(expected), len(newer), newer)
+	}
+	for i, v := range expected {
+		if newer[i] != v {
+			t.Errorf("At index %d: expected %s, got %s", i, v, newer[i])
+		}
+	}
+
+	// Test with current version prefixed with 'v'
+	newerV := filterNewerPanelVersions(releases, "v0.8.3")
+	if len(newerV) != len(expected) || newerV[0] != "v0.9.0" || newerV[1] != "v0.8.4" {
+		t.Errorf("Expected %v, got %v", expected, newerV)
+	}
+
+	// Test when current version is the highest
+	noneNewer := filterNewerPanelVersions(releases, "0.9.0")
+	if len(noneNewer) != 0 {
+		t.Errorf("Expected empty slice for latest version, got %v", noneNewer)
+	}
+
+	// Test when current version is very old
+	allNewer := filterNewerPanelVersions(releases, "0.8.0")
+	expectedAll := []string{"v0.9.0", "v0.8.4", "v0.8.3", "v0.8.2", "v0.8.1"}
+	if len(allNewer) != len(expectedAll) {
+		t.Fatalf("Expected %d newer versions, got %d: %v", len(expectedAll), len(allNewer), allNewer)
+	}
+	for i, v := range expectedAll {
+		if allNewer[i] != v {
+			t.Errorf("At index %d: expected %s, got %s", i, v, allNewer[i])
+		}
+	}
+}

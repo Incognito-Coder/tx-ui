@@ -285,7 +285,7 @@ func (s *Server) startTask() {
 	}
 
 	// check client ips from log file every 10 sec
-	s.cron.AddJob("@every 10s", job.NewCheckClientIpJob())
+	s.cron.AddJob("@every 10s", cron.SkipIfStillRunning(cron.DefaultLogger)(job.NewCheckClientIpJob()))
 
 	// check client ips from log file every day
 	s.cron.AddJob("@daily", job.NewClearLogsJob())
@@ -293,8 +293,11 @@ func (s *Server) startTask() {
 	// auto delete depleted clients
 	s.cron.AddJob("@every 1h", job.NewAutoDeleteDepletedClientsJob())
 
-	// check for panel new version every 8h
+	// check for panel new version every 8h and once shortly after startup
 	s.cron.AddJob("@every 8h", job.NewUpdateCheckerJob())
+	time.AfterFunc(5*time.Second, func() {
+		job.NewUpdateCheckerJob().Run()
+	})
 
 	// Make a traffic condition every day, 8:30
 	var entry cron.EntryID
@@ -318,7 +321,7 @@ func (s *Server) startTask() {
 		// Check CPU load and alarm to TgBot if threshold passes
 		cpuThreshold, err := s.settingService.GetTgCpu()
 		if (err == nil) && (cpuThreshold > 0) {
-			s.cron.AddJob("@every 10s", job.NewCheckCpuJob())
+			s.cron.AddJob("@every 10s", cron.SkipIfStillRunning(cron.DefaultLogger)(job.NewCheckCpuJob()))
 		}
 	} else {
 		s.cron.Remove(entry)

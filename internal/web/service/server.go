@@ -22,12 +22,14 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/hashicorp/go-version"
 	"github.com/tcnksm/go-latest"
 	"golang.org/x/crypto/ssh"
 
@@ -50,6 +52,13 @@ var (
 	isOutdated    bool
 	latestVersion string
 	checkErr      error
+
+	cachedCpuCores    int
+	cachedCpuSpeedMhz float64
+	cachedLogicalPro  int
+	cachedHostName    string
+	lastHardwareCheck time.Time
+	hardwareMutex     sync.RWMutex
 )
 
 type ProcessState string
@@ -167,26 +176,44 @@ func (s *ServerService) GetStatus(lastStatus *Status) *Status {
 		status.Cpu = percents[0]
 	}
 
-	status.CpuCores, err = cpu.Counts(false)
-	if err != nil {
-		logger.Warning("get cpu cores count failed:", err)
+	// Use cached hardware properties to avoid heavy queries (WMI / /proc/cpuinfo) on every status poll
+	hardwareMutex.RLock()
+	hwExpired := time.Since(lastHardwareCheck) > 5*time.Minute || cachedCpuCores == 0
+	hardwareMutex.RUnlock()
+
+	if hwExpired {
+		hardwareMutex.Lock()
+		if time.Since(lastHardwareCheck) > 5*time.Minute || cachedCpuCores == 0 {
+			cores, err := cpu.Counts(false)
+			if err == nil && cores > 0 {
+				cachedCpuCores = cores
+			}
+			cachedLogicalPro = runtime.NumCPU()
+
+			cpuInfos, err := cpu.Info()
+			if err == nil && len(cpuInfos) > 0 {
+				cachedCpuSpeedMhz = cpuInfos[0].Mhz
+			}
+
+			hName, err := os.Hostname()
+			if err == nil && hName != "" {
+				cachedHostName = hName
+			}
+			lastHardwareCheck = now
+		}
+		hardwareMutex.Unlock()
 	}
 
-	status.LogicalPro = runtime.NumCPU()
+	hardwareMutex.RLock()
+	status.CpuCores = cachedCpuCores
+	status.LogicalPro = cachedLogicalPro
+	status.CpuSpeedMhz = cachedCpuSpeedMhz
+	hardwareMutex.RUnlock()
+
 	if p != nil && p.IsRunning() {
 		status.AppStats.Uptime = p.GetUptime()
 	} else {
 		status.AppStats.Uptime = 0
-	}
-
-	cpuInfos, err := cpu.Info()
-	if err != nil {
-		logger.Warning("get cpu info failed:", err)
-	} else if len(cpuInfos) > 0 {
-		cpuInfo := cpuInfos[0]
-		status.CpuSpeedMhz = cpuInfo.Mhz // setting CPU speed in MHz
-	} else {
-		logger.Warning("could not find cpu info")
 	}
 
 	upTime, err := host.Uptime()
@@ -281,7 +308,9 @@ func (s *ServerService) GetStatus(lastStatus *Status) *Status {
 	fillGeoFileStatus(xray.GetGeoipPath(), &status.GeoFiles.GeoIP)
 	fillGeoFileStatus(xray.GetGeositePath(), &status.GeoFiles.GeoSite)
 
-	status.HostName, _ = os.Hostname()
+	hardwareMutex.RLock()
+	status.HostName = cachedHostName
+	hardwareMutex.RUnlock()
 
 	if s.xrayService.IsXrayRunning() {
 		status.Xray.State = Running
@@ -318,14 +347,31 @@ func (s *ServerService) GetStatus(lastStatus *Status) *Status {
 }
 
 func (s *ServerService) CheckForUpdate(owner, repo, currentVersion string) (bool, string, error) {
+	versions, err := s.GetPanelVersions()
+	if err == nil {
+		if len(versions) > 0 {
+			isOutdated = true
+			latestVersion = strings.TrimPrefix(versions[0], "v")
+			logger.Info("A new version is available: ", latestVersion)
+		} else {
+			isOutdated = false
+			latestVersion = strings.TrimPrefix(currentVersion, "v")
+			logger.Info("You are using the latest version.")
+		}
+		checkErr = nil
+		return isOutdated, latestVersion, nil
+	}
+
+	// Fallback to go-latest if GetPanelVersions failed
 	g := &latest.GithubTag{
 		Owner:      owner,
 		Repository: repo,
 	}
 
 	res, err := latest.Check(g, strings.TrimPrefix(currentVersion, "v"))
-	if err != nil {
+	if err != nil || res == nil {
 		checkErr = err
+		return isOutdated, latestVersion, err
 	}
 
 	isOutdated = res.Outdated
@@ -337,6 +383,89 @@ func (s *ServerService) CheckForUpdate(owner, repo, currentVersion string) (bool
 	}
 
 	return isOutdated, latestVersion, checkErr
+}
+
+func filterNewerPanelVersions(releases []Release, currentVersion string) []string {
+	curVerStr := strings.TrimSpace(currentVersion)
+	currentVer, err := version.NewVersion(curVerStr)
+	if err != nil {
+		currentVer, _ = version.NewVersion(strings.TrimPrefix(curVerStr, "v"))
+	}
+
+	type versionItem struct {
+		tag string
+		ver *version.Version
+	}
+	var newerItems []versionItem
+
+	for _, release := range releases {
+		if release.Draft {
+			continue
+		}
+		tagName := strings.TrimSpace(release.TagName)
+		if tagName == "" {
+			continue
+		}
+		relVer, err := version.NewVersion(tagName)
+		if err != nil {
+			relVer, err = version.NewVersion(strings.TrimPrefix(tagName, "v"))
+		}
+		if err != nil {
+			continue
+		}
+
+		if currentVer != nil {
+			if relVer.GreaterThan(currentVer) {
+				newerItems = append(newerItems, versionItem{tag: tagName, ver: relVer})
+			}
+		} else {
+			newerItems = append(newerItems, versionItem{tag: tagName, ver: relVer})
+		}
+	}
+
+	// Sort descending (highest version first)
+	sort.Slice(newerItems, func(i, j int) bool {
+		return newerItems[i].ver.GreaterThan(newerItems[j].ver)
+	})
+
+	result := make([]string, 0, len(newerItems))
+	for _, item := range newerItems {
+		result = append(result, item.tag)
+	}
+	return result
+}
+
+func (s *ServerService) GetPanelVersions() ([]string, error) {
+	const PanelURL = "https://api.github.com/repos/Incognito-Coder/tx-ui/releases?per_page=30"
+
+	req, err := http.NewRequest("GET", PanelURL, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("User-Agent", "tx-ui/1.0")
+
+	client := &http.Client{Timeout: 15 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("GitHub API returned HTTP %d", resp.StatusCode)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var releases []Release
+	if err := json.Unmarshal(body, &releases); err != nil {
+		return nil, err
+	}
+
+	return filterNewerPanelVersions(releases, config.GetVersion()), nil
 }
 
 func (s *ServerService) GetXrayVersions() ([]string, error) {
@@ -827,56 +956,131 @@ func readGeoFileVersion(path string) string {
 	return strings.TrimSpace(string(data))
 }
 
-func (s *ServerService) UpdatePanel(version string) {
-	fmt.Println("Starting x-ui installation...")
+func getPanelArch() (string, error) {
+	switch runtime.GOARCH {
+	case "amd64":
+		return "amd64", nil
+	case "arm64":
+		return "arm64", nil
+	case "386":
+		return "386", nil
+	case "s390x":
+		return "s390x", nil
+	case "arm":
+		out, err := exec.Command("uname", "-m").Output()
+		if err == nil {
+			m := strings.ToLower(strings.TrimSpace(string(out)))
+			if strings.Contains(m, "armv5") {
+				return "armv5", nil
+			} else if strings.Contains(m, "armv6") {
+				return "armv6", nil
+			} else if strings.Contains(m, "armv7") {
+				return "armv7", nil
+			}
+		}
+		return "armv7", nil
+	default:
+		out, err := exec.Command("uname", "-m").Output()
+		if err == nil {
+			archMap := map[string]string{
+				"x86_64": "amd64", "x64": "amd64", "amd64": "amd64",
+				"i386": "386", "i686": "386", "x86": "386",
+				"armv8": "arm64", "arm64": "arm64", "aarch64": "arm64",
+				"armv7l": "armv7", "armv7": "armv7", "arm": "armv7",
+				"armv6l": "armv6", "armv6": "armv6", "armv5": "armv5",
+				"s390x": "s390x",
+			}
+			if val, exists := archMap[strings.TrimSpace(string(out))]; exists {
+				return val, nil
+			}
+		}
+		return "", fmt.Errorf("unsupported CPU architecture: %s", runtime.GOARCH)
+	}
+}
+
+func downloadFile(url, dest string) error {
+	client := &http.Client{Timeout: 3 * time.Minute}
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("User-Agent", "tx-ui/1.0")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("HTTP %d", resp.StatusCode)
+	}
+
+	out, err := os.Create(dest)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	_, err = io.Copy(out, resp.Body)
+	return err
+}
+
+func (s *ServerService) UpdatePanel(version string) error {
+	logger.Info("Starting x-ui installation...")
 
 	// Detect system architecture
-	archMap := map[string]string{
-		"x86_64": "amd64", "x64": "amd64", "amd64": "amd64",
-		"i386": "386", "i686": "386", "x86": "386",
-		"armv8": "arm64", "arm64": "arm64", "aarch64": "arm64",
-		"armv7": "armv7", "arm": "armv7",
-		"armv6": "armv6", "armv5": "armv5", "s390x": "s390x",
-	}
-
-	out, err := exec.Command("uname", "-m").Output()
+	arch, err := getPanelArch()
 	if err != nil {
-		fmt.Println("Error detecting architecture:", err)
-		return
-	}
-	arch := strings.TrimSpace(string(out))
-	if val, exists := archMap[arch]; exists {
-		arch = val
-	} else {
-		fmt.Println("Unsupported CPU architecture!")
-		return
+		logger.Error("Unsupported CPU architecture:", err)
+		return err
 	}
 
 	// Get latest version if not provided
+	version = strings.TrimSpace(version)
 	if version == "" {
 		logger.Info("Fetching latest version...")
-		out, err := exec.Command("curl", "-Ls", "https://api.github.com/repos/Incognito-Coder/tx-ui/releases/latest").Output()
+		client := &http.Client{Timeout: 15 * time.Second}
+		req, err := http.NewRequest("GET", "https://api.github.com/repos/Incognito-Coder/tx-ui/releases/latest", nil)
+		if err != nil {
+			return err
+		}
+		req.Header.Set("User-Agent", "tx-ui/1.0")
+		resp, err := client.Do(req)
 		if err != nil {
 			logger.Error("Failed to fetch latest version:", err)
-			return
+			return err
 		}
-		for _, line := range strings.Split(string(out), "\n") {
-			if strings.Contains(line, "\"tag_name\":") {
-				version = strings.Split(line, ":")[1]
-				version = strings.Trim(version, " \"\t,")
-				break
-			}
+		defer resp.Body.Close()
+
+		var latestRel Release
+		if err := json.NewDecoder(resp.Body).Decode(&latestRel); err != nil {
+			logger.Error("Failed to decode latest release:", err)
+			return err
 		}
+		version = strings.TrimSpace(latestRel.TagName)
+		if version == "" {
+			return fmt.Errorf("failed to determine latest panel version")
+		}
+	}
+
+	if !strings.HasPrefix(version, "v") {
+		version = "v" + version
 	}
 
 	// Download x-ui
 	url := fmt.Sprintf("https://github.com/Incognito-Coder/tx-ui/releases/download/%s/x-ui-linux-%s.tar.gz", version, arch)
 	filePath := fmt.Sprintf("/usr/local/x-ui-linux-%s.tar.gz", arch)
-	logger.Info("Downloading:", url)
-	err = exec.Command("wget", "-N", "--no-check-certificate", "-O", filePath, url).Run()
+	logger.Infof("Downloading %s to %s", url, filePath)
+
+	err = downloadFile(url, filePath)
 	if err != nil {
-		logger.Error("Download failed:", err)
-		return
+		logger.Warningf("Go HTTP download failed (%v), falling back to wget...", err)
+		wgetErr := exec.Command("wget", "-N", "--no-check-certificate", "-O", filePath, url).Run()
+		if wgetErr != nil {
+			logger.Errorf("Download failed: %v", wgetErr)
+			return fmt.Errorf("download failed: %w", wgetErr)
+		}
 	}
 
 	// Backup geo version files before removing /usr/local/x-ui/
@@ -891,12 +1095,16 @@ func (s *ServerService) UpdatePanel(version string) {
 		_ = s.settingService.saveSetting("geositeVersion", geositeVer)
 	}
 
-	os.RemoveAll("/usr/local/x-ui/")
+	_ = os.RemoveAll("/usr/local/x-ui/")
 
 	// Extract, configure, and install
 	logger.Debug("Extracting...")
-	exec.Command("tar", "-zxvf", filePath, "-C", "/usr/local/").Run()
-	os.Remove(filePath)
+	extractErr := exec.Command("tar", "-zxvf", filePath, "-C", "/usr/local/").Run()
+	_ = os.Remove(filePath)
+	if extractErr != nil {
+		logger.Errorf("Tar extract failed: %v", extractErr)
+		return fmt.Errorf("tar extract failed: %w", extractErr)
+	}
 
 	// Restore geo version files if missing after tar extraction
 	restoreGeoVersion := func(geoPath, settingKey string) {
@@ -912,17 +1120,20 @@ func (s *ServerService) UpdatePanel(version string) {
 	}
 	restoreGeoVersion(xray.GetGeoipPath(), "geoipVersion")
 	restoreGeoVersion(xray.GetGeositePath(), "geositeVersion")
-	exec.Command("chmod", "+x", "/usr/local/x-ui/x-ui").Run()
+
+	_ = exec.Command("chmod", "+x", "/usr/local/x-ui/x-ui").Run()
 	xrayLinux := fmt.Sprintf("/usr/local/x-ui/bin/xray-linux-%s", arch)
-	exec.Command("chmod", "+x", "/usr/local/x-ui/x-ui", xrayLinux).Run()
-	exec.Command("cp", "-f", "/usr/local/x-ui/x-ui.service", "/etc/systemd/system/").Run()
-	exec.Command("wget", "--no-check-certificate", "-O", "/usr/bin/x-ui", "https://raw.githubusercontent.com/Incognito-Coder/tx-ui/main/x-ui.sh").Run()
-	exec.Command("chmod", "+x", "/usr/bin/x-ui").Run()
-	exec.Command("systemctl", "daemon-reload").Run()
-	exec.Command("systemctl", "enable", "x-ui").Run()
-	exec.Command("systemctl", "start", "x-ui").Run()
-	exec.Command("x-ui", "restart").Run()
-	logger.Infof("x-ui %s installation finished and is now running!", version)
+	_ = exec.Command("chmod", "+x", xrayLinux).Run()
+	if _, err := os.Stat("/usr/local/x-ui/x-ui.service"); err == nil {
+		_ = exec.Command("cp", "-f", "/usr/local/x-ui/x-ui.service", "/etc/systemd/system/").Run()
+	}
+	_ = exec.Command("wget", "--no-check-certificate", "-O", "/usr/bin/x-ui", "https://raw.githubusercontent.com/Incognito-Coder/tx-ui/main/x-ui.sh").Run()
+	_ = exec.Command("chmod", "+x", "/usr/bin/x-ui").Run()
+	_ = exec.Command("systemctl", "daemon-reload").Run()
+	_ = exec.Command("systemctl", "enable", "x-ui").Run()
+
+	logger.Infof("x-ui %s installation finished successfully!", version)
+	return nil
 }
 
 func (s *ServerService) ApplyTunnel(ip string, port string, username string, password string) {

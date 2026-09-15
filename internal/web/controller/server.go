@@ -4,10 +4,13 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os/exec"
 	"regexp"
+	"runtime"
 	"strings"
 	"time"
 
+	"x-ui/internal/logger"
 	"x-ui/internal/web/global"
 	"x-ui/internal/web/service"
 
@@ -27,6 +30,9 @@ type ServerController struct {
 
 	lastVersions        []string
 	lastGetVersionsTime time.Time
+
+	lastPanelVersions        []string
+	lastGetPanelVersionsTime time.Time
 }
 
 func NewServerController(g *gin.RouterGroup) *ServerController {
@@ -54,6 +60,8 @@ func (a *ServerController) initRouter(g *gin.RouterGroup) {
 	g.POST("/stopXrayService", a.stopXrayService)
 	g.POST("/restartXrayService", a.restartXrayService)
 	g.POST("/installPanel", a.installPanel)
+	g.POST("/installPanel/:version", a.installPanel)
+	g.GET("/getPanelVersions", a.getPanelVersions)
 	g.POST("/installXray/:version", a.installXray)
 	g.GET("/getGeoVersions", a.getGeoVersions)
 	g.POST("/updateGeoFiles", a.updateGeoFiles)
@@ -179,9 +187,57 @@ func (a *ServerController) restartXrayService(c *gin.Context) {
 	jsonMsg(c, "Xray restarted", err)
 }
 
+func (a *ServerController) getPanelVersions(c *gin.Context) {
+	now := time.Now()
+	if now.Sub(a.lastGetPanelVersionsTime) <= time.Minute && a.lastPanelVersions != nil {
+		jsonObj(c, a.lastPanelVersions, nil)
+		return
+	}
+
+	versions, err := a.serverService.GetPanelVersions()
+	if err != nil {
+		jsonMsg(c, I18nWeb(c, "getVersion"), err)
+		return
+	}
+
+	a.lastPanelVersions = versions
+	a.lastGetPanelVersionsTime = time.Now()
+
+	jsonObj(c, versions, nil)
+}
+
 func (a *ServerController) installPanel(c *gin.Context) {
-	a.serverService.UpdatePanel("")
+	version := c.Param("version")
+	if version == "" {
+		version = c.Query("version")
+	}
+	if version == "" {
+		var req struct {
+			Version string `json:"version"`
+		}
+		_ = c.ShouldBindJSON(&req)
+		version = req.Version
+	}
+
+	err := a.serverService.UpdatePanel(version)
+	if err != nil {
+		jsonMsg(c, I18nWeb(c, "pages.index.installingPanel"), err)
+		return
+	}
+
 	jsonMsg(c, I18nWeb(c, "pages.index.installingPanel"), nil)
+
+	go func() {
+		time.Sleep(1500 * time.Millisecond)
+		if runtime.GOOS == "linux" {
+			if err := exec.Command("systemctl", "restart", "x-ui").Run(); err != nil {
+				logger.Warning("systemctl restart failed, triggering internal restart:", err)
+				global.TriggerRestart()
+			}
+		} else {
+			global.TriggerRestart()
+		}
+	}()
 }
 
 func (a *ServerController) setTunnel(c *gin.Context) {
