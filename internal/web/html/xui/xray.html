@@ -251,6 +251,9 @@
     .telemetry-arrow-up {
         color: #3b82f6;
     }
+    .telemetry-arrow-neutral {
+        color: var(--ui-text-muted);
+    }
     .telemetry-clean-traffic-val {
         font-size: 12px;
         font-weight: 700;
@@ -984,7 +987,7 @@
                                     </div>
                                     <span
                                             v-else-if="outboundTestStates[index] && outboundTestStates[index].testing">
-                <a-icon type="loading"/>
+                <a-icon type="loading"></a-icon>
             </span>
                                     <span v-else>-</span>
                                 </template>
@@ -1197,7 +1200,7 @@
                                                    title='{{ i18n "pages.xray.tunnel.password" }}'
                                                    type="text"
                                                    v-model="serverPass"></setting-list-item>
-                                <a-space direction="horizontal" style="padding: 0 20px; margin-top: 4px;">
+                                <a-space direction="horizontal" style="padding: 0 20px; margin-top: 4px; margin-bottom: 12px;">
                                     <a-button @click="applyTunnel()" icon="plus" type="primary">{{ i18n
                                         "pages.xray.tunnel.apply" }}
                                     </a-button>
@@ -1250,7 +1253,8 @@
 
             <a-tabs default-active-key="overview" size="small">
                 <!-- Tab 1: Telemetry Overview & Gauges -->
-                <a-tab-pane key="overview" tab='{{ i18n "pages.xray.metrics.tabOverview" }}' style="padding-top: 14px;">
+                <a-tab-pane key="overview" style="padding-top: 14px;">
+                    <span slot="tab"><a-icon type="dashboard" style="margin-right: 6px;"></a-icon>{{ i18n "pages.xray.metrics.tabOverview" }}</span>
                     <a-row :gutter="[12, 12]" style="margin-bottom: 18px;">
                         <a-col :xs="12" :sm="12" :lg="6">
                             <div style="background: var(--ui-surface-muted); border: 1px solid var(--ui-border); border-radius: var(--ui-radius); padding: 12px 10px; text-align: center; box-shadow: var(--ui-shadow-sm);">
@@ -1312,7 +1316,8 @@
                 </a-tab-pane>
 
                 <!-- Tab 2: Realtime SVG Sparkline Charts -->
-                <a-tab-pane key="charts" tab='{{ i18n "pages.xray.metrics.tabCharts" }}' style="padding-top: 14px;">
+                <a-tab-pane key="charts" style="padding-top: 14px;">
+                    <span slot="tab"><a-icon type="area-chart" style="margin-right: 6px;"></a-icon>{{ i18n "pages.xray.metrics.tabCharts" }}</span>
                     <div style="margin-bottom: 16px;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
                             <strong><a-icon type="area-chart" style="color: var(--ui-primary); margin-right: 6px;"></a-icon> {{ i18n "pages.xray.metrics.memTrend" }}</strong>
@@ -1353,7 +1358,8 @@
                 </a-tab-pane>
 
                 <!-- Tab 3: Traffic Stats -->
-                <a-tab-pane key="traffic" tab='{{ i18n "pages.xray.metrics.tabStats" }}' style="padding-top: 14px;">
+                <a-tab-pane key="traffic" style="padding-top: 14px;">
+                    <span slot="tab"><a-icon type="swap" style="margin-right: 6px;"></a-icon>{{ i18n "pages.xray.metrics.tabStats" }}</span>
                     <div v-if="hasStatsTraffic()">
                         <div class="telemetry-stats-toolbar">
                             <div style="flex: 1; min-width: 200px; max-width: 360px;">
@@ -1365,6 +1371,7 @@
                                     <a-radio-button value="inbound">Inbound</a-radio-button>
                                     <a-radio-button value="outbound">Outbound</a-radio-button>
                                     <a-radio-button value="user">User</a-radio-button>
+                                    <a-radio-button value="other">Other</a-radio-button>
                                 </a-radio-group>
                                 <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ui-text-muted); margin-left: 4px;">
                                     <span>Raw Keys:</span>
@@ -1374,13 +1381,16 @@
                         </div>
                         <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
                             <a-tag color="green" style="margin: 0;">
-                                <a-icon type="arrow-down" style="margin-right: 4px;" />Down Total: [[ formatMetricsBytes(getTotalTraffic('downlink')) ]]
+                                <a-icon type="arrow-down" style="margin-right: 4px;"></a-icon>Down Total: [[ formatMetricsBytes(getTotalTraffic('downlink')) ]]
                             </a-tag>
                             <a-tag color="blue" style="margin: 0;">
-                                <a-icon type="arrow-up" style="margin-right: 4px;" />Up Total: [[ formatMetricsBytes(getTotalTraffic('uplink')) ]]
+                                <a-icon type="arrow-up" style="margin-right: 4px;"></a-icon>Up Total: [[ formatMetricsBytes(getTotalTraffic('uplink')) ]]
+                            </a-tag>
+                            <a-tag v-if="getTotalTraffic('other') > 0" style="margin: 0;">
+                                <a-icon type="swap" style="margin-right: 4px;"></a-icon>Other Total: [[ formatMetricsBytes(getTotalTraffic('other')) ]]
                             </a-tag>
                             <a-tag style="margin: 0;">
-                                <a-icon type="bars" style="margin-right: 4px;" />Items: [[ getParsedStatsTraffic().length ]]
+                                <a-icon type="bars" style="margin-right: 4px;"></a-icon>Items: [[ getParsedStatsTraffic().length ]]
                             </a-tag>
                         </div>
                         <a-row :gutter="[10, 10]" v-if="getParsedStatsTraffic().length > 0">
@@ -1388,9 +1398,11 @@
                                 <div class="telemetry-parsed-stat-item">
                                     <div class="telemetry-stat-left">
                                         <div class="telemetry-stat-tags">
-                                            <a-tag :color="item.categoryColor" class="telemetry-category-tag">[[ item.categoryLabel ]]</a-tag>
+                                            <a-tag :color="item.categoryColor" class="telemetry-category-tag">
+                                                <a-icon :type="item.category === 'inbound' ? 'login' : (item.category === 'outbound' ? 'logout' : (item.category === 'user' ? 'user' : 'appstore'))" style="margin-right: 3px; font-size: 10px;"></a-icon>[[ item.categoryLabel ]]
+                                            </a-tag>
                                             <span :class="item.isDownlink ? 'telemetry-badge-down' : (item.isUplink ? 'telemetry-badge-up' : 'telemetry-badge-neutral')">
-                                                <a-icon :type="item.isDownlink ? 'arrow-down' : (item.isUplink ? 'arrow-up' : 'swap')" />
+                                                <a-icon :type="item.isDownlink ? 'arrow-down' : (item.isUplink ? 'arrow-up' : 'swap')"></a-icon>
                                                 [[ item.directionLabel ]]
                                             </span>
                                         </div>
@@ -1411,7 +1423,8 @@
                 </a-tab-pane>
 
                 <!-- Tab 4: Clean Inspector -->
-                <a-tab-pane key="clean" tab="Clean Inspector" style="padding-top: 14px;">
+                <a-tab-pane key="clean" style="padding-top: 14px;">
+                    <span slot="tab"><a-icon type="appstore" style="margin-right: 6px;"></a-icon>Clean Inspector</span>
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px;">
                         <div style="flex: 1; min-width: 240px; max-width: 440px;">
                             <a-input placeholder='{{ i18n "pages.xray.metrics.filterPlaceholder" }}' v-model="metricsModal.filterKeyword" allow-clear></a-input>
@@ -1424,7 +1437,10 @@
                     </div>
                     <!-- Categorized Clean View -->
                     <a-collapse :default-active-key="['runtime', 'memstats', 'traffic']" :bordered="false">
-                        <a-collapse-panel key="runtime" header="Runtime & Goroutines">
+                        <a-collapse-panel key="runtime">
+                            <template slot="header">
+                                <a-icon type="branches" style="color: #8b5cf6; margin-right: 6px;"></a-icon>Runtime & Goroutines
+                            </template>
                             <div class="telemetry-grid telemetry-grid-3">
                                 <div class="telemetry-stat-card">
                                     <div class="telemetry-stat-header">
@@ -1455,7 +1471,10 @@
                                 </div>
                             </div>
                         </a-collapse-panel>
-                        <a-collapse-panel key="memstats" header="Memory Overview">
+                        <a-collapse-panel key="memstats">
+                            <template slot="header">
+                                <a-icon type="database" style="color: var(--ui-primary); margin-right: 6px;"></a-icon>Memory Overview
+                            </template>
                             <div class="telemetry-grid telemetry-grid-2">
                                 <div class="telemetry-stat-card">
                                     <div class="telemetry-stat-header">
@@ -1495,17 +1514,20 @@
                                 </div>
                             </div>
                         </a-collapse-panel>
-                        <a-collapse-panel key="traffic" header="Traffic Counters" v-if="hasStatsTraffic()">
+                        <a-collapse-panel key="traffic" v-if="hasStatsTraffic()">
+                            <template slot="header">
+                                <a-icon type="swap" style="color: #10b981; margin-right: 6px;"></a-icon>Traffic Counters
+                            </template>
                             <div style="max-height: 280px; overflow-y: auto; padding-right: 2px;">
                                 <div class="telemetry-clean-traffic-list" v-if="getParsedFilteredStatsTraffic().length > 0">
                                     <div class="telemetry-clean-traffic-row" v-for="item in getParsedFilteredStatsTraffic()" :key="item.raw">
                                         <div class="telemetry-clean-traffic-left">
                                             <a-tag :color="item.categoryColor" style="margin-right: 6px; font-size: 11px; padding: 0 6px; line-height: 20px; font-weight: 600;">
-                                                [[ item.categoryLabel ]]
+                                                <a-icon :type="item.category === 'inbound' ? 'login' : (item.category === 'outbound' ? 'logout' : (item.category === 'user' ? 'user' : 'appstore'))" style="margin-right: 3px; font-size: 10px;"></a-icon>[[ item.categoryLabel ]]
                                             </a-tag>
                                             <span class="telemetry-clean-traffic-target" :title="item.raw">[[ item.target ]]</span>
-                                            <span :class="item.isDownlink ? 'telemetry-arrow-down' : (item.isUplink ? 'telemetry-arrow-up' : '')" style="margin-left: 6px; font-size: 11px; font-weight: 600;">
-                                                <a-icon :type="item.isDownlink ? 'arrow-down' : (item.isUplink ? 'arrow-up' : 'swap')" />
+                                            <span :class="item.isDownlink ? 'telemetry-arrow-down' : (item.isUplink ? 'telemetry-arrow-up' : 'telemetry-arrow-neutral')" style="margin-left: 6px; font-size: 11px; font-weight: 600;">
+                                                <a-icon :type="item.isDownlink ? 'arrow-down' : (item.isUplink ? 'arrow-up' : 'swap')"></a-icon>
                                                 [[ item.directionLabel ]]
                                             </span>
                                         </div>
@@ -1517,7 +1539,10 @@
                                 <a-empty v-else description='{{ i18n "pages.xray.metrics.noData" }}'></a-empty>
                             </div>
                         </a-collapse-panel>
-                        <a-collapse-panel key="parsedTree" header="Structured Data Tree">
+                        <a-collapse-panel key="parsedTree">
+                            <template slot="header">
+                                <a-icon type="folder-open" style="color: #f59e0b; margin-right: 6px;"></a-icon>Structured Data Tree
+                            </template>
                             <div class="client-table-odd-row" style="border-radius: var(--ui-radius); padding: 10px; font-family: monospace; white-space: pre-wrap; word-break: break-all; max-height: 260px; overflow-y: auto; font-size: 11px;">
                                 [[ getCleanFormattedJson() ]]
                             </div>
@@ -1526,7 +1551,8 @@
                 </a-tab-pane>
 
                 <!-- Tab 5: Raw Inspector & Watch -->
-                <a-tab-pane key="raw" tab="Raw Inspector & Watch" style="padding-top: 14px;">
+                <a-tab-pane key="raw" style="padding-top: 14px;">
+                    <span slot="tab"><a-icon type="code" style="margin-right: 6px;"></a-icon>Raw Inspector & Watch</span>
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 10px;">
                         <div style="flex: 1; min-width: 240px; max-width: 440px;">
                             <a-input placeholder='{{ i18n "pages.xray.metrics.filterPlaceholder" }}' v-model="metricsModal.filterKeyword" allow-clear></a-input>
@@ -2119,36 +2145,43 @@
             parseTrafficStatKey(rawKey) {
                 if (!rawKey) return { raw: '', category: 'other', target: 'Unknown', direction: '', isDownlink: false, isUplink: false };
                 let clean = String(rawKey).trim();
-                if (clean.startsWith('stat.')) clean = clean.substring(5);
+                if (clean.startsWith('stats.')) clean = clean.substring(6);
+                else if (clean.startsWith('stat.')) clean = clean.substring(5);
+                else if (clean.startsWith('xray.')) clean = clean.substring(5);
+                else if (clean.startsWith('xray_traffic_')) clean = clean.substring(13);
+                else if (clean.startsWith('stats_')) clean = clean.substring(6);
+                else if (clean.startsWith('stat_')) clean = clean.substring(5);
+
                 clean = clean.replace(/>>>/g, '.');
                 clean = clean.replace(/\.traffic\./g, '.');
+                clean = clean.replace(/_traffic_/g, '.');
 
                 let direction = '';
                 let isDownlink = false;
                 let isUplink = false;
 
-                if (clean.endsWith('.downlink') || clean.endsWith('.down')) {
+                if (clean.endsWith('.downlink') || clean.endsWith('.down') || clean.endsWith('_downlink') || clean.endsWith('_down')) {
                     direction = 'downlink';
                     isDownlink = true;
-                    clean = clean.replace(/\.(downlink|down)$/i, '');
-                } else if (clean.endsWith('.uplink') || clean.endsWith('.up')) {
+                    clean = clean.replace(/[\._](downlink|down)$/i, '');
+                } else if (clean.endsWith('.uplink') || clean.endsWith('.up') || clean.endsWith('_uplink') || clean.endsWith('_up')) {
                     direction = 'uplink';
                     isUplink = true;
-                    clean = clean.replace(/\.(uplink|up)$/i, '');
+                    clean = clean.replace(/[\._](uplink|up)$/i, '');
                 }
 
                 let category = 'other';
                 let target = clean;
 
-                if (clean.startsWith('inbound.')) {
+                if (clean === 'inbound' || clean.startsWith('inbound.') || clean.startsWith('inbound_')) {
                     category = 'inbound';
-                    target = clean.substring(8);
-                } else if (clean.startsWith('outbound.')) {
+                    target = clean === 'inbound' ? 'Inbound' : clean.substring(8);
+                } else if (clean === 'outbound' || clean.startsWith('outbound.') || clean.startsWith('outbound_')) {
                     category = 'outbound';
-                    target = clean.substring(9);
-                } else if (clean.startsWith('user.')) {
+                    target = clean === 'outbound' ? 'Outbound' : clean.substring(9);
+                } else if (clean === 'user' || clean.startsWith('user.') || clean.startsWith('user_')) {
                     category = 'user';
-                    target = clean.substring(5);
+                    target = clean === 'user' ? 'User' : clean.substring(5);
                 }
 
                 return {
@@ -2247,7 +2280,7 @@
                     } else if (parsed.isUplink) {
                         parsed.directionLabel = 'Up';
                     } else {
-                        parsed.directionLabel = '';
+                        parsed.directionLabel = 'Other';
                     }
                     items.push(parsed);
                 }
@@ -2261,6 +2294,8 @@
                     if (direction === 'downlink' && parsed.isDownlink) {
                         total += Number(val) || 0;
                     } else if (direction === 'uplink' && parsed.isUplink) {
+                        total += Number(val) || 0;
+                    } else if (direction === 'other' && !parsed.isDownlink && !parsed.isUplink) {
                         total += Number(val) || 0;
                     } else if (!direction) {
                         total += Number(val) || 0;
