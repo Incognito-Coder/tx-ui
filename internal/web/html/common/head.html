@@ -3,7 +3,7 @@
     <meta charset="UTF-8">
     <meta content="webkit" name="renderer">
     <meta content="IE=edge,chrome=1" http-equiv="X-UA-Compatible">
-    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <link rel="manifest" href="{{ .base_path }}manifest.json">
     <meta name="theme-color" content="#2563eb">
     <meta name="mobile-web-app-capable" content="yes">
@@ -21,6 +21,14 @@
     <style>
         [v-cloak] {
             display: none;
+        }
+
+        /* Prevent iOS auto-zoom on input focus */
+        input, select, textarea {
+            font-size: 16px;
+        }
+        html {
+            -webkit-text-size-adjust: 100%;
         }
 
         /* vazirmatn-regular - arabic_latin_latin-ext */
