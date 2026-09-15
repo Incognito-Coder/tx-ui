@@ -81,6 +81,8 @@ var defaultValueMap = map[string]string{
 	"showInsecureWarning": "true",
 	"warp":                "",
 	"xrayOutboundTestUrl": "https://www.google.com/generate_204",
+	"geoipVersion":        "",
+	"geositeVersion":      "",
 }
 
 type SettingService struct{}
@@ -694,3 +696,20 @@ func (s *SettingService) GetDefaultSettings(host string) (interface{}, error) {
 
 	return result, nil
 }
+
+func (s *SettingService) GetGeoipVersion() (string, error) {
+	return s.getString("geoipVersion")
+}
+
+func (s *SettingService) SetGeoipVersion(v string) error {
+	return s.setString("geoipVersion", v)
+}
+
+func (s *SettingService) GetGeositeVersion() (string, error) {
+	return s.getString("geositeVersion")
+}
+
+func (s *SettingService) SetGeositeVersion(v string) error {
+	return s.setString("geositeVersion", v)
+}
+

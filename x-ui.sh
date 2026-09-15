@@ -889,6 +889,14 @@ update_geo() {
         rm -f geoip.dat geosite.dat
         wget -N https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat
         wget -N https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat
+        geo_tag=$(curl -sSLI -o /dev/null -w "%{url_effective}" https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest | awk -F'/' '{print $NF}')
+        if [[ -n "$geo_tag" && "$geo_tag" != "latest" ]]; then
+            echo "$geo_tag" > geoip.dat.version
+            echo "$geo_tag" > geosite.dat.version
+            mkdir -p /etc/x-ui
+            echo "$geo_tag" > /etc/x-ui/geoip.dat.version
+            echo "$geo_tag" > /etc/x-ui/geosite.dat.version
+        fi
         echo -e "${green}Loyalsoldier datasets have been updated successfully!${plain}"
         restart
         ;;
@@ -897,6 +905,14 @@ update_geo() {
         rm -f geoip_IR.dat geosite_IR.dat
         wget -O geoip_IR.dat -N https://github.com/chocolate4u/Iran-v2ray-rules/releases/latest/download/geoip.dat
         wget -O geosite_IR.dat -N https://github.com/chocolate4u/Iran-v2ray-rules/releases/latest/download/geosite.dat
+        geo_ir_tag=$(curl -sSLI -o /dev/null -w "%{url_effective}" https://github.com/chocolate4u/Iran-v2ray-rules/releases/latest | awk -F'/' '{print $NF}')
+        if [[ -n "$geo_ir_tag" && "$geo_ir_tag" != "latest" ]]; then
+            echo "$geo_ir_tag" > geoip_IR.dat.version
+            echo "$geo_ir_tag" > geosite_IR.dat.version
+            mkdir -p /etc/x-ui
+            echo "$geo_ir_tag" > /etc/x-ui/geoip_IR.dat.version
+            echo "$geo_ir_tag" > /etc/x-ui/geosite_IR.dat.version
+        fi
         echo -e "${green}chocolate4u datasets have been updated successfully!${plain}"
         restart
         ;;
@@ -905,6 +921,14 @@ update_geo() {
         rm -f geoip_RU.dat geosite_RU.dat
         wget -O geoip_RU.dat -N https://github.com/runetfreedom/russia-v2ray-rules-dat/releases/latest/download/geoip.dat
         wget -O geosite_RU.dat -N https://github.com/runetfreedom/russia-v2ray-rules-dat/releases/latest/download/geosite.dat
+        geo_ru_tag=$(curl -sSLI -o /dev/null -w "%{url_effective}" https://github.com/runetfreedom/russia-v2ray-rules-dat/releases/latest | awk -F'/' '{print $NF}')
+        if [[ -n "$geo_ru_tag" && "$geo_ru_tag" != "latest" ]]; then
+            echo "$geo_ru_tag" > geoip_RU.dat.version
+            echo "$geo_ru_tag" > geosite_RU.dat.version
+            mkdir -p /etc/x-ui
+            echo "$geo_ru_tag" > /etc/x-ui/geoip_RU.dat.version
+            echo "$geo_ru_tag" > /etc/x-ui/geosite_RU.dat.version
+        fi
         echo -e "${green}runetfreedom datasets have been updated successfully!${plain}"
         restart
         ;;

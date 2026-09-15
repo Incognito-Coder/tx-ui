@@ -418,6 +418,8 @@ install_x-ui() {
 
     if [[ -e /usr/local/x-ui/ ]]; then
         systemctl stop x-ui
+        mkdir -p /etc/x-ui
+        cp -f /usr/local/x-ui/bin/*.version /etc/x-ui/ 2>/dev/null || true
         rm /usr/local/x-ui/ -rf
     fi
 
@@ -425,6 +427,15 @@ install_x-ui() {
     rm x-ui-linux-$(arch).tar.gz -f
     cd x-ui
     chmod +x x-ui
+
+    # Restore geodata version files if missing after extraction
+    if [[ -d /etc/x-ui ]]; then
+        for f in /etc/x-ui/*.version; do
+            if [[ -f "$f" && ! -f "bin/$(basename "$f")" ]]; then
+                cp -f "$f" bin/ 2>/dev/null || true
+            fi
+        done
+    fi
 
     # Check the system's architecture and rename the file accordingly
     if [[ $(arch) == "armv5" || $(arch) == "armv6" || $(arch) == "armv7" ]]; then

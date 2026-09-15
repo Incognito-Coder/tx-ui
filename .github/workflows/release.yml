@@ -141,6 +141,14 @@ jobs:
           rm -f geoip.dat geosite.dat
           curl -sSL -O https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat
           curl -sSL -O https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat
+          GEO_TAG=$(curl -sSL -I "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest" | grep -i "^location:" | sed -E 's/.*tag\/([^[:space:]\r\n]+).*/\1/')
+          if [ -z "$GEO_TAG" ]; then
+            GEO_TAG=$(curl -sSL https://api.github.com/repos/Loyalsoldier/v2ray-rules-dat/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+          fi
+          if [ -n "$GEO_TAG" ]; then
+            echo "$GEO_TAG" > geoip.dat.version
+            echo "$GEO_TAG" > geosite.dat.version
+          fi
           curl -sSL -o geoip_IR.dat https://github.com/chocolate4u/Iran-v2ray-rules/releases/latest/download/geoip.dat
           curl -sSL -o geosite_IR.dat https://github.com/chocolate4u/Iran-v2ray-rules/releases/latest/download/geosite.dat
           curl -sSL -o geoip_RU.dat https://github.com/runetfreedom/russia-v2ray-rules-dat/releases/latest/download/geoip.dat
@@ -191,6 +199,14 @@ jobs:
           Remove-Item geoip.dat, geosite.dat -ErrorAction SilentlyContinue
           Invoke-WebRequest -Uri "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat" -OutFile "geoip.dat"
           Invoke-WebRequest -Uri "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat" -OutFile "geosite.dat"
+          try {
+            $resp = Invoke-WebRequest -Uri "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest" -MaximumRedirection 0 -ErrorAction SilentlyContinue
+            $geoTag = $resp.Headers.Location -replace '.*/tag/', ''
+            if ($geoTag) {
+              Set-Content -Path "geoip.dat.version" -Value $geoTag -NoNewline
+              Set-Content -Path "geosite.dat.version" -Value $geoTag -NoNewline
+            }
+          } catch {}
           Invoke-WebRequest -Uri "https://github.com/chocolate4u/Iran-v2ray-rules/releases/latest/download/geoip.dat" -OutFile "geoip_IR.dat"
           Invoke-WebRequest -Uri "https://github.com/chocolate4u/Iran-v2ray-rules/releases/latest/download/geosite.dat" -OutFile "geosite_IR.dat"
           Invoke-WebRequest -Uri "https://github.com/runetfreedom/russia-v2ray-rules-dat/releases/latest/download/geoip.dat" -OutFile "geoip_RU.dat"

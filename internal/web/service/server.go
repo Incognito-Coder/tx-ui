@@ -24,6 +24,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -275,7 +276,7 @@ func (s *ServerService) GetStatus(lastStatus *Status) *Status {
 		dest.Exists = true
 		dest.Size = uint64(info.Size())
 		dest.UpdatedAt = info.ModTime().Unix()
-		dest.Version = readGeoFileVersion(path)
+		dest.Version = s.readGeoFileVersion(path)
 	}
 	fillGeoFileStatus(xray.GetGeoipPath(), &status.GeoFiles.GeoIP)
 	fillGeoFileStatus(xray.GetGeositePath(), &status.GeoFiles.GeoSite)
@@ -679,6 +680,13 @@ func (s *ServerService) UpdateGeoFiles(targetVersion ...string) error {
 			if err := os.WriteFile(file.path+".version", []byte(version), 0o644); err != nil {
 				logger.Warningf("failed to write %s version file: %v", file.name, err)
 			}
+			dbFolder := config.GetDBFolderPath()
+			_ = os.WriteFile(filepath.Join(dbFolder, file.name+".version"), []byte(version), 0o644)
+			settingKey := "geoipVersion"
+			if strings.Contains(strings.ToLower(file.name), "geosite") {
+				settingKey = "geositeVersion"
+			}
+			_ = s.settingService.saveSetting(settingKey, version)
 		}
 	}
 
@@ -727,6 +735,88 @@ func getLatestReleaseTag(assetURL string, assetName string) (string, error) {
 	}
 
 	return extractReleaseTag(location, assetName), nil
+}
+
+var (
+	geoResolveMutex sync.Mutex
+	geoResolving    = make(map[string]bool)
+	lastGeoResolve  = make(map[string]time.Time)
+)
+
+func (s *ServerService) readGeoFileVersion(path string) string {
+	fileName := filepath.Base(path)
+	versionFile := path + ".version"
+
+	// 1. Check direct .version file in bin/
+	if data, err := os.ReadFile(versionFile); err == nil {
+		v := strings.TrimSpace(string(data))
+		if v != "" {
+			return v
+		}
+	}
+
+	settingKey := "geoipVersion"
+	if strings.Contains(strings.ToLower(fileName), "geosite") {
+		settingKey = "geositeVersion"
+	}
+
+	// 2. Check persistent folder (/etc/x-ui/<fileName>.version)
+	dbFolder := config.GetDBFolderPath()
+	etcVersionFile := filepath.Join(dbFolder, fileName+".version")
+	if data, err := os.ReadFile(etcVersionFile); err == nil {
+		v := strings.TrimSpace(string(data))
+		if v != "" {
+			_ = os.WriteFile(versionFile, []byte(v), 0o644)
+			_ = s.settingService.saveSetting(settingKey, v)
+			return v
+		}
+	}
+
+	// 3. Check database setting
+	if dbVer, err := s.settingService.getString(settingKey); err == nil {
+		v := strings.TrimSpace(dbVer)
+		if v != "" {
+			_ = os.WriteFile(versionFile, []byte(v), 0o644)
+			_ = os.WriteFile(etcVersionFile, []byte(v), 0o644)
+			return v
+		}
+	}
+
+	// 4. If the geo file exists on disk but has no version recorded anywhere,
+	// auto-resolve it in the background so GetStatus is not blocked.
+	if info, err := os.Stat(path); err == nil && info.Size() > 0 {
+		geoResolveMutex.Lock()
+		resolving := geoResolving[fileName]
+		lastAttempt := lastGeoResolve[fileName]
+		if !resolving && time.Since(lastAttempt) > 5*time.Minute {
+			geoResolving[fileName] = true
+			geoResolveMutex.Unlock()
+
+			go func() {
+				defer func() {
+					geoResolveMutex.Lock()
+					geoResolving[fileName] = false
+					lastGeoResolve[fileName] = time.Now()
+					geoResolveMutex.Unlock()
+				}()
+
+				tag, err := getLatestReleaseTag("https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/"+fileName, fileName)
+				if err != nil || tag == "" {
+					logger.Warningf("auto-detect %s version failed: %v", fileName, err)
+					return
+				}
+				tag = strings.TrimSpace(tag)
+				_ = os.WriteFile(versionFile, []byte(tag), 0o644)
+				_ = os.WriteFile(etcVersionFile, []byte(tag), 0o644)
+				_ = s.settingService.saveSetting(settingKey, tag)
+				logger.Infof("Successfully auto-detected and saved %s version: %s", fileName, tag)
+			}()
+		} else {
+			geoResolveMutex.Unlock()
+		}
+	}
+
+	return ""
 }
 
 func readGeoFileVersion(path string) string {
@@ -789,12 +879,39 @@ func (s *ServerService) UpdatePanel(version string) {
 		return
 	}
 
+	// Backup geo version files before removing /usr/local/x-ui/
+	dbFolder := config.GetDBFolderPath()
+	_ = os.MkdirAll(dbFolder, 0o755)
+	if geoipVer := s.readGeoFileVersion(xray.GetGeoipPath()); geoipVer != "" {
+		_ = os.WriteFile(filepath.Join(dbFolder, "geoip.dat.version"), []byte(geoipVer), 0o644)
+		_ = s.settingService.saveSetting("geoipVersion", geoipVer)
+	}
+	if geositeVer := s.readGeoFileVersion(xray.GetGeositePath()); geositeVer != "" {
+		_ = os.WriteFile(filepath.Join(dbFolder, "geosite.dat.version"), []byte(geositeVer), 0o644)
+		_ = s.settingService.saveSetting("geositeVersion", geositeVer)
+	}
+
 	os.RemoveAll("/usr/local/x-ui/")
 
 	// Extract, configure, and install
 	logger.Debug("Extracting...")
 	exec.Command("tar", "-zxvf", filePath, "-C", "/usr/local/").Run()
 	os.Remove(filePath)
+
+	// Restore geo version files if missing after tar extraction
+	restoreGeoVersion := func(geoPath, settingKey string) {
+		fileName := filepath.Base(geoPath)
+		targetVersionFile := geoPath + ".version"
+		if _, err := os.Stat(targetVersionFile); os.IsNotExist(err) {
+			if data, err := os.ReadFile(filepath.Join(dbFolder, fileName+".version")); err == nil && len(strings.TrimSpace(string(data))) > 0 {
+				_ = os.WriteFile(targetVersionFile, data, 0o644)
+			} else if dbVer, err := s.settingService.getString(settingKey); err == nil && dbVer != "" {
+				_ = os.WriteFile(targetVersionFile, []byte(dbVer), 0o644)
+			}
+		}
+	}
+	restoreGeoVersion(xray.GetGeoipPath(), "geoipVersion")
+	restoreGeoVersion(xray.GetGeositePath(), "geositeVersion")
 	exec.Command("chmod", "+x", "/usr/local/x-ui/x-ui").Run()
 	xrayLinux := fmt.Sprintf("/usr/local/x-ui/bin/xray-linux-%s", arch)
 	exec.Command("chmod", "+x", "/usr/local/x-ui/x-ui", xrayLinux).Run()
