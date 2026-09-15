@@ -49,12 +49,19 @@
     </style>
     <script>
         (function() {
-            var isDark = localStorage.getItem('dark-mode') === 'true';
+            var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            var storedDark = localStorage.getItem('dark-mode');
+            var isDark = storedDark !== null ? storedDark === 'true' : prefersDark;
             var isUltra = localStorage.getItem('isUltraDarkThemeEnabled') === 'true';
             if (isDark) {
                 document.documentElement.classList.add('dark');
                 if (document.body) document.body.classList.add('dark');
                 if (isUltra) document.documentElement.setAttribute('data-theme', 'ultra-dark');
+            }
+            // Dynamically set iOS status bar style
+            var statusBarMeta = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
+            if (statusBarMeta) {
+                statusBarMeta.setAttribute('content', isDark ? 'black-translucent' : 'default');
             }
 
             var isSiderCollapsed = localStorage.getItem('sider-collapsed') === 'true';
