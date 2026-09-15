@@ -3,7 +3,7 @@
 # ========================================================
 FROM golang:1.27-bookworm AS builder
 WORKDIR /app
-ARG TARGETARCH
+ARG TARGETARCH=amd64
 
 RUN apt-get update && apt-get install -y \
   build-essential \
