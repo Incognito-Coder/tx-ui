@@ -21,7 +21,7 @@ RUN ./DockerInit.sh "$TARGETARCH"
 # ========================================================
 # Stage: Final Image of tx-ui
 # ========================================================
-FROM bookworm
+FROM debian:bookworm-slim
 ENV TZ=Asia/Tehran
 WORKDIR /app
 
