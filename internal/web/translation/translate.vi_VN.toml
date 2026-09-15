@@ -130,6 +130,7 @@
 "upgrade" = "NÂNG CẤP"
 "upgradeAvail" = "Bản cập nhật bảng điều khiển mới đã có"
 "installingPanel" = "Bảng điều khiển đã bắt đầu cài đặt"
+"latestVersion" = "Bạn đang sử dụng phiên bản mới nhất của bảng điều khiển"
 "systemHost" = "Hostname"
 "geoData" = "Dữ liệu Geo"
 "geoUpdate" = "Cập nhật"

@@ -130,6 +130,7 @@
 "upgrade" = "UPGRADE"
 "upgradeAvail" = "Yeni panel güncellemesi mevcut"
 "installingPanel" = "Panel kurulumu başladı"
+"latestVersion" = "Panelin en son sürümünü kullanıyorsunuz"
 "systemHost" = "Hostname"
 "geoData" = "Geo Verisi"
 "geoUpdate" = "Güncelle"

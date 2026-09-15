@@ -385,7 +385,7 @@
                  message='{{ i18n "pages.index.upgradeAvail" }}' show-icon
                  style="margin-bottom: 12px; width: fit-content" type="info"></a-alert>
         <a-alert v-else
-                 message="You are using the latest version of TX-UI" show-icon
+                 message='{{ i18n "pages.index.latestVersion" }}' show-icon
                  style="margin-bottom: 12px; width: fit-content" type="success"></a-alert>
         <template v-for="version, index in panelVersionModal.versions">
             <a-tag :color="index % 2 == 0 ? 'purple' : 'green'" @click="switchPanelVersion(version)"
@@ -896,7 +896,7 @@
                     return;
                 }
                 if (!msg.obj || msg.obj.length === 0) {
-                    this.$message.info('{{ i18n "pages.index.latestVersion" }}' || 'You are using the latest version');
+                    this.$message.info('{{ i18n "pages.index.latestVersion" }}');
                     return;
                 }
                 panelVersionModal.show(msg.obj);

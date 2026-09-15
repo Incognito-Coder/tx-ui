@@ -130,6 +130,7 @@
 "upgrade" = "Обновление"
 "upgradeAvail" = "Доступно новое обновление панели"
 "installingPanel" = "Началась установка панели"
+"latestVersion" = "Вы используете последнюю версию панели"
 "systemHost" = "Hostname"
 "geoData" = "Геоданные"
 "geoUpdate" = "Обновить"

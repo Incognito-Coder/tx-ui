@@ -130,6 +130,7 @@
 "upgrade" = "UPGRADE"
 "upgradeAvail" = "New panel update is availabe"
 "installingPanel" = "Panel started to install"
+"latestVersion" = "You are using the latest version of TX-UI"
 "systemHost" = "Hostname"
 "geoData" = "Geo Data"
 "geoUpdate" = "Update"

@@ -131,6 +131,7 @@
 "upgrade" = "升级"
 "upgradeAvail" = "新面板更新可用"
 "installingPanel" = "面板已开始安装"
+"latestVersion" = "您當前正在使用最新版本的面板"
 "systemHost" = "Hostname"
 "geoData" = "地理資料"
 "geoUpdate" = "更新"

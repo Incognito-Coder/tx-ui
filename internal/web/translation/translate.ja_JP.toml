@@ -130,6 +130,7 @@
 "upgrade" = "アップグレード"
 "upgradeAvail" = "新しいパネルのアップデートが利用可能です"
 "installingPanel" = "パネルのインストールが開始されました"
+"latestVersion" = "最新バージョンのパネルを使用しています"
 "systemHost" = "Hostname"
 "geoData" = "ジオデータ"
 "geoUpdate" = "更新"

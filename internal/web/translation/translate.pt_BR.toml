@@ -130,6 +130,7 @@
 "upgrade" = "ATUALIZAÇÃO"
 "upgradeAvail" = "Nova atualização do painel disponível"
 "installingPanel" = "Painel começou a instalar"
+"latestVersion" = "Você está usando a versão mais recente do painel"
 "systemHost" = "Hostname"
 "geoData" = "Dados Geo"
 "geoUpdate" = "Atualizar"

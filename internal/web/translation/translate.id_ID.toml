@@ -130,6 +130,7 @@
 "upgrade" = "UPGRADE"
 "upgradeAvail" = "Pembaruan panel baru tersedia"
 "installingPanel" = "Panel mulai diinstal"
+"latestVersion" = "Anda menggunakan versi terbaru dari panel"
 "systemHost" = "Hostname"
 "geoData" = "Data Geo"
 "geoUpdate" = "Perbarui"

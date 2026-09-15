@@ -134,6 +134,7 @@
 "upgrade" = "ترقية"
 "upgradeAvail" = "تحديث لوحة جديد متاح"
 "installingPanel" = "بدأ تثبيت اللوحة"
+"latestVersion" = "أنت تستخدم أحدث إصدار من اللوحة"
 "systemHost" = "اسم المضيف"
 "geoData" = "بيانات جيو"
 "geoUpdate" = "تحديث"
