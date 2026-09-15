@@ -1,9 +1,9 @@
 # ========================================================
 # Stage: Builder
 # ========================================================
-FROM golang:1.27-bookworm AS builder
+FROM --platform=$TARGETARCH golang:1.27-bookworm AS builder
 WORKDIR /app
-ARG TARGETARCH=amd64
+ARG TARGETARCH
 
 RUN apt-get update && apt-get install -y \
   build-essential \
