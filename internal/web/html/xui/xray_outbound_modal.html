@@ -40,7 +40,7 @@
             this.outbound = isEdit ? Outbound.fromJson(outbound) : new Outbound();
             this.isEdit = isEdit;
             this.tags = tags;
-            this.check()
+            outModal.check();
         },
         close() {
             outModal.visible = false;
@@ -51,11 +51,11 @@
         },
         check() {
             if (outModal.outbound.tag == '' || outModal.tags.includes(outModal.outbound.tag)) {
-                this.duplicateTag = true;
-                this.isValid = false;
+                outModal.duplicateTag = true;
+                outModal.isValid = false;
             } else {
-                this.duplicateTag = false;
-                this.isValid = true;
+                outModal.duplicateTag = false;
+                outModal.isValid = true;
             }
         },
         toggleJson(jsonTab) {
@@ -71,7 +71,7 @@
                     value = editor.getValue();
                     if (this.isJsonString(value)) {
                         this.outbound = Outbound.fromJson(JSON.parse(value));
-                        this.check();
+                        outModal.check();
                     }
                 });
                 this.activeKey = '2';

@@ -87,14 +87,23 @@ self.addEventListener('fetch', (event) => {
                     }).catch(() => {});
                     return cachedResponse;
                 }
-                return fetch(request).then((networkResponse) => {
-                    if (networkResponse && networkResponse.status === 200) {
-                        const responseClone = networkResponse.clone();
-                        caches.open(CACHE_NAME).then((cache) => {
-                            cache.put(request, responseClone);
-                        });
+                const assetIndex = url.pathname.indexOf('/assets/');
+                const relativeAssetPath = assetIndex >= 0 ? url.pathname.slice(assetIndex + 1) : null;
+                const tryCache = relativeAssetPath ? caches.match(relativeAssetPath) : Promise.resolve(null);
+
+                return tryCache.then((matched) => {
+                    if (matched) {
+                        return matched;
                     }
-                    return networkResponse;
+                    return fetch(request).then((networkResponse) => {
+                        if (networkResponse && networkResponse.status === 200) {
+                            const responseClone = networkResponse.clone();
+                            caches.open(CACHE_NAME).then((cache) => {
+                                cache.put(request, responseClone);
+                            });
+                        }
+                        return networkResponse;
+                    });
                 });
             })
         );

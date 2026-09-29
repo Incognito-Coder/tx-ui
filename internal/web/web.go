@@ -109,7 +109,7 @@ func NewServer() *Server {
 func (s *Server) getHtmlFiles() ([]string, error) {
 	files := make([]string, 0)
 	dir, _ := os.Getwd()
-	err := fs.WalkDir(os.DirFS(dir), "web/html", func(path string, d fs.DirEntry, err error) error {
+	err := fs.WalkDir(os.DirFS(dir), "internal/web/html", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -226,7 +226,7 @@ func (s *Server) initRouter() (*gin.Engine, error) {
 			return nil, err
 		}
 		engine.LoadHTMLFiles(files...)
-		engine.StaticFS(basePath+"assets", http.FS(os.DirFS("web/assets")))
+		engine.StaticFS(basePath+"assets", http.FS(os.DirFS("internal/web/assets")))
 	} else {
 		// for production
 		template, err := s.getHtmlTemplate(funcMap)
@@ -247,7 +247,7 @@ func (s *Server) initRouter() (*gin.Engine, error) {
 		var content []byte
 		var err error
 		if config.IsDebug() {
-			content, err = os.ReadFile("web/assets/pwa/manifest.json")
+			content, err = os.ReadFile("internal/web/assets/pwa/manifest.json")
 		} else {
 			content, err = assetsFS.ReadFile("assets/pwa/manifest.json")
 		}
@@ -264,7 +264,7 @@ func (s *Server) initRouter() (*gin.Engine, error) {
 		var content []byte
 		var err error
 		if config.IsDebug() {
-			content, err = os.ReadFile("web/assets/pwa/sw.js")
+			content, err = os.ReadFile("internal/web/assets/pwa/sw.js")
 		} else {
 			content, err = assetsFS.ReadFile("assets/pwa/sw.js")
 		}
@@ -282,7 +282,7 @@ func (s *Server) initRouter() (*gin.Engine, error) {
 		var content []byte
 		var err error
 		if config.IsDebug() {
-			content, err = os.ReadFile("web/assets/img/icons/favicon.ico")
+			content, err = os.ReadFile("internal/web/assets/img/icons/favicon.ico")
 		} else {
 			content, err = assetsFS.ReadFile("assets/img/icons/favicon.ico")
 		}

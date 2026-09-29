@@ -15,7 +15,7 @@
     <a-form :colon="false" :label-col="{ md: {span:8} }" :wrapper-col="{ md: {span:14} }">
         <a-form-item :validate-status="balancerModal.duplicateTag? 'warning' : 'success'" has-feedback
                      label='{{ i18n "pages.xray.balancer.tag" }}'>
-            <a-input @change="balancerModal.check()" placeholder='{{ i18n "pages.xray.balancer.tagDesc" }}'
+            <a-input @change="balancerModal.check()" @input="balancerModal.check()" placeholder='{{ i18n "pages.xray.balancer.tagDesc" }}'
                      v-model.trim="balancerModal.balancer.tag"></a-input>
         </a-form-item>
         <a-form-item label='{{ i18n "pages.xray.balancer.balancerStrategy" }}'>
@@ -40,7 +40,6 @@
                 </a-select-option>
             </a-select>
         </a-form-item>
-        </table>
     </a-form>
 </a-modal>
 <script>
@@ -53,6 +52,7 @@
         confirm: null,
         duplicateTag: false,
         emptySelector: false,
+        isValid: true,
         balancer: {
             tag: '',
             strategy: 'random',
@@ -62,7 +62,10 @@
         outboundTags: [],
         balancerTags: [],
         ok() {
-            if (balancerModal.balancer.selector.length == 0) {
+            balancerModal.check();
+            balancerModal.checkSelector();
+            if (!balancerModal.isValid) return;
+            if (!balancerModal.balancer || !balancerModal.balancer.selector || balancerModal.balancer.selector.length == 0) {
                 balancerModal.emptySelector = true;
                 return;
             }
@@ -70,15 +73,24 @@
             ObjectUtil.execute(balancerModal.confirm, balancerModal.balancer);
         },
         show({
-                 title = '', okText = '{{ i18n "sure" }}', balancerTags = [], balancer, confirm = (balancer) => {
+                 title = '', okText = '{{ i18n "sure" }}', balancerTags = [], balancer = null, confirm = (balancer) => {
             }, isEdit = false
              }) {
-            this.title = title;
-            this.okText = okText;
-            this.confirm = confirm;
-            this.visible = true;
-            if (isEdit) {
-                balancerModal.balancer = balancer;
+            balancerModal.title = title;
+            balancerModal.okText = okText;
+            balancerModal.confirm = confirm;
+            balancerModal.isEdit = isEdit;
+            if (isEdit && balancer) {
+                balancerModal.balancer = ObjectUtil.clone(balancer);
+                if (!balancerModal.balancer.selector) {
+                    balancerModal.balancer.selector = [];
+                }
+                if (!balancerModal.balancer.strategy) {
+                    balancerModal.balancer.strategy = 'random';
+                }
+                if (typeof balancerModal.balancer.fallbackTag === 'undefined') {
+                    balancerModal.balancer.fallbackTag = '';
+                }
             } else {
                 balancerModal.balancer = {
                     tag: '',
@@ -87,31 +99,33 @@
                     fallbackTag: ''
                 };
             }
-            this.balancerTags = balancerTags.filter((tag) => tag != balancer.tag);
-            this.outboundTags = app.templateSettings.outbounds.filter((o) => !ObjectUtil.isEmpty(o.tag)).map(obj => obj.tag);
-            this.outboundTags.push(...app.clientReverseTags);
-            this.isEdit = isEdit;
-            this.check();
-            this.checkSelector();
+            balancerModal.balancerTags = balancerTags.filter((tag) => tag != (balancer ? balancer.tag : ''));
+            balancerModal.outboundTags = app.templateSettings && app.templateSettings.outbounds ? app.templateSettings.outbounds.filter((o) => !ObjectUtil.isEmpty(o.tag)).map(obj => obj.tag) : [];
+            if (app.clientReverseTags) {
+                balancerModal.outboundTags.push(...app.clientReverseTags);
+            }
+            balancerModal.check();
+            balancerModal.checkSelector();
+            balancerModal.visible = true;
         },
         close() {
-            this.visible = false;
-            this.loading(false);
+            balancerModal.visible = false;
+            balancerModal.loading(false);
         },
         loading(loading = true) {
-            this.confirmLoading = loading;
+            balancerModal.confirmLoading = loading;
         },
         check() {
-            if (this.balancer.tag == '' || this.balancerTags.includes(this.balancer.tag)) {
-                this.duplicateTag = true;
-                this.isValid = false;
+            if (!balancerModal.balancer || !balancerModal.balancer.tag || balancerModal.balancer.tag.trim() === '' || balancerModal.balancerTags.includes(balancerModal.balancer.tag.trim())) {
+                balancerModal.duplicateTag = true;
+                balancerModal.isValid = false;
             } else {
-                this.duplicateTag = false;
-                this.isValid = true;
+                balancerModal.duplicateTag = false;
+                balancerModal.isValid = true;
             }
         },
         checkSelector() {
-            this.emptySelector = this.balancer.selector.length == 0;
+            balancerModal.emptySelector = !balancerModal.balancer || !balancerModal.balancer.selector || balancerModal.balancer.selector.length == 0;
         }
     };
 

@@ -568,7 +568,7 @@ body {
     border-color: var(--ui-border-strong);
     border-radius: 9px;
     background: var(--ui-surface);
-    box-shadow: var(--ui-shadow-sm);
+    box-shadow: none !important;
     transition: all 0.2s ease;
 }
 
@@ -641,12 +641,14 @@ body {
 .ant-btn-primary {
     border-color: var(--ui-primary);
     background: var(--ui-primary);
+    box-shadow: none !important;
 }
 
 .ant-btn-primary:hover,
 .ant-btn-primary:focus {
     border-color: var(--ui-primary-hover);
     background: var(--ui-primary-hover);
+    box-shadow: none !important;
 }
 
 .ant-btn-default:hover,
@@ -654,12 +656,14 @@ body {
     color: var(--ui-primary);
     border-color: var(--ui-primary);
     background: var(--ui-primary-soft);
+    box-shadow: none !important;
 }
 
 .ant-btn-danger {
     color: #ffffff;
     border-color: var(--ui-danger);
     background: var(--ui-danger);
+    box-shadow: none !important;
 }
 
 .ant-btn-danger:hover,
@@ -667,6 +671,7 @@ body {
     color: #ffffff;
     border-color: #ef4444;
     background: #ef4444;
+    box-shadow: none !important;
 }
 
 .ant-btn[disabled],
@@ -1816,7 +1821,7 @@ li.ant-calendar-time-picker-select-option-selected {
     font-weight: 500;
     background: var(--ui-primary);
     color: #ffffff;
-    box-shadow: 0 4px 12px var(--ui-primary-soft);
+    box-shadow: none !important;
     transition: all 0.2s ease;
 }
 
@@ -1825,20 +1830,21 @@ li.ant-calendar-time-picker-select-option-selected {
     width: 100%;
     background: var(--ui-primary-hover);
     color: #ffffff;
-    box-shadow: 0 6px 16px var(--ui-primary-soft);
+    box-shadow: none !important;
 }
 
 #login .ant-btn-primary-login:active {
     width: 100%;
     background: var(--ui-primary);
     color: #ffffff;
+    box-shadow: none !important;
 }
 
 body.dark #login .ant-btn-primary-login,
 #app.dark #login .ant-btn-primary-login {
     background: var(--ui-primary);
     color: #ffffff;
-    box-shadow: 0 4px 12px var(--ui-primary-soft);
+    box-shadow: none !important;
 }
 
 body.dark #login .ant-btn-primary-login:hover,
@@ -1847,7 +1853,7 @@ body.dark #login .ant-btn-primary-login:focus,
 #app.dark #login .ant-btn-primary-login:focus {
     background: var(--ui-primary-hover);
     color: #ffffff;
-    box-shadow: 0 6px 16px var(--ui-primary-soft);
+    box-shadow: none !important;
 }
 
 body.light #login,

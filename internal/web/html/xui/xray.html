@@ -2385,15 +2385,19 @@
                 if (this.cm != null) {
                     this.cm.toTextArea();
                 }
-                if (this.obsSettings == '') {
+                if (!this.obsSettings || this.obsSettings === '') {
                     this.cm = null;
-                    return
+                    return;
                 }
-                textAreaObj = document.getElementById('obsSetting');
-                textAreaObj.value = this[this.obsSettings];
+                const textAreaObj = document.getElementById('obsSetting');
+                if (!textAreaObj) {
+                    this.cm = null;
+                    return;
+                }
+                textAreaObj.value = this[this.obsSettings] || '';
                 this.cm = CodeMirror.fromTextArea(textAreaObj, this.cmOptions);
                 this.cm.on('change', editor => {
-                    value = editor.getValue();
+                    const value = editor.getValue();
                     if (this.isJsonString(value)) {
                         this[this.obsSettings] = value;
                     }
@@ -2612,48 +2616,69 @@
                     balancerTags: this.balancersData.filter((o) => !ObjectUtil.isEmpty(o.tag)).map(obj => obj.tag),
                     balancer: this.balancersData[index],
                     confirm: (balancer) => {
-                        balancerModal.loading();
-                        newTemplateSettings = this.templateSettings;
+                        try {
+                            balancerModal.loading();
+                            let newTemplateSettings = this.templateSettings || {};
+                            if (!newTemplateSettings.routing) {
+                                newTemplateSettings.routing = {};
+                            }
+                            if (!newTemplateSettings.routing.balancers) {
+                                newTemplateSettings.routing.balancers = [];
+                            }
 
-                        let tmpBalancer = {
-                            'tag': balancer.tag,
-                            'selector': balancer.selector,
-                            'fallbackTag': balancer.fallbackTag
-                        };
-
-                        // Remove old tag
-                        if (newTemplateSettings.observatory) {
-                            newTemplateSettings.observatory.subjectSelector = newTemplateSettings.observatory.subjectSelector.filter(s => s != oldTag);
-                        }
-                        if (newTemplateSettings.burstObservatory) {
-                            newTemplateSettings.burstObservatory.subjectSelector = newTemplateSettings.burstObservatory.subjectSelector.filter(s => s != oldTag);
-                        }
-
-                        if (balancer.strategy && balancer.strategy != 'random') {
-                            tmpBalancer.strategy = {
-                                'type': balancer.strategy
+                            let tmpBalancer = {
+                                'tag': balancer.tag,
+                                'selector': balancer.selector || [],
+                                'fallbackTag': balancer.fallbackTag || ''
                             };
-                        }
 
-                        newTemplateSettings.routing.balancers[index] = tmpBalancer;
-                        // change edited tag if used in rule section
-                        if (oldTag != balancer.tag) {
-                            newTemplateSettings.routing.rules.forEach((rule) => {
-                                if (rule.balancerTag && rule.balancerTag == oldTag) {
-                                    rule.balancerTag = balancer.tag;
-                                }
-                            });
+                            // Remove old tag safely from observatory subjectSelectors
+                            if (newTemplateSettings.observatory && Array.isArray(newTemplateSettings.observatory.subjectSelector)) {
+                                newTemplateSettings.observatory.subjectSelector = newTemplateSettings.observatory.subjectSelector.filter(s => s != oldTag);
+                            }
+                            if (newTemplateSettings.burstObservatory && Array.isArray(newTemplateSettings.burstObservatory.subjectSelector)) {
+                                newTemplateSettings.burstObservatory.subjectSelector = newTemplateSettings.burstObservatory.subjectSelector.filter(s => s != oldTag);
+                            }
+
+                            if (balancer.strategy && balancer.strategy != 'random') {
+                                tmpBalancer.strategy = {
+                                    'type': balancer.strategy
+                                };
+                            }
+
+                            let realIndex = newTemplateSettings.routing.balancers.findIndex(b => b.tag === oldTag);
+                            if (realIndex === -1) {
+                                realIndex = index;
+                            }
+                            if (realIndex >= 0 && realIndex < newTemplateSettings.routing.balancers.length) {
+                                newTemplateSettings.routing.balancers.splice(realIndex, 1, tmpBalancer);
+                            } else {
+                                newTemplateSettings.routing.balancers.push(tmpBalancer);
+                            }
+
+                            // change edited tag if used in rule section
+                            if (oldTag != balancer.tag && newTemplateSettings.routing.rules) {
+                                newTemplateSettings.routing.rules.forEach((rule) => {
+                                    if (rule.balancerTag && rule.balancerTag == oldTag) {
+                                        rule.balancerTag = balancer.tag;
+                                    }
+                                });
+                            }
+                            this.templateSettings = newTemplateSettings;
+                            this.updateObservatorySelectors();
+                            balancerModal.close();
+                            this.changeObsCode();
+                        } catch (e) {
+                            console.error("Error saving balancer:", e);
+                            balancerModal.loading(false);
                         }
-                        this.templateSettings = newTemplateSettings;
-                        this.updateObservatorySelectors();
-                        balancerModal.close();
-                        this.changeObsCode();
                     },
                     isEdit: true
                 });
             },
             updateObservatorySelectors() {
-                newTemplateSettings = this.templateSettings;
+                let newTemplateSettings = this.templateSettings;
+                if (!newTemplateSettings) return;
                 const leastPings = this.balancersData.filter((b) => b.strategy == 'leastPing');
                 const leastLoads = this.balancersData.filter((b) =>
                     b.strategy === 'leastLoad' ||
@@ -2662,29 +2687,33 @@
                 );
                 if (leastPings.length > 0) {
                     if (!newTemplateSettings.observatory)
-                        newTemplateSettings.observatory = this.defaultObservatory;
+                        newTemplateSettings.observatory = ObjectUtil.clone(this.defaultObservatory);
                     newTemplateSettings.observatory.subjectSelector = [];
                     leastPings.forEach((b) => {
-                        b.selector.forEach((s) => {
-                            if (!newTemplateSettings.observatory.subjectSelector.includes(s))
-                                newTemplateSettings.observatory.subjectSelector.push(s);
-                        });
+                        if (Array.isArray(b.selector)) {
+                            b.selector.forEach((s) => {
+                                if (!newTemplateSettings.observatory.subjectSelector.includes(s))
+                                    newTemplateSettings.observatory.subjectSelector.push(s);
+                            });
+                        }
                     });
                 } else {
-                    delete newTemplateSettings.observatory
+                    delete newTemplateSettings.observatory;
                 }
                 if (leastLoads.length > 0) {
                     if (!newTemplateSettings.burstObservatory)
-                        newTemplateSettings.burstObservatory = this.defaultBurstObservatory;
+                        newTemplateSettings.burstObservatory = ObjectUtil.clone(this.defaultBurstObservatory);
                     newTemplateSettings.burstObservatory.subjectSelector = [];
                     leastLoads.forEach((b) => {
-                        b.selector.forEach((s) => {
-                            if (!newTemplateSettings.burstObservatory.subjectSelector.includes(s))
-                                newTemplateSettings.burstObservatory.subjectSelector.push(s);
-                        });
+                        if (Array.isArray(b.selector)) {
+                            b.selector.forEach((s) => {
+                                if (!newTemplateSettings.burstObservatory.subjectSelector.includes(s))
+                                    newTemplateSettings.burstObservatory.subjectSelector.push(s);
+                            });
+                        }
                     });
                 } else {
-                    delete newTemplateSettings.burstObservatory
+                    delete newTemplateSettings.burstObservatory;
                 }
                 this.templateSettings = newTemplateSettings;
                 this.changeObsCode();
