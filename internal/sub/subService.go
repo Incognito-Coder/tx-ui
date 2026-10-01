@@ -956,12 +956,12 @@ func (s *SubService) genVlessLink(inbound *model.Inbound, email string) string {
 				shortIds, _ := sidValue.([]interface{})
 				params["sid"] = shortIds[random.Num(len(shortIds))].(string)
 			}
-			if fpValue, ok := searchKey(realitySetting, "fingerprint"); ok {
+			if fpValue, ok := searchKey(realitySettings, "fingerprint"); ok {
 				if fp, ok := fpValue.(string); ok && len(fp) > 0 {
 					params["fp"] = fp
 				}
 			}
-			if pqvValue, ok := searchKey(realitySetting, "mldsa65Verify"); ok {
+			if pqvValue, ok := searchKey(realitySettings, "mldsa65Verify"); ok {
 				if pqv, ok := pqvValue.(string); ok && len(pqv) > 0 {
 					params["pqv"] = pqv
 				}
@@ -1172,12 +1172,12 @@ func (s *SubService) genTrojanLink(inbound *model.Inbound, email string) string 
 				shortIds, _ := sidValue.([]interface{})
 				params["sid"] = shortIds[random.Num(len(shortIds))].(string)
 			}
-			if fpValue, ok := searchKey(realitySetting, "fingerprint"); ok {
+			if fpValue, ok := searchKey(realitySettings, "fingerprint"); ok {
 				if fp, ok := fpValue.(string); ok && len(fp) > 0 {
 					params["fp"] = fp
 				}
 			}
-			if pqvValue, ok := searchKey(realitySetting, "mldsa65Verify"); ok {
+			if pqvValue, ok := searchKey(realitySettings, "mldsa65Verify"); ok {
 				if pqv, ok := pqvValue.(string); ok && len(pqv) > 0 {
 					params["pqv"] = pqv
 				}

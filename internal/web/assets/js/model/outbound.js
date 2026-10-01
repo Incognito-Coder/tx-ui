@@ -836,7 +836,7 @@ class FinalMaskStreamSettings extends CommonClass {
     constructor(tcp = [], udp = []) {
         super();
         this.tcp = Array.isArray(tcp) ? tcp.map(mask => TcpMask.fromJson(mask)) : [];
-        this.udp = Array.isArray(udp) ? udp.map(u => new UdpMask(u.type, u.settings)) : [new UdpMask(udp.type, udp.settings)];
+        this.udp = Array.isArray(udp) ? udp.map(u => new UdpMask(u.type, u.settings)) : [];
     }
 
     static fromJson(json = {}) {

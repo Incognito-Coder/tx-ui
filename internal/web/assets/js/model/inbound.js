@@ -607,7 +607,8 @@ class HysteriaStreamSettings extends XrayCommonClass {
         udpIdleTimeout = 60,
         masquerade,
     ) {
-        super(protocol);
+        super();
+        this.protocol = protocol;
         this.version = version;
         this.auth = auth;
         this.udpIdleTimeout = udpIdleTimeout;
@@ -1323,7 +1324,7 @@ class FinalMaskStreamSettings extends XrayCommonClass {
     constructor(tcp = [], udp = []) {
         super();
         this.tcp = Array.isArray(tcp) ? tcp.map(mask => TcpMask.fromJson(mask)) : [];
-        this.udp = Array.isArray(udp) ? udp.map(u => new UdpMask(u.type, u.settings)) : [new UdpMask(udp.type, udp.settings)];
+        this.udp = Array.isArray(udp) ? udp.map(u => new UdpMask(u.type, u.settings)) : [];
     }
 
     static fromJson(json = {}) {
@@ -1785,7 +1786,7 @@ class Inbound extends XrayCommonClass {
             obj.host = ws.host?.length > 0 ? ws.host : this.getHeader(ws, 'host');
         } else if (network === 'grpc') {
             obj.path = this.stream.grpc.serviceName;
-            obj.authority = this.stream.grpc.authority;
+            if (this.stream.grpc.authority?.length > 0) obj.authority = this.stream.grpc.authority;
             if (this.stream.grpc.multiMode) {
                 obj.type = 'multi'
             }
@@ -1848,7 +1849,7 @@ class Inbound extends XrayCommonClass {
             case "grpc":
                 const grpc = this.stream.grpc;
                 params.set("serviceName", grpc.serviceName);
-                params.set("authority", grpc.authority);
+                if (grpc.authority?.length > 0) params.set("authority", grpc.authority);
                 if (grpc.multiMode) {
                     params.set("mode", "multi");
                 }
@@ -1952,7 +1953,7 @@ class Inbound extends XrayCommonClass {
             case "grpc":
                 const grpc = this.stream.grpc;
                 params.set("serviceName", grpc.serviceName);
-                params.set("authority", grpc.authority);
+                if (grpc.authority?.length > 0) params.set("authority", grpc.authority);
                 if (grpc.multiMode) {
                     params.set("mode", "multi");
                 }
@@ -2028,7 +2029,7 @@ class Inbound extends XrayCommonClass {
             case "grpc":
                 const grpc = this.stream.grpc;
                 params.set("serviceName", grpc.serviceName);
-                params.set("authority", grpc.authority);
+                if (grpc.authority?.length > 0) params.set("authority", grpc.authority);
                 if (grpc.multiMode) {
                     params.set("mode", "multi");
                 }
