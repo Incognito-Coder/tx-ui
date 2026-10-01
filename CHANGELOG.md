@@ -78,8 +78,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [v0.8.2] - 2026-09-10
 
 ### 🚀 Features & Xray-core Integration
-- **Xray-core v26.9.9 Upgrade**: Updated `xray-core` dependency to latest `v26.9.9` release tag across `go.mod`, `DockerInit.sh`, and GitHub Actions release workflow (`release.yml`).
-- **Xray-core v26.3.27 - v26.9.9 Feature Alignment**:
+- **Xray-core v26.9.30 Upgrade**: Updated `xray-core` dependency to latest `v26.9.30` release tag across `go.mod`, `DockerInit.sh`, and GitHub Actions release workflow (`release.yml`).
+- **Xray-core v26.3.27 - v26.9.30 Feature Alignment**:
   - **Finalmask Obfuscation Engine**: Full panel support for Finalmask TCP & UDP masks including `udpHop` (`ports`, `interval`), `Sudoku` (`ascii`, `paddingMin/Max`), `fragment` (`length`, `interval`), `noise`, `header-custom`, and `salamander` in both inbound and outbound form models.
   - **mKCP TTI Extension**: Expanded mKCP Transmission Time Interval (TTI) max range from 100 ms up to 5000 ms for XDNS and high-latency connections.
   - **REALITY Security Hints**: Added real-time security warning alert on REALITY configuration forms for non-443 target ports or Apple/iCloud SNI domains.
