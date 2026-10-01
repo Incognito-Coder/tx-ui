@@ -92,7 +92,7 @@ func (s *XrayService) GetXrayConfig() (*xray.Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	xrayConfig.OutboundConfigs, err = normalizeLegacyVMessOutbounds(xrayConfig.OutboundConfigs)
+	xrayConfig.OutboundConfigs, err = normalizeLegacyOutbounds(xrayConfig.OutboundConfigs)
 	if err != nil {
 		return nil, err
 	}
@@ -299,6 +299,76 @@ func (s *XrayService) GetXrayConfig() (*xray.Config, error) {
 				}
 				settings["peers"] = final_peers
 				delete(settings, "clients")
+			} else if inbound.Protocol == model.Masque {
+				if addr, ok := settings["address"]; ok && addr != nil {
+					switch a := addr.(type) {
+					case []string:
+						settings["address"] = a
+					case []interface{}:
+						arr := make([]string, 0, len(a))
+						for _, item := range a {
+							if s, ok := item.(string); ok && s != "" {
+								arr = append(arr, s)
+							}
+						}
+						if len(arr) > 0 {
+							settings["address"] = arr
+						} else {
+							settings["address"] = []string{"10.13.0.1/24"}
+						}
+					case string:
+						if a != "" {
+							settings["address"] = []string{a}
+						} else {
+							settings["address"] = []string{"10.13.0.1/24"}
+						}
+					default:
+						settings["address"] = []string{"10.13.0.1/24"}
+					}
+				} else {
+					settings["address"] = []string{"10.13.0.1/24"}
+				}
+
+				var final_clients []interface{}
+				seenFinalEmails := make(map[string]bool)
+				for _, client := range clients {
+					c, isMap := client.(map[string]interface{})
+					if !isMap {
+						continue
+					}
+					if c["enable"] != nil {
+						if enable, ok := c["enable"].(bool); ok && !enable {
+							continue
+						}
+					}
+					email, _ := c["email"].(string)
+					emailKey := strings.ToLower(strings.TrimSpace(email))
+					if emailKey == "" || seenFinalEmails[emailKey] {
+						continue
+					}
+					seenFinalEmails[emailKey] = true
+					pass := ""
+					if p, ok := c["pass"].(string); ok && p != "" {
+						pass = p
+					} else if p, ok := c["password"].(string); ok && p != "" {
+						pass = p
+					} else if p, ok := c["id"].(string); ok && p != "" {
+						pass = p
+					}
+					mc := map[string]interface{}{
+						"email": email,
+						"pass":  pass,
+					}
+					if level, ok := c["level"]; ok {
+						mc["level"] = level
+					}
+					final_clients = append(final_clients, mc)
+				}
+				settings["clients"] = final_clients
+				delete(settings, "users")
+				if mtu, ok := settings["mtu"].(float64); !ok || mtu == 0 {
+					settings["mtu"] = 1500
+				}
 			} else {
 				// clear client config for additional parameters
 				var final_clients []interface{}
@@ -390,7 +460,7 @@ func normalizeLegacyVMessUser(user map[string]interface{}) {
 	}
 }
 
-func normalizeLegacyVMessOutbounds(raw json_util.RawMessage) (json_util.RawMessage, error) {
+func normalizeLegacyOutbounds(raw json_util.RawMessage) (json_util.RawMessage, error) {
 	if len(raw) == 0 {
 		return raw, nil
 	}
@@ -401,20 +471,28 @@ func normalizeLegacyVMessOutbounds(raw json_util.RawMessage) (json_util.RawMessa
 	}
 	changed := false
 	for _, outbound := range outbounds {
-		if outbound["protocol"] != "vmess" {
-			continue
-		}
-		settings, _ := outbound["settings"].(map[string]interface{})
-		vnext, _ := settings["vnext"].([]interface{})
-		for _, destinationValue := range vnext {
-			destination, _ := destinationValue.(map[string]interface{})
-			users, _ := destination["users"].([]interface{})
-			for _, userValue := range users {
-				user, _ := userValue.(map[string]interface{})
-				before, _ := user["security"].(string)
-				normalizeLegacyVMessUser(user)
-				after, _ := user["security"].(string)
-				changed = changed || before != after
+		protocol, _ := outbound["protocol"].(string)
+		if protocol == "vmess" {
+			settings, _ := outbound["settings"].(map[string]interface{})
+			vnext, _ := settings["vnext"].([]interface{})
+			for _, destinationValue := range vnext {
+				destination, _ := destinationValue.(map[string]interface{})
+				users, _ := destination["users"].([]interface{})
+				for _, userValue := range users {
+					user, _ := userValue.(map[string]interface{})
+					before, _ := user["security"].(string)
+					normalizeLegacyVMessUser(user)
+					after, _ := user["security"].(string)
+					changed = changed || before != after
+				}
+			}
+		} else if protocol == "wireguard" {
+			settings, ok := outbound["settings"].(map[string]interface{})
+			if ok {
+				if _, hasDS := settings["domainStrategy"]; hasDS {
+					delete(settings, "domainStrategy")
+					changed = true
+				}
 			}
 		}
 	}

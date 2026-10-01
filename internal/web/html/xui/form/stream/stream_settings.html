@@ -1,6 +1,6 @@
 {{define "form/streamSettings"}}
 <!-- select stream network -->
-<a-form :colon="false" :label-col="{ md: {span:8} }" :wrapper-col="{ md: {span:14} }" v-if="inbound.protocol != Protocols.HYSTERIA">
+<a-form :colon="false" :label-col="{ md: {span:8} }" :wrapper-col="{ md: {span:14} }" v-if="inbound.protocol != Protocols.HYSTERIA && inbound.protocol != Protocols.MASQUE">
     <a-form-item label='{{ i18n "transmission" }}'>
         <a-select :dropdown-class-name="themeSwitcher.currentTheme" @change="streamNetworkChange" style="width: 75%"
                   v-model="inbound.stream.network">
@@ -10,6 +10,7 @@
             <a-select-option value="grpc">gRPC</a-select-option>
             <a-select-option value="httpupgrade">HTTPUpgrade</a-select-option>
             <a-select-option value="xhttp">XHTTP</a-select-option>
+            <a-select-option value="xdrive">XDRIVE</a-select-option>
         </a-select>
     </a-form-item>
 </a-form>
@@ -37,6 +38,16 @@
 <!-- hysteria -->
 <template v-if="inbound.stream.network === 'hysteria'">
     {{template "form/streamHysteria"}}
+</template>
+
+<!-- masque -->
+<template v-if="inbound.stream.network === 'masque'">
+    {{template "form/streamMasque"}}
+</template>
+
+<!-- xdrive -->
+<template v-if="inbound.stream.network === 'xdrive'">
+    {{template "form/streamXDrive"}}
 </template>
 
 <!-- httpupgrade -->

@@ -1,0 +1,26 @@
+{{define "form/streamMasque"}}
+<a-form :colon="false" :label-col="{ md: {span:8} }" :wrapper-col="{ md: {span:14} }">
+    <a-form-item label='{{ i18n "host" }}'>
+        <a-input placeholder="example.com" v-model.trim="inbound.stream.masque.host"></a-input>
+    </a-form-item>
+    <a-form-item label='{{ i18n "path" }}'>
+        <a-input placeholder="/.well-known/masque/ip/*/*/" v-model.trim="inbound.stream.masque.path"></a-input>
+    </a-form-item>
+    <a-form-item label='{{ i18n "pages.inbounds.stream.tcp.requestHeader" }}'>
+        <a-button @click="inbound.stream.masque.addHeader('', '')" icon="plus" size="small"></a-button>
+    </a-form-item>
+    <a-form-item :wrapper-col="{span:24}">
+        <a-input-group compact v-for="(header, index) in inbound.stream.masque.headers">
+            <a-input placeholder='{{ i18n "pages.inbounds.stream.general.name"}}' style="width: 50%"
+                     v-model.trim="header.name">
+                <template slot="addonBefore" style="margin: 0;">[[ index+1 ]]</template>
+            </a-input>
+            <a-input placeholder='{{ i18n "pages.inbounds.stream.general.value" }}' style="width: 50%"
+                     v-model.trim="header.value">
+                <a-button @click="inbound.stream.masque.removeHeader(index)" icon="minus" size="small"
+                          slot="addonAfter"></a-button>
+            </a-input>
+        </a-input-group>
+    </a-form-item>
+</a-form>
+{{end}}

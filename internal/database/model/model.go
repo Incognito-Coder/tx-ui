@@ -20,6 +20,7 @@ const (
 	Mixed       Protocol = "mixed"
 	WireGuard   Protocol = "wireguard"
 	Hysteria    Protocol = "hysteria"
+	Masque      Protocol = "masque"
 )
 
 type User struct {
@@ -81,6 +82,8 @@ func (i *Inbound) GenXrayInboundConfig() *xray.InboundConfig {
 	settings := i.Settings
 	if i.Protocol == WireGuard {
 		settings = wireguardClientsAsPeers(settings)
+	} else if i.Protocol == Masque {
+		settings = masqueSettingsNormalize(settings)
 	}
 	return &xray.InboundConfig{
 		Listen:         json_util.RawMessage(listen),
@@ -163,6 +166,87 @@ func wireguardClientsAsPeers(settings string) string {
 	return string(converted)
 }
 
+func masqueSettingsNormalize(settings string) string {
+	var raw map[string]any
+	if err := json.Unmarshal([]byte(settings), &raw); err != nil {
+		return settings
+	}
+	if addr, ok := raw["address"]; ok && addr != nil {
+		switch a := addr.(type) {
+		case []string:
+			raw["address"] = a
+		case []any:
+			arr := make([]string, 0, len(a))
+			for _, item := range a {
+				if s, ok := item.(string); ok && s != "" {
+					arr = append(arr, s)
+				}
+			}
+			if len(arr) > 0 {
+				raw["address"] = arr
+			} else {
+				raw["address"] = []string{"10.13.0.1/24"}
+			}
+		case string:
+			if a != "" {
+				raw["address"] = []string{a}
+			} else {
+				raw["address"] = []string{"10.13.0.1/24"}
+			}
+		default:
+			raw["address"] = []string{"10.13.0.1/24"}
+		}
+	} else {
+		raw["address"] = []string{"10.13.0.1/24"}
+	}
+
+	clients, ok := raw["clients"]
+	if !ok {
+		clients = raw["users"]
+	}
+	if clientList, isList := clients.([]any); isList {
+		var finalUsers []any
+		for _, clientItem := range clientList {
+			c, isMap := clientItem.(map[string]any)
+			if !isMap {
+				continue
+			}
+			if enable, ok := c["enable"].(bool); ok && !enable {
+				continue
+			}
+			user := map[string]any{}
+			if email, ok := c["email"].(string); ok && email != "" {
+				user["email"] = email
+			}
+			pass := ""
+			if p, ok := c["pass"].(string); ok && p != "" {
+				pass = p
+			} else if p, ok := c["password"].(string); ok && p != "" {
+				pass = p
+			} else if p, ok := c["id"].(string); ok && p != "" {
+				pass = p
+			}
+			user["pass"] = pass
+			if level, ok := c["level"].(float64); ok {
+				user["level"] = uint32(level)
+			}
+			finalUsers = append(finalUsers, user)
+		}
+		raw["clients"] = finalUsers
+		delete(raw, "users")
+	}
+
+	if mtu, ok := raw["mtu"].(float64); !ok || mtu == 0 {
+		raw["mtu"] = 1500
+	}
+
+	result, err := json.Marshal(raw)
+	if err != nil {
+		return settings
+	}
+	return string(result)
+}
+
 type Setting struct {
 	Id    int    `json:"id" form:"id" gorm:"primaryKey;autoIncrement"`
 	Key   string `json:"key" form:"key"`
@@ -178,6 +262,7 @@ type Client struct {
 	ID         string         `json:"id,omitempty"`
 	Security   string         `json:"security"`
 	Password   string         `json:"password,omitempty"` // Client password
+	Pass       string         `json:"pass,omitempty"`     // MASQUE password
 	Flow       string         `json:"flow,omitempty"`     // Flow control (XTLS)
 	Auth       string         `json:"auth,omitempty"`     // Auth password (Hysteria)
 	PublicKey  string         `json:"publicKey,omitempty"`  // WireGuard Public Key

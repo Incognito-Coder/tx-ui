@@ -99,6 +99,10 @@
                     newClient = new Inbound.WireguardSettings.Peer();
                     clients.push(newClient);
                     return newClient;
+                case Protocols.MASQUE:
+                    newClient = new Inbound.MasqueSettings.Masque();
+                    clients.push(newClient);
+                    return newClient;
                 default:
                     return null;
             }

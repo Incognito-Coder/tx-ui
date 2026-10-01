@@ -601,6 +601,26 @@
 "systemRoutes" = "系统路由"
 "outboundInterface" = "出站接口"
 "outboundInterfaceDesc" = "从自动路由中排除的出站接口。留空时由 Xray 自动选择"
+"autoSystemDnsToGateway" = "将 DNS 路由至网关"
+"autoSystemWfpBlockLeak" = "WFP 泄漏阻止"
+"autoSystemWfpBlockLeakDesc" = "Windows 筛选平台泄漏防护规则 (dns, misconfigtun)"
+
+[pages.xray.masque]
+"address" = "隧道 IP 范围 (CIDR)"
+"addressDesc" = "MASQUE 隧道的本地 IP 前缀/CIDR (例如 10.13.0.1/24)"
+
+[pages.xray.xdrive]
+"service" = "服务提供商"
+"remoteFolder" = "远程文件夹"
+"secrets" = "密钥/凭据"
+"secretsDesc" = "远程网盘服务的 OAuth 凭据或 API 访问令牌"
+"template" = "模板 (Template)"
+"segmentBytes" = "分片大小 (字节)"
+"flushIntervalMs" = "刷新间隔 (毫秒)"
+"pollIntervalMs" = "轮询间隔 (毫秒)"
+"maxPollIntervalMs" = "最大轮询间隔 (毫秒)"
+"sessionTtlSeconds" = "会话超时时间 (秒)"
+"concurrency" = "并发数"
 
 [pages.xray.finalmask]
 "tcpMasks" = "TCP 掩码"

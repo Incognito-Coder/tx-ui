@@ -153,13 +153,6 @@
                 <a-form-item label='{{ i18n "pages.xray.wireguard.publicKey" }}'>
                     <a-input disabled v-model="outbound.settings.pubKey"></a-input>
                 </a-form-item>
-                <a-form-item label='{{ i18n "pages.xray.wireguard.domainStrategy" }}'>
-                    <a-select :dropdown-class-name="themeSwitcher.currentTheme"
-                              v-model="outbound.settings.domainStrategy">
-                        <a-select-option :value="wds" v-for="wds in ['', ...WireguardDomainStrategy]">[[ wds ]]
-                        </a-select-option>
-                    </a-select>
-                </a-form-item>
                 <a-form-item label='MTU'>
                     <a-input-number min="0" v-model.number="outbound.settings.mtu"></a-input-number>
                 </a-form-item>
@@ -346,6 +339,21 @@
                 </a-form-item>
             </template>
 
+            <!-- masque settings -->
+            <template v-if="outbound.protocol === Protocols.Masque">
+                <a-form-item label='{{ i18n "pages.xray.outbound.address" }}'>
+                    <a-input v-model.trim="outbound.settings.address"></a-input>
+                </a-form-item>
+                <a-form-item label='{{ i18n "pages.xray.outbound.port" }}'>
+                    <a-input-number :max="65535" :min="1" v-model.number="outbound.settings.port"></a-input-number>
+                </a-form-item>
+                <a-form-item label='Remote DNS'>
+                    <a-select :dropdown-class-name="themeSwitcher.currentTheme" mode="tags"
+                              placeholder="1.1.1.1, 8.8.8.8" :token-separators="[',']"
+                              v-model="outbound.settings.remoteDNS"></a-select>
+                </a-form-item>
+            </template>
+
             <!-- stream settings -->
             <template v-if="outbound.canEnableStream()">
                 <a-form-item label='{{ i18n "transmission" }}'>
@@ -359,6 +367,8 @@
                         <a-select-option value="xhttp">XHTTP</a-select-option>
                         <a-select-option v-if="outbound.protocol === Protocols.Hysteria" value="hysteria">Hysteria2
                         </a-select-option>
+                        <a-select-option v-if="outbound.protocol === Protocols.Masque" value="masque">MASQUE</a-select-option>
+                        <a-select-option value="xdrive">XDRIVE</a-select-option>
                     </a-select>
                 </a-form-item>
                 <template v-if="outbound.stream.network === 'tcp'">
@@ -542,6 +552,79 @@
                     <a-form-item label='Disable Path MTU'>
                         <a-switch
                                 v-model="outbound.stream.hysteria.disablePathMTUDiscovery"></a-switch>
+                    </a-form-item>
+                </template>
+
+                <!-- masque -->
+                <template v-if="outbound.stream.network === 'masque'">
+                    <a-form-item label='{{ i18n "host" }}'>
+                        <a-input placeholder="example.com" v-model.trim="outbound.stream.masque.host"></a-input>
+                    </a-form-item>
+                    <a-form-item label='{{ i18n "path" }}'>
+                        <a-input placeholder="/.well-known/masque/ip/*/*/" v-model.trim="outbound.stream.masque.path"></a-input>
+                    </a-form-item>
+                    <a-form-item label='{{ i18n "pages.inbounds.stream.tcp.requestHeader" }}'>
+                        <a-button @click="outbound.stream.masque.addHeader('', '')" icon="plus" size="small"></a-button>
+                    </a-form-item>
+                    <a-form-item :wrapper-col="{span:24}">
+                        <a-input-group compact v-for="(header, index) in outbound.stream.masque.headers">
+                            <a-input placeholder='{{ i18n "pages.inbounds.stream.general.name"}}' style="width: 50%"
+                                     v-model.trim="header.name">
+                                <template slot="addonBefore" style="margin: 0;">[[ index+1 ]]</template>
+                            </a-input>
+                            <a-input placeholder='{{ i18n "pages.inbounds.stream.general.value" }}' style="width: 50%"
+                                     v-model.trim="header.value">
+                                <a-button @click="outbound.stream.masque.removeHeader(index)" icon="minus" size="small"
+                                          slot="addonAfter"></a-button>
+                            </a-input>
+                        </a-input-group>
+                    </a-form-item>
+                </template>
+
+                <!-- xdrive -->
+                <template v-if="outbound.stream.network === 'xdrive'">
+                    <a-form-item label='{{ i18n "pages.xray.xdrive.service" }}'>
+                        <a-select :dropdown-class-name="themeSwitcher.currentTheme" v-model="outbound.stream.xdrive.service">
+                            <a-select-option value="local">local</a-select-option>
+                            <a-select-option value="Google Drive">Google Drive</a-select-option>
+                            <a-select-option value="template">template</a-select-option>
+                        </a-select>
+                    </a-form-item>
+                    <a-form-item label='{{ i18n "pages.xray.xdrive.remoteFolder" }}'>
+                        <a-input placeholder="xray_drive_folder" v-model.trim="outbound.stream.xdrive.remoteFolder"></a-input>
+                    </a-form-item>
+                    <a-form-item v-if="outbound.stream.xdrive.service === 'Google Drive'">
+                        <template slot="label">
+                            <a-tooltip>
+                                <template slot="title">
+                                    <span>{{ i18n "pages.xray.xdrive.secretsDesc" }}</span>
+                                </template>
+                                {{ i18n "pages.xray.xdrive.secrets" }}
+                                <a-icon type="question-circle"></a-icon>
+                            </a-tooltip>
+                        </template>
+                        <a-textarea :rows="3" placeholder="ClientID&#10;ClientSecret&#10;RefreshToken" v-model="outbound.stream.xdrive.secrets"></a-textarea>
+                    </a-form-item>
+                    <a-form-item label='{{ i18n "pages.xray.xdrive.template" }}' v-if="outbound.stream.xdrive.service === 'template'">
+                        <a-textarea :rows="4" placeholder="{ ... }" v-model="outbound.stream.xdrive.template"></a-textarea>
+                    </a-form-item>
+                    <a-form-item label='{{ i18n "pages.xray.xdrive.segmentBytes" }}'>
+                        <a-input-number :min="1024" placeholder="1048576" v-model.number="outbound.stream.xdrive.segmentBytes"></a-input-number>
+                    </a-form-item>
+                    <a-form-item label='{{ i18n "pages.xray.xdrive.flushIntervalMs" }}'>
+                        <a-input-number :min="1" placeholder="500" v-model.number="outbound.stream.xdrive.flushIntervalMs"></a-input-number>
+                    </a-form-item>
+                    <a-form-item label='{{ i18n "pages.xray.xdrive.pollIntervalMs" }}'>
+                        <a-input-number :min="1" placeholder="500" v-model.number="outbound.stream.xdrive.pollIntervalMs"></a-input-number>
+                    </a-form-item>
+                    <a-form-item label='{{ i18n "pages.xray.xdrive.maxPollIntervalMs" }}'>
+                        <a-input-number :min="1" placeholder="5000" v-model.number="outbound.stream.xdrive.maxPollIntervalMs"></a-input-number>
+                    </a-form-item>
+                    <a-form-item label='{{ i18n "pages.xray.xdrive.sessionTtlSeconds" }}'>
+                        <a-input-number :min="1" placeholder="60" v-model.number="outbound.stream.xdrive.sessionTtlSeconds"></a-input-number>
+                    </a-form-item>
+                    <a-form-item label='{{ i18n "pages.xray.xdrive.concurrency" }}'>
+                        <a-input-number :min="1" placeholder="4" v-model.number="outbound.stream.xdrive.concurrency"></a-input-number>
                     </a-form-item>
                 </template>
             </template>

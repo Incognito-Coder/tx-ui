@@ -264,6 +264,10 @@ func (s *InboundService) AddInbound(inbound *model.Inbound) (*model.Inbound, boo
 			if client.PublicKey == "" || client.Email == "" {
 				return inbound, false, common.NewError("empty client ID")
 			}
+		} else if inbound.Protocol == "masque" {
+			if client.Password == "" && client.Pass == "" && client.ID == "" {
+				return inbound, false, common.NewError("empty client ID")
+			}
 		} else {
 			if client.ID == "" {
 				return inbound, false, common.NewError("empty client ID")
@@ -575,6 +579,10 @@ func (s *InboundService) AddInboundClient(data *model.Inbound) (bool, error) {
 			if client.PublicKey == "" || client.Email == "" {
 				return false, common.NewError("empty client ID")
 			}
+		} else if oldInbound.Protocol == "masque" {
+			if client.Password == "" && client.Pass == "" && client.ID == "" {
+				return false, common.NewError("empty client ID")
+			}
 		} else {
 			if client.ID == "" {
 				return false, common.NewError("empty client ID")
@@ -819,6 +827,21 @@ func (s *InboundService) UpdateInboundClient(data *model.Inbound, clientId strin
 			newClientId = clients[0].Email
 			if newClientId == "" {
 				newClientId = clients[0].PublicKey
+			}
+			if newClientId == "" {
+				newClientId = clients[0].ID
+			}
+		} else if oldInbound.Protocol == "masque" {
+			oldClientId = oldClient.Password
+			if oldClientId == "" {
+				oldClientId = oldClient.Pass
+			}
+			if oldClientId == "" {
+				oldClientId = oldClient.ID
+			}
+			newClientId = clients[0].Password
+			if newClientId == "" {
+				newClientId = clients[0].Pass
 			}
 			if newClientId == "" {
 				newClientId = clients[0].ID
@@ -1816,6 +1839,14 @@ func (s *InboundService) SetClientTelegramUserID(trafficId int, tgId int64) (boo
 				clientId = oldClient.Password
 			} else if inbound.Protocol == "shadowsocks" {
 				clientId = oldClient.Email
+			} else if inbound.Protocol == "masque" {
+				clientId = oldClient.Password
+				if clientId == "" {
+					clientId = oldClient.Pass
+				}
+				if clientId == "" {
+					clientId = oldClient.ID
+				}
 			} else {
 				clientId = oldClient.ID
 			}
@@ -1900,6 +1931,14 @@ func (s *InboundService) ToggleClientEnableByEmail(clientEmail string) (bool, bo
 				clientId = oldClient.Password
 			} else if inbound.Protocol == "shadowsocks" {
 				clientId = oldClient.Email
+			} else if inbound.Protocol == "masque" {
+				clientId = oldClient.Password
+				if clientId == "" {
+					clientId = oldClient.Pass
+				}
+				if clientId == "" {
+					clientId = oldClient.ID
+				}
 			} else {
 				clientId = oldClient.ID
 			}
@@ -1963,6 +2002,14 @@ func (s *InboundService) ResetClientIpLimitByEmail(clientEmail string, count int
 				clientId = oldClient.Password
 			} else if inbound.Protocol == "shadowsocks" {
 				clientId = oldClient.Email
+			} else if inbound.Protocol == "masque" {
+				clientId = oldClient.Password
+				if clientId == "" {
+					clientId = oldClient.Pass
+				}
+				if clientId == "" {
+					clientId = oldClient.ID
+				}
 			} else {
 				clientId = oldClient.ID
 			}
@@ -2020,6 +2067,14 @@ func (s *InboundService) ResetClientExpiryTimeByEmail(clientEmail string, expiry
 				clientId = oldClient.Password
 			} else if inbound.Protocol == "shadowsocks" {
 				clientId = oldClient.Email
+			} else if inbound.Protocol == "masque" {
+				clientId = oldClient.Password
+				if clientId == "" {
+					clientId = oldClient.Pass
+				}
+				if clientId == "" {
+					clientId = oldClient.ID
+				}
 			} else {
 				clientId = oldClient.ID
 			}
@@ -2080,6 +2135,14 @@ func (s *InboundService) ResetClientTrafficLimitByEmail(clientEmail string, tota
 				clientId = oldClient.Password
 			} else if inbound.Protocol == "shadowsocks" {
 				clientId = oldClient.Email
+			} else if inbound.Protocol == "masque" {
+				clientId = oldClient.Password
+				if clientId == "" {
+					clientId = oldClient.Pass
+				}
+				if clientId == "" {
+					clientId = oldClient.ID
+				}
 			} else {
 				clientId = oldClient.ID
 			}

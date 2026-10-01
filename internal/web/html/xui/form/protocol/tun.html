@@ -77,5 +77,24 @@
         </template>
         <a-input placeholder="auto" v-model.trim="inbound.settings.autoOutboundsInterface"></a-input>
     </a-form-item>
+    <a-form-item label='{{ i18n "pages.xray.tun.autoSystemDnsToGateway" }}'>
+        <a-switch v-model="inbound.settings.autoSystemDnsToGateway"></a-switch>
+    </a-form-item>
+    <a-form-item>
+        <template slot="label">
+            <a-tooltip>
+                <template slot="title">
+                    <span>{{ i18n "pages.xray.tun.autoSystemWfpBlockLeakDesc" }}</span>
+                </template>
+                {{ i18n "pages.xray.tun.autoSystemWfpBlockLeak" }}
+                <a-icon type="question-circle"></a-icon>
+            </a-tooltip>
+        </template>
+        <a-select :dropdown-class-name="themeSwitcher.currentTheme" mode="multiple"
+                  placeholder="dns, misconfigtun" v-model="inbound.settings.autoSystemWfpBlockLeak">
+            <a-select-option value="dns">dns</a-select-option>
+            <a-select-option value="misconfigtun">misconfigtun</a-select-option>
+        </a-select>
+    </a-form-item>
 </a-form>
 {{end}}

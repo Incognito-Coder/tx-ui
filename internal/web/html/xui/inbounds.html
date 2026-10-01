@@ -1181,7 +1181,8 @@
                 switch (protocol) {
                     case Protocols.TROJAN:
                     case Protocols.SHADOWSOCKS:
-                        return clients.findIndex(item => item && item.password === client.password && item.email === client.email);
+                    case Protocols.MASQUE:
+                        return clients.findIndex(item => item && (item.password === client.password || item.pass === client.pass) && item.email === client.email);
                     default: return clients.findIndex(item => item && item.id === client.id && item.email === client.email);
                 }
             },
@@ -1278,6 +1279,7 @@
                     case Protocols.SHADOWSOCKS:
                         return client.email;
                     case Protocols.HYSTERIA: return client.auth;
+                    case Protocols.MASQUE: return client.password || client.pass || client.id || client.email;
                     default:
                         return client.id;
                 }

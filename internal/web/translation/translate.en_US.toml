@@ -603,6 +603,26 @@
 "systemRoutes" = "System Routes"
 "outboundInterface" = "Outbound Interface"
 "outboundInterfaceDesc" = "Outbound interface excluded from automatic routes. Leave empty to let Xray select it automatically"
+"autoSystemDnsToGateway" = "Route DNS to Gateway"
+"autoSystemWfpBlockLeak" = "WFP Block Leak"
+"autoSystemWfpBlockLeakDesc" = "Windows Filtering Platform leak prevention rules (dns, misconfigtun)"
+
+[pages.xray.masque]
+"address" = "Tunnel IP Range (CIDR)"
+"addressDesc" = "The local IP prefix/CIDR for MASQUE tunnel (e.g. 10.13.0.1/24)"
+
+[pages.xray.xdrive]
+"service" = "Service Provider"
+"remoteFolder" = "Remote Folder"
+"secrets" = "Secrets"
+"secretsDesc" = "OAuth credentials or API access tokens for remote drive service"
+"template" = "Template"
+"segmentBytes" = "Segment Size (Bytes)"
+"flushIntervalMs" = "Flush Interval (ms)"
+"pollIntervalMs" = "Poll Interval (ms)"
+"maxPollIntervalMs" = "Max Poll Interval (ms)"
+"sessionTtlSeconds" = "Session TTL (seconds)"
+"concurrency" = "Concurrency"
 
 [pages.xray.finalmask]
 "tcpMasks" = "TCP Masks"

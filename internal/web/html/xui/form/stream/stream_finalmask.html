@@ -172,6 +172,9 @@
                             placeholder="e.g., www.example.com"
                     ></a-select>
                 </a-form-item>
+                <a-form-item label="Extra Poll">
+                    <a-input-number :min="0" :max="3" placeholder="0" v-model.number="mask.settings.extraPoll"></a-input-number>
+                </a-form-item>
             </template>
             <!-- Settings for Sudoku -->
             <template v-if="mask.type === 'sudoku'">

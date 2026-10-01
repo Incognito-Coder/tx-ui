@@ -1,0 +1,34 @@
+{{define "form/masque"}}
+<a-collapse activeKey="0"
+            v-for="(client, index) in inbound.settings.clients.slice(0,1)"
+            v-if="!isEdit">
+    <a-collapse-panel header='{{ i18n "pages.inbounds.client" }}'>
+        {{template "form/client"}}
+    </a-collapse-panel>
+</a-collapse>
+<a-collapse v-else>
+    <a-collapse-panel :header="'{{ i18n "pages.client.clientCount"}} : ' + inbound.settings.clients.length">
+    <table width="100%">
+        <tr class="client-table-header">
+            <th>{{ i18n "pages.inbounds.email" }}</th>
+            <th>{{ i18n "password" }}</th>
+        </tr>
+        <tr v-for="(client, index) in inbound.settings.clients"
+            :class="index % 2 == 1 ? 'client-table-odd-row' : ''">
+            <td>[[ client.email ]]</td>
+            <td>[[ client.pass || client.password ]]</td>
+        </tr>
+    </table>
+    </a-collapse-panel>
+</a-collapse>
+<a-form :colon="false" :label-col="{ md: {span:8} }" :wrapper-col="{ md: {span:14} }" style="margin-top: 16px">
+    <a-form-item label='{{ i18n "pages.xray.masque.address" }}'>
+        <a-select :dropdown-class-name="themeSwitcher.currentTheme" :token-separators="[',']"
+                  mode="tags" placeholder="10.13.0.1/24"
+                  v-model="inbound.settings.address"></a-select>
+    </a-form-item>
+    <a-form-item label='MTU'>
+        <a-input-number :max="65535" :min="1280" placeholder="1500" v-model.number="inbound.settings.mtu"></a-input-number>
+    </a-form-item>
+</a-form>
+{{end}}

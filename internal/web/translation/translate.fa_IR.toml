@@ -603,6 +603,26 @@
 "systemRoutes" = "مسیرهای سیستم"
 "outboundInterface" = "رابط خروجی"
 "outboundInterfaceDesc" = "رابط خروجی مستثنا از مسیرهای خودکار. برای انتخاب خودکار توسط Xray خالی بگذارید"
+"autoSystemDnsToGateway" = "هدایت DNS به گیت‌وی"
+"autoSystemWfpBlockLeak" = "جلوگیری از نشت با WFP"
+"autoSystemWfpBlockLeakDesc" = "قوانین جلوگیری از نشت Windows Filtering Platform (شامل dns و misconfigtun)"
+
+[pages.xray.masque]
+"address" = "محدوده IP تونل (CIDR)"
+"addressDesc" = "پیشوند/CIDR آی‌پی محلی برای تونل MASQUE (مانند 10.13.0.1/24)"
+
+[pages.xray.xdrive]
+"service" = "سرویس‌دهنده"
+"remoteFolder" = "پوشه راه دور"
+"secrets" = "اطلاعات احراز هویت (Secrets)"
+"secretsDesc" = "اطلاعات محرمانه یا توکن‌های دسترسی API برای سرویس درایو راه دور"
+"template" = "الگو (Template)"
+"segmentBytes" = "اندازه هر قطعه (بایت)"
+"flushIntervalMs" = "بازه تخلیه بافر (میلی‌ثانیه)"
+"pollIntervalMs" = "بازه نظرسنجی (میلی‌ثانیه)"
+"maxPollIntervalMs" = "حداکثر بازه نظرسنجی (میلی‌ثانیه)"
+"sessionTtlSeconds" = "طول عمر نشست (ثانیه)"
+"concurrency" = "همزمانی (Concurrency)"
 
 [pages.xray.finalmask]
 "tcpMasks" = "ماسک‌های TCP"
