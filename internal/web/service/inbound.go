@@ -734,6 +734,38 @@ func (s *InboundService) ensureNodeClientLinked(tx *gorm.DB, client *model.Clien
 	return nil
 }
 
+// removeNodeClientForInbound is the delete-side counterpart of ensureNodeClientLinked.
+// It removes the NodeClientLink between the given email and inbound.
+// If the NodeClient has no remaining links it is fully deleted so the client
+// disappears from the panel completely.
+func (s *InboundService) removeNodeClientForInbound(db *gorm.DB, email string, inboundId int) {
+	if email == "" {
+		return
+	}
+
+	var nc model.NodeClient
+	if err := db.Where("LOWER(email) = LOWER(?)", email).First(&nc).Error; err != nil {
+		// Not in node_clients at all — nothing to do.
+		return
+	}
+
+	// Count remaining links for this NodeClient.
+	var linkCount int64
+	db.Model(&model.NodeClientLink{}).Where("node_client_id = ?", nc.Id).Count(&linkCount)
+
+	if linkCount <= 1 {
+		// Only this inbound linked — delete the whole NodeClient (cascades links + nulls traffics).
+		if err := s.nodeClientService.Delete(nc.Id); err != nil {
+			logger.Warningf("removeNodeClientForInbound: failed to delete NodeClient %d: %v", nc.Id, err)
+		}
+	} else {
+		// Still linked to other inbounds — only remove this specific link.
+		if err := s.nodeClientService.RemoveLink(nc.Id, inboundId); err != nil {
+			logger.Warningf("removeNodeClientForInbound: failed to remove link for NodeClient %d, inbound %d: %v", nc.Id, inboundId, err)
+		}
+	}
+}
+
 func (s *InboundService) DelInboundClient(inboundId int, clientId string) (bool, error) {
 	oldInbound, err := s.GetInbound(inboundId)
 	if err != nil {
@@ -838,6 +870,9 @@ func (s *InboundService) DelInboundClient(inboundId int, clientId string) (bool,
 			}
 			s.xrayApi.Close()
 		}
+
+		// Remove NodeClient / NodeClientLink so the client disappears from the panel.
+		s.removeNodeClientForInbound(db, email, inboundId)
 	}
 	return needRestart, db.Save(oldInbound).Error
 }
@@ -3014,6 +3049,9 @@ func (s *InboundService) DelInboundClientByEmail(inboundId int, email string) (b
 			}
 			s.xrayApi.Close()
 		}
+
+		// Remove NodeClient / NodeClientLink so the client disappears from the panel.
+		s.removeNodeClientForInbound(db, email, inboundId)
 	}
 
 	return needRestart, db.Save(oldInbound).Error
