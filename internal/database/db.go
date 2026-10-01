@@ -86,11 +86,15 @@ func runSeeders(isUsersEmpty bool) error {
 		return db.Create(hashSeeder).Error
 	} else {
 		var seedersHistory []string
-		db.Model(&model.HistoryOfSeeders{}).Pluck("seeder_name", &seedersHistory)
+		if err := db.Model(&model.HistoryOfSeeders{}).Pluck("seeder_name", &seedersHistory).Error; err != nil {
+			return err
+		}
 
 		if !slices.Contains(seedersHistory, "UserPasswordHash") && !isUsersEmpty {
 			var users []model.User
-			db.Find(&users)
+			if err := db.Find(&users).Error; err != nil {
+				return err
+			}
 
 			for _, user := range users {
 				hashedPassword, err := crypto.HashPasswordAsBcrypt(user.Password)
@@ -98,7 +102,9 @@ func runSeeders(isUsersEmpty bool) error {
 					log.Printf("Error hashing password for user '%s': %v", user.Username, err)
 					return err
 				}
-				db.Model(&user).Update("password", hashedPassword)
+				if err := db.Model(&user).Update("password", hashedPassword).Error; err != nil {
+					return err
+				}
 			}
 
 			hashSeeder := &model.HistoryOfSeeders{
@@ -145,6 +151,9 @@ func InitDB(dbPath string) error {
 	}
 
 	isUsersEmpty, err := isTableEmpty("users")
+	if err != nil {
+		return err
+	}
 
 	if err := initUser(); err != nil {
 		return err

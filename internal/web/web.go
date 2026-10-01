@@ -1,6 +1,7 @@
 package web
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"embed"
@@ -48,17 +49,54 @@ type wrapAssetsFS struct {
 }
 
 func (f *wrapAssetsFS) Open(name string) (fs.File, error) {
-	file, err := f.FS.Open("assets/" + name)
+	assetPath := "assets/" + name
+	file, err := f.FS.Open(assetPath)
 	if err != nil {
 		return nil, err
 	}
+	content, err := fs.ReadFile(f.FS, assetPath)
+	if err != nil {
+		info, statErr := file.Stat()
+		if statErr != nil || !info.IsDir() {
+			_ = file.Close()
+			if statErr != nil {
+				return nil, statErr
+			}
+			return nil, err
+		}
+		return &wrapAssetsFile{File: file}, nil
+	}
 	return &wrapAssetsFile{
-		File: file,
+		File:   file,
+		reader: bytes.NewReader(content),
 	}, nil
 }
 
 type wrapAssetsFile struct {
 	fs.File
+	reader *bytes.Reader
+}
+
+func (f *wrapAssetsFile) Read(p []byte) (int, error) {
+	if f.reader != nil {
+		return f.reader.Read(p)
+	}
+	return f.File.Read(p)
+}
+
+func (f *wrapAssetsFile) Seek(offset int64, whence int) (int64, error) {
+	if f.reader == nil {
+		return 0, fmt.Errorf("cannot seek directory")
+	}
+	return f.reader.Seek(offset, whence)
+}
+
+func (f *wrapAssetsFile) ReadDir(n int) ([]fs.DirEntry, error) {
+	dir, ok := f.File.(fs.ReadDirFile)
+	if !ok {
+		return nil, fmt.Errorf("not a directory")
+	}
+	return dir.ReadDir(n)
 }
 
 func (f *wrapAssetsFile) Stat() (fs.FileInfo, error) {

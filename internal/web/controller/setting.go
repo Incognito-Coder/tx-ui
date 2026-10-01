@@ -112,6 +112,7 @@ func (a *SettingController) updateSecret(c *gin.Context) {
 	err := c.ShouldBind(form)
 	if err != nil {
 		jsonMsg(c, I18nWeb(c, "pages.settings.toasts.modifySettings"), err)
+		return
 	}
 	user := session.GetLoginUser(c)
 	err = a.userService.UpdateUserSecret(user.Id, form.LoginSecret)

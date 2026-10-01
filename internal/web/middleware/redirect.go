@@ -9,24 +9,31 @@ import (
 
 func RedirectMiddleware(basePath string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Redirect from old '/xui' path to '/panel'
-		redirects := map[string]string{
-			"panel/API": "panel/api",
-			"xui/API":   "panel/api",
-			"xui":       "panel",
+		// Keep the most specific legacy path first so /xui/API never
+		// takes the shorter /xui redirect.
+		redirects := [][2]string{
+			{"panel/API", "panel/api"},
+			{"xui/API", "panel/api"},
+			{"xui", "panel"},
 		}
 
-		path := c.Request.URL.Path
-		for from, to := range redirects {
+		requestPath := c.Request.URL.Path
+		for _, redirect := range redirects {
+			from, to := redirect[0], redirect[1]
 			from, to = basePath+from, basePath+to
-
-			if strings.HasPrefix(path, from) {
-				newPath := to + path[len(from):]
-
-				c.Redirect(http.StatusMovedPermanently, newPath)
-				c.Abort()
-				return
+			if len(requestPath) < len(from) || !strings.HasPrefix(requestPath, from) {
+				continue
 			}
+			if len(requestPath) > len(from) && requestPath[len(from)] != '/' {
+				continue
+			}
+			newPath := to + requestPath[len(from):]
+			if c.Request.URL.RawQuery != "" {
+				newPath += "?" + c.Request.URL.RawQuery
+			}
+			c.Redirect(http.StatusMovedPermanently, newPath)
+			c.Abort()
+			return
 		}
 
 		c.Next()

@@ -1,28 +1,46 @@
 #!/bin/sh
-case $1 in
+set -eu
+
+case "${1:-}" in
     amd64)
         ARCH="64"
         FNAME="amd64"
         ;;
-    i386)
+    i386 | 386)
         ARCH="32"
-        FNAME="i386"
+        FNAME="386"
         ;;
     armv8 | arm64 | aarch64)
         ARCH="arm64-v8a"
         FNAME="arm64"
         ;;
-    armv7 | arm | arm32)
+    armv7 | arm32)
         ARCH="arm32-v7a"
-        FNAME="arm32"
+        FNAME="arm"
         ;;
     armv6)
         ARCH="arm32-v6"
-        FNAME="armv6"
+        FNAME="arm"
+        ;;
+    arm)
+        case "${2:-}" in
+            v6)
+                ARCH="arm32-v6"
+                FNAME="arm"
+                ;;
+            v7)
+                ARCH="arm32-v7a"
+                FNAME="arm"
+                ;;
+            *)
+                echo "Unsupported ARM TARGETVARIANT: ${2:-}" >&2
+                exit 1
+                ;;
+        esac
         ;;
     *)
-        ARCH="64"
-        FNAME="amd64"
+        echo "Unsupported TARGETARCH/TARGETVARIANT: ${1:-}/${2:-}" >&2
+        exit 1
         ;;
 esac
 mkdir -p build/bin

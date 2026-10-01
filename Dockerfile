@@ -4,6 +4,7 @@
 FROM golang:1.27-alpine AS builder
 WORKDIR /app
 ARG TARGETARCH
+ARG TARGETVARIANT
 
 RUN apk --no-cache --update add \
   build-base \
@@ -16,7 +17,7 @@ COPY . .
 ENV CGO_ENABLED=1
 ENV CGO_CFLAGS="-D_LARGEFILE64_SOURCE"
 RUN go build -ldflags "-w -s" -o build/x-ui main.go
-RUN ./DockerInit.sh "$TARGETARCH"
+RUN ./DockerInit.sh "$TARGETARCH" "$TARGETVARIANT"
 
 # ========================================================
 # Stage: Final Image of tx-ui
