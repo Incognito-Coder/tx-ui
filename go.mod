@@ -3,7 +3,7 @@ module x-ui
 go 1.27
 
 require (
-	github.com/gin-contrib/gzip v1.2.7
+	github.com/gin-contrib/gzip v1.2.8
 	github.com/gin-contrib/sessions v1.1.1
 	github.com/gin-gonic/gin v1.12.0
 	github.com/goccy/go-json v0.10.6
