@@ -859,6 +859,29 @@
                                                 </a-menu-item>
                                             </a-menu>
                                         </a-dropdown>
+                                        <a-dropdown :trigger="['click']">
+                                            <a-button :icon="clientSortOrder === 'desc' ? 'sort-descending' : 'sort-ascending'">
+                                                <template v-if="!isMobile">
+                                                    <span style="margin-left: 4px;">[[ getSortLabel() ]]</span>
+                                                </template>
+                                            </a-button>
+                                            <a-menu :selected-keys="[clientSortBy, clientSortOrder]" :theme="themeSwitcher.currentTheme"
+                                                    @click="a => sortClients(a.key)" slot="overlay">
+                                                <a-menu-item key="default">{{ i18n "default" }}</a-menu-item>
+                                                <a-menu-item key="alphabet">{{ i18n "alphabet" }}</a-menu-item>
+                                                <a-menu-item key="remainingTime">{{ i18n "remained" }}</a-menu-item>
+                                                <a-menu-item key="usage">{{ i18n "usage" }}</a-menu-item>
+                                                <a-menu-divider></a-menu-divider>
+                                                <a-menu-item key="asc">
+                                                    <a-icon type="sort-ascending"></a-icon>
+                                                    {{ i18n "ascending" }}
+                                                </a-menu-item>
+                                                <a-menu-item key="desc">
+                                                    <a-icon type="sort-descending"></a-icon>
+                                                    {{ i18n "descending" }}
+                                                </a-menu-item>
+                                            </a-menu>
+                                        </a-dropdown>
                                         <a-button @click="confirmBulkDelete" icon="delete" type="danger"
                                             v-if="selectedRowKeys.length > 0">
                                             <template v-if="!isMobile">{{ i18n "delete" }} ([[ selectedRowKeys.length ]])</template>
@@ -1741,6 +1764,8 @@
                 selectedRowKeys: [],
                 pageSize: 50,
                 isMobile: window.innerWidth <= 768,
+                clientSortBy: 'default',
+                clientSortOrder: 'asc',
                 datepicker: 'gregorian',
                 remarkModel: '-ieo',
                 ipLimitEnable: false,
@@ -1917,6 +1942,42 @@
                             const links = this.clientLinksMap[c.id] || [];
                             return links.some(l => Number(typeof l === 'object' && l !== null ? l.inboundId : l) === ibId);
                         });
+                    }
+                    const sortBy = this.clientSortBy || 'default';
+                    const isDesc = this.clientSortOrder === 'desc';
+                    if (sortBy === 'alphabet') {
+                        list.sort((a, b) => {
+                            const cmp = (a.email || '').localeCompare(b.email || '');
+                            return isDesc ? -cmp : cmp;
+                        });
+                    } else if (sortBy === 'usage') {
+                        list.sort((a, b) => {
+                            const aUsage = (this.getTrafficData(a) || {}).used || 0;
+                            const bUsage = (this.getTrafficData(b) || {}).used || 0;
+                            if (bUsage !== aUsage) {
+                                return isDesc ? (bUsage - aUsage) : (aUsage - bUsage);
+                            }
+                            const emailCmp = (a.email || '').localeCompare(b.email || '');
+                            return isDesc ? -emailCmp : emailCmp;
+                        });
+                    } else if (sortBy === 'remainingTime') {
+                        const now = Date.now();
+                        const getRem = (c) => {
+                            if (!c.expiryTime || c.expiryTime === 0) return Number.MAX_SAFE_INTEGER;
+                            if (c.expiryTime < 0) return -c.expiryTime;
+                            return c.expiryTime - now;
+                        };
+                        list.sort((a, b) => {
+                            const aRem = getRem(a);
+                            const bRem = getRem(b);
+                            if (bRem !== aRem) {
+                                return isDesc ? (bRem - aRem) : (aRem - bRem);
+                            }
+                            const emailCmp = (a.email || '').localeCompare(b.email || '');
+                            return isDesc ? -emailCmp : emailCmp;
+                        });
+                    } else if (isDesc) {
+                        list.reverse();
                     }
                     return list;
                 },
@@ -2466,8 +2527,42 @@
                         };
                     }
                 },
+                getSortLabel() {
+                    switch (this.clientSortBy) {
+                        case 'alphabet': return '{{ i18n "alphabet" }}';
+                        case 'remainingTime': return '{{ i18n "remained" }}';
+                        case 'usage': return '{{ i18n "usage" }}';
+                        default: return '{{ i18n "default" }}';
+                    }
+                },
+                sortClients(key) {
+                    if (key === 'asc' || key === 'desc') {
+                        this.clientSortOrder = key;
+                    } else if (this.clientSortBy === key) {
+                        this.clientSortOrder = this.clientSortOrder === 'asc' ? 'desc' : 'asc';
+                    } else {
+                        this.clientSortBy = key;
+                        if (key === 'usage' || key === 'remainingTime') {
+                            this.clientSortOrder = 'desc';
+                        } else {
+                            this.clientSortOrder = 'asc';
+                        }
+                    }
+                    localStorage.setItem('clientSortBy', this.clientSortBy);
+                    localStorage.setItem('clientSortOrder', this.clientSortOrder);
+                },
             },
             mounted() {
+                const clientSortBy = localStorage.getItem('clientSortBy');
+                if (clientSortBy) {
+                    this.clientSortBy = clientSortBy;
+                }
+                const clientSortOrder = localStorage.getItem('clientSortOrder');
+                if (clientSortOrder) {
+                    this.clientSortOrder = clientSortOrder;
+                } else if (this.clientSortBy === 'usage' || this.clientSortBy === 'remainingTime') {
+                    this.clientSortOrder = 'desc';
+                }
                 window.addEventListener('resize', () => { this.isMobile = window.innerWidth <= 768; });
                 this.loading();
                 this.getDefaultSettings();
