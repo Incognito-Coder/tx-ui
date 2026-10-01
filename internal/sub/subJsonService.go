@@ -158,20 +158,33 @@ func (s *SubJsonService) getConfig(inbound *model.Inbound, client model.Client, 
 	delete(stream, "externalProxy")
 
 	for _, ep := range externalProxies {
-		extPrxy := ep.(map[string]interface{})
-		inbound.Listen = extPrxy["dest"].(string)
-		inbound.Port = int(extPrxy["port"].(float64))
-		newStream := stream
-		switch extPrxy["forceTls"].(string) {
+		extPrxy, ok := ep.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		if dest, ok := extPrxy["dest"].(string); ok {
+			inbound.Listen = dest
+		}
+		if port, ok := extPrxy["port"].(float64); ok {
+			inbound.Port = int(port)
+		} else if portInt, ok := extPrxy["port"].(int); ok {
+			inbound.Port = portInt
+		}
+		newStream := make(map[string]interface{}, len(stream))
+		for k, v := range stream {
+			newStream[k] = v
+		}
+		forceTls, _ := extPrxy["forceTls"].(string)
+		switch forceTls {
 		case "tls":
 			if newStream["security"] != "tls" {
 				newStream["security"] = "tls"
-				newStream["tslSettings"] = map[string]interface{}{}
+				newStream["tlsSettings"] = map[string]interface{}{}
 			}
 		case "none":
 			if newStream["security"] != "none" {
 				newStream["security"] = "none"
-				delete(newStream, "tslSettings")
+				delete(newStream, "tlsSettings")
 			}
 		}
 		streamSettings, _ := json.MarshalIndent(newStream, "", "  ")
@@ -201,7 +214,8 @@ func (s *SubJsonService) getConfig(inbound *model.Inbound, client model.Client, 
 			newConfigJson[key] = value
 		}
 		newConfigJson["outbounds"] = newOutbounds
-		newConfigJson["remarks"] = s.SubService.genRemark(inbound, client.Email, extPrxy["remark"].(string))
+		remark, _ := extPrxy["remark"].(string)
+		newConfigJson["remarks"] = s.SubService.genRemark(inbound, client.Email, remark)
 
 		newConfig, _ := json.MarshalIndent(newConfigJson, "", "  ")
 		newJsonArray = append(newJsonArray, newConfig)
@@ -222,7 +236,10 @@ func (s *SubJsonService) genHy(inbound *model.Inbound, newStream map[string]any,
 
 	var settings, stream map[string]any
 	json.Unmarshal([]byte(inbound.Settings), &settings)
-	version, _ := settings["version"].(float64)
+	var version float64
+	if settings != nil {
+		version, _ = settings["version"].(float64)
+	}
 	outbound.Settings = OutboundSettings{
 		Version: int(version),
 		Address: inbound.Listen,
@@ -230,19 +247,21 @@ func (s *SubJsonService) genHy(inbound *model.Inbound, newStream map[string]any,
 	}
 
 	json.Unmarshal([]byte(inbound.StreamSettings), &stream)
-	hyStream := stream["hysteriaSettings"].(map[string]any)
 	outHyStream := map[string]any{
 		"version": int(version),
 		"auth":    client.Auth,
 	}
-	if udpIdleTimeout, ok := hyStream["udpIdleTimeout"].(float64); ok {
-		outHyStream["udpIdleTimeout"] = int(udpIdleTimeout)
+	if stream != nil {
+		if hyStream, ok := stream["hysteriaSettings"].(map[string]any); ok {
+			if udpIdleTimeout, ok := hyStream["udpIdleTimeout"].(float64); ok {
+				outHyStream["udpIdleTimeout"] = int(udpIdleTimeout)
+			}
+			if finalmask, ok := hyStream["finalmask"].(map[string]any); ok {
+				newStream["finalmask"] = finalmask
+			}
+		}
 	}
 	newStream["hysteriaSettings"] = outHyStream
-
-	if finalmask, ok := hyStream["finalmask"].(map[string]any); ok {
-		newStream["finalmask"] = finalmask
-	}
 
 	newStream["network"] = "hysteria"
 	newStream["security"] = "tls"
@@ -258,9 +277,13 @@ func (s *SubJsonService) streamData(stream string) map[string]interface{} {
 	json.Unmarshal([]byte(stream), &streamSettings)
 	security, _ := streamSettings["security"].(string)
 	if security == "tls" {
-		streamSettings["tlsSettings"] = s.tlsData(streamSettings["tlsSettings"].(map[string]interface{}))
+		if tlsMap, ok := streamSettings["tlsSettings"].(map[string]interface{}); ok {
+			streamSettings["tlsSettings"] = s.tlsData(tlsMap)
+		}
 	} else if security == "reality" {
-		streamSettings["realitySettings"] = s.realityData(streamSettings["realitySettings"].(map[string]interface{}))
+		if realityMap, ok := streamSettings["realitySettings"].(map[string]interface{}); ok {
+			streamSettings["realitySettings"] = s.realityData(realityMap)
+		}
 	}
 	delete(streamSettings, "sockopt")
 
@@ -291,6 +314,9 @@ func (s *SubJsonService) removeAcceptProxy(setting interface{}) map[string]inter
 
 func (s *SubJsonService) tlsData(tData map[string]interface{}) map[string]interface{} {
 	tlsData := make(map[string]interface{}, 1)
+	if tData == nil {
+		return tlsData
+	}
 	tlsClientSettings, _ := tData["settings"].(map[string]interface{})
 
 	tlsData["serverName"] = tData["serverName"]
@@ -303,24 +329,37 @@ func (s *SubJsonService) tlsData(tData map[string]interface{}) map[string]interf
 
 func (s *SubJsonService) realityData(rData map[string]interface{}) map[string]interface{} {
 	rltyData := make(map[string]interface{}, 1)
+	if rData == nil {
+		return rltyData
+	}
 	rltyClientSettings, _ := rData["settings"].(map[string]interface{})
 
 	rltyData["show"] = false
-	rltyData["publicKey"] = rltyClientSettings["publicKey"]
-	rltyData["fingerprint"] = rltyClientSettings["fingerprint"]
-	rltyData["mldsa65Verify"] = rltyClientSettings["mldsa65Verify"]
+	if rltyClientSettings != nil {
+		rltyData["publicKey"] = rltyClientSettings["publicKey"]
+		rltyData["fingerprint"] = rltyClientSettings["fingerprint"]
+		rltyData["mldsa65Verify"] = rltyClientSettings["mldsa65Verify"]
+	}
 
 	// Set random data
 	rltyData["spiderX"] = "/" + random.Seq(15)
-	shortIds, ok := rData["shortIds"].([]interface{})
-	if ok && len(shortIds) > 0 {
-		rltyData["shortId"] = shortIds[random.Num(len(shortIds))].(string)
+	if shortIds, ok := rData["shortIds"].([]interface{}); ok && len(shortIds) > 0 {
+		idx := random.Num(len(shortIds))
+		if str, ok := shortIds[idx].(string); ok {
+			rltyData["shortId"] = str
+		} else {
+			rltyData["shortId"] = fmt.Sprint(shortIds[idx])
+		}
 	} else {
 		rltyData["shortId"] = ""
 	}
-	serverNames, ok := rData["serverNames"].([]interface{})
-	if ok && len(serverNames) > 0 {
-		rltyData["serverName"] = serverNames[random.Num(len(serverNames))].(string)
+	if serverNames, ok := rData["serverNames"].([]interface{}); ok && len(serverNames) > 0 {
+		idx := random.Num(len(serverNames))
+		if str, ok := serverNames[idx].(string); ok {
+			rltyData["serverName"] = str
+		} else {
+			rltyData["serverName"] = fmt.Sprint(serverNames[idx])
+		}
 	} else {
 		rltyData["serverName"] = ""
 	}

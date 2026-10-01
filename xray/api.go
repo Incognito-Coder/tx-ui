@@ -66,7 +66,22 @@ func (x *XrayAPI) Close() {
 	x.isConnected = false
 }
 
+func safeGetString(m map[string]interface{}, key string) string {
+	if m == nil {
+		return ""
+	}
+	if v, ok := m[key]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			return s
+		}
+	}
+	return ""
+}
+
 func (x *XrayAPI) AddInbound(inbound []byte) error {
+	if x.HandlerServiceClient == nil {
+		return common.NewError("xray api is not initialized")
+	}
 	client := *x.HandlerServiceClient
 
 	conf := new(conf.InboundDetourConfig)
@@ -88,6 +103,9 @@ func (x *XrayAPI) AddInbound(inbound []byte) error {
 }
 
 func (x *XrayAPI) DelInbound(tag string) error {
+	if x.HandlerServiceClient == nil {
+		return common.NewError("xray api is not initialized")
+	}
 	client := *x.HandlerServiceClient
 	_, err := client.RemoveInbound(context.Background(), &command.RemoveInboundRequest{
 		Tag: tag,
@@ -96,24 +114,29 @@ func (x *XrayAPI) DelInbound(tag string) error {
 }
 
 func (x *XrayAPI) AddUser(Protocol string, inboundTag string, user map[string]interface{}) error {
+	if x.HandlerServiceClient == nil {
+		return common.NewError("xray api is not initialized")
+	}
+
 	var account *serial.TypedMessage
 	switch Protocol {
 	case "vmess":
 		account = serial.ToTypedMessage(&vmess.Account{
-			Id: user["id"].(string),
+			Id: safeGetString(user, "id"),
 		})
 	case "vless":
 		account = serial.ToTypedMessage(&vless.Account{
-			Id:   user["id"].(string),
-			Flow: user["flow"].(string),
+			Id:   safeGetString(user, "id"),
+			Flow: safeGetString(user, "flow"),
 		})
 	case "trojan":
 		account = serial.ToTypedMessage(&trojan.Account{
-			Password: user["password"].(string),
+			Password: safeGetString(user, "password"),
 		})
 	case "shadowsocks":
 		var ssCipherType shadowsocks.CipherType
-		switch user["cipher"].(string) {
+		cipher := safeGetString(user, "cipher")
+		switch cipher {
 		case "aes-128-gcm":
 			ssCipherType = shadowsocks.CipherType_AES_128_GCM
 		case "aes-256-gcm":
@@ -128,27 +151,26 @@ func (x *XrayAPI) AddUser(Protocol string, inboundTag string, user map[string]in
 
 		if ssCipherType != shadowsocks.CipherType_UNKNOWN {
 			account = serial.ToTypedMessage(&shadowsocks.Account{
-				Password:   user["password"].(string),
+				Password:   safeGetString(user, "password"),
 				CipherType: ssCipherType,
 			})
 		} else {
 			account = serial.ToTypedMessage(&shadowsocks_2022.ServerConfig{
-				Key:   user["password"].(string),
-				Email: user["email"].(string),
+				Key:   safeGetString(user, "password"),
+				Email: safeGetString(user, "email"),
 			})
 		}
 	case "hysteria":
 		account = serial.ToTypedMessage(&hysteriaAccount.Account{
-			Auth: user["auth"].(string),
+			Auth: safeGetString(user, "auth"),
 		})
 	case "masque":
-		pass := ""
-		if p, ok := user["pass"].(string); ok && p != "" {
-			pass = p
-		} else if p, ok := user["password"].(string); ok && p != "" {
-			pass = p
-		} else if p, ok := user["id"].(string); ok && p != "" {
-			pass = p
+		pass := safeGetString(user, "pass")
+		if pass == "" {
+			pass = safeGetString(user, "password")
+		}
+		if pass == "" {
+			pass = safeGetString(user, "id")
 		}
 		account = serial.ToTypedMessage(&masque.Account{
 			Password: pass,
@@ -163,7 +185,7 @@ func (x *XrayAPI) AddUser(Protocol string, inboundTag string, user map[string]in
 		Tag: inboundTag,
 		Operation: serial.ToTypedMessage(&command.AddUserOperation{
 			User: &protocol.User{
-				Email:   user["email"].(string),
+				Email:   safeGetString(user, "email"),
 				Account: account,
 			},
 		}),
@@ -172,6 +194,10 @@ func (x *XrayAPI) AddUser(Protocol string, inboundTag string, user map[string]in
 }
 
 func (x *XrayAPI) RemoveUser(inboundTag, email string) error {
+	if x.HandlerServiceClient == nil {
+		return common.NewError("xray api is not initialized")
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 

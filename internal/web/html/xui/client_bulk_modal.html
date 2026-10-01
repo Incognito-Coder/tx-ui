@@ -152,8 +152,9 @@
         delayedStart: false,
         reset: 0,
         ok() {
-            clients = [];
-            method = clientsBulkModal.emailMethod;
+            const clients = [];
+            const method = clientsBulkModal.emailMethod;
+            let start, end;
             if (method > 1) {
                 start = clientsBulkModal.firstNum;
                 end = clientsBulkModal.lastNum + 1;
@@ -161,11 +162,12 @@
                 start = 0;
                 end = clientsBulkModal.quantity;
             }
-            prefix = (method > 0 && clientsBulkModal.emailPrefix.length > 0) ? clientsBulkModal.emailPrefix : "";
-            useNum = (method > 1);
-            postfix = (method > 2 && clientsBulkModal.emailPostfix.length > 0) ? clientsBulkModal.emailPostfix : "";
+            const prefix = (method > 0 && clientsBulkModal.emailPrefix.length > 0) ? clientsBulkModal.emailPrefix : "";
+            const useNum = (method > 1);
+            const postfix = (method > 2 && clientsBulkModal.emailPostfix.length > 0) ? clientsBulkModal.emailPostfix : "";
             for (let i = start; i < end; i++) {
-                newClient = clientsBulkModal.newClient(clientsBulkModal.dbInbound.protocol);
+                const newClient = clientsBulkModal.newClient(clientsBulkModal.dbInbound.protocol);
+                if (!newClient) continue;
                 if (method == 4) newClient.email = "";
                 newClient.email += useNum ? prefix + i.toString() + postfix : prefix + postfix;
                 if (clientsBulkModal.subId.length > 0) newClient.subId = clientsBulkModal.subId;
@@ -219,10 +221,16 @@
                     return new Inbound.VLESSSettings.VLESS();
                 case Protocols.TROJAN:
                     return new Inbound.TrojanSettings.Trojan();
-                case Protocols.SHADOWSOCKS:
-                    return new Inbound.ShadowsocksSettings.Shadowsocks(clientsBulkModal.inbound.settings.shadowsockses[0].method);
+                case Protocols.SHADOWSOCKS: {
+                    const method = clientsBulkModal.inbound.settings.shadowsockses && clientsBulkModal.inbound.settings.shadowsockses[0] ? clientsBulkModal.inbound.settings.shadowsockses[0].method : "";
+                    return new Inbound.ShadowsocksSettings.Shadowsocks(method);
+                }
                 case Protocols.HYSTERIA:
                     return new Inbound.HysteriaSettings.Hysteria();
+                case Protocols.WIREGUARD:
+                    return new Inbound.WireguardSettings.Peer();
+                case Protocols.MASQUE:
+                    return new Inbound.MasqueSettings.Masque();
                 default:
                     return null;
             }

@@ -896,6 +896,10 @@ func (s *InboundService) UpdateInboundClient(data *model.Inbound, clientId strin
 		interfaceClients = rawPeers
 	}
 
+	if len(clients) == 0 || len(interfaceClients) == 0 {
+		return false, common.NewError("no clients in update data")
+	}
+
 	oldInbound, err := s.GetInbound(data.Id)
 	if err != nil {
 		return false, err
@@ -1047,7 +1051,10 @@ func (s *InboundService) UpdateInboundClient(data *model.Inbound, clientId strin
 							}
 
 							for i, subClient := range subClients {
-								clientMap := subClient.(map[string]interface{})
+								clientMap, ok := subClient.(map[string]interface{})
+								if !ok {
+									continue
+								}
 								if cSubId, ok := clientMap["subId"].(string); ok && cSubId == clients[0].SubID {
 									clientMap["expiryTime"] = float64(clients[0].ExpiryTime)
 									subClients[i] = clientMap
@@ -1293,28 +1300,46 @@ func (s *InboundService) addClientTraffic(tx *gorm.DB, traffics []*xray.ClientTr
 		}
 	}
 
+	// Compute max Up and Down for each node client so counters stay synchronized and accurate
+	maxTrafficPerNC := make(map[int]struct{ up, down int64 })
+	for _, dbTraffic := range dbClientTraffics {
+		if dbTraffic.NodeClientId != nil && *dbTraffic.NodeClientId > 0 {
+			ncId := *dbTraffic.NodeClientId
+			curr := maxTrafficPerNC[ncId]
+			if dbTraffic.Up > curr.up {
+				curr.up = dbTraffic.Up
+			}
+			if dbTraffic.Down > curr.down {
+				curr.down = dbTraffic.Down
+			}
+			maxTrafficPerNC[ncId] = curr
+		}
+	}
+
+	// Update all in-memory dbClientTraffics of that node client to the max values
+	for _, dbTraffic := range dbClientTraffics {
+		if dbTraffic.NodeClientId != nil && *dbTraffic.NodeClientId > 0 {
+			if maxTr, ok := maxTrafficPerNC[*dbTraffic.NodeClientId]; ok {
+				dbTraffic.Up = maxTr.up
+				dbTraffic.Down = maxTr.down
+			}
+		}
+	}
+
 	// Persist updated Up/Down values for matched ClientTraffic rows
 	if err := tx.Save(dbClientTraffics).Error; err != nil {
 		logger.Warning("AddClientTraffic update data ", err)
 	}
 
-	// For node clients, sync the traffic counters to all linked client_traffics rows
-	// so volume is shared globally across all inbounds rather than calculated separately per inbound.
-	syncedNodeClients := make(map[int]struct{})
-	for _, dbTraffic := range dbClientTraffics {
-		if dbTraffic.NodeClientId != nil && *dbTraffic.NodeClientId > 0 {
-			ncId := *dbTraffic.NodeClientId
-			if _, done := syncedNodeClients[ncId]; !done {
-				syncedNodeClients[ncId] = struct{}{}
-				if err := tx.Model(&xray.ClientTraffic{}).
-					Where("node_client_id = ?", ncId).
-					Updates(map[string]interface{}{
-						"up":   dbTraffic.Up,
-						"down": dbTraffic.Down,
-					}).Error; err != nil {
-					logger.Warningf("AddClientTraffic sync node client %d traffic: %v", ncId, err)
-				}
-			}
+	// For node clients, ensure all linked client_traffics rows in the DB are synced
+	for ncId, maxTr := range maxTrafficPerNC {
+		if err := tx.Model(&xray.ClientTraffic{}).
+			Where("node_client_id = ?", ncId).
+			Updates(map[string]interface{}{
+				"up":   maxTr.up,
+				"down": maxTr.down,
+			}).Error; err != nil {
+			logger.Warningf("AddClientTraffic sync node client %d traffic: %v", ncId, err)
 		}
 	}
 
@@ -1406,7 +1431,10 @@ func (s *InboundService) addClientTraffic(tx *gorm.DB, traffics []*xray.ClientTr
 				}
 
 				for i, c := range clientsInInbound {
-					clientMap := c.(map[string]interface{})
+					clientMap, ok := c.(map[string]interface{})
+					if !ok {
+						continue
+					}
 					if cSubId, ok := clientMap["subId"].(string); ok && cSubId == subId {
 						clientMap["expiryTime"] = float64(maxTrafficClient.ExpiryTime)
 						clientsInInbound[i] = clientMap
@@ -2130,16 +2158,26 @@ func (s *InboundService) ResetClientIpLimitByEmail(clientEmail string, count int
 	if err != nil {
 		return false, err
 	}
-	clients := settings["clients"].([]interface{})
+	clients, ok := settings["clients"].([]interface{})
+	if !ok {
+		clients, ok = settings["peers"].([]interface{})
+		if !ok {
+			return false, common.NewError("no clients in inbound settings")
+		}
+	}
 	var newClients []interface{}
 	for client_index := range clients {
-		c := clients[client_index].(map[string]interface{})
+		c, ok := clients[client_index].(map[string]interface{})
+		if !ok {
+			continue
+		}
 		if c["email"] == clientEmail {
 			c["limitIp"] = count
 			newClients = append(newClients, interface{}(c))
 		}
 	}
 	settings["clients"] = newClients
+	delete(settings, "peers")
 	modifiedSettings, err := json.MarshalIndent(settings, "", "  ")
 	if err != nil {
 		return false, err
@@ -2195,16 +2233,26 @@ func (s *InboundService) ResetClientExpiryTimeByEmail(clientEmail string, expiry
 	if err != nil {
 		return false, err
 	}
-	clients := settings["clients"].([]interface{})
+	clients, ok := settings["clients"].([]interface{})
+	if !ok {
+		clients, ok = settings["peers"].([]interface{})
+		if !ok {
+			return false, common.NewError("no clients in inbound settings")
+		}
+	}
 	var newClients []interface{}
 	for client_index := range clients {
-		c := clients[client_index].(map[string]interface{})
+		c, ok := clients[client_index].(map[string]interface{})
+		if !ok {
+			continue
+		}
 		if c["email"] == clientEmail {
 			c["expiryTime"] = expiry_time
 			newClients = append(newClients, interface{}(c))
 		}
 	}
 	settings["clients"] = newClients
+	delete(settings, "peers")
 	modifiedSettings, err := json.MarshalIndent(settings, "", "  ")
 	if err != nil {
 		return false, err
@@ -2263,16 +2311,26 @@ func (s *InboundService) ResetClientTrafficLimitByEmail(clientEmail string, tota
 	if err != nil {
 		return false, err
 	}
-	clients := settings["clients"].([]interface{})
+	clients, ok := settings["clients"].([]interface{})
+	if !ok {
+		clients, ok = settings["peers"].([]interface{})
+		if !ok {
+			return false, common.NewError("no clients in inbound settings")
+		}
+	}
 	var newClients []interface{}
 	for client_index := range clients {
-		c := clients[client_index].(map[string]interface{})
+		c, ok := clients[client_index].(map[string]interface{})
+		if !ok {
+			continue
+		}
 		if c["email"] == clientEmail {
-			c["totalGB"] = totalGB * 1024 * 1024 * 1024
+			c["totalGB"] = int64(totalGB) * 1024 * 1024 * 1024
 			newClients = append(newClients, interface{}(c))
 		}
 	}
 	settings["clients"] = newClients
+	delete(settings, "peers")
 	modifiedSettings, err := json.MarshalIndent(settings, "", "  ")
 	if err != nil {
 		return false, err

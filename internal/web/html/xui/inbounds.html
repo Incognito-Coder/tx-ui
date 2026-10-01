@@ -1239,7 +1239,8 @@
                     case Protocols.TROJAN:
                         return client.password;
                     case Protocols.SHADOWSOCKS:
-                        return client.email;
+                    case Protocols.WIREGUARD:
+                        return client.email || client.publicKey || client.id;
                     case Protocols.HYSTERIA: return client.auth;
                     case Protocols.MASQUE: return client.password || client.pass || client.id || client.email;
                     default:
@@ -1247,17 +1248,17 @@
                 }
             },
             checkFallback(dbInbound) {
-                newDbInbound = new DBInbound(dbInbound);
+                let newDbInbound = new DBInbound(dbInbound);
                 if (dbInbound.listen.startsWith("@")) {
-                    rootInbound = this.inbounds.find((i) =>
+                    const rootInbound = this.inbounds.find((i) =>
                         i.isTcp &&
                         ['trojan', 'vless'].includes(i.protocol) &&
-                        i.settings.fallbacks.find(f => f.dest === dbInbound.listen)
+                        i.settings.fallbacks && i.settings.fallbacks.find(f => f.dest === dbInbound.listen)
                     );
                     if (rootInbound) {
                         newDbInbound.listen = rootInbound.listen;
                         newDbInbound.port = rootInbound.port;
-                        newInbound = newDbInbound.toInbound();
+                        const newInbound = newDbInbound.toInbound();
                         newInbound.stream.security = rootInbound.stream.security;
                         newInbound.stream.tls = rootInbound.stream.tls;
                         newInbound.stream.externalProxy = rootInbound.stream.externalProxy;
@@ -1638,5 +1639,7 @@
 {{template "qrcodeModal"}}
 {{template "textModal"}}
 {{template "inboundInfoModal"}}
+{{template "clientsModal" .}}
+{{template "clientsBulkModal" .}}
 </body>
 </html>

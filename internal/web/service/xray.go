@@ -122,25 +122,36 @@ func (s *XrayService) GetXrayConfig() (*xray.Config, error) {
 		if ok {
 			// check users active or not
 			clientStats := inbound.ClientStats
+			disabledEmails := make(map[string]bool)
 			for _, clientTraffic := range clientStats {
-				indexDecrease := 0
-				for index, client := range clients {
-					c := client.(map[string]interface{})
-					if c["email"] == clientTraffic.Email {
-						if !clientTraffic.Enable {
-							clients = RemoveIndex(clients, index-indexDecrease)
-							indexDecrease++
-							logger.Infof("Remove Inbound User %s due to expiration or traffic limit", c["email"])
-						}
-					}
+				if !clientTraffic.Enable {
+					disabledEmails[clientTraffic.Email] = true
 				}
 			}
+
+			activeClients := make([]interface{}, 0, len(clients))
+			for _, client := range clients {
+				c, isMap := client.(map[string]interface{})
+				if !isMap {
+					continue
+				}
+				email, _ := c["email"].(string)
+				if email != "" && disabledEmails[email] {
+					logger.Infof("Remove Inbound User %s due to expiration or traffic limit", email)
+					continue
+				}
+				activeClients = append(activeClients, c)
+			}
+			clients = activeClients
 
 			// Merge node-client synthesised entries into the clients slice.
 			// Requirements: 3.1, 3.2
 			existingModelClients := make([]model.Client, 0, len(clients))
 			for _, client := range clients {
-				c := client.(map[string]interface{})
+				c, isMap := client.(map[string]interface{})
+				if !isMap {
+					continue
+				}
 				if inbound.Protocol == "vmess" {
 					normalizeLegacyVMessUser(c)
 				}
@@ -375,7 +386,10 @@ func (s *XrayService) GetXrayConfig() (*xray.Config, error) {
 				seenFinalEmails := make(map[string]bool)
 				seenFinalIDs := make(map[string]bool)
 				for _, client := range clients {
-					c := client.(map[string]interface{})
+					c, isMap := client.(map[string]interface{})
+					if !isMap {
+						continue
+					}
 					if c["enable"] != nil {
 						if enable, ok := c["enable"].(bool); ok && !enable {
 							continue
@@ -426,12 +440,11 @@ func (s *XrayService) GetXrayConfig() (*xray.Config, error) {
 			// Remove the "settings" field under "tlsSettings" and "realitySettings"
 			tlsSettings, ok1 := stream["tlsSettings"].(map[string]interface{})
 			realitySettings, ok2 := stream["realitySettings"].(map[string]interface{})
-			if ok1 || ok2 {
-				if ok1 {
-					delete(tlsSettings, "settings")
-				} else if ok2 {
-					delete(realitySettings, "settings")
-				}
+			if ok1 {
+				delete(tlsSettings, "settings")
+			}
+			if ok2 {
+				delete(realitySettings, "settings")
 			}
 
 			delete(stream, "externalProxy")

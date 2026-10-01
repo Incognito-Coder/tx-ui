@@ -86,10 +86,8 @@ func GetAccessLogPath() (string, error) {
 		return "", err
 	}
 
-	if jsonConfig["log"] != nil {
-		jsonLog := jsonConfig["log"].(map[string]interface{})
-		if jsonLog["access"] != nil {
-			accessLogPath := jsonLog["access"].(string)
+	if jsonLog, ok := jsonConfig["log"].(map[string]interface{}); ok && jsonLog != nil {
+		if accessLogPath, ok := jsonLog["access"].(string); ok {
 			return accessLogPath, nil
 		}
 	}

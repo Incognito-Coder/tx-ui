@@ -607,10 +607,13 @@
             themeSwitcher
         }),
         mounted() {
-            this.$message.config({
-                getContainer: () => document.getElementById('message')
-            });
-            document.getElementById('message').className = themeSwitcher.currentTheme;
+            const msgEl = document.getElementById('message');
+            if (msgEl) {
+                this.$message.config({
+                    getContainer: () => msgEl
+                });
+                msgEl.className = themeSwitcher.currentTheme;
+            }
         }
     });
     Vue.component('theme-switch-login', {
@@ -620,10 +623,13 @@
             themeSwitcher
         }),
         mounted() {
-            this.$message.config({
-                getContainer: () => document.getElementById('message')
-            });
-            document.getElementById('message').className = themeSwitcher.currentTheme;
+            const msgEl = document.getElementById('message');
+            if (msgEl) {
+                this.$message.config({
+                    getContainer: () => msgEl
+                });
+                msgEl.className = themeSwitcher.currentTheme;
+            }
         }
     });
 </script>

@@ -42,5 +42,8 @@ func Seq(n int) string {
 }
 
 func Num(n int) int {
+	if n <= 0 {
+		return 0
+	}
 	return rand.Intn(n)
 }

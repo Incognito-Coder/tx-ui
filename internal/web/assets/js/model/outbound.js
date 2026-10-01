@@ -1875,7 +1875,7 @@ Outbound.WireguardSettings = class extends CommonClass {
             json.workers,
             json.domainStrategy,
             json.reserved,
-            json.peers.map(peer => Outbound.WireguardSettings.Peer.fromJson(peer)),
+            (json.peers || []).map(peer => Outbound.WireguardSettings.Peer.fromJson(peer)),
             json.noKernelTun,
         );
     }

@@ -68,6 +68,8 @@
                     return client.email || client.publicKey || client.id;
                 case Protocols.HYSTERIA:
                     return client.auth;
+                case Protocols.MASQUE:
+                    return client.auth || client.password || client.email || client.id;
                 default:
                     return client.id;
             }
@@ -137,10 +139,11 @@
                 return app.datepicker;
             },
             get isTrafficExhausted() {
-                if (!clientStats) return false
-                if (clientStats.total <= 0) return false
-                if (clientStats.up + clientStats.down < clientStats.total) return false
-                return true
+                const stats = this.clientStats;
+                if (!stats) return false;
+                if (stats.total <= 0) return false;
+                if (stats.up + stats.down < stats.total) return false;
+                return true;
             },
             get isExpiry() {
                 return this.clientModal.isEdit && this.client.expiryTime > 0 ? (this.client.expiryTime < new Date().getTime()) : false;

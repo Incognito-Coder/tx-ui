@@ -58,8 +58,8 @@ function formatSecond(second) {
     } else if (second < 3600 * 24) {
         return (second / 3600).toFixed(0) + 'h';
     } else {
-        day = Math.floor(second / 3600 / 24);
-        remain = ((second / 3600) - (day * 24)).toFixed(0);
+        const day = Math.floor(second / 3600 / 24);
+        const remain = ((second / 3600) - (day * 24)).toFixed(0);
         return day + 'd' + (remain > 0 ? ' ' + remain + 'h' : '');
     }
 }
