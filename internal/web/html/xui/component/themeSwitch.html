@@ -504,6 +504,13 @@
         document.body.classList.toggle('dark', isDarkTheme);
         document.body.classList.toggle('light', !isDarkTheme);
 
+        // Apply initial classes to both body and #app
+        const appEl = document.getElementById('app');
+        if (appEl) {
+            appEl.classList.toggle('dark', isDarkTheme);
+            appEl.classList.toggle('light', !isDarkTheme);
+        }
+
         // Immediately apply saved theme color on script load
         applyThemeColor(currentColorKey, customColor, isDarkTheme);
 
@@ -560,6 +567,11 @@
                 localStorage.setItem('dark-mode', this.isDarkTheme);
                 document.body.classList.toggle('dark', this.isDarkTheme);
                 document.body.classList.toggle('light', !this.isDarkTheme);
+                const appEl = document.getElementById('app');
+                if (appEl) {
+                    appEl.classList.toggle('dark', this.isDarkTheme);
+                    appEl.classList.toggle('light', !this.isDarkTheme);
+                }
                 if (this.isDarkTheme && this.isUltra) {
                     document.documentElement.setAttribute('data-theme', 'ultra-dark');
                 } else {
