@@ -1,12 +1,19 @@
-const CACHE_NAME = 'tx-ui-pwa-v2';
+const CACHE_NAME = 'tx-ui-pwa-v3';
 const OFFLINE_URL = 'assets/pwa/offline.html';
 
 const PRECACHE_ASSETS = [
     'assets/pwa/offline.html',
+    'assets/img/icons/tx-ui-dark.png',
     'assets/img/icons/icon-192x192.png',
     'assets/img/icons/icon-512x512.png',
+    'assets/img/icons/icon-maskable-192x192.png',
+    'assets/img/icons/icon-maskable-512x512.png',
     'assets/img/icons/apple-touch-icon.png',
-    'assets/img/icons/favicon-32x32.png'
+    'assets/img/icons/favicon-32x32.png',
+    'assets/img/icons/favicon-16x16.png',
+    'assets/img/icons/favicon.ico',
+    'favicon.ico',
+    'manifest.json'
 ];
 
 self.addEventListener('install', (event) => {
@@ -66,14 +73,21 @@ self.addEventListener('fetch', (event) => {
                     return response;
                 })
                 .catch(() => {
-                    return caches.match(OFFLINE_URL);
+                    return caches.match(OFFLINE_URL).then((offlineRes) => {
+                        if (offlineRes) {
+                            return offlineRes;
+                        }
+                        const assetIndex = OFFLINE_URL.indexOf('assets/');
+                        const relPath = assetIndex >= 0 ? OFFLINE_URL.slice(assetIndex) : OFFLINE_URL;
+                        return caches.match(relPath);
+                    });
                 })
         );
         return;
     }
 
-    // Static assets (CSS, JS, images, fonts): Cache-first with network fallback
-    if (url.pathname.includes('/assets/')) {
+    // Static assets, images, and manifest: Cache-first with network fallback
+    if (url.pathname.includes('/assets/') || url.pathname.endsWith('/favicon.ico') || url.pathname.endsWith('/manifest.json')) {
         event.respondWith(
             caches.match(request).then((cachedResponse) => {
                 if (cachedResponse) {
@@ -103,7 +117,7 @@ self.addEventListener('fetch', (event) => {
                             });
                         }
                         return networkResponse;
-                    });
+                    }).catch(() => caches.match(request));
                 });
             })
         );

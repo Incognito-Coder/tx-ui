@@ -21,8 +21,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 🐛 Bug Fixes & Stability
 - **Inbound Client & Database Synchronization**:
+  - Fixed issue where deleted clients were resurrected on panel restart: `nodeClientService.deleteInTx()`, `RemoveLink()`, and `SetLinks()` now strip deleted/unlinked client credentials from `inbounds.settings` JSON (`clients` and `peers`), preventing `MigrateLegacyClients()` from re-importing them on startup.
+  - Purged associated `client_traffics` records upon client deletion to prevent orphaned statistics.
+  - Fixed client deletion abort in `DelInboundClient` when no traffic record exists by ignoring `gorm.ErrRecordNotFound`.
+  - Added automatic unlinking and linking of `NodeClient` records in `UpdateInbound` when modifying clients through the inbound modal.
   - Fixed client visibility when adding clients via the legacy `/addClient` API: `AddInboundClient` now automatically links and synchronizes clients with `node_clients` and `node_client_links`.
   - Fixed client deletion via API: `DelInboundClient` and `DelInboundClientByEmail` now fully delete or unlink `NodeClient` records to prevent orphaned entries from remaining in the panel.
+- **PWA Offline Asset & Logo Caching**:
+  - Replaced corrupted base64 fallback icon in `offline.html` with verified, crisp 192x192 TX-UI application icon.
+  - Updated Service Worker (`sw.js`) to cache version `v3` and added all application logo icons (`tx-ui-dark.png`, standard/maskable 192x192 and 512x512 icons, favicons, `manifest.json`) to `PRECACHE_ASSETS`.
+  - Expanded asset interceptor to handle root `/favicon.ico` and `manifest.json` requests with offline cache fallback.
+- **Server Shutdown & Restart Cleanliness**:
+  - Suppressed redundant `net.ErrClosed` (`use of closed network connection`) error logs when stopping listeners in web and sub servers during panel restarts.
 - **Xray & Subscription Services Stability**:
   - Resolved panic risks and nil-pointer dereferences in subscription service generators (`subService.go`, `subJsonService.go`) and Xray API client handlers.
   - Fixed Reality fingerprint generation in subscription links to prevent invalid empty values.
