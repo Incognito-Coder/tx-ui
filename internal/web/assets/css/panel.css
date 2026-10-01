@@ -2324,6 +2324,14 @@ html[data-theme="ultra-dark"] body.dark {
         margin-inline: 0;
     }
 
+    /* Hide disabled & ended (depleted) status badges on client name and near progressbar on mobile */
+    .client-status-badge,
+    .usage-bar-box .status-badge,
+    .usage-bar-box .client-status-badge,
+    .usage-bar-box .ant-tag {
+        display: none !important;
+    }
+
     #content-layout .ant-card-head {
         padding-inline: 14px;
     }

@@ -406,6 +406,14 @@
             display: none !important;
         }
 
+        /* Hide disabled & ended (depleted) status badges on client name and near progressbar on mobile */
+        .client-status-badge,
+        .usage-bar-box .status-badge,
+        .usage-bar-box .client-status-badge,
+        .usage-bar-box .ant-tag {
+            display: none !important;
+        }
+
         /* Inbound tag: truncate on mobile */
         .inbound-menu-trigger {
             max-width: 110px;
@@ -1030,10 +1038,10 @@
                                                     style="margin-right: 6px;"></a-badge>
                                             </a-tooltip>
                                             <strong @click="showClientDetail(c)" class="client-email-link" style="word-break: break-all;" :title="'{{ i18n "pages.inbounds.details" }}'">[[ c.email ]]</strong>
-                                            <a-tag color="red" v-if="!c.enable" style="margin-left: 6px; font-size: 10px; line-height: 16px; height: 18px; padding: 0 4px;">
+                                            <a-tag class="client-status-badge" color="red" v-if="!isMobile && !c.enable" style="margin-left: 6px; font-size: 10px; line-height: 16px; height: 18px; padding: 0 4px;">
                                                 {{ i18n "disabled" }}
                                             </a-tag>
-                                            <a-tag color="orange" v-else-if="isDepletedOrExpired(c)" style="margin-left: 6px; font-size: 10px; line-height: 16px; height: 18px; padding: 0 4px;">
+                                            <a-tag class="client-status-badge" color="orange" v-else-if="!isMobile && isDepletedOrExpired(c)" style="margin-left: 6px; font-size: 10px; line-height: 16px; height: 18px; padding: 0 4px;">
                                                 {{ i18n "depleted" }}
                                             </a-tag>
                                             <a-tooltip :title="c.comment" v-if="c.comment">
@@ -1092,7 +1100,7 @@
                                             <span class="usage-bar-label-muted usage-bar-total-hide" style="flex-shrink: 0; text-align: left; min-width: 44px;">
                                                 [[ c.totalGB > 0 ? sizeFormat(c.totalGB) : '∞' ]]
                                             </span>
-                                            <a-tag class="status-badge" color="orange" v-if="isDepletedOrExpired(c)"
+                                            <a-tag class="status-badge client-status-badge" color="orange" v-if="!isMobile && isDepletedOrExpired(c)"
                                                 style="font-size: 10px; height: 18px; line-height: 16px; padding: 0 4px; margin: 0; flex-shrink: 0;">
                                                 {{ i18n "depleted" }}
                                             </a-tag>
