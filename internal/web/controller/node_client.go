@@ -1,10 +1,15 @@
 package controller
 
 import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 
 	"x-ui/internal/database/model"
+	"x-ui/internal/logger"
 	"x-ui/internal/web/service"
 
 	"github.com/gin-gonic/gin"
@@ -25,21 +30,26 @@ func (a *NodeClientController) initRouter(g *gin.RouterGroup) {
 	g.GET("/list", a.list)
 	g.GET("/get/:id", a.getOne)
 	g.POST("/create", a.create)
+	g.POST("/bulkCreate", a.bulkCreate)
 	g.POST("/update/:id", a.update)
 	g.POST("/del/:id", a.del)
 	g.POST("/bulkDel", a.bulkDel)
 	g.GET("/:id/links", a.getLinks)
 	g.POST("/:id/addLink", a.addLink)
+	g.POST("/:id/setLinks", a.setLinks)
 	g.POST("/:id/removeLink/:inboundId", a.removeLink)
 	g.GET("/:id/traffic", a.getTraffic)
 	g.POST("/:id/resetTraffic", a.resetTraffic)
+	g.POST("/resetAllTraffics", a.resetAllTraffics)
+	g.POST("/delDepleted", a.delDepleted)
+	g.GET("/inboundLinkCounts", a.inboundLinkCounts)
 	g.POST("/:id/toggle", a.toggle)
 }
 
 func (a *NodeClientController) list(c *gin.Context) {
-	clients, err := a.nodeClientService.GetAll()
+	clients, err := a.nodeClientService.GetAllWithDetails()
 	if err != nil {
-		jsonMsg(c, "Failed to get node clients", err)
+		jsonMsg(c, "Failed to get clients", err)
 		return
 	}
 	jsonObj(c, clients, nil)
@@ -48,13 +58,13 @@ func (a *NodeClientController) list(c *gin.Context) {
 func (a *NodeClientController) getOne(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		jsonMsg(c, "Invalid node client ID", err)
+		jsonMsg(c, "Invalid client ID", err)
 		return
 	}
 
 	nc, err := a.nodeClientService.GetByID(id)
 	if err != nil {
-		jsonMsg(c, "Node client not found", err)
+		jsonMsg(c, "Client not found", err)
 		c.Status(http.StatusNotFound)
 		return
 	}
@@ -62,20 +72,155 @@ func (a *NodeClientController) getOne(c *gin.Context) {
 }
 
 func (a *NodeClientController) create(c *gin.Context) {
-	nc := &model.NodeClient{}
-	err := c.ShouldBind(nc)
+	var req struct {
+		model.NodeClient
+		InboundIds []int `json:"inboundIds" form:"inboundIds"`
+	}
+
+	raw, _ := c.GetRawData()
+	if len(raw) > 0 {
+		_ = json.Unmarshal(raw, &req)
+	}
+	if req.NodeClient.Email == "" {
+		c.Request.Body = io.NopCloser(bytes.NewBuffer(raw))
+		_ = c.ShouldBind(&req)
+	}
+	if len(req.InboundIds) == 0 {
+		formIds := c.PostFormArray("inboundIds")
+		if len(formIds) == 0 {
+			formIds = c.PostFormArray("inboundIds[]")
+		}
+		for _, fid := range formIds {
+			if n, perr := strconv.Atoi(fid); perr == nil {
+				req.InboundIds = append(req.InboundIds, n)
+			}
+		}
+	}
+
+	nc := &req.NodeClient
+	err := a.nodeClientService.Create(nc)
 	if err != nil {
-		jsonMsg(c, "Failed to create node client", err)
+		jsonMsg(c, "Failed to create client: "+err.Error(), err)
 		return
 	}
 
-	err = a.nodeClientService.Create(nc)
+	if len(req.InboundIds) > 0 {
+		links := make([]service.NodeClientLinkInput, len(req.InboundIds))
+		for i, inboundId := range req.InboundIds {
+			links[i] = service.NodeClientLinkInput{
+				InboundId: inboundId,
+				Flow:      nc.Flow,
+			}
+		}
+		_ = a.nodeClientService.SetLinks(nc.Id, links)
+	}
+
+	a.xrayService.SetToNeedRestart()
+	jsonMsg(c, "Client created", nil)
+}
+
+func (a *NodeClientController) bulkCreate(c *gin.Context) {
+	var req struct {
+		Clients    []model.NodeClient `json:"clients" form:"clients"`
+		InboundIds []int              `json:"inboundIds" form:"inboundIds"`
+	}
+
+	raw, _ := c.GetRawData()
+	if len(raw) > 0 {
+		_ = json.Unmarshal(raw, &req)
+	}
+	if len(req.Clients) == 0 {
+		c.Request.Body = io.NopCloser(bytes.NewBuffer(raw))
+		_ = c.ShouldBind(&req)
+	}
+	if len(req.Clients) == 0 {
+		jsonMsg(c, "No clients provided", nil)
+		return
+	}
+	if len(req.InboundIds) == 0 {
+		formIds := c.PostFormArray("inboundIds")
+		if len(formIds) == 0 {
+			formIds = c.PostFormArray("inboundIds[]")
+		}
+		for _, fid := range formIds {
+			if n, perr := strconv.Atoi(fid); perr == nil {
+				req.InboundIds = append(req.InboundIds, n)
+			}
+		}
+	}
+
+	err := a.nodeClientService.BulkCreate(req.Clients, req.InboundIds)
 	if err != nil {
-		jsonMsg(c, "Failed to create node client", err)
+		jsonMsg(c, "Bulk create failed: "+err.Error(), err)
 		return
 	}
 
-	jsonObj(c, nc, nil)
+	a.xrayService.SetToNeedRestart()
+	jsonMsg(c, fmt.Sprintf("Successfully created %d clients", len(req.Clients)), nil)
+}
+
+func (a *NodeClientController) setLinks(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		jsonMsg(c, "Invalid client ID", err)
+		return
+	}
+
+	var req struct {
+		Links []service.NodeClientLinkInput `json:"links" form:"links"`
+	}
+
+	raw, _ := c.GetRawData()
+	if len(raw) > 0 {
+		_ = json.Unmarshal(raw, &req)
+	}
+	if len(req.Links) == 0 {
+		c.Request.Body = io.NopCloser(bytes.NewBuffer(raw))
+		_ = c.ShouldBind(&req)
+		if len(req.Links) == 0 {
+			if linksStr := c.PostForm("links"); linksStr != "" {
+				_ = json.Unmarshal([]byte(linksStr), &req.Links)
+			}
+		}
+	}
+
+	err = a.nodeClientService.SetLinks(id, req.Links)
+	if err != nil {
+		jsonMsg(c, "Failed to set links: "+err.Error(), err)
+		return
+	}
+
+	a.xrayService.SetToNeedRestart()
+	jsonMsg(c, "Links updated", nil)
+}
+
+func (a *NodeClientController) resetAllTraffics(c *gin.Context) {
+	err := a.nodeClientService.ResetAllTraffics()
+	if err != nil {
+		jsonMsg(c, "Failed to reset traffic", err)
+		return
+	}
+	a.xrayService.SetToNeedRestart()
+	jsonMsg(c, "All client traffic reset", nil)
+}
+
+func (a *NodeClientController) delDepleted(c *gin.Context) {
+	err := a.nodeClientService.DeleteDepleted()
+	if err != nil {
+		jsonMsg(c, "Failed to delete depleted clients", err)
+		return
+	}
+	a.xrayService.SetToNeedRestart()
+	jsonMsg(c, "Depleted clients deleted", nil)
+}
+
+func (a *NodeClientController) inboundLinkCounts(c *gin.Context) {
+	counts, err := a.nodeClientService.GetLinkedInboundsCounts()
+	if err != nil {
+		jsonMsg(c, "Failed to get linked counts", err)
+		return
+	}
+	jsonObj(c, counts, nil)
 }
 
 func (a *NodeClientController) update(c *gin.Context) {
@@ -85,17 +230,53 @@ func (a *NodeClientController) update(c *gin.Context) {
 		return
 	}
 
-	nc := &model.NodeClient{Id: id}
-	err = c.ShouldBind(nc)
+	var req struct {
+		model.NodeClient
+		InboundIds *[]int `json:"inboundIds" form:"inboundIds"`
+	}
+
+	raw, _ := c.GetRawData()
+	if len(raw) > 0 {
+		_ = json.Unmarshal(raw, &req)
+	}
+	if req.NodeClient.Email == "" {
+		c.Request.Body = io.NopCloser(bytes.NewBuffer(raw))
+		_ = c.ShouldBind(&req)
+	}
+	if req.InboundIds == nil {
+		formIds := c.PostFormArray("inboundIds")
+		if len(formIds) == 0 {
+			formIds = c.PostFormArray("inboundIds[]")
+		}
+		if len(formIds) > 0 {
+			var ids []int
+			for _, fid := range formIds {
+				if n, perr := strconv.Atoi(fid); perr == nil {
+					ids = append(ids, n)
+				}
+			}
+			req.InboundIds = &ids
+		}
+	}
+	req.NodeClient.Id = id
+
+	err = a.nodeClientService.Update(&req.NodeClient)
 	if err != nil {
-		jsonMsg(c, "Failed to update node client", err)
+		jsonMsg(c, "Failed to update node client: "+err.Error(), err)
 		return
 	}
 
-	err = a.nodeClientService.Update(nc)
-	if err != nil {
-		jsonMsg(c, "Failed to update node client", err)
-		return
+	if req.InboundIds != nil {
+		links := make([]service.NodeClientLinkInput, len(*req.InboundIds))
+		for i, inId := range *req.InboundIds {
+			links[i] = service.NodeClientLinkInput{
+				InboundId: inId,
+				Flow:      req.NodeClient.Flow,
+			}
+		}
+		if err := a.nodeClientService.SetLinks(id, links); err != nil {
+			logger.Warningf("Failed to update links for client %d: %v", id, err)
+		}
 	}
 
 	a.xrayService.SetToNeedRestart()
@@ -124,20 +305,34 @@ func (a *NodeClientController) bulkDel(c *gin.Context) {
 		Ids []int `json:"ids" form:"ids"`
 	}
 
-	err := c.ShouldBind(&req)
-	if err != nil {
-		jsonMsg(c, "Invalid request", err)
-		return
+	raw, _ := c.GetRawData()
+	if len(raw) > 0 {
+		_ = json.Unmarshal(raw, &req)
+	}
+	if len(req.Ids) == 0 {
+		c.Request.Body = io.NopCloser(bytes.NewBuffer(raw))
+		_ = c.ShouldBind(&req)
+	}
+	if len(req.Ids) == 0 {
+		formIds := c.PostFormArray("ids")
+		if len(formIds) == 0 {
+			formIds = c.PostFormArray("ids[]")
+		}
+		for _, fid := range formIds {
+			if n, perr := strconv.Atoi(fid); perr == nil {
+				req.Ids = append(req.Ids, n)
+			}
+		}
 	}
 
 	if len(req.Ids) == 0 {
-		jsonMsg(c, "Bulk delete failed", err)
+		jsonMsg(c, "No clients selected", nil)
 		return
 	}
 
-	err = a.nodeClientService.BulkDelete(req.Ids)
+	err := a.nodeClientService.BulkDelete(req.Ids)
 	if err != nil {
-		jsonMsg(c, "Bulk delete failed", err)
+		jsonMsg(c, "Bulk delete failed: "+err.Error(), err)
 		return
 	}
 

@@ -191,7 +191,7 @@
                                         <a-back-top :target="() => document.getElementById('content-layout')"
                                                     visibility-height="200"></a-back-top>
                                         {{ i18n "clients" }}:
-                                        <a-tag color="green">[[ total.clients ]]</a-tag>
+                                        <a-tag color="green" style="cursor: pointer;" @click="goToClients()">[[ total.clients ]]</a-tag>
                                         <a-popover :overlay-class-name="themeSwitcher.currentTheme"
                                                    title='{{ i18n "disabled" }}'>
                                             <template slot="content">
@@ -263,14 +263,6 @@
                                                 <a-icon type="reload"></a-icon>
                                                 {{ i18n "pages.inbounds.resetAllTraffic" }}
                                             </a-menu-item>
-                                            <a-menu-item key="resetClients">
-                                                <a-icon type="file-done"></a-icon>
-                                                {{ i18n "pages.inbounds.resetAllClientTraffics" }}
-                                            </a-menu-item>
-                                            <a-menu-item key="delDepletedClients" style="color: var(--ui-danger);">
-                                                <a-icon type="rest"></a-icon>
-                                                {{ i18n "pages.inbounds.delDepletedClients" }}
-                                            </a-menu-item>
                                         </a-menu>
                                     </a-dropdown>
                                     <a-dropdown :trigger="['click']">
@@ -330,12 +322,7 @@
                         <a-back-top></a-back-top>
                         <a-table :columns="isMobile ? mobileColumns : columns" :data-source="searchedInbounds"
                                  class="inbounds-table"
-                                 :expand-icon-as-cell="false"
-                                 :expand-icon-column-index="0"
-                                 :expand-row-by-click="false"
-                                 :indent-size="0"
                                  :pagination=pagination(searchedInbounds)
-                                 :row-class-name="dbInbound => (dbInbound.isMultiUser() ? '' : 'hideExpandIcon')"
                                  :row-key="dbInbound => dbInbound.id"
                                  :scroll="isMobile ? {} : { x: 1000 }"
                                  style="margin-top: 10px">
@@ -380,39 +367,14 @@
                                             <a-icon type="qrcode"></a-icon>
                                             {{ i18n "qrCode" }}
                                         </a-menu-item>
-                                        <template v-if="dbInbound.isMultiUser()">
-                                            <a-menu-item key="addClient">
-                                                <a-icon type="user-add"></a-icon>
-                                                {{ i18n "pages.client.add"}}
-                                            </a-menu-item>
-                                            <a-menu-item key="addBulkClient">
-                                                <a-icon type="usergroup-add"></a-icon>
-                                                {{ i18n "pages.client.bulk"}}
-                                            </a-menu-item>
-                                            <a-menu-item key="resetClients">
-                                                <a-icon type="file-done"></a-icon>
-                                                {{ i18n "pages.inbounds.resetInboundClientTraffics"}}
-                                            </a-menu-item>
-                                            <a-menu-item key="export">
-                                                <a-icon type="export"></a-icon>
-                                                {{ i18n "pages.inbounds.export"}}
-                                            </a-menu-item>
-                                            <a-menu-item key="subs" v-if="subSettings.enable">
-                                                <a-icon type="export"></a-icon>
-                                                {{ i18n "pages.inbounds.export" }} - {{ i18n
-                                                "pages.settings.subSettings" }}
-                                            </a-menu-item>
-                                            <a-menu-item key="delDepletedClients" style="color: var(--ui-danger);">
-                                                <a-icon type="rest"></a-icon>
-                                                {{ i18n "pages.inbounds.delDepletedClients" }}
-                                            </a-menu-item>
-                                        </template>
-                                        <template v-else>
-                                            <a-menu-item key="showInfo">
-                                                <a-icon type="info-circle"></a-icon>
-                                                {{ i18n "info"}}
-                                            </a-menu-item>
-                                        </template>
+                                        <a-menu-item key="showInfo">
+                                            <a-icon type="info-circle"></a-icon>
+                                            {{ i18n "info"}}
+                                        </a-menu-item>
+                                        <a-menu-item key="viewClients">
+                                            <a-icon type="team"></a-icon>
+                                            {{ i18n "clients"}}
+                                        </a-menu-item>
                                         <a-menu-item key="clipboard">
                                             <a-icon type="copy"></a-icon>
                                             {{ i18n "pages.inbounds.exportInbound" }}
@@ -454,54 +416,11 @@
                                 </template>
                             </template>
                             <template slot="clients" slot-scope="text, dbInbound">
-                                <template v-if="clientCount[dbInbound.id]">
-                                    <a-tag color="green" style="margin:0;">[[ clientCount[dbInbound.id].clients ]]
+                                <span @click.stop="goToClients(dbInbound.id)" style="cursor: pointer; display: inline-block;">
+                                    <a-tag color="blue" style="margin:0; cursor:pointer;" @click.native.stop="goToClients(dbInbound.id)" @click.stop="goToClients(dbInbound.id)">
+                                        <a-icon type="team"></a-icon> [[ getInboundClientCount(dbInbound.id) ]] {{ i18n "clients" }}
                                     </a-tag>
-                                    <a-popover :overlay-class-name="themeSwitcher.currentTheme"
-                                               title='{{ i18n "disabled" }}'>
-                                        <template slot="content">
-                                            <p v-for="clientEmail in clientCount[dbInbound.id].deactive">[[ clientEmail
-                                                ]]</p>
-                                        </template>
-                                        <a-tag style="margin:0; padding: 0 2px;"
-                                               v-if="clientCount[dbInbound.id].deactive.length">[[
-                                            clientCount[dbInbound.id].deactive.length ]]
-                                        </a-tag>
-                                    </a-popover>
-                                    <a-popover :overlay-class-name="themeSwitcher.currentTheme"
-                                               title='{{ i18n "depleted" }}'>
-                                        <template slot="content">
-                                            <p v-for="clientEmail in clientCount[dbInbound.id].depleted">[[ clientEmail
-                                                ]]</p>
-                                        </template>
-                                        <a-tag color="red" style="margin:0; padding: 0 2px;"
-                                               v-if="clientCount[dbInbound.id].depleted.length">[[
-                                            clientCount[dbInbound.id].depleted.length ]]
-                                        </a-tag>
-                                    </a-popover>
-                                    <a-popover :overlay-class-name="themeSwitcher.currentTheme"
-                                               title='{{ i18n "depletingSoon" }}'>
-                                        <template slot="content">
-                                            <p v-for="clientEmail in clientCount[dbInbound.id].expiring">[[ clientEmail
-                                                ]]</p>
-                                        </template>
-                                        <a-tag color="orange" style="margin:0; padding: 0 2px;"
-                                               v-if="clientCount[dbInbound.id].expiring.length">[[
-                                            clientCount[dbInbound.id].expiring.length ]]
-                                        </a-tag>
-                                    </a-popover>
-                                    <a-popover :overlay-class-name="themeSwitcher.currentTheme"
-                                               title='{{ i18n "online" }}'>
-                                        <template slot="content">
-                                            <p v-for="clientEmail in clientCount[dbInbound.id].online">[[ clientEmail
-                                                ]]</p>
-                                        </template>
-                                        <a-tag color="blue" style="margin:0; padding: 0 2px;"
-                                               v-if="clientCount[dbInbound.id].online.length">[[
-                                            clientCount[dbInbound.id].online.length ]]
-                                        </a-tag>
-                                    </a-popover>
-                                </template>
+                                </span>
                             </template>
                             <template slot="traffic" slot-scope="text, dbInbound">
                                 <a-popover :overlay-class-name="themeSwitcher.currentTheme">
@@ -593,56 +512,14 @@
                                                     <a-tag>[[ dbInbound.port ]]</a-tag>
                                                 </td>
                                             </tr>
-                                            <tr v-if="clientCount[dbInbound.id]">
+                                            <tr>
                                                 <td>{{ i18n "clients" }}</td>
                                                 <td>
-                                                    <a-tag color="blue" style="margin:0;">[[
-                                                        clientCount[dbInbound.id].clients ]]
-                                                    </a-tag>
-                                                    <a-popover :overlay-class-name="themeSwitcher.currentTheme"
-                                                               title='{{ i18n "disabled" }}'>
-                                                        <template slot="content">
-                                                            <p v-for="clientEmail in clientCount[dbInbound.id].deactive">
-                                                                [[ clientEmail ]]</p>
-                                                        </template>
-                                                        <a-tag style="margin:0; padding: 0 2px;"
-                                                               v-if="clientCount[dbInbound.id].deactive.length">[[
-                                                            clientCount[dbInbound.id].deactive.length ]]
+                                                    <span @click.stop="goToClients(dbInbound.id)" style="cursor: pointer; display: inline-block;">
+                                                        <a-tag color="blue" style="margin:0; cursor:pointer;" @click.native.stop="goToClients(dbInbound.id)" @click.stop="goToClients(dbInbound.id)">
+                                                            <a-icon type="team"></a-icon> [[ getInboundClientCount(dbInbound.id) ]] {{ i18n "clients" }}
                                                         </a-tag>
-                                                    </a-popover>
-                                                    <a-popover :overlay-class-name="themeSwitcher.currentTheme"
-                                                               title='{{ i18n "depleted" }}'>
-                                                        <template slot="content">
-                                                            <p v-for="clientEmail in clientCount[dbInbound.id].depleted">
-                                                                [[ clientEmail ]]</p>
-                                                        </template>
-                                                        <a-tag color="red" style="margin:0; padding: 0 2px;"
-                                                               v-if="clientCount[dbInbound.id].depleted.length">[[
-                                                            clientCount[dbInbound.id].depleted.length ]]
-                                                        </a-tag>
-                                                    </a-popover>
-                                                    <a-popover :overlay-class-name="themeSwitcher.currentTheme"
-                                                               title='{{ i18n "depletingSoon" }}'>
-                                                        <template slot="content">
-                                                            <p v-for="clientEmail in clientCount[dbInbound.id].expiring">
-                                                                [[ clientEmail ]]</p>
-                                                        </template>
-                                                        <a-tag color="orange" style="margin:0; padding: 0 2px;"
-                                                               v-if="clientCount[dbInbound.id].expiring.length">[[
-                                                            clientCount[dbInbound.id].expiring.length ]]
-                                                        </a-tag>
-                                                    </a-popover>
-                                                    <a-popover :overlay-class-name="themeSwitcher.currentTheme"
-                                                               title='{{ i18n "online" }}'>
-                                                        <template slot="content">
-                                                            <p v-for="clientEmail in clientCount[dbInbound.id].online">
-                                                                [[ clientEmail ]]</p>
-                                                        </template>
-                                                        <a-tag color="green" style="margin:0; padding: 0 2px;"
-                                                               v-if="clientCount[dbInbound.id].online.length">[[
-                                                            clientCount[dbInbound.id].online.length ]]
-                                                        </a-tag>
-                                                    </a-popover>
+                                                    </span>
                                                 </td>
                                             </tr>
                                             <tr>
@@ -714,16 +591,7 @@
                                     </a-badge>
                                 </a-popover>
                             </template>
-                            <template slot="expandedRowRender" slot-scope="record">
-                                <a-table
-                                        :columns="isMobile ? innerMobileColumns : innerColumns"
-                                        :data-source="getInboundClients(record)"
-                                        :pagination=pagination(getInboundClients(record))
-                                        :row-key="client => client.id"
-                                        class="inbound-client-table">
-                                    {{template "client_table"}}
-                                </a-table>
-                            </template>
+
                         </a-table>
                     </a-card>
                 </transition>
@@ -859,6 +727,7 @@
             defaultCert: '',
             defaultKey: '',
             clientCount: [],
+            inboundLinkCounts: {},
             onlineClients: [],
             isRefreshEnabled: localStorage.getItem("isRefreshEnabled") === "true" ? true : false,
             refreshing: false,
@@ -908,11 +777,34 @@
                     return;
                 }
 
-                await this.getOnlineUsers();
+                await Promise.all([this.getOnlineUsers(), this.getInboundLinkCounts()]);
                 this.setInbounds(msg.obj);
                 setTimeout(() => {
                     this.refreshing = false;
                 }, 500);
+            },
+            async getInboundLinkCounts() {
+                try {
+                    const msg = await HttpUtil.get('/panel/api/clients/inboundLinkCounts');
+                    if (msg.success && msg.obj) {
+                        this.inboundLinkCounts = msg.obj;
+                    }
+                } catch (e) {
+                    console.error(e);
+                }
+            },
+            getInboundClientCount(inboundId) {
+                if (this.inboundLinkCounts && this.inboundLinkCounts[inboundId] !== undefined) {
+                    return this.inboundLinkCounts[inboundId];
+                }
+                if (this.clientCount && this.clientCount[inboundId]) {
+                    return this.clientCount[inboundId].clients;
+                }
+                return 0;
+            },
+            goToClients(inboundId) {
+                const target = basePath + 'panel/clients' + (inboundId ? '?inboundId=' + inboundId : '');
+                window.location.href = target;
             },
             async getOnlineUsers() {
                 const msg = await HttpUtil.post('/panel/api/inbounds/onlines');
@@ -1104,6 +996,9 @@
                         break;
                     case "edit":
                         this.openEditInbound(dbInbound.id);
+                        break;
+                    case "viewClients":
+                        this.goToClients(dbInbound.id);
                         break;
                     case "addClient":
                         this.openAddClient(dbInbound.id)
@@ -1822,7 +1717,5 @@
 {{template "qrcodeModal"}}
 {{template "textModal"}}
 {{template "inboundInfoModal"}}
-{{template "clientsModal"}}
-{{template "clientsBulkModal"}}
 </body>
 </html>

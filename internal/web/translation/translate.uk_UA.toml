@@ -69,6 +69,9 @@
 "secAlertSubJsonURI" = "Стандартний URI-шлях JSON підписки небезпечний. Будь ласка, сконфігуруйте складний URI-шлях."
 "moveUp" = "Перемістити вгору"
 "moveDown" = "Перемістити вниз"
+"all" = "Всі"
+"inbounds" = "Вхідні"
+"links" = "Посилання"
 
 [menu]
 "theme" = "Тема"
@@ -82,6 +85,7 @@
 "logout" = "Вийти"
 "link" = "Керувати"
 "node_clients" = "Node Clients"
+"clients" = "Клієнти"
 "txThemeHub" = "TX ThemeHub"
 
 [pages.login]
@@ -175,6 +179,8 @@
 "monitorDesc" = "Залиште порожнім, щоб слухати всі IP-адреси"
 "meansNoLimit" = "= Необмежено. (одиниця: ГБ)"
 "totalFlow" = "Загальна витрата"
+"up" = "Завантаження"
+"down" = "Вивантаження"
 "leaveBlankToNeverExpire" = "Залиште порожнім, щоб ніколи не закінчувався"
 "noRecommendKeepDefault" = "Рекомендується зберегти значення за замовчуванням"
 "certificatePath" = "Шлях до файлу"
@@ -219,6 +225,33 @@
 "reordered" = "Вхідні успішно впорядковані"
 
 [pages.node_clients]
+"bulkDelete" = "Масове видалення"
+"manageLinks" = "Керування посиланнями"
+"subscriptionUrl" = "URL підписки"
+"subscriptionUrlJson" = "URL підписки JSON"
+"showLinks" = "Показати посилання"
+"noLinks" = "Посилань немає"
+"title" = "Клієнти"
+"manageLinksFor" = "Керувати посиланнями для"
+"linkDrawerHint" = "Виберіть inbound для прив'язки цього клієнта. Використайте поле Flow, щоб перевизначити налаштування потоку для VLESS/Trojan XTLS."
+"linkedToPrefix" = "Пов'язано з"
+"linkedToSuffix" = "inbound(ів)"
+"flowOverride" = "Перезапис Flow (необов'язково), напр. xtls-rprx-vision"
+"commonValues" = "Загальні значення"
+"subscriptionId" = "ID підписки"
+"credentialFields" = "Поля облікових даних"
+"forVmessVlessProtocols" = "Для протоколів VMESS/VLESS"
+"uuid" = "UUID"
+"forTrojanShadowsocksProtocols" = "Для протоколів Trojan/Shadowsocks"
+"password" = "Пароль"
+"forHysteriaProtocol" = "Для протоколу Hysteria"
+"auth" = "Аутентифікація"
+"limitsAndPolicy" = "Обмеження та політика"
+"telegramChatId" = "ID чату Telegram"
+"depleted" = "Вичерпано"
+"expired" = "Термін дії минув"
+
+[pages.clients]
 "bulkDelete" = "Масове видалення"
 "manageLinks" = "Керування посиланнями"
 "subscriptionUrl" = "URL підписки"

@@ -1241,6 +1241,19 @@ body.dark .ant-select-dropdown-menu,
     font-weight: 600 !important;
 }
 
+/* Dark dropdown menu item group titles */
+body.dark .ant-dropdown-menu-item-group-title,
+#app.dark .ant-dropdown-menu-item-group-title,
+.dark .ant-dropdown-menu-item-group-title,
+.dark .ant-menu-item-group-title,
+.dark.ant-dropdown .ant-dropdown-menu-item-group-title,
+.ant-dropdown-menu-dark .ant-dropdown-menu-item-group-title,
+.dark .ant-menu-dark .ant-menu-item-group-title,
+html[data-theme="ultra-dark"] .ant-dropdown-menu-item-group-title,
+html[data-theme="ultra-dark"] .ant-menu-item-group-title {
+    color: var(--ui-text-muted) !important;
+}
+
 /* DatePicker & Calendar design system styling */
 .ant-calendar-picker-container,
 .ant-calendar {
@@ -1943,6 +1956,36 @@ body.dark .ant-input:focus,
     background: var(--ui-surface-muted);
 }
 
+body.dark .anticon-search,
+body.dark .ant-input-search-icon,
+body.dark .ant-input-prefix,
+body.dark .ant-input-suffix,
+body.dark .ant-input-clear-icon,
+#app.dark .anticon-search,
+#app.dark .ant-input-search-icon,
+#app.dark .ant-input-prefix,
+#app.dark .ant-input-suffix,
+#app.dark .ant-input-clear-icon,
+.dark .anticon-search,
+.dark .ant-input-search-icon,
+.dark .ant-input-prefix,
+.dark .ant-input-suffix,
+.dark .ant-input-clear-icon {
+    color: var(--ui-text-muted) !important;
+}
+
+body.dark .anticon-search:hover,
+body.dark .ant-input-search-icon:hover,
+body.dark .ant-input-clear-icon:hover,
+#app.dark .anticon-search:hover,
+#app.dark .ant-input-search-icon:hover,
+#app.dark .ant-input-clear-icon:hover,
+.dark .anticon-search:hover,
+.dark .ant-input-search-icon:hover,
+.dark .ant-input-clear-icon:hover {
+    color: var(--ui-text) !important;
+}
+
 body.dark .ant-btn:not(.ant-btn-primary):not(.ant-btn-danger),
 #app.dark .ant-btn:not(.ant-btn-primary):not(.ant-btn-danger) {
     color: var(--ui-text);
@@ -2463,4 +2506,57 @@ html[data-theme="ultra-dark"] body.dark {
 .list-leave-active {
     opacity: 0 !important;
     transform: translateY(-16px) scale(0.99) !important;
+}
+
+/* Inbound selection grid styling */
+.inbound-select-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    gap: 10px;
+    max-height: 220px;
+    overflow-y: auto;
+    padding: 14px 16px;
+    border: 1px solid var(--ui-border);
+    border-radius: var(--ui-radius-sm);
+    background: var(--ui-surface-muted);
+    margin: 10px 0 14px;
+}
+
+.inbound-select-grid .ant-checkbox-wrapper {
+    display: inline-flex;
+    align-items: center;
+    margin: 0 !important;
+    padding: 8px 12px;
+    background: var(--ui-surface);
+    border: 1px solid var(--ui-border);
+    border-radius: var(--ui-radius-sm);
+    transition: all 0.2s ease;
+    line-height: 1.4;
+}
+
+.inbound-select-grid .ant-checkbox-wrapper:hover {
+    border-color: var(--ui-primary);
+    background: var(--ui-primary-soft);
+}
+
+.inbound-select-grid .ant-checkbox-wrapper .ant-checkbox {
+    margin-right: 10px;
+    flex-shrink: 0;
+}
+
+.inbound-select-grid .ant-checkbox-wrapper .ant-checkbox + span {
+    padding-left: 2px;
+    padding-right: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    font-weight: 500;
+    color: var(--ui-text);
+}
+
+[dir="rtl"] .inbound-select-grid .ant-checkbox-wrapper .ant-checkbox,
+.ant-modal[dir="rtl"] .inbound-select-grid .ant-checkbox-wrapper .ant-checkbox {
+    margin-right: 0;
+    margin-left: 10px;
 }

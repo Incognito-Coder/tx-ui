@@ -43,9 +43,13 @@ func (a *APIController) initRouter(g *gin.RouterGroup) {
 	server := api.Group("/server")
 	a.serverController = NewServerController(server)
 
-	// Node Clients API
+	// Clients API (Primary)
+	clients := api.Group("/clients")
+	a.nodeClientController = NewNodeClientController(clients)
+
+	// Node Clients API (Backward-compatible alias)
 	nodeClients := api.Group("/nodeClients")
-	a.nodeClientController = NewNodeClientController(nodeClients)
+	NewNodeClientController(nodeClients)
 
 	// Extra routes
 	api.GET("/backuptotgbot", a.BackuptoTgbot)

@@ -7,10 +7,21 @@
 <script src="{{ .base_path }}assets/js/axios-init.js?{{ .cur_ver }}"></script>
 <script src="{{ .base_path }}assets/js/util/common.js?{{ .cur_ver }}"></script>
 <script src="{{ .base_path }}assets/js/util/date-util.js?{{ .cur_ver }}"></script>
-<script src="{{ .base_path }}assets/js/util/utils.js?{{ .cur_ver }}"></script>
+<script src="{{ .base_path }}assets/js/util/utils.js?{{ .cur_ver }}_v2"></script>
 <script src="{{ .base_path }}assets/js/langs.js"></script>
 <script>
     const basePath = '{{ .base_path }}';
     axios.defaults.baseURL = basePath;
+    if (typeof HttpUtil !== 'undefined' && typeof HttpUtil.postJson !== 'function') {
+        HttpUtil.postJson = function(url, data, options = {}) {
+            const payload = (typeof data === 'object' && !(data instanceof FormData)) ? JSON.stringify(data) : data;
+            const opts = Object.assign({}, options, {
+                headers: Object.assign({}, (options && options.headers) || {}, {
+                    'Content-Type': 'application/json',
+                }),
+            });
+            return HttpUtil.post(url, payload, opts);
+        };
+    }
 </script>
 {{end}}

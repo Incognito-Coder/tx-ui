@@ -69,6 +69,9 @@
 "secAlertSubJsonURI" = "JSONサブスクリプションのデフォルトURIパスは安全ではありません。複雑なURIパスを設定してください。"
 "moveUp" = "上へ移動"
 "moveDown" = "下へ移動"
+"all" = "すべて"
+"inbounds" = "受信"
+"links" = "リンク"
 
 [menu]
 "theme" = "テーマ"
@@ -82,6 +85,7 @@
 "logout" = "ログアウト"
 "link" = "リンク管理"
 "node_clients" = "Node Clients"
+"clients" = "クライアント"
 "txThemeHub" = "TX ThemeHub"
 
 [pages.login]
@@ -175,6 +179,8 @@
 "monitorDesc" = "空白にするとすべてのIPを監視"
 "meansNoLimit" = "= 無制限（単位：GB）"
 "totalFlow" = "総トラフィック"
+"up" = "アップロード"
+"down" = "ダウンロード"
 "leaveBlankToNeverExpire" = "空白にすると期限なし"
 "noRecommendKeepDefault" = "デフォルト値を保持することをお勧めします"
 "certificatePath" = "ファイルパス"
@@ -219,6 +225,33 @@
 "reordered" = "インバウンドルールの順序が変更されました"
 
 [pages.node_clients]
+"bulkDelete" = "一括削除"
+"manageLinks" = "リンク管理"
+"subscriptionUrl" = "購読 URL"
+"subscriptionUrlJson" = "購読 URL JSON"
+"showLinks" = "リンクを表示"
+"noLinks" = "利用可能なリンクはありません"
+"title" = "クライアント"
+"manageLinksFor" = "リンクを管理"
+"linkDrawerHint" = "このノードクライアントにリンクするinboundを選択してください。FlowフィールドでVLESS/Trojan XTLSのフロー設定を上書きできます。"
+"linkedToPrefix" = "リンク先"
+"linkedToSuffix" = "インバウンド"
+"flowOverride" = "Flow上書き（任意）。例: xtls-rprx-vision"
+"commonValues" = "よく使われる値"
+"subscriptionId" = "サブスクリプションID"
+"credentialFields" = "認証情報フィールド"
+"forVmessVlessProtocols" = "VMESS/VLESSプロトコル用"
+"uuid" = "UUID"
+"forTrojanShadowsocksProtocols" = "Trojan/Shadowsocksプロトコル用"
+"password" = "パスワード"
+"forHysteriaProtocol" = "Hysteriaプロトコル用"
+"auth" = "認証"
+"limitsAndPolicy" = "制限とポリシー"
+"telegramChatId" = "TelegramチャットID"
+"depleted" = "消費済み"
+"expired" = "期限切れ"
+
+[pages.clients]
 "bulkDelete" = "一括削除"
 "manageLinks" = "リンク管理"
 "subscriptionUrl" = "購読 URL"

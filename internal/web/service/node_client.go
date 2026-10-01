@@ -1,6 +1,7 @@
 package service
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -22,6 +23,13 @@ type NodeClientService struct{}
 // Read helpers
 // ---------------------------------------------------------------------------
 
+// ClientDetail bundles a NodeClient with its active links and aggregated traffic.
+type ClientDetail struct {
+	model.NodeClient
+	Links   []model.NodeClientLink `json:"links"`
+	Traffic *xray.ClientTraffic   `json:"traffic"`
+}
+
 // GetAll returns all NodeClient records.
 func (s *NodeClientService) GetAll() ([]*model.NodeClient, error) {
 	db := database.GetDB()
@@ -31,6 +39,80 @@ func (s *NodeClientService) GetAll() ([]*model.NodeClient, error) {
 		return nil, err
 	}
 	return clients, nil
+}
+
+// GetAllWithDetails returns all NodeClient records with their links and traffic populated.
+func (s *NodeClientService) GetAllWithDetails() ([]*ClientDetail, error) {
+	db := database.GetDB()
+	var clients []*model.NodeClient
+	err := db.Model(model.NodeClient{}).Order("id asc").Find(&clients).Error
+	if err != nil && err != gorm.ErrRecordNotFound {
+		return nil, err
+	}
+
+	var allLinks []model.NodeClientLink
+	_ = db.Find(&allLinks).Error
+
+	linksByClient := make(map[int][]model.NodeClientLink, len(allLinks))
+	for _, l := range allLinks {
+		linksByClient[l.NodeClientId] = append(linksByClient[l.NodeClientId], l)
+	}
+
+	var allTraffics []xray.ClientTraffic
+	_ = db.Find(&allTraffics).Error
+
+	trafficsByNodeClientId := make(map[int][]xray.ClientTraffic)
+	trafficsByEmail := make(map[string][]xray.ClientTraffic)
+	for _, t := range allTraffics {
+		if t.NodeClientId != nil && *t.NodeClientId > 0 {
+			trafficsByNodeClientId[*t.NodeClientId] = append(trafficsByNodeClientId[*t.NodeClientId], t)
+		}
+		if t.Email != "" {
+			le := strings.ToLower(t.Email)
+			trafficsByEmail[le] = append(trafficsByEmail[le], t)
+		}
+	}
+
+	results := make([]*ClientDetail, 0, len(clients))
+	for _, nc := range clients {
+		links := linksByClient[nc.Id]
+		if links == nil {
+			links = []model.NodeClientLink{}
+		}
+
+		var rows []xray.ClientTraffic
+		seenTrafficIds := make(map[int]bool)
+		if ncRows, ok := trafficsByNodeClientId[nc.Id]; ok {
+			for _, r := range ncRows {
+				if !seenTrafficIds[r.Id] {
+					seenTrafficIds[r.Id] = true
+					rows = append(rows, r)
+				}
+			}
+		}
+		if nc.Email != "" {
+			if emailRows, ok := trafficsByEmail[strings.ToLower(nc.Email)]; ok {
+				for _, r := range emailRows {
+					if !seenTrafficIds[r.Id] {
+						seenTrafficIds[r.Id] = true
+						rows = append(rows, r)
+					}
+				}
+			}
+		}
+
+		traffic := aggregateTrafficRows(rows, nc.TotalGB, nc.ExpiryTime, nc.Id)
+		if traffic.Email == "" {
+			traffic.Email = nc.Email
+		}
+
+		results = append(results, &ClientDetail{
+			NodeClient: *nc,
+			Links:      links,
+			Traffic:    traffic,
+		})
+	}
+	return results, nil
 }
 
 // GetByID returns a single NodeClient by primary key.
@@ -67,48 +149,8 @@ func (s *NodeClientService) GetBySubID(subId string) (*model.NodeClient, error) 
 }
 
 // ---------------------------------------------------------------------------
-// Uniqueness helpers (scan both node_clients table and inbound settings JSON)
+// Uniqueness helpers
 // ---------------------------------------------------------------------------
-
-// getAllInboundEmails returns all client emails embedded in any inbound's
-// settings.clients JSON array — mirrors InboundService.getAllEmails.
-func (s *NodeClientService) getAllInboundEmails() ([]string, error) {
-	db := database.GetDB()
-	var emails []string
-	err := db.Raw(`
-		SELECT JSON_EXTRACT(client.value, '$.email')
-		FROM inbounds,
-			JSON_EACH(JSON_EXTRACT(inbounds.settings, '$.clients')) AS client
-		WHERE inbounds.settings IS NOT NULL
-		  AND inbounds.settings != ''
-		  AND JSON_TYPE(inbounds.settings, '$.clients') = 'array'
-	`).Scan(&emails).Error
-	if err != nil {
-		return nil, err
-	}
-	return emails, nil
-}
-
-// getAllInboundSubIDs returns all client subId values embedded in any inbound's
-// settings.clients JSON array.
-func (s *NodeClientService) getAllInboundSubIDs() ([]string, error) {
-	db := database.GetDB()
-	var subIds []string
-	err := db.Raw(`
-		SELECT JSON_EXTRACT(client.value, '$.subId')
-		FROM inbounds,
-			JSON_EACH(JSON_EXTRACT(inbounds.settings, '$.clients')) AS client
-		WHERE inbounds.settings IS NOT NULL
-		  AND inbounds.settings != ''
-		  AND JSON_TYPE(inbounds.settings, '$.clients') = 'array'
-		  AND JSON_EXTRACT(client.value, '$.subId') IS NOT NULL
-		  AND JSON_EXTRACT(client.value, '$.subId') != ''
-	`).Scan(&subIds).Error
-	if err != nil {
-		return nil, err
-	}
-	return subIds, nil
-}
 
 func containsIgnoreCase(slice []string, s string) bool {
 	lower := strings.ToLower(s)
@@ -121,15 +163,14 @@ func containsIgnoreCase(slice []string, s string) bool {
 }
 
 // checkEmailUnique verifies that the given email does not already exist in the
-// node_clients table (excluding ignoreID > 0) or in any inbound's JSON clients.
+// node_clients table (excluding ignoreID > 0).
 func (s *NodeClientService) checkEmailUnique(email string, ignoreID int) error {
 	if email == "" {
 		return nil
 	}
 	db := database.GetDB()
 
-	// Check node_clients table
-	query := db.Model(model.NodeClient{}).Where("email = ?", email)
+	query := db.Model(model.NodeClient{}).Where("LOWER(email) = LOWER(?)", email)
 	if ignoreID > 0 {
 		query = query.Where("id != ?", ignoreID)
 	}
@@ -138,29 +179,19 @@ func (s *NodeClientService) checkEmailUnique(email string, ignoreID int) error {
 		return err
 	}
 	if count > 0 {
-		return fmt.Errorf("email already exists in node clients: %s", email)
-	}
-
-	// Check inbound settings JSON arrays
-	inboundEmails, err := s.getAllInboundEmails()
-	if err != nil {
-		return err
-	}
-	if containsIgnoreCase(inboundEmails, email) {
-		return fmt.Errorf("email already exists in inbound clients: %s", email)
+		return fmt.Errorf("email already exists: %s", email)
 	}
 	return nil
 }
 
 // checkSubIDUnique verifies that the given SubID does not already exist in the
-// node_clients table (excluding ignoreID > 0) or in any inbound's JSON clients.
+// node_clients table (excluding ignoreID > 0).
 func (s *NodeClientService) checkSubIDUnique(subId string, ignoreID int) error {
 	if subId == "" {
 		return nil
 	}
 	db := database.GetDB()
 
-	// Check node_clients table
 	query := db.Model(model.NodeClient{}).Where("sub_id = ?", subId)
 	if ignoreID > 0 {
 		query = query.Where("id != ?", ignoreID)
@@ -170,16 +201,7 @@ func (s *NodeClientService) checkSubIDUnique(subId string, ignoreID int) error {
 		return err
 	}
 	if count > 0 {
-		return fmt.Errorf("subId already exists in node clients: %s", subId)
-	}
-
-	// Check inbound settings JSON arrays
-	inboundSubIDs, err := s.getAllInboundSubIDs()
-	if err != nil {
-		return err
-	}
-	if containsIgnoreCase(inboundSubIDs, subId) {
-		return fmt.Errorf("subId already exists in inbound clients: %s", subId)
+		return fmt.Errorf("subId already exists: %s", subId)
 	}
 	return nil
 }
@@ -236,14 +258,32 @@ func (s *NodeClientService) Update(nc *model.NodeClient) error {
 
 	// Keep each linked traffic row's node-client metadata in sync while
 	// preserving its accumulated upload and download counters.
+	trafficUpdates := map[string]interface{}{
+		"email":       nc.Email,
+		"total":       nc.TotalGB,
+		"expiry_time": nc.ExpiryTime,
+		"reset":       nc.Reset,
+	}
+	now := time.Now().Unix() * 1000
+	if !nc.Enable {
+		trafficUpdates["enable"] = false
+	} else {
+		isExhausted := false
+		if nc.ExpiryTime > 0 && nc.ExpiryTime <= now {
+			isExhausted = true
+		}
+		if !isExhausted && nc.TotalGB > 0 {
+			aggregated, _ := s.GetAggregatedTraffic(nc.Id, tx)
+			if aggregated != nil && (aggregated.Up+aggregated.Down) >= nc.TotalGB {
+				isExhausted = true
+			}
+		}
+		trafficUpdates["enable"] = !isExhausted
+	}
+
 	if err := tx.Model(&xray.ClientTraffic{}).
 		Where("node_client_id = ?", nc.Id).
-		Updates(map[string]interface{}{
-			"email":       nc.Email,
-			"total":       nc.TotalGB,
-			"expiry_time": nc.ExpiryTime,
-			"reset":       nc.Reset,
-		}).Error; err != nil {
+		Updates(trafficUpdates).Error; err != nil {
 		tx.Rollback()
 		return err
 	}
@@ -507,44 +547,42 @@ func (s *NodeClientService) RemoveLink(nodeClientId, inboundId int) error {
 // ---------------------------------------------------------------------------
 
 func aggregateTrafficRows(rows []xray.ClientTraffic, totalGB int64, expiryTime int64, nodeClientId int) *xray.ClientTraffic {
-	trafficByEmail := make(map[string]*xray.ClientTraffic, len(rows))
+	var maxUp, maxDown int64
+	var email string
 	for _, row := range rows {
-		if row.Email == "" {
-			continue
+		if row.Email != "" && email == "" {
+			email = row.Email
 		}
-		existing, ok := trafficByEmail[row.Email]
-		if !ok || row.Up+row.Down > existing.Up+existing.Down {
-			copied := row
-			trafficByEmail[row.Email] = &copied
+		if row.Up > maxUp {
+			maxUp = row.Up
+		}
+		if row.Down > maxDown {
+			maxDown = row.Down
 		}
 	}
 
-	var totalUp, totalDown int64
-	var email string
-	for _, row := range trafficByEmail {
-		totalUp += row.Up
-		totalDown += row.Down
-		if email == "" {
-			email = row.Email
-		}
+	now := time.Now().Unix() * 1000
+	isActive := true
+	if expiryTime > 0 && expiryTime <= now {
+		isActive = false
+	}
+	if totalGB > 0 && (maxUp+maxDown) >= totalGB {
+		isActive = false
 	}
 
 	return &xray.ClientTraffic{
 		Email:        email,
-		Up:           totalUp,
-		Down:         totalDown,
+		Up:           maxUp,
+		Down:         maxDown,
 		Total:        totalGB,
 		ExpiryTime:   expiryTime,
+		Enable:       isActive,
 		NodeClientId: &nodeClientId,
 	}
 }
 
-// GetAggregatedTraffic queries all ClientTraffic rows with the given node_client_id,
-// dedupes rows by email, and returns a single aggregated *xray.ClientTraffic.
-// If the node client is linked to multiple inbounds, the same email may appear
-// across multiple rows in the DB, so only one representative row per email is
-// used when calculating used traffic.
-// Requirements: 4.5, 6.3
+// GetAggregatedTraffic queries all ClientTraffic rows with the given node_client_id or email,
+// dedupes rows, and returns a single aggregated *xray.ClientTraffic.
 func (s *NodeClientService) GetAggregatedTraffic(nodeClientId int, txs ...*gorm.DB) (*xray.ClientTraffic, error) {
 	db := database.GetDB()
 	if len(txs) > 0 && txs[0] != nil {
@@ -558,11 +596,15 @@ func (s *NodeClientService) GetAggregatedTraffic(nodeClientId int, txs ...*gorm.
 	}
 
 	var rows []xray.ClientTraffic
-	if err := db.Where("node_client_id = ?", nodeClientId).Find(&rows).Error; err != nil {
+	if err := db.Where("node_client_id = ? OR LOWER(email) = LOWER(?)", nodeClientId, nc.Email).Find(&rows).Error; err != nil {
 		return nil, err
 	}
 
-	return aggregateTrafficRows(rows, nc.TotalGB, nc.ExpiryTime, nodeClientId), nil
+	traffic := aggregateTrafficRows(rows, nc.TotalGB, nc.ExpiryTime, nodeClientId)
+	if traffic.Email == "" {
+		traffic.Email = nc.Email
+	}
+	return traffic, nil
 }
 
 // ResetTraffic zeros out Up and Down on all ClientTraffic rows for the given node client
@@ -579,9 +621,18 @@ func (s *NodeClientService) ResetTraffic(nodeClientId int) (bool, error) {
 		}
 	}()
 
+	updates := map[string]interface{}{"up": 0, "down": 0}
+	var nc model.NodeClient
+	if err := tx.First(&nc, nodeClientId).Error; err == nil {
+		now := time.Now().Unix() * 1000
+		if nc.Enable && (nc.ExpiryTime <= 0 || nc.ExpiryTime > now) {
+			updates["enable"] = true
+		}
+	}
+
 	if err := tx.Model(&xray.ClientTraffic{}).
 		Where("node_client_id = ?", nodeClientId).
-		Updates(map[string]interface{}{"up": 0, "down": 0}).Error; err != nil {
+		Updates(updates).Error; err != nil {
 		tx.Rollback()
 		return false, err
 	}
@@ -697,18 +748,16 @@ func (s *NodeClientService) DisableExhausted(txs ...*gorm.DB) (bool, error) {
 		return false, nil
 	}
 
-	// Disable all exhausted node clients in one query
-	if err := db.Model(&model.NodeClient{}).Where("id IN ?", idsToDisable).Update("enable", false).Error; err != nil {
-		return false, err
+	// Only disable linked client_traffics rows so every inbound reflects the exhaustion in Xray.
+	// We do NOT update node_clients.enable to false, because the switch represents manual deactivation;
+	// exhausted/expired clients are disconnected at the network/core level while keeping the switch on.
+	res := db.Model(&xray.ClientTraffic{}).Where("node_client_id IN ? AND enable = ?", idsToDisable, true).Update("enable", false)
+	if res.Error != nil {
+		return false, res.Error
 	}
 
-	// Also disable all linked client_traffics rows so every inbound reflects the exhaustion
-	if err := db.Model(&xray.ClientTraffic{}).Where("node_client_id IN ?", idsToDisable).Update("enable", false).Error; err != nil {
-		return false, err
-	}
-
-	logger.Debugf("Disabled %d exhausted node clients", len(idsToDisable))
-	return true, nil
+	logger.Debugf("Marked %d exhausted node client traffic rows disabled", res.RowsAffected)
+	return res.RowsAffected > 0, nil
 }
 
 // AutoRenew processes all enabled NodeClients with Reset > 0. For each client whose
@@ -755,10 +804,10 @@ func (s *NodeClientService) AutoRenew(txs ...*gorm.DB) error {
 			return fmt.Errorf("updating expiry_time for NodeClient %d: %w", nc.Id, err)
 		}
 
-		// Zero out Up/Down on all linked ClientTraffic rows
+		// Zero out Up/Down on all linked ClientTraffic rows and re-enable
 		if err := tx.Model(&xray.ClientTraffic{}).
 			Where("node_client_id = ?", nc.Id).
-			Updates(map[string]interface{}{"up": 0, "down": 0, "expiry_time": newExpiryTime}).Error; err != nil {
+			Updates(map[string]interface{}{"up": 0, "down": 0, "expiry_time": newExpiryTime, "enable": true}).Error; err != nil {
 			tx.Rollback()
 			return fmt.Errorf("resetting traffic for NodeClient %d: %w", nc.Id, err)
 		}
@@ -881,24 +930,39 @@ func (s *NodeClientService) MergeIntoInboundConfig(inboundId int, existingClient
 			node_clients.comment`).
 		Joins("JOIN node_clients ON node_clients.id = node_client_links.node_client_id").
 		Where("node_client_links.inbound_id = ? AND node_clients.enable = ?", inboundId, true).
+		Order("node_clients.id ASC").
 		Scan(&rows).Error
 	if err != nil {
 		return nil, fmt.Errorf("fetching node client links for inbound %d: %w", inboundId, err)
 	}
 
-	// Build a set of emails already present in existingClients for fast collision detection.
-	seenEmails := make(map[string]struct{}, len(existingClients))
-	for _, c := range existingClients {
-		if c.Email != "" {
-			seenEmails[strings.ToLower(c.Email)] = struct{}{}
-		}
-	}
+	merged := make([]model.Client, 0, len(existingClients)+len(rows))
+	seenEmails := make(map[string]struct{}, len(existingClients)+len(rows))
+	seenIDs := make(map[string]struct{}, len(existingClients)+len(rows))
 
-	// Start with a copy of existingClients so we never mutate the caller's slice.
-	merged := make([]model.Client, len(existingClients), len(existingClients)+len(rows))
-	copy(merged, existingClients)
-
+	now := time.Now().Unix() * 1000
+	// 1. Add all active node clients first (NodeClient is primary source of truth)
 	for _, row := range rows {
+		// Skip expired node clients
+		if row.ExpiryTime > 0 && row.ExpiryTime <= now {
+			continue
+		}
+
+		// Skip traffic-exhausted node clients
+		if row.TotalGB > 0 {
+			var totalTraffic struct {
+				Up   int64
+				Down int64
+			}
+			err := db.Table("client_traffics").
+				Select("COALESCE(MAX(up), 0) as up, COALESCE(MAX(down), 0) as down").
+				Where("node_client_id = ? OR email = ?", row.ClientID, row.Email).
+				Scan(&totalTraffic).Error
+			if err == nil && (totalTraffic.Up+totalTraffic.Down) >= row.TotalGB {
+				continue
+			}
+		}
+
 		nc := model.NodeClient{
 			Id:         row.ClientID,
 			Email:      row.Email,
@@ -917,20 +981,410 @@ func (s *NodeClientService) MergeIntoInboundConfig(inboundId int, existingClient
 			Comment:    row.Comment,
 		}
 		link := model.NodeClientLink{Flow: row.LinkFlow}
+		client := s.synthesiseClient(&nc, &link)
 
-		emailKey := strings.ToLower(nc.Email)
-		if _, collision := seenEmails[emailKey]; collision {
-			logger.Warningf(
-				"NodeClientService.MergeIntoInboundConfig: email collision for %q "+
-					"(node_client_id=%d, inbound_id=%d) — skipping link",
-				nc.Email, link.NodeClientId, inboundId,
-			)
-			continue
+		emailKey := strings.ToLower(strings.TrimSpace(client.Email))
+		idKey := strings.ToLower(strings.TrimSpace(client.ID))
+		if emailKey != "" {
+			if _, ok := seenEmails[emailKey]; ok {
+				continue
+			}
+			seenEmails[emailKey] = struct{}{}
 		}
+		if idKey != "" {
+			if _, ok := seenIDs[idKey]; ok {
+				continue
+			}
+			seenIDs[idKey] = struct{}{}
+		}
+		merged = append(merged, client)
+	}
 
-		seenEmails[emailKey] = struct{}{}
-		merged = append(merged, s.synthesiseClient(&nc, &link))
+	// 2. Add existingClients from settings JSON that are not already covered by node clients
+	for _, c := range existingClients {
+		emailKey := strings.ToLower(strings.TrimSpace(c.Email))
+		idKey := strings.ToLower(strings.TrimSpace(c.ID))
+		if emailKey != "" {
+			if _, ok := seenEmails[emailKey]; ok {
+				continue
+			}
+		}
+		if idKey != "" {
+			if _, ok := seenIDs[idKey]; ok {
+				continue
+			}
+		}
+		if emailKey != "" {
+			seenEmails[emailKey] = struct{}{}
+		}
+		if idKey != "" {
+			seenIDs[idKey] = struct{}{}
+		}
+		merged = append(merged, c)
 	}
 
 	return merged, nil
+}
+
+// ---------------------------------------------------------------------------
+// Extended Client Operations
+// ---------------------------------------------------------------------------
+
+type NodeClientLinkInput struct {
+	InboundId int    `json:"inboundId" form:"inboundId"`
+	Flow      string `json:"flow"      form:"flow"`
+}
+
+// SetLinks replaces all links for a client with the provided list.
+func (s *NodeClientService) SetLinks(nodeClientId int, links []NodeClientLinkInput) error {
+	db := database.GetDB()
+	nc := &model.NodeClient{}
+	if err := db.First(nc, nodeClientId).Error; err != nil {
+		return fmt.Errorf("client not found (id=%d): %w", nodeClientId, err)
+	}
+
+	tx := db.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	var currentLinks []model.NodeClientLink
+	if err := tx.Where("node_client_id = ?", nodeClientId).Find(&currentLinks).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	newInboundMap := make(map[int]string, len(links))
+	for _, l := range links {
+		newInboundMap[l.InboundId] = l.Flow
+	}
+
+	// Remove links not in new set
+	for _, cl := range currentLinks {
+		if _, keep := newInboundMap[cl.InboundId]; !keep {
+			if err := tx.Delete(&cl).Error; err != nil {
+				tx.Rollback()
+				return err
+			}
+			_ = tx.Model(&xray.ClientTraffic{}).
+				Where("LOWER(email) = LOWER(?) AND node_client_id = ? AND inbound_id = ?", nc.Email, nodeClientId, cl.InboundId).
+				Update("node_client_id", nil).Error
+		}
+	}
+
+	// Add or update links
+	for _, l := range links {
+		var existing model.NodeClientLink
+		err := tx.Where("node_client_id = ? AND inbound_id = ?", nodeClientId, l.InboundId).First(&existing).Error
+		if err == gorm.ErrRecordNotFound {
+			newLink := model.NodeClientLink{
+				NodeClientId: nodeClientId,
+				InboundId:    l.InboundId,
+				Flow:         l.Flow,
+			}
+			if err := tx.Create(&newLink).Error; err != nil {
+				tx.Rollback()
+				return err
+			}
+
+			var ct xray.ClientTraffic
+			res := tx.Where("LOWER(email) = LOWER(?) AND inbound_id = ?", nc.Email, l.InboundId).First(&ct)
+			if res.Error == gorm.ErrRecordNotFound {
+				ct = xray.ClientTraffic{
+					InboundId:    l.InboundId,
+					Email:        nc.Email,
+					Enable:       true,
+					Up:           0,
+					Down:         0,
+					Total:        nc.TotalGB,
+					ExpiryTime:   nc.ExpiryTime,
+					Reset:        nc.Reset,
+					NodeClientId: &nodeClientId,
+				}
+				_ = tx.Create(&ct).Error
+			} else if res.Error == nil {
+				_ = tx.Model(&ct).Updates(map[string]interface{}{
+					"node_client_id": nodeClientId,
+					"total":          nc.TotalGB,
+					"expiry_time":    nc.ExpiryTime,
+					"reset":          nc.Reset,
+				}).Error
+			}
+		} else if err == nil {
+			if existing.Flow != l.Flow {
+				existing.Flow = l.Flow
+				_ = tx.Save(&existing).Error
+			}
+		}
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		return err
+	}
+
+	isNeedXrayRestart.Store(true)
+	return nil
+}
+
+// BulkCreate creates multiple clients and links each to the specified inbounds.
+func (s *NodeClientService) BulkCreate(clients []model.NodeClient, inboundIds []int) error {
+	db := database.GetDB()
+	tx := db.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	for i := range clients {
+		nc := &clients[i]
+		if err := s.checkEmailUnique(nc.Email, 0); err != nil {
+			tx.Rollback()
+			return err
+		}
+		if err := s.checkSubIDUnique(nc.SubID, 0); err != nil {
+			tx.Rollback()
+			return err
+		}
+
+		if err := tx.Create(nc).Error; err != nil {
+			tx.Rollback()
+			return err
+		}
+
+		for _, inId := range inboundIds {
+			link := model.NodeClientLink{
+				NodeClientId: nc.Id,
+				InboundId:    inId,
+				Flow:         nc.Flow,
+			}
+			if err := tx.Create(&link).Error; err != nil {
+				tx.Rollback()
+				return err
+			}
+
+			ct := xray.ClientTraffic{
+				InboundId:    inId,
+				Email:        nc.Email,
+				Enable:       true,
+				Up:           0,
+				Down:         0,
+				Total:        nc.TotalGB,
+				ExpiryTime:   nc.ExpiryTime,
+				Reset:        nc.Reset,
+				NodeClientId: &nc.Id,
+			}
+			if err := tx.Create(&ct).Error; err != nil {
+				tx.Rollback()
+				return err
+			}
+		}
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		return err
+	}
+
+	isNeedXrayRestart.Store(true)
+	return nil
+}
+
+// ResetAllTraffics resets upload and download counters on all clients.
+func (s *NodeClientService) ResetAllTraffics() error {
+	db := database.GetDB()
+	if err := db.Model(&xray.ClientTraffic{}).
+		Where("node_client_id IS NOT NULL").
+		Updates(map[string]interface{}{"up": 0, "down": 0}).Error; err != nil {
+		return err
+	}
+	now := time.Now().Unix() * 1000
+	var enabledClientIds []int
+	db.Model(&model.NodeClient{}).
+		Where("enable = ? AND (expiry_time <= 0 OR expiry_time > ?)", true, now).
+		Pluck("id", &enabledClientIds)
+	if len(enabledClientIds) > 0 {
+		db.Model(&xray.ClientTraffic{}).
+			Where("node_client_id IN ?", enabledClientIds).
+			Update("enable", true)
+	}
+	isNeedXrayRestart.Store(true)
+	return nil
+}
+
+// DeleteDepleted deletes all clients whose quota is exhausted or expiry time has passed.
+func (s *NodeClientService) DeleteDepleted() error {
+	db := database.GetDB()
+	var clients []*model.NodeClient
+	if err := db.Find(&clients).Error; err != nil {
+		return err
+	}
+	now := time.Now().Unix() * 1000
+	var idsToDelete []int
+	for _, nc := range clients {
+		if nc.ExpiryTime > 0 && nc.ExpiryTime <= now {
+			idsToDelete = append(idsToDelete, nc.Id)
+			continue
+		}
+		if nc.TotalGB > 0 {
+			agg, err := s.GetAggregatedTraffic(nc.Id)
+			if err == nil && (agg.Up+agg.Down) >= nc.TotalGB {
+				idsToDelete = append(idsToDelete, nc.Id)
+			}
+		}
+	}
+	if len(idsToDelete) > 0 {
+		return s.BulkDelete(idsToDelete)
+	}
+	return nil
+}
+
+// GetLinkedInboundsCounts returns a map of inboundId -> linked clients count.
+func (s *NodeClientService) GetLinkedInboundsCounts() (map[int]int, error) {
+	db := database.GetDB()
+	type countRow struct {
+		InboundId int `gorm:"column:inbound_id"`
+		Count     int `gorm:"column:count"`
+	}
+	var rows []countRow
+	err := db.Table("node_client_links").
+		Select("inbound_id, count(*) as count").
+		Group("inbound_id").
+		Scan(&rows).Error
+	if err != nil {
+		return nil, err
+	}
+	res := make(map[int]int, len(rows))
+	for _, r := range rows {
+		res[r.InboundId] = r.Count
+	}
+	return res, nil
+}
+
+// MigrateLegacyClients scans all inbounds for clients embedded in settings JSON.
+// Any client that does not yet exist in node_clients is imported into node_clients,
+// linked to its inbound in node_client_links, and its client_traffics row is associated.
+func (s *NodeClientService) MigrateLegacyClients() error {
+	db := database.GetDB()
+	if db == nil {
+		return nil
+	}
+
+	var inbounds []*model.Inbound
+	if err := db.Find(&inbounds).Error; err != nil {
+		return err
+	}
+
+	for _, inbound := range inbounds {
+		if inbound.Settings == "" {
+			continue
+		}
+		var raw map[string]interface{}
+		if err := json.Unmarshal([]byte(inbound.Settings), &raw); err != nil {
+			continue
+		}
+		clientsRaw, ok := raw["clients"]
+		if !ok || clientsRaw == nil {
+			continue
+		}
+		clientsList, ok := clientsRaw.([]interface{})
+		if !ok || len(clientsList) == 0 {
+			continue
+		}
+
+		for _, item := range clientsList {
+			cMap, ok := item.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			email, _ := cMap["email"].(string)
+			if email == "" {
+				continue
+			}
+
+			// Check if NodeClient with this email already exists
+			var existingNC model.NodeClient
+			err := db.Where("LOWER(email) = LOWER(?)", email).First(&existingNC).Error
+			if err == gorm.ErrRecordNotFound {
+				subId, _ := cMap["subId"].(string)
+				id, _ := cMap["id"].(string)
+				password, _ := cMap["password"].(string)
+				auth, _ := cMap["auth"].(string)
+				security, _ := cMap["security"].(string)
+				flow, _ := cMap["flow"].(string)
+				comment, _ := cMap["comment"].(string)
+
+				var totalGB int64
+				if v, ok := cMap["totalGB"].(float64); ok {
+					totalGB = int64(v)
+				}
+				var expiryTime int64
+				if v, ok := cMap["expiryTime"].(float64); ok {
+					expiryTime = int64(v)
+				}
+				var limitIp int
+				if v, ok := cMap["limitIp"].(float64); ok {
+					limitIp = int(v)
+				}
+				var tgId int64
+				if v, ok := cMap["tgId"].(float64); ok {
+					tgId = int64(v)
+				}
+				var reset int
+				if v, ok := cMap["reset"].(float64); ok {
+					reset = int(v)
+				}
+				enable := true
+				if v, ok := cMap["enable"].(bool); ok {
+					enable = v
+				}
+
+				newNC := model.NodeClient{
+					Email:      email,
+					SubID:      subId,
+					UUID:       id,
+					Password:   password,
+					Auth:       auth,
+					Security:   security,
+					Flow:       flow,
+					TotalGB:    totalGB,
+					ExpiryTime: expiryTime,
+					LimitIP:    limitIp,
+					TgID:       tgId,
+					Enable:     enable,
+					Reset:      reset,
+					Comment:    comment,
+				}
+				if err := db.Create(&newNC).Error; err != nil {
+					logger.Warningf("MigrateLegacyClients: failed to create client %s: %v", email, err)
+					continue
+				}
+				existingNC = newNC
+			} else if err != nil {
+				continue
+			}
+
+			// Ensure link exists
+			var linkCount int64
+			db.Model(&model.NodeClientLink{}).
+				Where("node_client_id = ? AND inbound_id = ?", existingNC.Id, inbound.Id).
+				Count(&linkCount)
+			if linkCount == 0 {
+				flow, _ := cMap["flow"].(string)
+				link := model.NodeClientLink{
+					NodeClientId: existingNC.Id,
+					InboundId:    inbound.Id,
+					Flow:         flow,
+				}
+				_ = db.Create(&link).Error
+			}
+
+			// Associate existing ClientTraffic row with node_client_id
+			_ = db.Model(&xray.ClientTraffic{}).
+				Where("email = ? AND inbound_id = ? AND (node_client_id IS NULL OR node_client_id = 0)", email, inbound.Id).
+				Update("node_client_id", existingNC.Id).Error
+		}
+	}
+	return nil
 }

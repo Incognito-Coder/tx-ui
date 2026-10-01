@@ -68,6 +68,9 @@
 "secAlertSubJsonURI" = "訂閱 JSON 預設 URI 路徑不安全。請配置複雜的 URI 路徑。"
 "moveUp" = "上移"
 "moveDown" = "下移"
+"all" = "全部"
+"inbounds" = "入站"
+"links" = "鏈接"
 
 "useIPv4ForHost" = "主機使用 IPv4"
 
@@ -83,6 +86,7 @@
 "logout" = "退出登入"
 "link" = "管理"
 "node_clients" = "Node Clients"
+"clients" = "使用者列表"
 "txThemeHub" = "TX ThemeHub"
 
 [pages.login]
@@ -176,6 +180,8 @@
 "monitorDesc" = "留空表示監聽所有 IP"
 "meansNoLimit" = "= 無限制（單位：GB)"
 "totalFlow" = "總流量"
+"up" = "上傳"
+"down" = "下載"
 "leaveBlankToNeverExpire" = "留空表示永不過期"
 "noRecommendKeepDefault" = "建議保留預設值"
 "certificatePath" = "檔案路徑"
@@ -220,6 +226,33 @@
 "reordered" = "入站已重新排序"
 
 [pages.node_clients]
+"bulkDelete" = "批次刪除"
+"manageLinks" = "管理連結"
+"subscriptionUrl" = "訂閱 URL"
+"subscriptionUrlJson" = "訂閱 URL JSON"
+"showLinks" = "顯示連結"
+"noLinks" = "沒有可用連結"
+"title" = "客戶端"
+"manageLinksFor" = "管理連結"
+"linkDrawerHint" = "選擇要連結到此節點客戶端的入站（inbound）。使用 Flow 欄位可覆蓋 VLESS/Trojan XTLS 的流設定。"
+"linkedToPrefix" = "已連結至"
+"linkedToSuffix" = "入站"
+"flowOverride" = "流覆蓋（可選），例如 xtls-rprx-vision"
+"commonValues" = "常用值"
+"subscriptionId" = "訂閱 ID"
+"credentialFields" = "憑證欄位"
+"forVmessVlessProtocols" = "適用於 VMESS/VLESS 協議"
+"uuid" = "UUID"
+"forTrojanShadowsocksProtocols" = "適用於 Trojan/Shadowsocks 協議"
+"password" = "密碼"
+"forHysteriaProtocol" = "適用於 Hysteria 協議"
+"auth" = "認證"
+"limitsAndPolicy" = "限制與政策"
+"telegramChatId" = "Telegram 聊天 ID"
+"depleted" = "已耗盡"
+"expired" = "已過期"
+
+[pages.clients]
 "bulkDelete" = "批次刪除"
 "manageLinks" = "管理連結"
 "subscriptionUrl" = "訂閱 URL"

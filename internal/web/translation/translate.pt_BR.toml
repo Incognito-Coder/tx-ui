@@ -69,6 +69,9 @@
 "secAlertSubJsonURI" = "O caminho URI JSON de inscrição padrão não é seguro. Configure um caminho URI complexo."
 "moveUp" = "Mover para Cima"
 "moveDown" = "Mover para Baixo"
+"all" = "Todos"
+"inbounds" = "Entradas"
+"links" = "Links"
 
 [menu]
 "theme" = "Tema"
@@ -82,6 +85,7 @@
 "logout" = "Sair"
 "link" = "Gerenciar"
 "node_clients" = "Node Clients"
+"clients" = "Clientes"
 "txThemeHub" = "TX ThemeHub"
 
 [pages.login]
@@ -175,6 +179,8 @@
 "monitorDesc" = "Deixe em branco para ouvir todos os IPs"
 "meansNoLimit" = "= Ilimitado. (unidade: GB)"
 "totalFlow" = "Fluxo Total"
+"up" = "Upload"
+"down" = "Download"
 "leaveBlankToNeverExpire" = "Deixe em branco para nunca expirar"
 "noRecommendKeepDefault" = "Recomenda-se manter o padrão"
 "certificatePath" = "Caminho"
@@ -219,6 +225,33 @@
 "reordered" = "Reordenado com Sucesso"
 
 [pages.node_clients]
+"bulkDelete" = "Exclusão em massa"
+"manageLinks" = "Gerenciar links"
+"subscriptionUrl" = "URL de assinatura"
+"subscriptionUrlJson" = "URL de assinatura JSON"
+"showLinks" = "Mostrar links"
+"noLinks" = "Nenhum link disponível"
+"title" = "Clientes"
+"manageLinksFor" = "Gerenciar links para"
+"linkDrawerHint" = "Selecione inbounds para vincular a este cliente. Use o campo Flow para sobrescrever a configuração de fluxo para VLESS/Trojan XTLS."
+"linkedToPrefix" = "Vinculado a"
+"linkedToSuffix" = "entrada(s)"
+"flowOverride" = "Substituição de Flow (opcional), ex.: xtls-rprx-vision"
+"commonValues" = "Valores comuns"
+"subscriptionId" = "ID de assinatura"
+"credentialFields" = "Campos de credenciais"
+"forVmessVlessProtocols" = "Para protocolos VMESS/VLESS"
+"uuid" = "UUID"
+"forTrojanShadowsocksProtocols" = "Para protocolos Trojan/Shadowsocks"
+"password" = "Senha"
+"forHysteriaProtocol" = "Para protocolo Hysteria"
+"auth" = "Autenticação"
+"limitsAndPolicy" = "Limites e política"
+"telegramChatId" = "ID do chat do Telegram"
+"depleted" = "Esgotado"
+"expired" = "Expirado"
+
+[pages.clients]
 "bulkDelete" = "Exclusão em massa"
 "manageLinks" = "Gerenciar links"
 "subscriptionUrl" = "URL de assinatura"

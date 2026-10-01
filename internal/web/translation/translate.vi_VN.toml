@@ -69,6 +69,9 @@
 "secAlertSubJsonURI" = "Đường dẫn URI JSON mặc định của đăng ký không an toàn. Vui lòng cấu hình một đường dẫn URI phức tạp."
 "moveUp" = "Di chuyển lên"
 "moveDown" = "Di chuyển xuống"
+"all" = "Tất cả"
+"inbounds" = "Điểm vào"
+"links" = "Liên kết"
 
 [menu]
 "theme" = "Giao diện"
@@ -82,6 +85,7 @@
 "xray" = "Cài đặt Xray"
 "link" = "Quản lý"
 "node_clients" = "Node Clients"
+"clients" = "Khách hàng"
 "txThemeHub" = "TX ThemeHub"
 
 [pages.login]
@@ -175,6 +179,8 @@
 "monitorDesc" = "Mặc định để trống"
 "meansNoLimit" = "= Không giới hạn (đơn vị: GB)"
 "totalFlow" = "Tổng lưu lượng"
+"up" = "Tai len"
+"down" = "Tai xuong"
 "leaveBlankToNeverExpire" = "Để trống để không bao giờ hết hạn"
 "noRecommendKeepDefault" = "Không yêu cầu đặc biệt để giữ nguyên cài đặt mặc định"
 "certificatePath" = "Đường dẫn tập"
@@ -219,6 +225,33 @@
 "reordered" = "Sắp xếp lại điểm vào thành công"
 
 [pages.node_clients]
+"bulkDelete" = "Xóa hàng loạt"
+"manageLinks" = "Quản lý liên kết"
+"subscriptionUrl" = "URL đăng ký"
+"subscriptionUrlJson" = "URL đăng ký JSON"
+"showLinks" = "Hiện liên kết"
+"noLinks" = "Không có liên kết"
+"title" = "Khách hàng"
+"manageLinksFor" = "Quản lý liên kết cho"
+"linkDrawerHint" = "Chọn inbounds để liên kết client này. Sử dụng trường Flow để ghi đè cấu hình luồng cho VLESS/Trojan XTLS."
+"linkedToPrefix" = "Được liên kết với"
+"linkedToSuffix" = "inbound(s)"
+"flowOverride" = "Ghi đè Flow (tùy chọn), ví dụ xtls-rprx-vision"
+"commonValues" = "Giá trị phổ biến"
+"subscriptionId" = "ID đăng ký"
+"credentialFields" = "Trường thông tin xác thực"
+"forVmessVlessProtocols" = "Cho các giao thức VMESS/VLESS"
+"uuid" = "UUID"
+"forTrojanShadowsocksProtocols" = "Cho các giao thức Trojan/Shadowsocks"
+"password" = "Mật khẩu"
+"forHysteriaProtocol" = "Cho giao thức Hysteria"
+"auth" = "Xác thực"
+"limitsAndPolicy" = "Giới hạn & Chính sách"
+"telegramChatId" = "ID Chat Telegram"
+"depleted" = "Hết"
+"expired" = "Hết hạn"
+
+[pages.clients]
 "bulkDelete" = "Xóa hàng loạt"
 "manageLinks" = "Quản lý liên kết"
 "subscriptionUrl" = "URL đăng ký"

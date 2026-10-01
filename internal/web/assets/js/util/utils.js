@@ -57,6 +57,16 @@ class HttpUtil {
         }
     }
 
+    static async postJson(url, data, options = {}) {
+        const payload = (typeof data === 'object' && !(data instanceof FormData)) ? JSON.stringify(data) : data;
+        const opts = Object.assign({}, options, {
+            headers: Object.assign({}, (options && options.headers) || {}, {
+                'Content-Type': 'application/json',
+            }),
+        });
+        return this.post(url, payload, opts);
+    }
+
     static async postWithModal(url, data, modal) {
         if (modal) {
             modal.loading(true);

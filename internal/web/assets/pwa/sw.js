@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tx-ui-pwa-v1';
+const CACHE_NAME = 'tx-ui-pwa-v2';
 const OFFLINE_URL = 'assets/pwa/offline.html';
 
 const PRECACHE_ASSETS = [

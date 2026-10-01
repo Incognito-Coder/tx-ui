@@ -1,0 +1,2487 @@
+<!DOCTYPE html>
+<html lang="en">
+{{template "head" .}}
+<style>
+    /* ─── Base layout ─────────────────────────────────────── */
+    .ant-table .ant-table-content .ant-table-scroll .ant-table-body {
+        overflow-y: hidden;
+    }
+
+    @media (min-width: 769px) {
+        .ant-layout-content {
+            margin: 24px 16px;
+        }
+    }
+
+    /* ─── Dark-mode text fixes ────────────────────────────── */
+    /* Ant-Design table cells use rgb(0 0 0 / .65) by default.
+       Both the layout's .dark class and the popover's overlay class need overriding. */
+    .dark .ant-table-thead > tr > th {
+        color: var(--ui-text-muted) !important;
+    }
+
+    .dark .ant-table-tbody > tr > td,
+    .dark .ant-table-tbody > tr > td span,
+    .dark .ant-table-tbody > tr > td strong {
+        color: var(--ui-text) !important;
+    }
+
+    /* Popover overlay gets the "dark" class via :overlay-class-name.
+       The popover is rendered in document.body, outside the layout .dark wrapper. */
+    .dark .ant-popover-inner-content,
+    .dark .ant-popover-inner-content td,
+    .dark .ant-popover-inner-content th,
+    .dark .ant-popover-inner-content span {
+        color: var(--ui-text) !important;
+    }
+
+    .dark .ant-popover-inner-content td:first-child {
+        color: var(--ui-text-muted) !important;
+    }
+
+    /* Cards */
+    .dark .ant-card-body,
+    .dark .ant-card-head-title {
+        color: var(--ui-text) !important;
+    }
+
+    .dark strong {
+        color: var(--ui-text) !important;
+    }
+
+    /* Usage bar label spans – need !important since they're inside .dark layout */
+    .usage-bar-label {
+        font-size: 12px;
+        color: var(--ui-text) !important;
+        white-space: nowrap;
+    }
+
+    .usage-bar-label-muted {
+        font-size: 12px;
+        color: var(--ui-text-muted) !important;
+        white-space: nowrap;
+    }
+
+    /* Dark mode text color fixes for dropdown group title & search icon */
+    body.dark .ant-dropdown-menu-item-group-title,
+    #app.dark .ant-dropdown-menu-item-group-title,
+    .dark .ant-dropdown-menu-item-group-title,
+    .dark .ant-menu-item-group-title,
+    .dark.ant-dropdown .ant-dropdown-menu-item-group-title,
+    .ant-dropdown-menu-dark .ant-dropdown-menu-item-group-title,
+    .dark .ant-menu-dark .ant-menu-item-group-title,
+    html[data-theme="ultra-dark"] .ant-dropdown-menu-item-group-title,
+    html[data-theme="ultra-dark"] .ant-menu-item-group-title {
+        color: var(--ui-text-muted) !important;
+    }
+
+    body.dark .anticon-search,
+    body.dark .ant-input-search-icon,
+    body.dark .ant-input-prefix,
+    body.dark .ant-input-suffix,
+    body.dark .ant-input-clear-icon,
+    #app.dark .anticon-search,
+    #app.dark .ant-input-search-icon,
+    #app.dark .ant-input-prefix,
+    #app.dark .ant-input-suffix,
+    #app.dark .ant-input-clear-icon,
+    .dark .anticon-search,
+    .dark .ant-input-search-icon,
+    .dark .ant-input-prefix,
+    .dark .ant-input-suffix,
+    .dark .ant-input-clear-icon,
+    html[data-theme="ultra-dark"] .anticon-search,
+    html[data-theme="ultra-dark"] .ant-input-search-icon,
+    html[data-theme="ultra-dark"] .ant-input-prefix,
+    html[data-theme="ultra-dark"] .ant-input-suffix {
+        color: var(--ui-text-muted) !important;
+    }
+
+    body.dark .anticon-search:hover,
+    body.dark .ant-input-search-icon:hover,
+    body.dark .ant-input-clear-icon:hover,
+    #app.dark .anticon-search:hover,
+    #app.dark .ant-input-search-icon:hover,
+    #app.dark .ant-input-clear-icon:hover,
+    .dark .anticon-search:hover,
+    .dark .ant-input-search-icon:hover,
+    .dark .ant-input-clear-icon:hover {
+        color: var(--ui-text) !important;
+    }
+
+    /* Client email clickable link */
+    .client-email-link {
+        cursor: pointer;
+        transition: color 0.15s ease;
+    }
+    .client-email-link:hover {
+        color: var(--ui-primary) !important;
+    }
+
+    /* ─── Client Detail Modal ────────────────────────────── */
+    .panel-modal-detail .ant-modal {
+        width: 600px !important;
+        max-width: min(600px, calc(100vw - 32px)) !important;
+        margin: 0 auto;
+        top: 20px;
+        padding-bottom: 20px;
+    }
+
+    .panel-modal-detail .ant-modal-content {
+        display: flex;
+        flex-direction: column;
+        max-height: calc(100vh - 40px);
+        max-height: calc(100dvh - 40px);
+        border-radius: 12px;
+        overflow: hidden;
+    }
+
+    .panel-modal-detail .ant-modal-header {
+        flex-shrink: 0;
+        padding: 14px 20px;
+    }
+
+    .panel-modal-detail .ant-modal-body {
+        padding: 16px 20px !important;
+        flex: 1 1 auto;
+        max-height: calc(100vh - 105px);
+        max-height: calc(100dvh - 105px);
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .detail-stats-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        margin-bottom: 10px;
+        text-align: center;
+    }
+
+    .detail-stat-card {
+        padding: 8px 6px;
+        background: var(--ui-surface-muted, rgba(128, 128, 128, 0.05));
+        border: 1px solid var(--ui-border);
+        border-radius: 8px;
+    }
+
+    .detail-stat-label {
+        font-size: 11px;
+        color: var(--ui-text-muted);
+        margin-bottom: 3px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .detail-stat-val {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--ui-text);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        flex-wrap: wrap;
+    }
+
+    .detail-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .detail-table tr {
+        border-bottom: 1px solid var(--ui-border);
+    }
+
+    .detail-table tr:last-child {
+        border-bottom: none;
+    }
+
+    .detail-table td {
+        padding: 6px 8px;
+        vertical-align: middle;
+        font-size: 13px;
+    }
+
+    .dark .detail-table td {
+        color: var(--ui-text) !important;
+    }
+
+    .detail-table td:first-child {
+        width: 120px;
+        color: var(--ui-text-muted) !important;
+        white-space: nowrap;
+        font-size: 12px;
+    }
+
+    .compact-code {
+        font-size: 12px;
+        background: var(--ui-surface-muted, rgba(128, 128, 128, 0.1));
+        padding: 2px 6px;
+        border-radius: 4px;
+        word-break: break-all;
+        max-width: 320px;
+        display: inline-block;
+        vertical-align: middle;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .detail-inbounds-box {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        max-height: 260px;
+        overflow-y: auto;
+        margin-top: 6px;
+        padding-right: 2px;
+    }
+
+    .detail-inbound-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 5px 10px;
+        border: 1px solid var(--ui-border);
+        border-radius: 6px;
+        background: var(--ui-surface-muted, rgba(128, 128, 128, 0.05));
+        font-size: 12px;
+    }
+
+    /* ─── Clients Toolbar & Filter Bar ─────────────────────── */
+    .clients-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+        gap: 8px;
+        flex-wrap: nowrap;
+    }
+
+    .clients-action-buttons {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: nowrap;
+        min-width: 0;
+    }
+
+    .clients-action-buttons > * {
+        flex-shrink: 0;
+    }
+
+    .clients-refresh-box {
+        display: flex;
+        align-items: center;
+        flex-shrink: 0;
+    }
+
+    .clients-refresh-icon {
+        font-size: 16px;
+        margin: 0 4px;
+        cursor: pointer;
+        transition: transform 0.2s ease, color 0.15s ease;
+    }
+
+    .clients-refresh-icon:hover {
+        color: var(--ui-primary);
+    }
+
+    .clients-filter-bar {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        align-items: center;
+        margin-bottom: 12px;
+    }
+
+    .clients-search-filter-row {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex: 0 0 auto;
+    }
+
+    .clients-search-input {
+        width: 220px;
+    }
+
+    .clients-inbound-select {
+        width: 200px;
+    }
+
+    .clients-inbound-select .ant-select-selection {
+        width: 100%;
+    }
+
+    .clients-status-filter-row {
+        display: flex;
+        align-items: center;
+        flex: 0 0 auto;
+    }
+
+    /* ─── Mobile table ────────────────────────────────────── */
+    @media (max-width: 768px) {
+        .ant-card-body {
+            padding: .5rem;
+        }
+
+        .clients-table .ant-table-selection-column {
+            width: 34px !important;
+            min-width: 34px !important;
+            padding: 8px 6px !important;
+            text-align: center;
+        }
+
+        .clients-table .ant-table-thead > tr > th:not(.ant-table-selection-column) {
+            padding: 8px 8px !important;
+            overflow: hidden;
+            line-height: 1.3;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-size: 11px;
+        }
+
+        .clients-table .ant-table-thead > tr > th:nth-child(2) {
+            padding-left: 10px !important;
+            padding-right: 10px !important;
+        }
+
+        .clients-table .ant-table-thead > tr > th:nth-child(3) {
+            padding-left: 16px !important;
+        }
+
+        .clients-table .ant-table-tbody > tr > td {
+            padding: 8px 8px !important;
+        }
+
+        .clients-table .ant-table-tbody > tr > td:nth-child(3) {
+            padding-left: 16px !important;
+        }
+
+        /* Usage bar: compact on mobile, hide the right total-GB label */
+        .usage-bar-box {
+            min-width: 0 !important;
+            max-width: 120px !important;
+            padding: 2px 2px !important;
+            gap: 3px !important;
+        }
+
+        .usage-bar-label,
+        .usage-bar-label-muted {
+            font-size: 10px !important;
+        }
+
+        /* Hide the total-GB right label on mobile – still shown in the popover */
+        .usage-bar-total-hide {
+            display: none !important;
+        }
+
+        /* Inbound tag: truncate on mobile */
+        .inbound-menu-trigger {
+            max-width: 110px;
+            overflow: hidden;
+        }
+
+        .inbound-menu-trigger span {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 80px;
+            display: inline-block;
+        }
+
+        /* Stats summary card: compact grid on mobile */
+        .stats-summary-col {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            align-items: center;
+            font-size: 12px;
+        }
+
+        /* Toolbar buttons & sync in single row on mobile */
+        .clients-card-header {
+            flex-wrap: nowrap;
+        }
+
+        .clients-action-buttons {
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+
+        .clients-action-buttons::-webkit-scrollbar {
+            display: none;
+        }
+
+        .clients-refresh-box {
+            flex-shrink: 0;
+        }
+
+        /* Filter bar: Search & Inbound in row 1, status in row 2 */
+        .clients-filter-bar {
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            gap: 8px;
+            width: 100%;
+        }
+
+        .clients-search-filter-row {
+            display: flex;
+            flex-direction: row;
+            gap: 8px;
+            align-items: center;
+            width: 100%;
+            flex-wrap: nowrap;
+        }
+
+        .clients-search-filter-row .clients-search-input {
+            flex: 1 1 0;
+            width: 0;
+            min-width: 0;
+            max-width: none;
+        }
+
+        .clients-search-filter-row .clients-inbound-select {
+            flex: 1 1 0;
+            width: 0;
+            min-width: 0;
+            max-width: none;
+        }
+
+        .clients-status-filter-row {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            padding-bottom: 2px;
+            scrollbar-width: none;
+        }
+
+        .clients-status-filter-row::-webkit-scrollbar {
+            display: none;
+        }
+
+        .clients-status-filter-row .ant-radio-group {
+            display: inline-flex;
+            white-space: nowrap;
+        }
+
+        .panel-modal-detail .ant-modal {
+            top: 8px !important;
+            padding-bottom: 8px !important;
+            width: calc(100vw - 16px) !important;
+            max-width: calc(100vw - 16px) !important;
+            margin: 0 auto !important;
+        }
+
+        .panel-modal-detail .ant-modal-content {
+            display: flex;
+            flex-direction: column;
+            max-height: calc(100vh - 16px) !important;
+            max-height: calc(100dvh - 16px) !important;
+        }
+
+        .panel-modal-detail .ant-modal-header {
+            padding: 12px 14px !important;
+            flex-shrink: 0;
+        }
+
+        .panel-modal-detail .ant-modal-body {
+            padding: 12px 12px !important;
+            flex: 1 1 auto;
+            max-height: calc(100vh - 70px) !important;
+            max-height: calc(100dvh - 70px) !important;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .detail-table td:first-child {
+            width: 90px;
+            font-size: 11px;
+        }
+
+        .detail-table td {
+            padding: 5px 5px;
+            font-size: 12px;
+        }
+
+        .compact-code {
+            max-width: 180px;
+            font-size: 11px;
+        }
+
+        .detail-inbounds-box {
+            max-height: 220px;
+        }
+    }
+
+    /* ─── QR Modal ────────────────────────────────────────── */
+    .panel-modal-qr .ant-modal {
+        top: 36px;
+        width: fit-content !important;
+        min-width: min(290px, calc(100vw - 32px)) !important;
+        max-width: min(580px, calc(100vw - 32px)) !important;
+        margin: 0 auto !important;
+        padding-bottom: 24px;
+    }
+
+    .panel-modal-qr .ant-modal-body {
+        max-height: calc(100vh - 120px) !important;
+        max-height: calc(100dvh - 120px) !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch;
+        padding: 20px 24px !important;
+    }
+
+    .panel-modal-qr .qr-modal {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: wrap !important;
+        justify-content: center !important;
+        align-items: center !important;
+        gap: 16px !important;
+        row-gap: 20px !important;
+        margin: 0 auto !important;
+        width: 100% !important;
+        padding: 0 !important;
+    }
+
+    .panel-modal-qr .qr-box {
+        width: 220px !important;
+        margin: 0 auto !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        flex-shrink: 0 !important;
+    }
+
+    .panel-modal-qr .qr-box .qr-tag {
+        width: 100% !important;
+        margin: 0 0 10px 0 !important;
+        text-align: center !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        height: 28px !important;
+        line-height: 28px !important;
+        border-radius: 6px !important;
+        box-sizing: border-box !important;
+    }
+
+    .panel-modal-qr .qr-box .qr-bg,
+    .panel-modal-qr .qr-box .qr-bg-sub {
+        width: 220px !important;
+        height: 220px !important;
+        margin: 0 auto !important;
+        box-sizing: border-box !important;
+    }
+
+    .panel-modal-qr .qr-box .qr-copy-btn {
+        width: 100% !important;
+        margin: 10px 0 0 0 !important;
+        border-radius: 6px !important;
+        height: 32px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        font-size: 13px !important;
+    }
+
+    .panel-modal-qr .ant-tabs {
+        margin: 0 !important;
+        padding: 0 !important;
+        background: transparent !important;
+    }
+
+    .panel-modal-qr .ant-tabs-bar {
+        margin-bottom: 16px !important;
+        border-bottom: 1px solid var(--ui-border);
+    }
+
+    .client-qr-title {
+        display: flex;
+        align-items: center;
+        padding-right: 36px;
+        width: 100%;
+        overflow: hidden;
+        white-space: nowrap;
+    }
+
+    .client-qr-title span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        display: inline-block;
+    }
+
+    @media (max-width: 768px) {
+        .panel-modal-qr .ant-modal {
+            top: 14px !important;
+            width: fit-content !important;
+            min-width: min(280px, calc(100vw - 20px)) !important;
+            max-width: calc(100vw - 20px) !important;
+            margin: 0 auto !important;
+            padding-bottom: 14px;
+        }
+
+        .panel-modal-qr .ant-modal-body {
+            max-height: calc(100vh - 80px) !important;
+            max-height: calc(100dvh - 80px) !important;
+            padding: 16px 14px !important;
+        }
+
+        .panel-modal-qr .qr-modal {
+            flex-direction: column !important;
+            align-items: center !important;
+            gap: 16px !important;
+        }
+    }
+
+    /* ─── Misc badges / animations ────────────────────────── */
+    .infinite-tag {
+        padding: 0 5px;
+        min-width: 50px;
+        min-height: 22px;
+    }
+
+    .status-badge {
+        margin-left: 4px;
+    }
+
+    .qr-cv {
+        transition: all 0.3s ease-in-out;
+        cursor: pointer;
+    }
+
+    .qr-transition-enter-active,
+    .qr-transition-leave-active {
+        transition: opacity 0.3s, transform 0.3s;
+    }
+
+    .qr-transition-enter,
+    .qr-transition-leave-to {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+
+    .qr-transition-enter-to,
+    .qr-transition-leave {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    .online-animation .ant-badge-status-dot {
+        animation: onlineAnimation 1.2s linear infinite;
+    }
+
+    @keyframes onlineAnimation {
+        0%, 50%, 100% {
+            transform: scale(1);
+            opacity: 1;
+        }
+        10% {
+            transform: scale(1.5);
+            opacity: .2;
+        }
+    }
+
+    .inbound-tag-badge {
+        margin: 2px 4px 2px 0;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+    }
+
+    /* ─── Traffic Usage Bar ────────────────────────────────── */
+    .usage-bar-box {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        min-width: 180px;
+        max-width: 260px;
+        cursor: pointer;
+        padding: 4px 6px;
+        border-radius: 6px;
+        transition: background 0.15s ease, transform 0.15s ease;
+    }
+
+    .usage-bar-box:hover {
+        background: var(--ui-surface-muted, rgba(0,0,0,0.04));
+        transform: translateY(-1px);
+    }
+
+
+    /* ─── Inbound dropdown trigger ─────────────────────────── */
+    .inbound-menu-trigger {
+        cursor: pointer;
+        border-radius: 4px;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 2px 8px;
+        font-size: 12px;
+        transition: all 0.2s ease;
+        user-select: none;
+    }
+
+    .inbound-menu-trigger:hover {
+        opacity: 0.85;
+    }
+
+    /* ─── Inbound selection grid (client modal & bulk modal) ───────── */
+    .inbound-select-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+        gap: 10px;
+        max-height: 220px;
+        overflow-y: auto;
+        padding: 14px 16px;
+        border: 1px solid var(--ui-border);
+        border-radius: 8px;
+        background: var(--ui-surface-muted);
+        margin: 10px 0 14px;
+    }
+
+    .inbound-select-grid .ant-checkbox-wrapper {
+        display: inline-flex;
+        align-items: center;
+        margin: 0 !important;
+        padding: 8px 12px;
+        background: var(--ui-surface);
+        border: 1px solid var(--ui-border);
+        border-radius: 6px;
+        transition: all 0.2s ease;
+        line-height: 1.4;
+    }
+
+    .inbound-select-grid .ant-checkbox-wrapper:hover {
+        border-color: var(--ui-primary);
+        background: var(--ui-primary-soft);
+    }
+
+    .inbound-select-grid .ant-checkbox-wrapper .ant-checkbox {
+        margin-right: 10px;
+        flex-shrink: 0;
+    }
+
+    .inbound-select-grid .ant-checkbox-wrapper .ant-checkbox + span {
+        padding-left: 2px;
+        padding-right: 0;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+        font-weight: 500;
+        color: var(--ui-text);
+    }
+
+    [dir="rtl"] .inbound-select-grid .ant-checkbox-wrapper .ant-checkbox,
+    .ant-modal[dir="rtl"] .inbound-select-grid .ant-checkbox-wrapper .ant-checkbox {
+        margin-right: 0;
+        margin-left: 10px;
+    }
+</style>
+
+<body>
+    <a-layout :class="themeSwitcher.currentTheme" id="app" v-cloak>
+        {{ template "commonSider" . }}
+        <a-layout id="content-layout">
+            <a-layout-content>
+                <a-spin :delay="500" :spinning="spinning" tip='{{ i18n "loading"}}'>
+                    <!-- Header Stats Cards -->
+                    <transition appear name="list">
+                        <a-card hoverable style="margin-bottom: 12px;">
+                            <div style="display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: center; line-height: 1.8;">
+                                <span>
+                                    {{ i18n "clients" }}:
+                                    <a-tag color="green" style="font-weight: bold;">[[ clients.length ]]</a-tag>
+                                </span>
+                                <span>
+                                    {{ i18n "enabled" }}:
+                                    <a-tag color="blue">[[ clients.filter(c => isClientActive(c)).length ]]</a-tag>
+                                </span>
+                                <span>
+                                    {{ i18n "disabled" }}:
+                                    <a-tag color="red">[[ clients.filter(c => !c.enable).length ]]</a-tag>
+                                </span>
+                                <span>
+                                    {{ i18n "depleted" }}:
+                                    <a-tag color="orange">[[ clients.filter(c => c.enable && isDepletedOrExpired(c)).length ]]</a-tag>
+                                </span>
+                                <span>
+                                    {{ i18n "depletingSoon" }}:
+                                    <a-tag color="purple">[[ clients.filter(c => isDepletingSoon(c)).length ]]</a-tag>
+                                </span>
+                                <span>
+                                    {{ i18n "online" }}:
+                                    <a-tag color="cyan">[[ onlineClients.length ]]</a-tag>
+                                </span>
+                            </div>
+                        </a-card>
+                    </transition>
+
+                    <!-- Table Card -->
+                    <transition appear name="list">
+                        <a-card hoverable>
+                            <div slot="title">
+                                <div class="clients-card-header">
+                                    <div class="clients-action-buttons">
+                                        <a-button @click="clientModal.showAdd()" icon="user-add" type="primary">
+                                            <template v-if="!isMobile">{{ i18n "pages.client.add" }}</template>
+                                        </a-button>
+                                        <a-button @click="bulkModal.show()" icon="usergroup-add">
+                                            <template v-if="!isMobile">{{ i18n "pages.client.bulk" }}</template>
+                                        </a-button>
+                                        <a-dropdown :trigger="['click']">
+                                            <a-button icon="menu">
+                                                <template v-if="!isMobile">{{ i18n "pages.inbounds.generalActions" }}</template>
+                                            </a-button>
+                                            <a-menu :theme="themeSwitcher.currentTheme" @click="handleGeneralAction" slot="overlay">
+                                                <a-menu-item key="resetAllTraffics">
+                                                    <a-icon type="retweet"></a-icon>
+                                                    {{ i18n "pages.inbounds.resetAllClientTraffics" }}
+                                                </a-menu-item>
+                                                <a-menu-item key="delDepleted" style="color: var(--ui-danger);">
+                                                    <a-icon type="rest"></a-icon>
+                                                    {{ i18n "pages.inbounds.delDepletedClients" }}
+                                                </a-menu-item>
+                                                <a-menu-item key="export">
+                                                    <a-icon type="export"></a-icon>
+                                                    {{ i18n "pages.inbounds.export" }}
+                                                </a-menu-item>
+                                            </a-menu>
+                                        </a-dropdown>
+                                        <a-button @click="confirmBulkDelete" icon="delete" type="danger"
+                                            v-if="selectedRowKeys.length > 0">
+                                            <template v-if="!isMobile">{{ i18n "delete" }} ([[ selectedRowKeys.length ]])</template>
+                                            <template v-else>([[ selectedRowKeys.length ]])</template>
+                                        </a-button>
+                                    </div>
+                                    <div class="clients-refresh-box">
+                                        <a-icon :spin="refreshing" @click="manualRefresh" class="clients-refresh-icon"
+                                            type="sync"></a-icon>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Search and Filter Bar -->
+                            <div class="clients-filter-bar">
+                                <div class="clients-search-filter-row">
+                                    <a-input :size="isMobile ? 'small' : 'default'" allow-clear autofocus placeholder='{{ i18n "search" }}'
+                                        class="clients-search-input" v-model="searchKey">
+                                        <a-icon slot="prefix" type="search"></a-icon>
+                                    </a-input>
+
+                                    <a-select :dropdown-class-name="themeSwitcher.currentTheme" :size="isMobile ? 'small' : 'default'"
+                                        @change="filterClients" class="clients-inbound-select" v-model="filterInboundId">
+                                        <a-select-option value="">{{ i18n "all" }} ({{ i18n "inbounds" }})</a-select-option>
+                                        <a-select-option :value="ib.id" v-for="ib in allInbounds">
+                                            [[ ib.remark || ('#' + ib.id) ]] ([[ ib.protocol ]]:[[ ib.port ]])
+                                        </a-select-option>
+                                    </a-select>
+                                </div>
+
+                                <div class="clients-status-filter-row">
+                                    <a-radio-group :size="isMobile ? 'small' : 'default'" @change="filterClients" button-style="solid"
+                                        v-model="filterStatus">
+                                        <a-radio-button value="">{{ i18n "all" }}</a-radio-button>
+                                        <a-radio-button value="active">{{ i18n "enabled" }}</a-radio-button>
+                                        <a-radio-button value="disabled">{{ i18n "disabled" }}</a-radio-button>
+                                        <a-radio-button value="depleted">{{ i18n "depleted" }}</a-radio-button>
+                                        <a-radio-button value="online">{{ i18n "online" }}</a-radio-button>
+                                    </a-radio-group>
+                                </div>
+                            </div>
+
+                            <!-- Clients Table -->
+                            <a-table :columns="isMobile ? mobileColumns : columns" :data-source="filteredClients"
+                                class="clients-table"
+                                :pagination="pagination(filteredClients)" :row-key="c => c.id"
+                                :row-selection="{ selectedRowKeys: selectedRowKeys, onChange: onSelectChange, columnWidth: isMobile ? 34 : 28 }"
+                                :scroll="{ x: isMobile ? 380 : 850 }">
+                                <!-- Action column -->
+                                <template slot="action" slot-scope="text, c">
+                                    <a-dropdown :trigger="['click']">
+                                            <a-icon @click="e => e.preventDefault()" style="font-size: 20px; cursor: pointer;"
+                                                type="more"></a-icon>
+                                            <a-menu :theme="themeSwitcher.currentTheme" @click="a => clickAction(a, c)"
+                                                slot="overlay">
+                                                <a-menu-item key="info">
+                                                    <a-icon type="info-circle"></a-icon>
+                                                    {{ i18n "pages.inbounds.details" }}
+                                                </a-menu-item>
+                                                <a-menu-item key="showLinks">
+                                                    <a-icon type="qrcode"></a-icon>
+                                                    {{ i18n "qrCode" }} / {{ i18n "links" }}
+                                                </a-menu-item>
+                                                <a-menu-item key="edit">
+                                                    <a-icon type="edit"></a-icon>
+                                                    {{ i18n "edit" }}
+                                                </a-menu-item>
+                                                <a-menu-item key="manageLinks">
+                                                    <a-icon type="link"></a-icon>
+                                                    {{ i18n "pages.node_clients.manageLinks" }}
+                                                    <template v-if="isMobile">
+                                                        <a-badge
+                                                            :count="getClientLinks(c).length"
+                                                            :number-style="{backgroundColor: getClientLinks(c).length > 0 ? '#1890ff' : '#ff4d4f', fontSize: '10px'}"
+                                                            style="margin-left: 6px;">
+                                                        </a-badge>
+                                                    </template>
+                                                </a-menu-item>
+                                                <a-menu-item key="resetTraffic">
+                                                    <a-icon type="retweet"></a-icon>
+                                                    {{ i18n "pages.inbounds.resetTraffic" }}
+                                                </a-menu-item>
+                                                <a-menu-divider></a-menu-divider>
+                                                <a-menu-item key="delete">
+                                                    <span style="color: var(--ui-danger)">
+                                                        <a-icon type="delete"></a-icon> {{ i18n "delete" }}
+                                                    </span>
+                                                </a-menu-item>
+                                            </a-menu>
+                                        </a-dropdown>
+                                </template>
+
+                                <!-- Enable toggle column -->
+                                <template slot="enable" slot-scope="text, c">
+                                    <a-switch @change="toggleEnable(c)" v-model="c.enable"></a-switch>
+                                </template>
+
+                                <!-- Client Email & SubId & Online indicator -->
+                                <template slot="client" slot-scope="text, c">
+                                    <div style="display: flex; flex-direction: column; gap: 2px;">
+                                        <div style="display: flex; align-items: center; flex-wrap: wrap;">
+                                            <a-tooltip :title="clientStatusTooltip(c)">
+                                                <a-badge :class="isOnline(c.email) && isClientActive(c) ? 'online-animation' : ''"
+                                                    :color="clientBadgeColor(c)"
+                                                    style="margin-right: 6px;"></a-badge>
+                                            </a-tooltip>
+                                            <strong @click="showClientDetail(c)" class="client-email-link" style="word-break: break-all;" :title="'{{ i18n "pages.inbounds.details" }}'">[[ c.email ]]</strong>
+                                            <a-tag color="red" v-if="!c.enable" style="margin-left: 6px; font-size: 10px; line-height: 16px; height: 18px; padding: 0 4px;">
+                                                {{ i18n "disabled" }}
+                                            </a-tag>
+                                            <a-tag color="orange" v-else-if="isDepletedOrExpired(c)" style="margin-left: 6px; font-size: 10px; line-height: 16px; height: 18px; padding: 0 4px;">
+                                                {{ i18n "depleted" }}
+                                            </a-tag>
+                                            <a-tooltip :title="c.comment" v-if="c.comment">
+                                                <a-icon type="info-circle" style="margin-left: 4px; color: #888; font-size: 12px;"></a-icon>
+                                            </a-tooltip>
+                                        </div>
+                                    </div>
+                                </template>
+
+                                <!-- Traffic Usage Bar column -->
+                                <template slot="traffic" slot-scope="text, c">
+                                    <a-popover :overlay-class-name="themeSwitcher.currentTheme" placement="top">
+                                        <template slot="content">
+                                            <table cellpadding="4" style="min-width: 190px;">
+                                                <tr>
+                                                    <td style="color: var(--ui-text-muted);">↑ {{ i18n "pages.inbounds.up" }}:</td>
+                                                    <td style="font-weight: 600; text-align: right; color: var(--ui-text);">[[ sizeFormat(getTrafficData(c).up) ]]</td>
+                                                </tr>
+                                                <tr>
+                                                    <td style="color: var(--ui-text-muted);">↓ {{ i18n "pages.inbounds.down" }}:</td>
+                                                    <td style="font-weight: 600; text-align: right; color: var(--ui-text);">[[ sizeFormat(getTrafficData(c).down) ]]</td>
+                                                </tr>
+                                                <tr style="border-top: 1px solid var(--ui-border);">
+                                                    <td style="color: var(--ui-text-muted);">{{ i18n "pages.inbounds.totalFlow" }}:</td>
+                                                    <td style="font-weight: 600; text-align: right; color: var(--ui-text);">[[ sizeFormat(getTrafficData(c).used) ]]</td>
+                                                </tr>
+                                                <tr v-if="c.totalGB > 0">
+                                                    <td style="color: var(--ui-text-muted);">{{ i18n "remained" }}:</td>
+                                                    <td style="font-weight: 600; text-align: right; color: var(--ui-primary);">
+                                                        [[ sizeFormat(Math.max(0, c.totalGB - getTrafficData(c).used)) ]]
+                                                    </td>
+                                                </tr>
+                                                <tr v-if="c.totalGB > 0">
+                                                    <td colspan="2" style="padding-top: 2px;">
+                                                        <a-progress :percent="usagePercent(c)" size="small"
+                                                            :stroke-color="usageProgressColor(c)"
+                                                            :status="isDepletedOrExpired(c) ? 'exception' : 'normal'"
+                                                            style="margin: 0;">
+                                                        </a-progress>
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                        </template>
+                                        <!-- Trigger: usage bar -->
+                                        <div class="usage-bar-box" style="margin: 0 auto;">
+                                            <span class="usage-bar-label" style="flex-shrink: 0; text-align: right; min-width: 48px;">
+                                                [[ sizeFormat(getTrafficData(c).used) ]]
+                                            </span>
+                                            <div style="flex: 1; min-width: 36px;">
+                                                <a-progress :percent="usagePercent(c)" :show-info="false"
+                                                    :stroke-color="usageProgressColor(c)"
+                                                    :status="isDepletedOrExpired(c) ? 'exception' : 'normal'"
+                                                    style="margin: 0; line-height: 1;">
+                                                </a-progress>
+                                            </div>
+                                            <span class="usage-bar-label-muted usage-bar-total-hide" style="flex-shrink: 0; text-align: left; min-width: 44px;">
+                                                [[ c.totalGB > 0 ? sizeFormat(c.totalGB) : '∞' ]]
+                                            </span>
+                                            <a-tag class="status-badge" color="orange" v-if="isDepletedOrExpired(c)"
+                                                style="font-size: 10px; height: 18px; line-height: 16px; padding: 0 4px; margin: 0; flex-shrink: 0;">
+                                                {{ i18n "depleted" }}
+                                            </a-tag>
+                                        </div>
+                                    </a-popover>
+                                </template>
+
+                                <!-- Linked Inbounds Menu column -->
+                                <template slot="linkedInbounds" slot-scope="text, c">
+                                    <div style="display: inline-flex; align-items: center; justify-content: center;">
+                                        <template v-if="getClientLinks(c).length === 0">
+                                            <a-tag color="red" class="inbound-menu-trigger" @click="manageLinks(c)">
+                                                <a-icon type="disconnect"></a-icon>
+                                                <span>{{ i18n "pages.node_clients.manageLinks" }} (0)</span>
+                                            </a-tag>
+                                        </template>
+                                        <template v-else>
+                                            <a-dropdown :trigger="['click']">
+                                                <a-tag color="blue" class="inbound-menu-trigger">
+                                                    <a-icon type="link"></a-icon>
+                                                    <span>
+                                                        <template v-if="getClientLinks(c).length === 1">
+                                                            [[ getInboundShortLabel(getClientLinks(c)[0].inboundId) ]]
+                                                        </template>
+                                                        <template v-else>
+                                                            [[ getClientLinks(c).length ]] {{ i18n "inbounds" }}
+                                                        </template>
+                                                    </span>
+                                                    <a-icon type="down" style="font-size: 10px;"></a-icon>
+                                                </a-tag>
+                                                <a-menu :theme="themeSwitcher.currentTheme" slot="overlay"
+                                                    style="max-height: 280px; overflow-y: auto; min-width: 220px; box-shadow: 0 4px 16px rgba(0,0,0,0.18); border-radius: 8px; padding: 4px 0;">
+                                                    <a-menu-item-group :title="getClientLinks(c).length + ' {{ i18n "inbounds" }}'">
+                                                        <a-menu-item v-for="l in getClientLinks(c)" :key="l.inboundId" @click="manageLinks(c)"
+                                                            style="display: flex; align-items: center; justify-content: space-between; padding: 6px 14px;">
+                                                            <div style="display: flex; align-items: center; gap: 6px;">
+                                                                <a-icon type="api" style="color: var(--ui-primary);"></a-icon>
+                                                                <strong>[[ getInboundRemark(l.inboundId) ]]</strong>
+                                                                <span style="font-size: 11px; color: var(--ui-text-muted);">([[ getInboundProtoPort(l.inboundId) ]])</span>
+                                                            </div>
+                                                            <a-tag size="small" color="cyan" v-if="l.flow" style="font-size: 10px; margin-left: 8px;">[[ l.flow ]]</a-tag>
+                                                        </a-menu-item>
+                                                    </a-menu-item-group>
+                                                    <a-menu-divider></a-menu-divider>
+                                                    <a-menu-item @click="manageLinks(c)" style="color: var(--ui-primary); font-weight: 500;">
+                                                        <a-icon type="edit" style="margin-right: 6px;"></a-icon>
+                                                        {{ i18n "pages.node_clients.manageLinks" }}
+                                                    </a-menu-item>
+                                                </a-menu>
+                                            </a-dropdown>
+                                        </template>
+                                    </div>
+                                </template>
+
+                                <!-- Expiry column -->
+                                <template slot="expiryTime" slot-scope="text, c">
+                                    <a-popover :overlay-class-name="themeSwitcher.currentTheme" v-if="c.expiryTime > 0">
+                                        <template slot="content">
+                                            <template v-if="datepicker === 'gregorian'">
+                                                [[ DateUtil.formatMillis(c.expiryTime) ]]
+                                            </template>
+                                            <template v-else>
+                                                [[ DateUtil.convertToJalalian(moment(c.expiryTime)) ]]
+                                            </template>
+                                        </template>
+                                        <a-tag :color="isExpired(c) ? 'red' : 'blue'" style="min-width: 50px;">
+                                            [[ remainedDays(c.expiryTime) ]]
+                                        </a-tag>
+                                    </a-popover>
+                                    <a-tag color="green" v-else-if="c.expiryTime < 0">
+                                        [[ remainedDays(c.expiryTime) ]]
+                                    </a-tag>
+                                    <a-tag class="infinite-tag" color="purple" v-else>
+                                        &infin;
+                                    </a-tag>
+                                </template>
+                            </a-table>
+                        </a-card>
+                    </transition>
+
+                    <!-- Add / Edit Client Modal -->
+                    <a-modal :class="themeSwitcher.currentTheme" :closable="true"
+                        :confirm-loading="clientModal.confirmLoading" :mask-closable="false" :ok-text="clientModal.okText"
+                        :title="clientModal.title" @ok="handleClientModalOk" cancel-text='{{ i18n "close" }}' id="client-modal"
+                        v-model="clientModal.visible" wrap-class-name="panel-modal panel-modal-lg">
+                        <a-form :colon="false" :label-col="{ md: {span:8} }" :wrapper-col="{ md: {span:14} }"
+                            layout="horizontal" v-if="clientModal.client">
+                            <a-form-item label='{{ i18n "pages.inbounds.enable" }}'>
+                                <a-switch v-model="clientModal.client.enable"></a-switch>
+                            </a-form-item>
+
+                            <a-form-item>
+                                <template slot="label">
+                                    <a-tooltip title='{{ i18n "pages.inbounds.emailDesc" }}'>
+                                        {{ i18n "pages.inbounds.email" }}
+                                        <a-icon @click="clientModal.client.email = RandomUtil.randomLowerAndNum(9)"
+                                            type="sync"></a-icon>
+                                    </a-tooltip>
+                                </template>
+                                <a-input v-model.trim="clientModal.client.email"></a-input>
+                            </a-form-item>
+
+                            <a-form-item v-if="subSettings.enable">
+                                <template slot="label">
+                                    <a-tooltip title='{{ i18n "pages.inbounds.subscriptionDesc" }}'>
+                                        {{ i18n "pages.node_clients.subscriptionId" }}
+                                        <a-icon @click="clientModal.client.subId = RandomUtil.randomLowerAndNum(16)"
+                                            type="sync"></a-icon>
+                                    </a-tooltip>
+                                </template>
+                                <a-input v-model.trim="clientModal.client.subId"></a-input>
+                            </a-form-item>
+
+                            <!-- Inbound Assignment Section -->
+                            <a-divider>{{ i18n "pages.node_clients.manageLinks" }} (Inbounds)</a-divider>
+                            <a-form-item label='{{ i18n "inbounds" }}'>
+                                <div style="margin-bottom: 8px;">
+                                    <a-button size="small" @click="selectAllModalInbounds" style="margin-right: 6px;">{{ i18n "all" }}</a-button>
+                                    <a-button size="small" @click="clearModalInbounds">{{ i18n "none" }}</a-button>
+                                </div>
+                                <div class="inbound-select-grid">
+                                    <a-checkbox v-for="ib in allInbounds" :key="ib.id"
+                                        :checked="clientModal.selectedInboundIds.map(Number).includes(Number(ib.id))"
+                                        @change="e => toggleModalInbound(ib.id, e.target.checked)">
+                                        [[ ib.remark || ('#' + ib.id) ]]
+                                        <span style="font-size: 11px; color: #888;">([[ ib.protocol ]]:[[ ib.port ]])</span>
+                                    </a-checkbox>
+                                </div>
+                            </a-form-item>
+
+                            <!-- Protocol Credentials Section -->
+                            <a-divider>{{ i18n "pages.node_clients.credentialFields" }}</a-divider>
+
+                            <a-form-item>
+                                <template slot="label">
+                                    <a-tooltip title='{{ i18n "pages.node_clients.forVmessVlessProtocols" }}'>
+                                        UUID (VLESS/VMess)
+                                        <a-icon @click="clientModal.client.uuid = RandomUtil.randomUUID()"
+                                            type="sync"></a-icon>
+                                    </a-tooltip>
+                                </template>
+                                <a-input v-model.trim="clientModal.client.uuid"></a-input>
+                            </a-form-item>
+
+                            <a-form-item>
+                                <template slot="label">
+                                    <a-tooltip title='{{ i18n "pages.node_clients.forTrojanShadowsocksProtocols" }}'>
+                                        {{ i18n "password" }} (Trojan/SS)
+                                        <a-icon @click="clientModal.client.password = RandomUtil.randomSeq(10)"
+                                            type="sync"></a-icon>
+                                    </a-tooltip>
+                                </template>
+                                <a-input v-model.trim="clientModal.client.password"></a-input>
+                            </a-form-item>
+
+                            <a-form-item>
+                                <template slot="label">
+                                    <a-tooltip title='{{ i18n "pages.node_clients.forHysteriaProtocol" }}'>
+                                        Auth (Hysteria)
+                                        <a-icon @click="clientModal.client.auth = RandomUtil.randomSeq(10)"
+                                            type="sync"></a-icon>
+                                    </a-tooltip>
+                                </template>
+                                <a-input v-model.trim="clientModal.client.auth"></a-input>
+                            </a-form-item>
+
+                            <a-form-item label='Global Flow'>
+                                <a-select :dropdown-class-name="themeSwitcher.currentTheme" v-model="clientModal.client.flow">
+                                    <a-select-option value="">{{ i18n "none" }}</a-select-option>
+                                    <a-select-option value="xtls-rprx-vision">xtls-rprx-vision</a-select-option>
+                                    <a-select-option value="xtls-rprx-splice">xtls-rprx-splice</a-select-option>
+                                </a-select>
+                            </a-form-item>
+
+                            <!-- Limits & Policies Section -->
+                            <a-divider>{{ i18n "pages.node_clients.limitsAndPolicy" }}</a-divider>
+
+                            <a-form-item>
+                                <template slot="label">
+                                    <a-tooltip title='0 {{ i18n "pages.inbounds.meansNoLimit" }}'>
+                                        {{ i18n "pages.inbounds.totalFlow" }} (GB)
+                                        <a-icon type="question-circle"></a-icon>
+                                    </a-tooltip>
+                                </template>
+                                <a-input-number :min="0" v-model.number="clientModal.client._totalGB"></a-input-number>
+                            </a-form-item>
+
+                            <a-form-item label='{{ i18n "pages.client.delayedStart" }}'>
+                                <a-switch v-model="clientModal.delayedStart"
+                                    @change="clientModal.changeDelayedStart"></a-switch>
+                            </a-form-item>
+
+                            <a-form-item label='{{ i18n "pages.client.expireDays" }}'
+                                v-if="clientModal.delayedStart">
+                                <a-input-number :min="0" v-model.number="clientModal.delayedExpireDays"></a-input-number>
+                            </a-form-item>
+
+                            <a-form-item v-else>
+                                <template slot="label">
+                                    <a-tooltip title='{{ i18n "pages.inbounds.leaveBlankToNeverExpire" }}'>
+                                        {{ i18n "pages.inbounds.expireDate" }}
+                                        <a-icon type="question-circle"></a-icon>
+                                    </a-tooltip>
+                                </template>
+                                <a-date-picker :dropdown-class-name="themeSwitcher.currentTheme"
+                                    :show-time="{ format: 'HH:mm:ss' }" format="YYYY-MM-DD HH:mm:ss"
+                                    v-if="datepicker == 'gregorian'" v-model="clientModal.expiryTimeModel">
+                                </a-date-picker>
+                                <persian-datepicker placeholder='{{ i18n "pages.settings.datepickerPlaceholder" }}'
+                                    v-else v-model="clientModal.expiryTimeModel">
+                                </persian-datepicker>
+                            </a-form-item>
+
+                            <a-form-item v-if="ipLimitEnable">
+                                <template slot="label">
+                                    <a-tooltip title='{{ i18n "pages.inbounds.IPLimitDesc" }}'>
+                                        {{ i18n "pages.inbounds.IPLimit" }}
+                                        <a-icon type="question-circle"></a-icon>
+                                    </a-tooltip>
+                                </template>
+                                <a-input-number :min="0" v-model.number="clientModal.client.limitIp"></a-input-number>
+                            </a-form-item>
+
+                            <a-form-item v-if="tgBotEnable">
+                                <template slot="label">
+                                    <a-tooltip title='{{ i18n "pages.inbounds.telegramDesc" }}'>
+                                        Telegram ChatID
+                                        <a-icon type="question-circle"></a-icon>
+                                    </a-tooltip>
+                                </template>
+                                <a-input-number :min="0" style="width: 50%"
+                                    v-model.number="clientModal.client.tgId"></a-input-number>
+                            </a-form-item>
+
+                            <a-form-item>
+                                <template slot="label">
+                                    <a-tooltip title='{{ i18n "pages.client.renewDesc" }}'>
+                                        {{ i18n "pages.client.renew" }} (days)
+                                        <a-icon type="question-circle"></a-icon>
+                                    </a-tooltip>
+                                </template>
+                                <a-input-number :min="0" v-model.number="clientModal.client.reset"></a-input-number>
+                            </a-form-item>
+
+                            <a-form-item label='{{ i18n "comment" }}'>
+                                <a-textarea :auto-size="{ minRows: 2, maxRows: 4 }"
+                                    v-model.trim="clientModal.client.comment"></a-textarea>
+                            </a-form-item>
+                        </a-form>
+                    </a-modal>
+
+                    <!-- Bulk Add Clients Modal -->
+                    <a-modal :class="themeSwitcher.currentTheme" :closable="true"
+                        :confirm-loading="bulkModal.confirmLoading" :mask-closable="false" ok-text='{{ i18n "sure" }}'
+                        title='{{ i18n "pages.client.bulk" }}' @ok="handleBulkModalOk" cancel-text='{{ i18n "close" }}'
+                        v-model="bulkModal.visible" wrap-class-name="panel-modal panel-modal-lg">
+                        <a-form :colon="false" :label-col="{ md: {span:8} }" :wrapper-col="{ md: {span:14} }">
+                            <a-form-item label='{{ i18n "pages.client.method" }}'>
+                                <a-select :dropdown-class-name="themeSwitcher.currentTheme" v-model="bulkModal.emailMethod">
+                                    <a-select-option :value="0">Random</a-select-option>
+                                    <a-select-option :value="1">Random + Prefix</a-select-option>
+                                    <a-select-option :value="2">Random + Prefix + Number</a-select-option>
+                                    <a-select-option :value="3">Prefix + Number + Postfix</a-select-option>
+                                </a-select>
+                            </a-form-item>
+
+                            <a-form-item label='{{ i18n "pages.client.prefix" }}' v-if="bulkModal.emailMethod > 0">
+                                <a-input v-model.trim="bulkModal.emailPrefix"></a-input>
+                            </a-form-item>
+
+                            <a-form-item label='{{ i18n "pages.client.postfix" }}' v-if="bulkModal.emailMethod === 3">
+                                <a-input v-model.trim="bulkModal.emailPostfix"></a-input>
+                            </a-form-item>
+
+                            <a-form-item label='{{ i18n "pages.client.first" }}' v-if="bulkModal.emailMethod >= 2">
+                                <a-input-number :min="1" v-model.number="bulkModal.firstNum"></a-input-number>
+                            </a-form-item>
+
+                            <a-form-item label='{{ i18n "pages.client.last" }}' v-if="bulkModal.emailMethod >= 2">
+                                <a-input-number :min="bulkModal.firstNum" v-model.number="bulkModal.lastNum"></a-input-number>
+                            </a-form-item>
+
+                            <a-form-item label='{{ i18n "pages.client.clientCount" }}' v-if="bulkModal.emailMethod < 2">
+                                <a-input-number :max="100" :min="1" v-model.number="bulkModal.quantity"></a-input-number>
+                            </a-form-item>
+
+                            <!-- Inbounds selection for bulk -->
+                            <a-divider>{{ i18n "pages.node_clients.manageLinks" }} (Inbounds)</a-divider>
+                            <a-form-item label='{{ i18n "inbounds" }}'>
+                                <div style="margin-bottom: 8px;">
+                                    <a-button size="small" @click="bulkModal.selectedInboundIds = allInbounds.map(i => Number(i.id))" style="margin-right: 6px;">{{ i18n "all" }}</a-button>
+                                    <a-button size="small" @click="bulkModal.selectedInboundIds = []">{{ i18n "none" }}</a-button>
+                                </div>
+                                <div class="inbound-select-grid">
+                                    <a-checkbox v-for="ib in allInbounds" :key="ib.id"
+                                        :checked="bulkModal.selectedInboundIds.map(Number).includes(Number(ib.id))"
+                                        @change="e => toggleBulkInbound(ib.id, e.target.checked)">
+                                        [[ ib.remark || ('#' + ib.id) ]]
+                                        <span style="font-size: 11px; color: #888;">([[ ib.protocol ]]:[[ ib.port ]])</span>
+                                    </a-checkbox>
+                                </div>
+                            </a-form-item>
+
+                            <!-- Quotas for bulk -->
+                            <a-divider>{{ i18n "pages.node_clients.limitsAndPolicy" }}</a-divider>
+                            <a-form-item label='{{ i18n "pages.inbounds.totalFlow" }} (GB)'>
+                                <a-input-number :min="0" v-model.number="bulkModal.totalGB"></a-input-number>
+                            </a-form-item>
+
+                            <a-form-item label='{{ i18n "pages.client.delayedStart" }}'>
+                                <a-switch v-model="bulkModal.delayedStart"></a-switch>
+                            </a-form-item>
+
+                            <a-form-item label='{{ i18n "pages.client.expireDays" }}' v-if="bulkModal.delayedStart">
+                                <a-input-number :min="0" v-model.number="bulkModal.delayedExpireDays"></a-input-number>
+                            </a-form-item>
+
+                            <a-form-item v-else label='{{ i18n "pages.inbounds.expireDate" }}'>
+                                <a-date-picker :dropdown-class-name="themeSwitcher.currentTheme"
+                                    :show-time="{ format: 'HH:mm:ss' }" format="YYYY-MM-DD HH:mm:ss"
+                                    v-if="datepicker == 'gregorian'" v-model="bulkModal.expiryTimeModel">
+                                </a-date-picker>
+                                <persian-datepicker placeholder='{{ i18n "pages.settings.datepickerPlaceholder" }}'
+                                    v-else v-model="bulkModal.expiryTimeModel">
+                                </persian-datepicker>
+                            </a-form-item>
+
+                            <a-form-item label='{{ i18n "pages.client.renew" }} (days)'>
+                                <a-input-number :min="0" v-model.number="bulkModal.reset"></a-input-number>
+                            </a-form-item>
+
+                            <a-form-item label='{{ i18n "pages.inbounds.IPLimit" }}' v-if="ipLimitEnable">
+                                <a-input-number :min="0" v-model.number="bulkModal.limitIp"></a-input-number>
+                            </a-form-item>
+                        </a-form>
+                    </a-modal>
+
+                </a-spin>
+            </a-layout-content>
+        </a-layout>
+
+        <!-- Manage Links Drawer -->
+        <a-drawer :wrap-class-name="themeSwitcher.currentTheme" :closable="true"
+            :title="'{{ i18n "pages.node_clients.manageLinksFor" }}: ' + (linkDrawer.client ? linkDrawer.client.email : '')"
+            :visible="linkDrawer.visible" :width="isMobile ? '100%' : 560" @close="linkDrawer.close()"
+            placement="right">
+            <a-spin :spinning="linkDrawer.loading">
+                <div style="margin-bottom: 16px;">
+                    <a-alert message='{{ i18n "pages.node_clients.linkDrawerHint" }}' type="info" show-icon closable>
+                    </a-alert>
+                </div>
+
+                <a-list :data-source="linkDrawer.allInbounds" bordered size="small">
+                    <a-list-item slot="renderItem" slot-scope="inbound">
+                        <div style="width: 100%;">
+                            <div style="display: flex; align-items: center; margin-bottom: 6px;">
+                                <a-checkbox :checked="linkDrawer.isLinked(inbound.id)"
+                                    @change="e => linkDrawer.toggleLink(inbound.id, e.target.checked)"
+                                    style="margin-right: 8px;">
+                                </a-checkbox>
+                                <strong>[[ inbound.remark || ('Inbound #' + inbound.id) ]]</strong>
+                                <span style="margin-left: auto; font-size: 12px; color: #888;">
+                                    [[ inbound.protocol ]]:[[ inbound.port ]]
+                                </span>
+                            </div>
+                            <div v-if="linkDrawer.isLinked(inbound.id)" style="margin-left: 28px;">
+                                <a-input :placeholder='`{{ i18n "pages.node_clients.flowOverride" }}`'
+                                    :value="linkDrawer.getFlowForInbound(inbound.id)"
+                                    @change="e => linkDrawer.setFlow(inbound.id, e.target.value)" size="small"
+                                    style="max-width: 280px;">
+                                </a-input>
+                            </div>
+                        </div>
+                    </a-list-item>
+                </a-list>
+
+                <div style="margin-top: 16px; text-align: right;">
+                    <a-button @click="linkDrawer.close()" style="margin-right: 8px;">
+                        {{ i18n "cancel" }}
+                    </a-button>
+                    <a-button @click="handleDrawerSave" type="primary" :loading="linkDrawer.loading">
+                        {{ i18n "sure" }}
+                    </a-button>
+                </div>
+            </a-spin>
+        </a-drawer>
+
+        <!-- Client Detail Modal -->
+        <a-modal :class="themeSwitcher.currentTheme" :closable="true" :footer="null" :mask-closable="true"
+            id="client-detail-modal" :title="'{{ i18n "pages.inbounds.details" }}' + (detailModal.client ? ' - ' + detailModal.client.email : '')"
+            v-model="detailModal.visible" width="600px" wrap-class-name="panel-modal panel-modal-detail">
+            <template v-if="detailModal.client">
+                <!-- Top 3-Stat Summary Cards (Compact) -->
+                <div class="detail-stats-grid">
+                    <div class="detail-stat-card">
+                        <div class="detail-stat-label">{{ i18n "pages.inbounds.traffic" }}</div>
+                        <div class="detail-stat-val">
+                            <span style="color: var(--ui-primary);">[[ sizeFormat(getTrafficData(detailModal.client).used) ]]</span>
+                            <span style="font-size: 10px; font-weight: normal; color: var(--ui-text-muted);">/ [[ detailModal.client.totalGB > 0 ? sizeFormat(detailModal.client.totalGB) : '∞' ]]</span>
+                        </div>
+                    </div>
+                    <div class="detail-stat-card">
+                        <div class="detail-stat-label">{{ i18n "remained" }}</div>
+                        <div class="detail-stat-val">
+                            <a-tag :color="isDepleted(detailModal.client) ? 'red' : 'green'" style="margin: 0; font-size: 10px; height: 18px; line-height: 16px; padding: 0 4px;">
+                                [[ detailModal.client.totalGB > 0 ? sizeFormat(Math.max(0, detailModal.client.totalGB - getTrafficData(detailModal.client).used)) : '∞' ]]
+                            </a-tag>
+                        </div>
+                    </div>
+                    <div class="detail-stat-card">
+                        <div class="detail-stat-label">{{ i18n "pages.inbounds.expireDate" }}</div>
+                        <div class="detail-stat-val">
+                            <template v-if="detailModal.client.expiryTime > 0">
+                                <span :style="{ color: isExpired(detailModal.client) ? 'var(--ui-danger)' : 'var(--ui-text)', fontSize: '11px' }">
+                                    [[ remainedDays(detailModal.client.expiryTime) ]]
+                                </span>
+                            </template>
+                            <a-tag color="green" v-else-if="detailModal.client.expiryTime < 0" style="margin: 0; font-size: 10px; height: 18px; line-height: 16px; padding: 0 4px;">
+                                [[ Math.abs(detailModal.client.expiryTime) / 86400000 ]]d
+                            </a-tag>
+                            <span v-else style="color: var(--ui-text-muted);">&infin;</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Slim Progress Bar -->
+                <div v-if="detailModal.client.totalGB > 0" style="margin: -2px 0 8px 0;">
+                    <a-progress :percent="usagePercent(detailModal.client)" :show-info="false" :stroke-width="4"
+                        :stroke-color="usageProgressColor(detailModal.client)"
+                        :status="isDepletedOrExpired(detailModal.client) ? 'exception' : 'normal'">
+                    </a-progress>
+                </div>
+
+                <!-- Compact Table -->
+                <table class="detail-table">
+                    <tr>
+                        <td>{{ i18n "pages.inbounds.email" }}</td>
+                        <td>
+                            <strong style="word-break: break-all;">[[ detailModal.client.email ]]</strong>
+                            <a-icon @click="copyText(detailModal.client.email)" style="cursor: pointer; margin-left: 4px; color: var(--ui-primary); font-size: 12px;" type="copy"></a-icon>
+                            <a-tag color="green" v-if="isOnline(detailModal.client.email)" style="margin-left: 6px; font-size: 10px; height: 18px; line-height: 16px; padding: 0 4px;">{{ i18n "online" }}</a-tag>
+                            <a-tag color="green" v-if="isClientActive(detailModal.client)" style="margin-left: 4px; font-size: 10px; height: 18px; line-height: 16px; padding: 0 4px;">{{ i18n "enabled" }}</a-tag>
+                            <a-tag color="red" v-else-if="!detailModal.client.enable" style="margin-left: 4px; font-size: 10px; height: 18px; line-height: 16px; padding: 0 4px;">{{ i18n "disabled" }}</a-tag>
+                            <a-tag color="orange" v-if="isDepletedOrExpired(detailModal.client)" style="margin-left: 4px; font-size: 10px; height: 18px; line-height: 16px; padding: 0 4px;">{{ i18n "depleted" }}</a-tag>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>{{ i18n "pages.inbounds.traffic" }}</td>
+                        <td>
+                            <a-tag color="blue" style="font-size: 10px; height: 18px; line-height: 16px; padding: 0 4px; margin: 0;">
+                                ↑ [[ sizeFormat(getTrafficData(detailModal.client).up) ]] / [[ sizeFormat(getTrafficData(detailModal.client).down) ]] ↓
+                            </a-tag>
+                        </td>
+                    </tr>
+                    <tr v-if="detailModal.client.expiryTime > 0">
+                        <td>{{ i18n "pages.inbounds.expireDate" }}</td>
+                        <td>
+                            <span style="font-size: 11px;">
+                                <template v-if="datepicker === 'gregorian'">
+                                    [[ DateUtil.formatMillis(detailModal.client.expiryTime) ]]
+                                </template>
+                                <template v-else>
+                                    [[ DateUtil.convertToJalalian(moment(detailModal.client.expiryTime)) ]]
+                                </template>
+                            </span>
+                        </td>
+                    </tr>
+                    <tr v-if="detailModal.client.reset > 0">
+                        <td>{{ i18n "pages.client.renew" }}</td>
+                        <td><a-tag style="font-size: 10px; height: 18px; line-height: 16px; padding: 0 4px; margin: 0;">[[ detailModal.client.reset ]] {{ i18n "pages.client.days" }}</a-tag></td>
+                    </tr>
+                    <tr v-if="ipLimitEnable">
+                        <td>{{ i18n "pages.inbounds.IPLimit" }}</td>
+                        <td>
+                            <a-tag style="font-size: 10px; height: 18px; line-height: 16px; padding: 0 4px; margin: 0;">[[ detailModal.client.limitIp > 0 ? detailModal.client.limitIp : '{{ i18n "unlimited" }}' ]]</a-tag>
+                            <template v-if="detailModal.client.limitIp > 0">
+                                <span style="margin: 0 4px; color: var(--ui-text-muted);">|</span>
+                                <span style="color: var(--ui-text-muted); font-size: 11px;">{{ i18n "pages.inbounds.IPLimitlog" }}:</span>
+                                <a-tag style="font-size: 10px; height: 18px; line-height: 16px; padding: 0 4px; margin-left: 2px;">[[ detailModal.clientIps || '{{ i18n "none" }}' ]]</a-tag>
+                                <a-tooltip :title="'{{ i18n "pages.inbounds.IPLimitlogclear" }}'">
+                                    <a-icon @click="clearDetailIps(detailModal.client.email)" style="cursor: pointer; margin-left: 4px; color: var(--ui-danger);" type="delete"></a-icon>
+                                </a-tooltip>
+                                <a-tooltip :title="'{{ i18n "check" }}'">
+                                    <a-icon :spin="detailModal.loadingIps" @click="refreshDetailIps(detailModal.client.email)" style="cursor: pointer; margin-left: 4px; color: var(--ui-primary);" type="sync"></a-icon>
+                                </a-tooltip>
+                            </template>
+                        </td>
+                    </tr>
+                    <tr v-if="detailModal.client.uuid">
+                        <td>UUID</td>
+                        <td>
+                            <code class="compact-code">[[ detailModal.client.uuid ]]</code>
+                            <a-icon @click="copyText(detailModal.client.uuid)" style="cursor: pointer; margin-left: 5px; color: var(--ui-primary); font-size: 12px;" type="copy"></a-icon>
+                        </td>
+                    </tr>
+                    <tr v-if="detailModal.client.password">
+                        <td>{{ i18n "password" }}</td>
+                        <td>
+                            <code class="compact-code">[[ detailModal.client.password ]]</code>
+                            <a-icon @click="copyText(detailModal.client.password)" style="cursor: pointer; margin-left: 5px; color: var(--ui-primary); font-size: 12px;" type="copy"></a-icon>
+                        </td>
+                    </tr>
+                    <tr v-if="detailModal.client.auth">
+                        <td>Auth</td>
+                        <td>
+                            <code class="compact-code">[[ detailModal.client.auth ]]</code>
+                            <a-icon @click="copyText(detailModal.client.auth)" style="cursor: pointer; margin-left: 5px; color: var(--ui-primary); font-size: 12px;" type="copy"></a-icon>
+                        </td>
+                    </tr>
+                    <tr v-if="detailModal.client.flow">
+                        <td>Flow</td>
+                        <td><a-tag color="cyan" style="font-size: 10px; height: 18px; line-height: 16px; padding: 0 4px; margin: 0;">[[ detailModal.client.flow ]]</a-tag></td>
+                    </tr>
+                    <tr v-if="subSettings.enable && detailModal.client.subId">
+                        <td>{{ i18n "pages.node_clients.subscriptionId" }}</td>
+                        <td>
+                            <code class="compact-code">[[ detailModal.client.subId ]]</code>
+                            <a-icon @click="copyText(detailModal.client.subId)" style="cursor: pointer; margin-left: 5px; color: var(--ui-primary); font-size: 12px;" type="copy"></a-icon>
+                        </td>
+                    </tr>
+                    <tr v-if="subSettings.enable && detailModal.client.subId">
+                        <td>{{ i18n "pages.node_clients.subscriptionUrl" }}</td>
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 4px;">
+                                <a :href="subSettings.subURI + detailModal.client.subId" target="_blank" rel="noopener noreferrer"
+                                    style="word-break: break-all; font-size: 11px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                    [[ subSettings.subURI + detailModal.client.subId ]]
+                                </a>
+                                <a-icon @click="copyText(subSettings.subURI + detailModal.client.subId)" style="cursor: pointer; color: var(--ui-primary); font-size: 12px; flex-shrink: 0;" type="copy"></a-icon>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr v-if="tgBotEnable && detailModal.client.tgId">
+                        <td>Telegram ID</td>
+                        <td>
+                            <a-tag color="blue" style="font-size: 10px; height: 18px; line-height: 16px; padding: 0 4px; margin: 0;">[[ detailModal.client.tgId ]]</a-tag>
+                            <a-icon @click="copyText(detailModal.client.tgId.toString())" style="cursor: pointer; margin-left: 5px; color: var(--ui-primary); font-size: 12px;" type="copy"></a-icon>
+                        </td>
+                    </tr>
+                    <tr v-if="detailModal.client.comment">
+                        <td>{{ i18n "comment" }}</td>
+                        <td><span style="font-size: 11px;">[[ detailModal.client.comment ]]</span></td>
+                    </tr>
+                </table>
+
+                <!-- Linked Inbounds Section (Compact) -->
+                <div style="margin-top: 8px; padding-top: 6px; border-top: 1px solid var(--ui-border);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                        <span style="font-size: 11px; font-weight: 600; color: var(--ui-text);">
+                            {{ i18n "inbounds" }} ([[ detailModal.links.length ]])
+                        </span>
+                        <a-button @click="showClientQrcodes(detailModal.client)" icon="qrcode" type="primary" size="small" style="font-size: 11px; height: 24px; padding: 0 8px;">
+                            {{ i18n "qrCode" }}
+                        </a-button>
+                    </div>
+
+                    <div v-if="detailModal.links.length === 0" style="text-align: center; padding: 6px; font-size: 11px; color: var(--ui-text-muted);">
+                        No inbounds linked.
+                    </div>
+                    <div v-else class="detail-inbounds-box">
+                        <div v-for="(l, idx) in detailModal.links" :key="idx" class="detail-inbound-item">
+                            <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0;">
+                                <a-tag color="blue" style="font-size: 10px; height: 16px; line-height: 14px; padding: 0 3px; margin-right: 4px;">
+                                    [[ (l.protocol || '').toUpperCase() ]]:[[ l.port ]]
+                                </a-tag>
+                                <strong style="font-size: 11px;">[[ l.remark || l.title ]]</strong>
+                            </div>
+                            <a-button @click="copyText(l.link)" icon="copy" size="small" type="link" style="padding: 0 2px; flex-shrink: 0; font-size: 11px; height: 20px;">
+                                {{ i18n "copy" }}
+                            </a-button>
+                        </div>
+                    </div>
+                </div>
+            </template>
+        </a-modal>
+
+        <!-- QR Code & Links Modal -->
+        <a-modal :class="themeSwitcher.currentTheme" :closable="true"
+            :footer="null" width="fit-content" v-model="qrModal.visible"
+            wrap-class-name="panel-modal panel-modal-auto panel-modal-qr">
+            <template slot="title">
+                <div class="client-qr-title" :title="qrModal.title">
+                    <a-icon type="qrcode" style="margin-right: 8px; color: var(--ui-primary); font-size: 18px;"></a-icon>
+                    <span>[[ qrModal.title ]]</span>
+                </div>
+            </template>
+            <template v-if="subSettings.enable && qrModal.subLink">
+                <a-tabs v-model="qrModal.tab" @change="onQrTabChange" :animated="false">
+                    <a-tab-pane key="sub" tab='{{ i18n "pages.settings.subSettings" }}'>
+                        <tr-qr-modal class="qr-modal">
+                            <tr-qr-box class="qr-box">
+                                <a-tag class="qr-tag" color="purple"><span>{{ i18n "pages.node_clients.subscriptionUrl" }}</span></a-tag>
+                                <tr-qr-bg class="qr-bg-sub">
+                                    <tr-qr-bg-inner class="qr-bg-sub-inner">
+                                        <canvas id="clientSubQr" class="qr-cv"
+                                            @click="copyText(qrModal.subLink)"></canvas>
+                                    </tr-qr-bg-inner>
+                                </tr-qr-bg>
+                                <a-button size="small" type="dashed" class="qr-copy-btn" icon="copy"
+                                    @click="copyText(qrModal.subLink)">{{ i18n "copy" }}</a-button>
+                            </tr-qr-box>
+                            <tr-qr-box class="qr-box">
+                                <a-tag class="qr-tag" color="purple"><span>{{ i18n "pages.node_clients.subscriptionUrlJson" }}</span></a-tag>
+                                <tr-qr-bg class="qr-bg-sub">
+                                    <tr-qr-bg-inner class="qr-bg-sub-inner">
+                                        <canvas id="clientSubJsonQr" class="qr-cv"
+                                            @click="copyText(qrModal.subJsonLink)"></canvas>
+                                    </tr-qr-bg-inner>
+                                </tr-qr-bg>
+                                <a-button size="small" type="dashed" class="qr-copy-btn" icon="copy"
+                                    @click="copyText(qrModal.subJsonLink)">{{ i18n "copy" }}</a-button>
+                            </tr-qr-box>
+                        </tr-qr-modal>
+                    </a-tab-pane>
+                    <a-tab-pane key="inbounds">
+                        <span slot="tab">{{ i18n "inbounds" }} ([[ qrModal.qrcodes.length ]])</span>
+                        <tr-qr-modal class="qr-modal">
+                            <div v-if="qrModal.qrcodes.length === 0" style="padding: 24px; color: #888;">
+                                No inbounds linked.
+                            </div>
+                            <template v-for="(row, index) in qrModal.qrcodes">
+                                <tr-qr-box class="qr-box">
+                                    <a-tag class="qr-tag" color="green"><span>[[ row.title ]]</span></a-tag>
+                                    <tr-qr-bg class="qr-bg">
+                                        <canvas :id="'clientQr-' + index" class="qr-cv"
+                                            @click="copyText(row.link)"></canvas>
+                                    </tr-qr-bg>
+                                    <a-button size="small" type="dashed" class="qr-copy-btn" icon="copy"
+                                        @click="copyText(row.link)">{{ i18n "copy" }}</a-button>
+                                </tr-qr-box>
+                            </template>
+                        </tr-qr-modal>
+                    </a-tab-pane>
+                </a-tabs>
+            </template>
+            <template v-else>
+                <tr-qr-modal class="qr-modal">
+                    <template v-for="(row, index) in qrModal.qrcodes">
+                        <tr-qr-box class="qr-box">
+                            <a-tag class="qr-tag" color="green"><span>[[ row.title ]]</span></a-tag>
+                            <tr-qr-bg class="qr-bg">
+                                <canvas :id="'clientQr-' + index" class="qr-cv"
+                                    @click="copyText(row.link)"></canvas>
+                            </tr-qr-bg>
+                            <a-button size="small" type="dashed" class="qr-copy-btn" icon="copy"
+                                @click="copyText(row.link)">{{ i18n "copy" }}</a-button>
+                        </tr-qr-box>
+                    </template>
+                </tr-qr-modal>
+            </template>
+        </a-modal>
+    </a-layout>
+
+    {{template "js" .}}
+    <script src="{{ .base_path }}assets/base64/base64.min.js"></script>
+    <script src="{{ .base_path }}assets/qrcode/qrious2.min.js?{{ .cur_ver }}"></script>
+    <script src="{{ .base_path }}assets/clipboard/clipboard.min.js?{{ .cur_ver }}"></script>
+    <script src="{{ .base_path }}assets/uri/URI.min.js?{{ .cur_ver }}"></script>
+    <script src="{{ .base_path }}assets/js/model/inbound.js?{{ .cur_ver }}"></script>
+    <script src="{{ .base_path }}assets/js/model/dbinbound.js?{{ .cur_ver }}"></script>
+    {{template "component/themeSwitcher" .}}
+    {{template "component/persianDatepicker" .}}
+
+    <script>
+        if (typeof HttpUtil !== 'undefined' && typeof HttpUtil.postJson !== 'function') {
+            HttpUtil.postJson = function(url, data, options = {}) {
+                const payload = (typeof data === 'object' && !(data instanceof FormData)) ? JSON.stringify(data) : data;
+                const opts = Object.assign({}, options, {
+                    headers: Object.assign({}, (options && options.headers) || {}, {
+                        'Content-Type': 'application/json',
+                    }),
+                });
+                return HttpUtil.post(url, payload, opts);
+            };
+        }
+
+        const columns = [
+            { title: '{{ i18n "pages.inbounds.operate" }}', align: 'center', width: 45, scopedSlots: { customRender: 'action' } },
+            { title: '{{ i18n "pages.inbounds.enable" }}', align: 'center', width: 40, scopedSlots: { customRender: 'enable' } },
+            { title: '{{ i18n "pages.inbounds.client" }}', align: 'left', width: 160, scopedSlots: { customRender: 'client' } },
+            { title: '{{ i18n "pages.inbounds.traffic" }}', align: 'center', width: 190, scopedSlots: { customRender: 'traffic' } },
+            { title: '{{ i18n "inbounds" }}', align: 'center', width: 140, scopedSlots: { customRender: 'linkedInbounds' } },
+            { title: '{{ i18n "pages.inbounds.expireDate" }}', align: 'center', width: 90, scopedSlots: { customRender: 'expiryTime' } },
+        ];
+
+        const mobileColumns = [
+            { title: '{{ i18n "pages.inbounds.operate" }}', align: 'center', width: 60, scopedSlots: { customRender: 'action' } },
+            { title: '{{ i18n "pages.inbounds.client" }}', align: 'left', scopedSlots: { customRender: 'client' } },
+            { title: '{{ i18n "pages.inbounds.traffic" }}', align: 'center', width: 130, scopedSlots: { customRender: 'traffic' } },
+        ];
+
+        const app = new Vue({
+            delimiters: ["[[", "]]"],
+            el: '#app',
+            data: {
+                siderDrawer,
+                themeSwitcher,
+                persianDatepicker,
+                spinning: false,
+                refreshing: false,
+                clients: [],
+                allInbounds: [],
+                inboundMap: {},
+                trafficMap: {},
+                clientLinksMap: {},
+                onlineClients: [],
+                searchKey: '',
+                filterStatus: '',
+                filterInboundId: '',
+                selectedRowKeys: [],
+                pageSize: 50,
+                isMobile: window.innerWidth <= 768,
+                datepicker: 'gregorian',
+                remarkModel: '-ieo',
+                ipLimitEnable: false,
+                tgBotEnable: false,
+                subSettings: {
+                    enable: false,
+                    subURI: '',
+                    subJsonURI: '',
+                },
+                detailModal: {
+                    visible: false,
+                    client: null,
+                    clientIps: '',
+                    links: [],
+                    loadingIps: false,
+                },
+                expireDiff: 0,
+                trafficDiff: 0,
+                qrModal: {
+                    visible: false,
+                    title: '',
+                    client: null,
+                    subLink: '',
+                    subJsonLink: '',
+                    qrcodes: [],
+                    tab: 'sub',
+                },
+                clientModal: {
+                    visible: false,
+                    confirmLoading: false,
+                    title: '',
+                    okText: '',
+                    isEdit: false,
+                    client: null,
+                    selectedInboundIds: [],
+                    expiryTimeModel: null,
+                    delayedStart: false,
+                    delayedExpireDays: 0,
+                    changeDelayedStart(v) {
+                        if (v) this.expiryTimeModel = null;
+                        else this.delayedExpireDays = 0;
+                    },
+                    showAdd(defaultInboundId = null) {
+                        this.isEdit = false;
+                        this.title = '{{ i18n "pages.client.add" }}';
+                        this.okText = '{{ i18n "sure" }}';
+                        this.client = {
+                            email: RandomUtil.randomLowerAndNum(9),
+                            subId: RandomUtil.randomLowerAndNum(16),
+                            uuid: RandomUtil.randomUUID(),
+                            password: RandomUtil.randomSeq(10),
+                            auth: RandomUtil.randomSeq(10),
+                            flow: '',
+                            totalGB: 0,
+                            _totalGB: 0,
+                            expiryTime: 0,
+                            limitIp: 0,
+                            tgId: 0,
+                            enable: true,
+                            reset: 0,
+                            comment: '',
+                        };
+                        this.selectedInboundIds = defaultInboundId ? [Number(defaultInboundId)] : app.allInbounds.map(i => Number(i.id));
+                        this.expiryTimeModel = null;
+                        this.delayedStart = false;
+                        this.delayedExpireDays = 0;
+                        this.visible = true;
+                    },
+                    showEdit(c) {
+                        this.isEdit = true;
+                        this.title = '{{ i18n "pages.client.edit" }}: ' + c.email;
+                        this.okText = '{{ i18n "sure" }}';
+                        this.client = Object.assign({}, c);
+                        this.client._totalGB = toFixed((c.totalGB || 0) / ONE_GB, 2);
+                        this.delayedStart = c.expiryTime < 0;
+                        this.delayedExpireDays = this.delayedStart ? c.expiryTime / -86400000 : 0;
+                        this.expiryTimeModel = this.delayedStart ? null : (c.expiryTime > 0 && typeof moment !== 'undefined' ? moment(c.expiryTime) : null);
+                        const links = (c.links && c.links.length > 0) ? c.links : (app.clientLinksMap[c.id] || []);
+                        this.selectedInboundIds = links.map(l => Number(typeof l === 'object' && l !== null ? l.inboundId : l));
+                        this.visible = true;
+                    },
+                },
+                bulkModal: {
+                    visible: false,
+                    confirmLoading: false,
+                    emailMethod: 0,
+                    emailPrefix: 'user_',
+                    emailPostfix: '',
+                    firstNum: 1,
+                    lastNum: 10,
+                    quantity: 5,
+                    totalGB: 0,
+                    delayedStart: false,
+                    delayedExpireDays: 30,
+                    expiryTimeModel: null,
+                    reset: 0,
+                    limitIp: 0,
+                    selectedInboundIds: [],
+                    show() {
+                        this.visible = true;
+                        this.selectedInboundIds = app.allInbounds.map(i => Number(i.id));
+                    },
+                },
+                linkDrawer: {
+                    visible: false,
+                    loading: false,
+                    client: null,
+                    allInbounds: [],
+                    selectedLinks: [],
+                    async show(c) {
+                        this.client = c;
+                        this.allInbounds = app.allInbounds;
+                        this.visible = true;
+                        this.loading = true;
+                        try {
+                            const msg = await HttpUtil.get(`/panel/api/clients/${c.id}/links`);
+                            if (msg.success) {
+                                this.selectedLinks = (msg.obj || []).map(l => ({ inboundId: Number(l.inboundId), flow: l.flow || '' }));
+                            }
+                        } finally {
+                            this.loading = false;
+                        }
+                    },
+                    close() {
+                        this.visible = false;
+                        this.client = null;
+                        this.selectedLinks = [];
+                    },
+                    isLinked(inboundId) {
+                        const numId = Number(inboundId);
+                        return this.selectedLinks.some(l => Number(l.inboundId) === numId);
+                    },
+                    getFlowForInbound(inboundId) {
+                        const numId = Number(inboundId);
+                        const link = this.selectedLinks.find(l => Number(l.inboundId) === numId);
+                        return link ? link.flow : '';
+                    },
+                    toggleLink(inboundId, checked) {
+                        const numId = Number(inboundId);
+                        if (checked) {
+                            if (!this.isLinked(numId)) this.selectedLinks.push({ inboundId: numId, flow: '' });
+                        } else {
+                            const idx = this.selectedLinks.findIndex(l => Number(l.inboundId) === numId);
+                            if (idx !== -1) this.selectedLinks.splice(idx, 1);
+                        }
+                    },
+                    setFlow(inboundId, flow) {
+                        const numId = Number(inboundId);
+                        const link = this.selectedLinks.find(l => Number(l.inboundId) === numId);
+                        if (link) link.flow = flow || '';
+                    },
+                },
+            },
+            computed: {
+                filteredClients() {
+                    let list = this.clients.slice();
+                    if (this.searchKey && this.searchKey.trim()) {
+                        const k = this.searchKey.toLowerCase();
+                        list = list.filter(c =>
+                            (c.email && c.email.toLowerCase().includes(k)) ||
+                            (c.subId && c.subId.toLowerCase().includes(k)) ||
+                            (c.comment && c.comment.toLowerCase().includes(k))
+                        );
+                    }
+                    if (this.filterStatus) {
+                        if (this.filterStatus === 'active') list = list.filter(c => this.isClientActive(c));
+                        else if (this.filterStatus === 'disabled') list = list.filter(c => !c.enable);
+                        else if (this.filterStatus === 'depleted') list = list.filter(c => this.isDepletedOrExpired(c));
+                        else if (this.filterStatus === 'online') list = list.filter(c => this.isOnline(c.email));
+                    }
+                    if (this.filterInboundId !== '') {
+                        const ibId = Number(this.filterInboundId);
+                        list = list.filter(c => {
+                            const links = this.clientLinksMap[c.id] || [];
+                            return links.some(l => Number(typeof l === 'object' && l !== null ? l.inboundId : l) === ibId);
+                        });
+                    }
+                    return list;
+                },
+            },
+            methods: {
+                loading(spin = true) {
+                    this.spinning = spin;
+                },
+                async loadAllData() {
+                    this.refreshing = true;
+                    try {
+                        const [inboundsMsg, clientsMsg, onlinesMsg] = await Promise.all([
+                            HttpUtil.get('/panel/api/inbounds/list'),
+                            HttpUtil.get('/panel/api/clients/list'),
+                            HttpUtil.post('/panel/api/inbounds/onlines'),
+                        ]);
+
+                        if (inboundsMsg.success) {
+                            this.allInbounds = inboundsMsg.obj || [];
+                            const newInboundMap = {};
+                            this.allInbounds.forEach(ib => {
+                                newInboundMap[ib.id] = ib;
+                                newInboundMap[Number(ib.id)] = ib;
+                            });
+                            this.inboundMap = newInboundMap;
+                        }
+                        if (onlinesMsg.success) {
+                            this.onlineClients = onlinesMsg.obj || [];
+                        }
+                        if (clientsMsg.success) {
+                            this.clients = clientsMsg.obj || [];
+                            const newLinksMap = {};
+                            const newTrafficMap = {};
+                            this.clients.forEach(c => {
+                                if (c.traffic) {
+                                    newTrafficMap[c.id] = {
+                                        up: c.traffic.up || 0,
+                                        down: c.traffic.down || 0,
+                                        used: (c.traffic.up || 0) + (c.traffic.down || 0),
+                                        total: c.traffic.total || 0,
+                                    };
+                                }
+                                newLinksMap[c.id] = c.links || [];
+                            });
+                            this.trafficMap = newTrafficMap;
+                            this.clientLinksMap = newLinksMap;
+                        }
+                    } catch (e) {
+                        this.$message.error('Failed to load clients: ' + e.message);
+                    } finally {
+                        this.refreshing = false;
+                        this.spinning = false;
+                    }
+                },
+                getTrafficData(c) {
+                    return this.trafficMap[c.id] || { up: 0, down: 0, used: 0, total: 0 };
+                },
+                getInboundLabel(inboundId) {
+                    const ib = this.inboundMap[inboundId] || this.inboundMap[Number(inboundId)];
+                    if (!ib) return '#' + inboundId;
+                    const protoPort = (ib.protocol || '').toUpperCase() + ':' + ib.port;
+                    return ib.remark ? `${ib.remark} (${protoPort})` : protoPort;
+                },
+                isOnline(email) {
+                    return this.onlineClients && this.onlineClients.includes(email);
+                },
+                isDepleted(c) {
+                    if (!c || c.totalGB <= 0) return false;
+                    const t = this.getTrafficData(c);
+                    return t.used >= c.totalGB;
+                },
+                isExpired(c) {
+                    if (!c || c.expiryTime <= 0) return false;
+                    return c.expiryTime <= Date.now();
+                },
+                isDepletedOrExpired(c) {
+                    return this.isDepleted(c) || this.isExpired(c);
+                },
+                isClientActive(c) {
+                    return !!c.enable && !this.isDepletedOrExpired(c);
+                },
+                isDepletingSoon(c) {
+                    if (!this.isClientActive(c)) return false;
+                    if (c.expiryTime > 0 && this.expireDiff > 0) {
+                        const diff = c.expiryTime - Date.now();
+                        if (diff > 0 && diff < this.expireDiff) return true;
+                    }
+                    if (c.totalGB > 0 && this.trafficDiff > 0) {
+                        const t = this.getTrafficData(c);
+                        const remaining = c.totalGB - t.used;
+                        if (remaining > 0 && remaining < this.trafficDiff) return true;
+                    }
+                    return false;
+                },
+                clientBadgeColor(c) {
+                    if (!c.enable) return '#ff4d4f';
+                    if (this.isDepletedOrExpired(c)) return '#faad14';
+                    if (this.isOnline(c.email)) return '#52c41a';
+                    return '#d9d9d9';
+                },
+                clientStatusTooltip(c) {
+                    if (!c.enable) return '{{ i18n "disabled" }}';
+                    if (this.isDepleted(c)) return '{{ i18n "depleted" }} ({{ i18n "pages.inbounds.totalFlow" }})';
+                    if (this.isExpired(c)) return '{{ i18n "depleted" }} ({{ i18n "pages.inbounds.expireDate" }})';
+                    if (this.isOnline(c.email)) return '{{ i18n "online" }}';
+                    return '{{ i18n "offline" }}';
+                },
+                async showClientDetail(c) {
+                    this.detailModal.client = c;
+                    this.detailModal.clientIps = '';
+                    this.detailModal.links = this.generateClientLinks(c);
+                    this.detailModal.visible = true;
+                    if (this.ipLimitEnable && c.limitIp > 0) {
+                        await this.refreshDetailIps(c.email);
+                    }
+                },
+                generateClientLinks(c) {
+                    const links = this.clientLinksMap[c.id] || c.links || [];
+                    const res = [];
+                    links.forEach(l => {
+                        const ibId = Number(typeof l === 'object' && l !== null ? l.inboundId : l);
+                        const ib = this.inboundMap[ibId];
+                        if (!ib) return;
+                        const dbInbound = new DBInbound(ib);
+                        const inbound = dbInbound.toInbound();
+                        const clientObj = Object.assign({}, c, { id: c.uuid || c.id });
+                        inbound.genAllLinks(dbInbound.remark, this.remarkModel, clientObj).forEach(item => {
+                            const linkVal = (inbound.protocol === Protocols.WIREGUARD && item.url) ? item.url : item.link;
+                            res.push({
+                                inboundId: ib.id,
+                                protocol: ib.protocol,
+                                port: ib.port,
+                                remark: dbInbound.remark,
+                                title: item.remark || `[${(ib.protocol || '').toUpperCase()}:${ib.port}] ${dbInbound.remark || ''}`,
+                                link: linkVal,
+                            });
+                        });
+                    });
+                    return res;
+                },
+                async refreshDetailIps(email) {
+                    if (!email) return;
+                    this.detailModal.loadingIps = true;
+                    try {
+                        const msg = await HttpUtil.post(`/panel/api/inbounds/clientIps/${email}`);
+                        if (msg.success) {
+                            this.detailModal.clientIps = msg.obj || '';
+                        }
+                    } finally {
+                        this.detailModal.loadingIps = false;
+                    }
+                },
+                async clearDetailIps(email) {
+                    if (!email) return;
+                    const msg = await HttpUtil.post(`/panel/api/inbounds/clearClientIps/${email}`);
+                    if (msg.success) {
+                        this.$message.success('{{ i18n "success" }}');
+                        this.detailModal.clientIps = '';
+                    }
+                },
+                trafficColor(c) {
+                    if (this.isDepleted(c) || this.isExpired(c)) return 'red';
+                    const t = this.getTrafficData(c);
+                    if (c.totalGB > 0 && t.used / c.totalGB >= 0.9) return 'orange';
+                    return 'green';
+                },
+                usagePercent(c) {
+                    if (!c.totalGB || c.totalGB <= 0) return 100;
+                    const t = this.getTrafficData(c);
+                    const p = Math.round((t.used / c.totalGB) * 100);
+                    return Math.min(100, Math.max(0, p));
+                },
+                usageProgressColor(c) {
+                    if (!c.enable) return 'var(--ui-border-strong)';
+                    if (this.isDepleted(c) || this.isExpired(c)) return 'var(--ui-danger)';
+                    if (!c.totalGB || c.totalGB <= 0) return 'var(--ui-primary)';
+                    const t = this.getTrafficData(c);
+                    const ratio = t.used / c.totalGB;
+                    if (ratio >= 1) return 'var(--ui-danger)';
+                    if (ratio >= 0.8) return 'var(--ui-warning)';
+                    return 'var(--ui-success)';
+                },
+                getClientLinks(c) {
+                    return this.clientLinksMap[c.id] || c.links || [];
+                },
+                getInboundRemark(inboundId) {
+                    const ib = this.inboundMap[inboundId] || this.inboundMap[Number(inboundId)];
+                    if (!ib) return '#' + inboundId;
+                    return ib.remark || ('Inbound #' + inboundId);
+                },
+                getInboundProtoPort(inboundId) {
+                    const ib = this.inboundMap[inboundId] || this.inboundMap[Number(inboundId)];
+                    if (!ib) return '';
+                    return (ib.protocol || '').toUpperCase() + ':' + ib.port;
+                },
+                getInboundShortLabel(inboundId) {
+                    const ib = this.inboundMap[inboundId] || this.inboundMap[Number(inboundId)];
+                    if (!ib) return '#' + inboundId;
+                    const protoPort = (ib.protocol || '').toUpperCase() + ':' + ib.port;
+                    return ib.remark ? `${ib.remark} (${protoPort})` : protoPort;
+                },
+                remainedDays(expTime) {
+                    if (expTime === 0) return null;
+                    if (expTime < 0) return formatSecond(expTime / -1000);
+                    const now = Date.now();
+                    if (expTime < now) return '{{ i18n "depleted" }}';
+                    return formatSecond((expTime - now) / 1000);
+                },
+                async toggleEnable(c) {
+                    const msg = await HttpUtil.post(`/panel/api/clients/${c.id}/toggle`);
+                    if (!msg.success) {
+                        c.enable = !c.enable;
+                    }
+                },
+                selectAllModalInbounds() {
+                    this.clientModal.selectedInboundIds = this.allInbounds.map(i => Number(i.id));
+                },
+                clearModalInbounds() {
+                    this.clientModal.selectedInboundIds = [];
+                },
+                toggleModalInbound(id, checked) {
+                    const numId = Number(id);
+                    if (checked) {
+                        if (!this.clientModal.selectedInboundIds.some(i => Number(i) === numId)) {
+                            this.clientModal.selectedInboundIds.push(numId);
+                        }
+                    } else {
+                        this.clientModal.selectedInboundIds = this.clientModal.selectedInboundIds.filter(i => Number(i) !== numId);
+                    }
+                },
+                toggleBulkInbound(id, checked) {
+                    const numId = Number(id);
+                    if (checked) {
+                        if (!this.bulkModal.selectedInboundIds.some(i => Number(i) === numId)) {
+                            this.bulkModal.selectedInboundIds.push(numId);
+                        }
+                    } else {
+                        this.bulkModal.selectedInboundIds = this.bulkModal.selectedInboundIds.filter(i => Number(i) !== numId);
+                    }
+                },
+                async handleClientModalOk() {
+                    const cm = this.clientModal;
+                    if (!cm.client || !cm.client.email || !cm.client.email.trim()) {
+                        this.$message.error('Email is required');
+                        return;
+                    }
+
+                    cm.client.expiryTime = cm.delayedStart
+                        ? -86400000 * (Number(cm.delayedExpireDays) || 0)
+                        : (cm.expiryTimeModel && typeof cm.expiryTimeModel.valueOf === 'function' ? cm.expiryTimeModel.valueOf() : (cm.expiryTimeModel || 0));
+                    cm.client.totalGB = toFixed((cm.client._totalGB || 0) * ONE_GB, 0);
+
+                    cm.confirmLoading = true;
+                    try {
+                        const inbIds = (cm.selectedInboundIds || []).map(Number);
+                        if (cm.isEdit) {
+                            const payload = Object.assign({}, cm.client, {
+                                inboundIds: inbIds,
+                            });
+                            const res = await HttpUtil.postJson(`/panel/api/clients/update/${cm.client.id}`, payload);
+                            if (res.success) {
+                                cm.visible = false;
+                                await this.loadAllData();
+                            }
+                        } else {
+                            const payload = Object.assign({}, cm.client, {
+                                inboundIds: inbIds,
+                            });
+                            const res = await HttpUtil.postJson('/panel/api/clients/create', payload);
+                            if (res.success) {
+                                cm.visible = false;
+                                await this.loadAllData();
+                            }
+                        }
+                    } finally {
+                        cm.confirmLoading = false;
+                    }
+                },
+                async handleBulkModalOk() {
+                    const bm = this.bulkModal;
+                    const clients = [];
+                    let start = 0, end = bm.quantity;
+                    if (bm.emailMethod >= 2) {
+                        start = bm.firstNum;
+                        end = bm.lastNum + 1;
+                    }
+
+                    const expTime = bm.delayedStart
+                        ? -86400000 * (Number(bm.delayedExpireDays) || 0)
+                        : (bm.expiryTimeModel && typeof bm.expiryTimeModel.valueOf === 'function' ? bm.expiryTimeModel.valueOf() : (bm.expiryTimeModel || 0));
+
+                    for (let i = start; i < end; i++) {
+                        let email = '';
+                        if (bm.emailMethod === 0) email = RandomUtil.randomLowerAndNum(9);
+                        else if (bm.emailMethod === 1) email = bm.emailPrefix + RandomUtil.randomLowerAndNum(6);
+                        else if (bm.emailMethod === 2) email = bm.emailPrefix + i.toString();
+                        else if (bm.emailMethod === 3) email = bm.emailPrefix + i.toString() + bm.emailPostfix;
+
+                        clients.push({
+                            email: email,
+                            subId: RandomUtil.randomLowerAndNum(16),
+                            uuid: RandomUtil.randomUUID(),
+                            password: RandomUtil.randomSeq(10),
+                            auth: RandomUtil.randomSeq(10),
+                            totalGB: toFixed((bm.totalGB || 0) * ONE_GB, 0),
+                            expiryTime: expTime,
+                            limitIp: bm.limitIp || 0,
+                            reset: bm.reset || 0,
+                            enable: true,
+                        });
+                    }
+
+                    bm.confirmLoading = true;
+                    try {
+                        const inbIds = (bm.selectedInboundIds || []).map(Number);
+                        const res = await HttpUtil.postJson('/panel/api/clients/bulkCreate', {
+                            clients: clients,
+                            inboundIds: inbIds,
+                        });
+                        if (res.success) {
+                            bm.visible = false;
+                            await this.loadAllData();
+                        }
+                    } finally {
+                        bm.confirmLoading = false;
+                    }
+                },
+                async handleDrawerSave() {
+                    const ld = this.linkDrawer;
+                    if (!ld.client) return;
+                    ld.loading = true;
+                    try {
+                        const payload = ld.selectedLinks.map(l => ({ inboundId: Number(l.inboundId), flow: l.flow || '' }));
+                        const res = await HttpUtil.postJson(`/panel/api/clients/${ld.client.id}/setLinks`, { links: payload });
+                        if (res.success) {
+                            ld.close();
+                            await this.loadAllData();
+                        }
+                    } finally {
+                        ld.loading = false;
+                    }
+                },
+                clickAction(action, c) {
+                    if (action.key === 'info') this.showClientDetail(c);
+                    else if (action.key === 'showLinks') this.showClientQrcodes(c);
+                    else if (action.key === 'edit') this.clientModal.showEdit(c);
+                    else if (action.key === 'manageLinks') this.manageLinks(c);
+                    else if (action.key === 'resetTraffic') this.confirmResetTraffic(c);
+                    else if (action.key === 'delete') this.confirmDelete(c);
+                },
+                manageLinks(c) {
+                    this.linkDrawer.show(c);
+                },
+                async showClientQrcodes(c) {
+                    this.qrModal.client = c;
+                    this.qrModal.title = `${c.email}`;
+                    this.qrModal.qrcodes = [];
+                    this.qrModal.subLink = '';
+                    this.qrModal.subJsonLink = '';
+
+                    const links = this.clientLinksMap[c.id] || [];
+                    links.forEach(l => {
+                        const ib = this.inboundMap[l.inboundId];
+                        if (!ib) return;
+                        const dbInbound = new DBInbound(ib);
+                        const inbound = dbInbound.toInbound();
+                        const clientObj = Object.assign({}, c, { id: c.uuid || c.id });
+                        inbound.genAllLinks(dbInbound.remark, this.remarkModel, clientObj).forEach(item => {
+                            const linkVal = (inbound.protocol === Protocols.WIREGUARD && item.url) ? item.url : item.link;
+                            this.qrModal.qrcodes.push({
+                                title: `[${(ib.protocol || '').toUpperCase()}:${ib.port}] ${dbInbound.remark || ''} - ${item.remark || ''}`,
+                                link: linkVal,
+                            });
+                        });
+                    });
+
+                    if (this.subSettings.enable && c.subId) {
+                        this.qrModal.subLink = this.subSettings.subURI + c.subId;
+                        this.qrModal.subJsonLink = this.subSettings.subJsonURI + c.subId;
+                        this.qrModal.tab = 'sub';
+                    } else {
+                        this.qrModal.tab = 'inbounds';
+                    }
+
+                    this.qrModal.visible = true;
+                    this.$nextTick(() => { this.renderQrs(); });
+                },
+                renderQrs() {
+                    if (this.qrModal.subLink) this.drawQr('clientSubQr', this.qrModal.subLink);
+                    if (this.qrModal.subJsonLink) this.drawQr('clientSubJsonQr', this.qrModal.subJsonLink);
+                    this.qrModal.qrcodes.forEach((row, idx) => {
+                        this.drawQr(`clientQr-${idx}`, row.link);
+                    });
+                },
+                onQrTabChange() {
+                    this.$nextTick(() => { this.renderQrs(); });
+                },
+                drawQr(elementId, content) {
+                    const el = document.getElementById(elementId);
+                    if (!el) return;
+                    new QRious({
+                        element: el,
+                        size: 240,
+                        value: content,
+                        background: 'white',
+                        foreground: 'black',
+                        padding: 2,
+                        level: 'L',
+                    });
+                },
+                copyText(text) {
+                    if (!text) return;
+                    if (navigator.clipboard && window.isSecureContext) {
+                        navigator.clipboard.writeText(text).then(() => {
+                            this.$message.success('{{ i18n "copied" }}');
+                        }).catch(() => { this.fallbackCopy(text); });
+                    } else {
+                        this.fallbackCopy(text);
+                    }
+                },
+                fallbackCopy(text) {
+                    const ta = document.createElement('textarea');
+                    ta.value = text;
+                    document.body.appendChild(ta);
+                    ta.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(ta);
+                    this.$message.success('{{ i18n "copied" }}');
+                },
+                confirmResetTraffic(c) {
+                    this.$confirm({
+                        title: 'Reset Traffic for ' + c.email,
+                        content: 'Are you sure you want to reset traffic for this client?',
+                        class: themeSwitcher.currentTheme,
+                        okText: '{{ i18n "reset" }}',
+                        cancelText: '{{ i18n "cancel" }}',
+                        onOk: async () => {
+                            const res = await HttpUtil.post(`/panel/api/clients/${c.id}/resetTraffic`);
+                            if (res.success) {
+                                await this.loadAllData();
+                            }
+                        },
+                    });
+                },
+                confirmDelete(c) {
+                    this.$confirm({
+                        title: 'Delete Client "' + c.email + '"',
+                        content: 'Are you sure you want to delete this client? All links will be removed.',
+                        class: themeSwitcher.currentTheme,
+                        okText: '{{ i18n "delete" }}',
+                        cancelText: '{{ i18n "cancel" }}',
+                        onOk: async () => {
+                            const res = await HttpUtil.post(`/panel/api/clients/del/${c.id}`);
+                            if (res.success) {
+                                await this.loadAllData();
+                            }
+                        },
+                    });
+                },
+                confirmBulkDelete() {
+                    const count = this.selectedRowKeys.length;
+                    if (count === 0) return;
+                    this.$confirm({
+                        title: `Delete ${count} Clients`,
+                        content: `Are you sure you want to delete ${count} selected clients?`,
+                        class: themeSwitcher.currentTheme,
+                        okText: '{{ i18n "delete" }}',
+                        cancelText: '{{ i18n "cancel" }}',
+                        onOk: async () => {
+                            const res = await HttpUtil.postJson('/panel/api/clients/bulkDel', { ids: this.selectedRowKeys });
+                            if (res.success) {
+                                this.selectedRowKeys = [];
+                                await this.loadAllData();
+                            }
+                        },
+                    });
+                },
+                handleGeneralAction(item) {
+                    if (item.key === 'resetAllTraffics') {
+                        this.$confirm({
+                            title: '{{ i18n "pages.inbounds.resetAllClientTraffics" }}',
+                            content: 'Are you sure you want to reset traffic for all clients?',
+                            class: themeSwitcher.currentTheme,
+                            onOk: async () => {
+                                const res = await HttpUtil.post('/panel/api/clients/resetAllTraffics');
+                                if (res.success) {
+                                    await this.loadAllData();
+                                }
+                            },
+                        });
+                    } else if (item.key === 'delDepleted') {
+                        this.$confirm({
+                            title: '{{ i18n "pages.inbounds.delDepletedClients" }}',
+                            content: 'Delete all depleted and expired clients?',
+                            class: themeSwitcher.currentTheme,
+                            onOk: async () => {
+                                const res = await HttpUtil.post('/panel/api/clients/delDepleted');
+                                if (res.success) {
+                                    await this.loadAllData();
+                                }
+                            },
+                        });
+                    } else if (item.key === 'export') {
+                        // Export client credentials JSON
+                        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(this.clients, null, 2));
+                        const dlAnchor = document.createElement('a');
+                        dlAnchor.setAttribute("href", dataStr);
+                        dlAnchor.setAttribute("download", "tx-ui-clients.json");
+                        dlAnchor.click();
+                    }
+                },
+                onSelectChange(keys) {
+                    this.selectedRowKeys = keys;
+                },
+                filterClients() {
+                    // Triggers computed property
+                },
+                pagination(obj) {
+                    if (this.pageSize > 0 && obj.length > this.pageSize) {
+                        return {
+                            showSizeChanger: true,
+                            size: 'small',
+                            position: 'bottom',
+                            pageSize: this.pageSize,
+                            pageSizeOptions: ['25', '50', '100', '200'],
+                        };
+                    }
+                    return false;
+                },
+                manualRefresh() {
+                    this.loadAllData();
+                },
+                async getDefaultSettings() {
+                    const msg = await HttpUtil.post('/panel/setting/defaultSettings');
+                    if (msg.success && msg.obj) {
+                        const s = msg.obj;
+                        this.datepicker = s.datepicker || 'gregorian';
+                        this.remarkModel = s.remarkModel || '-ieo';
+                        this.ipLimitEnable = !!s.ipLimitEnable;
+                        this.tgBotEnable = !!s.tgBotEnable;
+                        this.expireDiff = (s.expireDiff || 0) * 86400000;
+                        this.trafficDiff = (s.trafficDiff || 0) * 1073741824;
+                        this.subSettings = {
+                            enable: s.subEnable,
+                            subURI: s.subURI,
+                            subJsonURI: s.subJsonURI,
+                        };
+                    }
+                },
+            },
+            mounted() {
+                window.addEventListener('resize', () => { this.isMobile = window.innerWidth <= 768; });
+                this.loading();
+                this.getDefaultSettings();
+
+                // Check for URL query param inboundId to pre-filter
+                const urlParams = new URLSearchParams(window.location.search);
+                const qInboundId = urlParams.get('inboundId');
+                if (qInboundId) {
+                    this.filterInboundId = Number(qInboundId);
+                }
+
+                this.loadAllData();
+            },
+        });
+    </script>
+</body>
+</html>

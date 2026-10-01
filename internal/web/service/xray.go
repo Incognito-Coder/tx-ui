@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"runtime"
+	"strings"
 	"sync"
 
 	"x-ui/internal/database/model"
@@ -178,28 +179,27 @@ func (s *XrayService) GetXrayConfig() (*xray.Config, error) {
 			mergedClients, err := s.inboundService.nodeClientService.MergeIntoInboundConfig(inbound.Id, existingModelClients)
 			if err != nil {
 				logger.Warningf("GetXrayConfig: MergeIntoInboundConfig failed for inbound %d: %v", inbound.Id, err)
-			} else {
-				// Append synthesised node-client entries (those beyond len(existingModelClients)) to clients.
-				for i := len(existingModelClients); i < len(mergedClients); i++ {
-					nc := mergedClients[i]
-					entry := map[string]interface{}{
-						"email":      nc.Email,
-						"id":         nc.ID,
-						"publicKey":  nc.PublicKey,
-						"privateKey": nc.PrivateKey,
-						"allowedIPs": nc.AllowedIPs,
-						"psk":        nc.Psk,
-						"security":   nc.Security,
-						"password":   nc.Password,
-						"auth":       nc.Auth,
-						"flow":       nc.Flow,
-						"enable":     nc.Enable,
-					}
-					if inbound.Protocol == "vmess" {
-						normalizeLegacyVMessUser(entry)
-					}
-					clients = append(clients, entry)
+				mergedClients = existingModelClients
+			}
+			clients = make([]interface{}, 0, len(mergedClients))
+			for _, nc := range mergedClients {
+				entry := map[string]interface{}{
+					"email":      nc.Email,
+					"id":         nc.ID,
+					"publicKey":  nc.PublicKey,
+					"privateKey": nc.PrivateKey,
+					"allowedIPs": nc.AllowedIPs,
+					"psk":        nc.Psk,
+					"security":   nc.Security,
+					"password":   nc.Password,
+					"auth":       nc.Auth,
+					"flow":       nc.Flow,
+					"enable":     nc.Enable,
 				}
+				if inbound.Protocol == "vmess" {
+					normalizeLegacyVMessUser(entry)
+				}
+				clients = append(clients, entry)
 			}
 
 			if inbound.Protocol == model.WireGuard {
@@ -233,6 +233,7 @@ func (s *XrayService) GetXrayConfig() (*xray.Config, error) {
 				}
 
 				var final_peers []interface{}
+				seenPeerPubKeys := make(map[string]bool)
 				for _, client := range clients {
 					c, isMap := client.(map[string]interface{})
 					if !isMap {
@@ -250,9 +251,10 @@ func (s *XrayService) GetXrayConfig() (*xray.Config, error) {
 					} else if v, ok := c["id"].(string); ok && v != "" {
 						pubKey = v
 					}
-					if pubKey == "" {
+					if pubKey == "" || seenPeerPubKeys[pubKey] {
 						continue
 					}
+					seenPeerPubKeys[pubKey] = true
 					peer["publicKey"] = pubKey
 					if v, ok := c["psk"].(string); ok && v != "" {
 						peer["preSharedKey"] = v
@@ -300,12 +302,30 @@ func (s *XrayService) GetXrayConfig() (*xray.Config, error) {
 			} else {
 				// clear client config for additional parameters
 				var final_clients []interface{}
+				seenFinalEmails := make(map[string]bool)
+				seenFinalIDs := make(map[string]bool)
 				for _, client := range clients {
 					c := client.(map[string]interface{})
 					if c["enable"] != nil {
 						if enable, ok := c["enable"].(bool); ok && !enable {
 							continue
 						}
+					}
+					email, _ := c["email"].(string)
+					id, _ := c["id"].(string)
+					emailKey := strings.ToLower(strings.TrimSpace(email))
+					idKey := strings.ToLower(strings.TrimSpace(id))
+					if emailKey != "" && seenFinalEmails[emailKey] {
+						continue
+					}
+					if idKey != "" && seenFinalIDs[idKey] {
+						continue
+					}
+					if emailKey != "" {
+						seenFinalEmails[emailKey] = true
+					}
+					if idKey != "" {
+						seenFinalIDs[idKey] = true
 					}
 					for key := range c {
 						if key != "email" && key != "id" && key != "password" && key != "flow" && key != "method" && key != "auth" && key != "reverse" {

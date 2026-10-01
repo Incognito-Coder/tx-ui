@@ -73,6 +73,9 @@
 "emptyReverseDesc" = "مفيش بروكسي عكسي مضاف."
 "moveUp" = "انقل لفوق"
 "moveDown" = "انقل لتحت"
+"all" = "الكل"
+"inbounds" = "الواردات"
+"links" = "الروابط"
 
 [menu]
 "theme" = "الثيم"
@@ -86,6 +89,7 @@
 "logout" = "تسجيل خروج"
 "link" = "إدارة"
 "node_clients" = "Node Clients"
+"clients" = "العملاء"
 "txThemeHub" = "TX ThemeHub"
 
 [pages.login]
@@ -181,6 +185,8 @@
 "monitorDesc" = "سيبها فاضية لو عايز تستمع على كل الـ IPs"
 "meansNoLimit" = "= غير محدود. (الوحدة: جيجابايت)"
 "totalFlow" = "إجمالي التدفق"
+"up" = "رفع"
+"down" = "تنزيل"
 "leaveBlankToNeverExpire" = "سيبها فاضية عشان ماتنتهيش"
 "noRecommendKeepDefault" = "ننصح باستخدام الافتراضي"
 "certificatePath" = "مسار الملف"
@@ -225,6 +231,33 @@
 "reordered" = "إعادة ترتيب الإدخالات"
 
 [pages.node_clients]
+"bulkDelete" = "حذف جماعي"
+"manageLinks" = "إدارة الروابط"
+"subscriptionUrl" = "رابط الاشتراك"
+"subscriptionUrlJson" = "رابط الاشتراك JSON"
+"showLinks" = "إظهار الروابط"
+"noLinks" = "لا توجد روابط متاحة"
+"title" = "العملاء"
+"manageLinksFor" = "إدارة الروابط لـ"
+"linkDrawerHint" = "حدد inbounds لربط هذا العميل. استخدم حقل Flow لتجاوز إعداد التدفق لـ VLESS/Trojan XTLS."
+"linkedToPrefix" = "مرتبط بـ"
+"linkedToSuffix" = "inbound(ها)"
+"flowOverride" = "تجاوز Flow (اختياري)، مثال: xtls-rprx-vision"
+"commonValues" = "القيم الشائعة"
+"subscriptionId" = "معرّف الاشتراك"
+"credentialFields" = "حقول الاعتماد"
+"forVmessVlessProtocols" = "لبروتوكولات VMESS/VLESS"
+"uuid" = "UUID"
+"forTrojanShadowsocksProtocols" = "لبروتوكولات Trojan/Shadowsocks"
+"password" = "كلمة المرور"
+"forHysteriaProtocol" = "لبروتوكول Hysteria"
+"auth" = "مصادقة"
+"limitsAndPolicy" = "القيود والسياسة"
+"telegramChatId" = "معرّف دردشة Telegram"
+"depleted" = "منتهي"
+"expired" = "منتهي الصلاحية"
+
+[pages.clients]
 "bulkDelete" = "حذف جماعي"
 "manageLinks" = "إدارة الروابط"
 "subscriptionUrl" = "رابط الاشتراك"

@@ -135,7 +135,9 @@ func (s *Server) getHtmlTemplate(funcMap template.FuncMap) (*template.Template, 
 		if d.IsDir() {
 			newT, err := t.ParseFS(htmlFS, path+"/*.html")
 			if err != nil {
-				// ignore
+				if !strings.Contains(err.Error(), "pattern matches no files") {
+					logger.Warning("failed to parse templates in ", path, ": ", err)
+				}
 				return nil
 			}
 			t = newT
@@ -310,6 +312,11 @@ func (s *Server) initRouter() (*gin.Engine, error) {
 }
 
 func (s *Server) startTask() {
+	var nodeClientService service.NodeClientService
+	if err := nodeClientService.MigrateLegacyClients(); err != nil {
+		logger.Warning("migrate legacy clients failed:", err)
+	}
+
 	err := s.xrayService.RestartXray(true)
 	if err != nil {
 		logger.Warning("start xray failed:", err)
