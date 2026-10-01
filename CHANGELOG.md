@@ -7,6 +7,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v0.8.5] - 2026-10-01
+
+### 🚀 Features & Enhancements
+- **Centralized Client Management (`/panel/clients`)**:
+  - Introduced a dedicated Client Management page (`/panel/clients`) consolidating multi-node client administration, search, and traffic analytics into a single responsive interface.
+  - Multi-inbound client provisioning: seamlessly link a single client across multiple inbounds and protocols with synchronized usage tracking and automatic deactivation.
+  - Automatic legacy migration: built-in automatic migration routine that converts legacy inbound-embedded clients into unified node clients upon accessing the clients page.
+  - Client Details modal: rich modal view displaying real-time traffic statistics (up, down, total limit, remaining), expiration countdown, credentials, QR share links, and responsive auto-scaling.
+  - Integrated client sorting: added ascending and descending sorting controls directly on the clients page to sort by traffic, expiry, or email/remark.
+- **Xray-core v26.9.30 Feature Alignment**:
+  - Upgraded core dependency to `xray-core` v26.9.30 (commit `b26a91d`) alongside updated `gRPC` and `wireguard` modules.
+  - **MASQUE (RFC 9484 CONNECT-IP)**: Added comprehensive inbound, outbound, and stream transport support (`stream_masque.html`) with automatic password (`pass`) credential normalization.
+  - **XDRIVE Transport**: Added support for file-based and cloud-storage-based transport stream settings (`stream_xdrive.html`).
+  - **TUN Inbound Enhancements**: Added Windows Filtering Platform leak protection (`autoSystemWfpBlockLeak`) and Linux gateway DNS routing (`autoSystemDnsToGateway`).
+  - **Finalmask xDNS**: Added `extraPoll` configuration parameter in stream settings for enhanced polling resilience.
+  - **WireGuard Outbound Modernization**: Normalized legacy outbounds and removed obsolete `domainStrategy` from WireGuard outbound configuration.
+
+### 🐛 Bug Fixes & Stability
+- **Xray Modal Form Validation**:
+  - Resolved `this.check` `ReferenceError` exception in Xray Balancer and Outbound configuration modals.
+  - Added safety guard in burst observatory selector against non-array values.
+- **Client IP Limit Display**:
+  - Fixed fallback logic to properly display "Unlimited" across all languages when client IP limit is unset or zero.
+- **Mobile Viewport Optimization**:
+  - Optimized mobile layout on clients and inbounds pages with a single-row action bar, streamlined search filters, and refined table column spacing.
+- **Development & Asset Paths**:
+  - Corrected static filesystem asset paths to `internal/web/` for local hot-reload and debugging mode.
+- **UI & Dark Mode Polish**:
+  - Removed lingering hardcoded button shadows across login and dynamic theme switcher components.
+  - Fixed dark mode dropdown menu titles and search icon styling.
+- **PWA & Offline Reliability**:
+  - Embedded base64 fallback application icon within `offline.html` and refined relative asset caching rules in `sw.js`.
+- **CI / Docker**:
+  - Switched container registry authentication in Docker workflow to standard `GITHUB_TOKEN`.
+
+### 🌐 Internationalization (i18n)
+- Added full translation coverage across 13 supported locales (`ar_EG`, `en_US`, `es_ES`, `fa_IR`, `id_ID`, `ja_JP`, `pt_BR`, `ru_RU`, `tr_TR`, `uk_UA`, `vi_VN`, `zh_CN`, `zh_TW`) for centralized client management, MASQUE protocol, XDRIVE transport, and TUN leak protection.
+
+### 📦 Dependencies & Maintenance
+- Updated `xray-core` (v26.9.30), `grpc`, and `wireguard` dependencies in `go.mod` and `go.sum`.
+- Updated release build workflows and bumped panel version to `0.8.5`.
+
+---
+
 ## [v0.8.4] - 2026-09-15
 
 ### 🚀 Features & Enhancements
