@@ -316,11 +316,14 @@ class GrpcStreamSettings extends CommonClass {
     }
 
     toJson() {
-        return {
+        const obj = {
             serviceName: this.serviceName,
-            authority: this.authority,
-            multiMode: this.multiMode
+            multiMode: this.multiMode,
+        };
+        if (this.authority && this.authority.length > 0) {
+            obj.authority = this.authority;
         }
+        return obj;
     }
 }
 

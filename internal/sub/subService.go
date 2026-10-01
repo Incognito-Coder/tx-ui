@@ -699,7 +699,7 @@ func (s *SubService) genVmessLink(inbound *model.Inbound, email string) string {
 			if serviceName, ok := grpc["serviceName"].(string); ok {
 				obj["path"] = serviceName
 			}
-			if authority, ok := grpc["authority"].(string); ok {
+			if authority, ok := grpc["authority"].(string); ok && len(authority) > 0 {
 				obj["authority"] = authority
 			}
 			if multiMode, ok := grpc["multiMode"].(bool); ok && multiMode {
@@ -879,7 +879,7 @@ func (s *SubService) genVlessLink(inbound *model.Inbound, email string) string {
 			if serviceName, ok := grpc["serviceName"].(string); ok {
 				params["serviceName"] = serviceName
 			}
-			if authority, ok := grpc["authority"].(string); ok {
+			if authority, ok := grpc["authority"].(string); ok && len(authority) > 0 {
 				params["authority"] = authority
 			}
 			if multiMode, ok := grpc["multiMode"].(bool); ok && multiMode {
@@ -1099,7 +1099,7 @@ func (s *SubService) genTrojanLink(inbound *model.Inbound, email string) string 
 			if serviceName, ok := grpc["serviceName"].(string); ok {
 				params["serviceName"] = serviceName
 			}
-			if authority, ok := grpc["authority"].(string); ok {
+			if authority, ok := grpc["authority"].(string); ok && len(authority) > 0 {
 				params["authority"] = authority
 			}
 			if multiMode, ok := grpc["multiMode"].(bool); ok && multiMode {
@@ -1319,7 +1319,7 @@ func (s *SubService) genShadowsocksLink(inbound *model.Inbound, email string) st
 			if serviceName, ok := grpc["serviceName"].(string); ok {
 				params["serviceName"] = serviceName
 			}
-			if authority, ok := grpc["authority"].(string); ok {
+			if authority, ok := grpc["authority"].(string); ok && len(authority) > 0 {
 				params["authority"] = authority
 			}
 			if multiMode, ok := grpc["multiMode"].(bool); ok && multiMode {

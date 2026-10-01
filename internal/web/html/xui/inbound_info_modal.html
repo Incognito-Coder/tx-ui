@@ -48,13 +48,13 @@
                                 <a-tag color="orange">{{ i18n "none" }}</a-tag>
                             </td>
                         </tr>
-                        </tr>
                         <tr>
                             <td>{{ i18n "path" }}</td>
                             <td v-if="inbound.path">
                                 <a-tooltip :title="inbound.path">
                                     <a-tag class="info-large-tag">[[ inbound.path ]]</a-tag>
                                 </a-tooltip>
+                            </td>
                             <td v-else>
                                 <a-tag color="orange">{{ i18n "none" }}</a-tag>
                             </td>
@@ -75,6 +75,8 @@
                                 <a-tooltip :title="inbound.serviceName">
                                     <a-tag class="info-large-tag">[[ inbound.serviceName ]]</a-tag>
                                 </a-tooltip>
+                            </td>
+                        </tr>
                         <tr>
                             <td>grpc multiMode</td>
                             <td>
