@@ -7,6 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v0.8.6] - 2026-10-01
+
+### 🚀 Features & Enhancements
+- **Client Auto-Refresh Controls**:
+  - Added configurable auto-refresh interval selector (5s to 60s) and toggle switch to the Clients management page (`/panel/clients`), matching Inbounds refresh behavior and persisting user preferences in `localStorage`.
+  - Guarded client polling with `isLoadingClients` to prevent concurrent overlapping fetches during active refreshes.
+- **Mobile Responsive Optimizations**:
+  - Hid "Disabled" and "Ended" (`depleted`) status tag badges on client name and near the traffic progress bar on mobile viewports (`max-width: 768px`) to keep the compact mobile table clean and prevent row stretching.
+  - Added spacing and margins between auto-refresh switches and controls across both clients and inbounds pages.
+- **REST API Documentation (`API.md`)**:
+  - Added full REST API reference documentation covering authentication, system endpoints, server settings, inbounds, clients, subscriptions, and database backups.
+
+### 🐛 Bug Fixes & Stability
+- **Inbound Client & Database Synchronization**:
+  - Fixed client visibility when adding clients via the legacy `/addClient` API: `AddInboundClient` now automatically links and synchronizes clients with `node_clients` and `node_client_links`.
+  - Fixed client deletion via API: `DelInboundClient` and `DelInboundClientByEmail` now fully delete or unlink `NodeClient` records to prevent orphaned entries from remaining in the panel.
+- **Xray & Subscription Services Stability**:
+  - Resolved panic risks and nil-pointer dereferences in subscription service generators (`subService.go`, `subJsonService.go`) and Xray API client handlers.
+  - Fixed Reality fingerprint generation in subscription links to prevent invalid empty values.
+  - Fixed gRPC authority handling in outbound and subscription links, properly omitting empty authority fields.
+  - Fixed Hysteria protocol field formatting and added FinalMask stream crash safeguards.
+- **Theme & Switcher Fixes**:
+  - Fixed light/dark theme toggle bug where `#app` element theme classes were not properly synchronized upon toggle.
+  - Corrected checkbox background, border contrast, checked, and indeterminate/select-all states across dark mode themes (preventing transparent blue or blinding white indeterminate states).
+
+### 🎨 UI & Theme Polish
+- Corrected selected table row background color and hover states in dark mode themes.
+- Improved spacing, modal widths, and responsive layouts across Client Modal, Bulk Add Modal, and Inbound Info Modal.
+
+### 🌐 Internationalization (i18n)
+- Synced all 13 supported locale translation files (`ar_EG`, `en_US`, `es_ES`, `fa_IR`, `id_ID`, `ja_JP`, `pt_BR`, `ru_RU`, `tr_TR`, `uk_UA`, `vi_VN`, `zh_CN`, `zh_TW`), resolving missing keys such as `pages.xray.outbound.port`.
+
+### 📦 Refactoring & CI
+- Removed legacy `node_clients.html` template and obsolete backward-compatibility routes/aliases in favor of the unified `/panel/clients` architecture.
+- Updated Docker CI workflow (`docker-image.yml`) with automated tagging and release pipelines.
+- Bumped panel version to `0.8.6`.
+
+---
+
 ## [v0.8.5] - 2026-10-01
 
 ### 🚀 Features & Enhancements
