@@ -266,19 +266,19 @@
                                         </a-menu>
                                     </a-dropdown>
                                 </a-col>
-                                <a-col :lg="12" :sm="12" :xs="12" style="text-align: right;">
+                                <a-col :lg="12" :sm="12" :xs="12" style="text-align: right; display: flex; align-items: center; justify-content: flex-end; gap: 8px;">
                                     <a-select :dropdown-class-name="themeSwitcher.currentTheme"
                                               @change="changeRefreshInterval"
-                                              style="width: 65px;"
+                                              style="width: 65px; margin-right: 2px;"
                                               v-if="isRefreshEnabled"
                                               v-model="refreshInterval">
                                         <a-select-option :value="key*1000" v-for="key in [5,10,15,20,25,30,60]">[[ key
                                             ]]s
                                         </a-select-option>
                                     </a-select>
-                                    <a-icon :spin="refreshing" @click="manualRefresh" style="margin: 0 5px;"
+                                    <a-icon :spin="refreshing" @click="manualRefresh" style="margin: 0 6px; cursor: pointer; font-size: 16px;"
                                             type="sync"></a-icon>
-                                    <a-switch @change="toggleRefresh" v-model="isRefreshEnabled"></a-switch>
+                                    <a-switch @change="toggleRefresh" style="margin-left: 2px;" v-model="isRefreshEnabled"></a-switch>
                                 </a-col>
                             </a-row>
                         </div>
