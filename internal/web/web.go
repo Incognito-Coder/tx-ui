@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/tls"
 	"embed"
+	"errors"
 	"fmt"
 	"html/template"
 	"io"
@@ -526,6 +527,9 @@ func (s *Server) Stop() error {
 	}
 	if s.listener != nil {
 		err2 = s.listener.Close()
+		if err2 != nil && (errors.Is(err2, net.ErrClosed) || strings.Contains(err2.Error(), "use of closed network connection")) {
+			err2 = nil
+		}
 	}
 	return common.Combine(err1, err2)
 }

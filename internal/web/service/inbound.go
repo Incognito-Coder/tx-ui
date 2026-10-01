@@ -509,6 +509,8 @@ func (s *InboundService) updateClientTraffics(tx *gorm.DB, oldInbound *model.Inb
 			if err != nil {
 				return err
 			}
+			_ = s.DelClientIPs(tx, oldClient.Email)
+			s.removeNodeClientForInbound(tx, oldClient.Email, oldInbound.Id)
 		}
 	}
 	for _, newClient := range newClients {
@@ -524,6 +526,7 @@ func (s *InboundService) updateClientTraffics(tx *gorm.DB, oldInbound *model.Inb
 			if err != nil {
 				return err
 			}
+			_ = s.ensureNodeClientLinked(tx, &newClient, oldInbound.Id)
 		}
 	}
 	return nil
@@ -845,7 +848,7 @@ func (s *InboundService) DelInboundClient(inboundId int, clientId string) (bool,
 	if len(email) > 0 {
 		notDepleted := true
 		err = db.Model(xray.ClientTraffic{}).Select("enable").Where("email = ?", email).First(&notDepleted).Error
-		if err != nil {
+		if err != nil && err != gorm.ErrRecordNotFound {
 			logger.Error("Get stats error")
 			return false, err
 		}

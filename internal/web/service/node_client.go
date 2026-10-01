@@ -328,7 +328,74 @@ func (s *NodeClientService) Delete(id int) error {
 	return nil
 }
 
-// deleteInTx performs the three-step deletion within a provided transaction.
+// removeClientFromInboundSettings removes any matching client from an inbound's settings JSON ("clients" and "peers").
+// Returns true if any client was removed.
+func removeClientFromInboundSettings(inbound *model.Inbound, email, uuid, password, auth string) bool {
+	if inbound.Settings == "" {
+		return false
+	}
+	var settings map[string]interface{}
+	if err := json.Unmarshal([]byte(inbound.Settings), &settings); err != nil {
+		return false
+	}
+	modified := false
+	for _, key := range []string{"clients", "peers"} {
+		raw, ok := settings[key]
+		if !ok || raw == nil {
+			continue
+		}
+		list, ok := raw.([]interface{})
+		if !ok || len(list) == 0 {
+			continue
+		}
+		var newList []interface{}
+		for _, item := range list {
+			c, ok := item.(map[string]interface{})
+			if !ok {
+				newList = append(newList, item)
+				continue
+			}
+			cEmail, _ := c["email"].(string)
+			cId, _ := c["id"].(string)
+			cPass, _ := c["password"].(string)
+			cAuth, _ := c["auth"].(string)
+			cKey, _ := c["publicKey"].(string)
+
+			isMatch := false
+			if email != "" && cEmail != "" && strings.EqualFold(strings.TrimSpace(cEmail), strings.TrimSpace(email)) {
+				isMatch = true
+			} else if uuid != "" && cId != "" && strings.EqualFold(strings.TrimSpace(cId), strings.TrimSpace(uuid)) {
+				isMatch = true
+			} else if password != "" && cPass != "" && cPass == password {
+				isMatch = true
+			} else if auth != "" && cAuth != "" && cAuth == auth {
+				isMatch = true
+			} else if uuid != "" && cKey != "" && strings.EqualFold(strings.TrimSpace(cKey), strings.TrimSpace(uuid)) {
+				isMatch = true
+			}
+
+			if isMatch {
+				modified = true
+			} else {
+				newList = append(newList, item)
+			}
+		}
+		settings[key] = newList
+	}
+
+	if modified {
+		newSettings, err := json.MarshalIndent(settings, "", "  ")
+		if err == nil {
+			inbound.Settings = string(newSettings)
+			return true
+		}
+	}
+	return false
+}
+
+// deleteInTx performs the deletion within a provided transaction.
+// It removes the client from inbounds settings JSON, deletes links,
+// cleans client traffic records, and deletes the NodeClient record.
 // It is reused by both Delete and BulkDelete.
 func (s *NodeClientService) deleteInTx(tx *gorm.DB, id int) error {
 	// 1. Verify the NodeClient exists.
@@ -337,24 +404,35 @@ func (s *NodeClientService) deleteInTx(tx *gorm.DB, id int) error {
 		return err
 	}
 
-	// 2. Delete all NodeClientLink rows for this NodeClient.
+	// 2. Remove this client from all inbounds' settings JSON so MigrateLegacyClients doesn't resurrect it on startup.
+	var inbounds []*model.Inbound
+	if err := tx.Find(&inbounds).Error; err == nil {
+		for _, inbound := range inbounds {
+			if removeClientFromInboundSettings(inbound, nc.Email, nc.UUID, nc.Password, nc.Auth) {
+				if err := tx.Model(&model.Inbound{}).Where("id = ?", inbound.Id).Update("settings", inbound.Settings).Error; err != nil {
+					logger.Warningf("deleteInTx: failed to update inbound %d settings: %v", inbound.Id, err)
+				}
+			}
+		}
+	}
+
+	// 3. Delete all NodeClientLink rows for this NodeClient.
 	if err := tx.Where("node_client_id = ?", id).Delete(&model.NodeClientLink{}).Error; err != nil {
 		return fmt.Errorf("deleting node client links for id %d: %w", id, err)
 	}
 
-	// 3. NULL-out node_client_id on all associated ClientTraffic rows.
-	if err := tx.Model(&xray.ClientTraffic{}).
-		Where("node_client_id = ?", id).
-		Update("node_client_id", nil).Error; err != nil {
-		return fmt.Errorf("nulling node_client_id on client_traffics for id %d: %w", id, err)
+	// 4. Delete associated ClientTraffic rows.
+	if err := tx.Where("node_client_id = ? OR (email != '' AND LOWER(email) = LOWER(?))", id, nc.Email).
+		Delete(&xray.ClientTraffic{}).Error; err != nil {
+		return fmt.Errorf("deleting client_traffics for id %d: %w", id, err)
 	}
 
-	// 4. Delete the NodeClient record itself.
+	// 5. Delete the NodeClient record itself.
 	if err := tx.Delete(&model.NodeClient{}, id).Error; err != nil {
 		return fmt.Errorf("deleting node client id %d: %w", id, err)
 	}
 
-	logger.Debugf("NodeClient %d deleted (links and traffic references cleaned up)", id)
+	logger.Debugf("NodeClient %d deleted (inbounds, links, and traffic cleaned up)", id)
 	return nil
 }
 
@@ -523,6 +601,14 @@ func (s *NodeClientService) RemoveLink(nodeClientId, inboundId int) error {
 	if err := tx.Delete(link).Error; err != nil {
 		tx.Rollback()
 		return fmt.Errorf("deleting node client link: %w", err)
+	}
+
+	// Remove from inbound.Settings for this specific inbound so MigrateLegacyClients won't resurrect the link.
+	var inbound model.Inbound
+	if err := tx.First(&inbound, inboundId).Error; err == nil {
+		if removeClientFromInboundSettings(&inbound, nc.Email, nc.UUID, nc.Password, nc.Auth) {
+			_ = tx.Model(&model.Inbound{}).Where("id = ?", inbound.Id).Update("settings", inbound.Settings).Error
+		}
 	}
 
 	// 4. NULL-out node_client_id on the ClientTraffic row (preserve the row).
@@ -1071,6 +1157,13 @@ func (s *NodeClientService) SetLinks(nodeClientId int, links []NodeClientLinkInp
 			_ = tx.Model(&xray.ClientTraffic{}).
 				Where("LOWER(email) = LOWER(?) AND node_client_id = ? AND inbound_id = ?", nc.Email, nodeClientId, cl.InboundId).
 				Update("node_client_id", nil).Error
+
+			var inbound model.Inbound
+			if err := tx.First(&inbound, cl.InboundId).Error; err == nil {
+				if removeClientFromInboundSettings(&inbound, nc.Email, nc.UUID, nc.Password, nc.Auth) {
+					_ = tx.Model(&model.Inbound{}).Where("id = ?", inbound.Id).Update("settings", inbound.Settings).Error
+				}
+			}
 		}
 	}
 

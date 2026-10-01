@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"embed"
+	"errors"
 	"html/template"
 	"io"
 	"io/fs"
@@ -11,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"x-ui/config"
 	"x-ui/internal/logger"
 	"x-ui/internal/util/common"
@@ -329,6 +331,9 @@ func (s *Server) Stop() error {
 	}
 	if s.listener != nil {
 		err2 = s.listener.Close()
+		if err2 != nil && (errors.Is(err2, net.ErrClosed) || strings.Contains(err2.Error(), "use of closed network connection")) {
+			err2 = nil
+		}
 	}
 	return common.Combine(err1, err2)
 }
