@@ -475,48 +475,74 @@ than one, Just separate them with ,)
 <details>
   <summary>Click for API routes details</summary>
 
-#### Usage
+#### Full Documentation
 
-- [API Documentation](https://www.postman.com/incognito-coder/tx-ui/collection/q1l5l0u/tx-ui)
-- `/login` with `POST` user data: `{username: '', password: ''}` for login
-- `/panel/api/inbounds` base for following actions:
+- **Full Documentation & Code Examples:** See [API.md](API.md)
+- [Postman Collection](https://www.postman.com/incognito-coder/tx-ui/collection/q1l5l0u/tx-ui)
+- Authentication: `POST /login` with `{ "username": "admin", "password": "..." }` sets session cookie.
+
+#### Clients API (`/panel/api/clients`)
+
+| Method | Path | Action |
+|:------:|------|--------|
+| `GET`  | `"/list"` | Get all clients with details & inbound links |
+| `GET`  | `"/get/:id"` | Get single client by ID |
+| `POST` | `"/create"` | Create a new client and link to inbounds |
+| `POST` | `"/bulkCreate"` | Bulk generate clients |
+| `POST` | `"/update/:id"` | Update client configuration |
+| `POST` | `"/del/:id"` | Delete client |
+| `POST` | `"/bulkDel"` | Bulk delete clients |
+| `POST` | `"/:id/toggle"` | Enable or disable client |
+| `GET`  | `"/:id/links"` | Get inbounds linked to client |
+| `POST` | `"/:id/addLink"` | Link client to inbound |
+| `POST` | `"/:id/setLinks"` | Set client inbound links |
+| `POST` | `"/:id/removeLink/:inboundId"` | Remove link to inbound |
+| `GET`  | `"/:id/traffic"` | Get real-time traffic statistics |
+| `POST` | `"/:id/resetTraffic"` | Reset client traffic |
+| `POST` | `"/resetAllTraffics"` | Reset all clients' traffic |
+| `POST` | `"/delDepleted"` | Delete all expired/depleted clients |
+
+#### Inbounds API (`/panel/api/inbounds`)
 
 | Method | Path                               | Action                                             |
 |:------:|------------------------------------|----------------------------------------------------|
 | `GET`  | `"/list"`                          | Get all inbounds                                   |
 | `GET`  | `"/get/:id"`                       | Get inbound with inbound.id                        |
-| `GET`  | `"/getClientTraffics/:email"`      | Get Client Traffics with email                     |
-| `GET`  | `"/getClientTrafficsById/:id"`     | Get client's traffic By ID                         |
-| `GET`  | `"/createbackup"`                  | Telegram bot sends backup to admins                |
+| `GET`  | `"/getClientTraffics/:email"`      | Get client traffics with email                     |
+| `GET`  | `"/getClientTrafficsById/:id"`     | Get client's traffic by ID                         |
 | `POST` | `"/add"`                           | Add inbound                                        |
-| `POST` | `"/del/:id"`                       | Delete Inbound                                     |
-| `POST` | `"/update/:id"`                    | Update Inbound                                     |
-| `POST` | `"/clientIps/:email"`              | Client Ip address                                  |
-| `POST` | `"/clearClientIps/:email"`         | Clear Client Ip address                            |
-| `POST` | `"/addClient"`                     | Add Client to inbound                              |
-| `POST` | `"/:id/delClient/:clientId"`       | Delete Client by clientId*                         |
-| `POST` | `"/updateClient/:clientId"`        | Update Client by clientId*                         |
-| `POST` | `"/updateClientTraffic/:email"`    | Update Client traffic by email,values are in bytes |
-| `POST` | `"/:id/resetClientTraffic/:email"` | Reset Client's Traffic                             |
-| `POST` | `"/resetAllTraffics"`              | Reset traffics of all inbounds                     |
-| `POST` | `"/resetAllClientTraffics/:id"`    | Reset traffics of all clients in an inbound        |
-| `POST` | `"/delDepletedClients/:id"`        | Delete inbound depleted clients (-1: all)          |
-| `POST` | `"/onlines"`                       | Get Online users ( list of emails )                |
-| `POST` | `"/depleted"`                      | Get Depleted users ( list of emails )              |
-| `POST` | `"/disabled"`                      | Get Disabled users ( list of emails )              |
+| `POST` | `"/del/:id"`                       | Delete inbound                                     |
+| `POST` | `"/update/:id"`                    | Update inbound                                     |
+| `POST` | `"/reorder"`                       | Reorder inbounds                                   |
+| `POST` | `"/clientIps/:email"`              | Get client IP address log                          |
+| `POST` | `"/clearClientIps/:email"`         | Clear client IP address log                        |
+| `POST` | `"/addClient"`                     | Add client to inbound                              |
+| `POST` | `"/:id/delClient/:clientId"`       | Delete client by clientId                          |
+| `POST` | `"/updateClient/:clientId"`        | Update client by clientId                          |
+| `POST` | `"/updateClientTraffic/:email"`    | Update client traffic by email (bytes)             |
+| `POST` | `"/:id/resetClientTraffic/:email"` | Reset client traffic                               |
+| `POST` | `"/resetAllTraffics"`              | Reset traffic of all inbounds                      |
+| `POST` | `"/resetAllClientTraffics/:id"`    | Reset traffic of all clients in an inbound         |
+| `POST` | `"/delDepletedClients/:id"`        | Delete depleted clients (-1: all)                  |
+| `POST` | `"/onlines"`                       | Get online users (list of emails)                  |
+| `POST` | `"/depleted"`                      | Get depleted users (list of emails)                |
+| `POST` | `"/disabled"`                      | Get disabled users (list of emails)                |
 
-- The field `clientId` should be filled by:
+#### Server API (`/panel/api/server`)
 
-- `client.id` for VMESS and VLESS
-- `client.password` for TROJAN
-- `client.email` for Shadowsocks \.
-
-`/panel/api/server` base for following actions:
-
-| Method | Path                    | Action            |
-|:------:|-------------------------|-------------------|
-| `GET`  | `"/status"`             | Get server status |
-| `GET`  | `"/restartXrayService"` | Restart xray-core |
+| Method | Path                    | Action                             |
+|:------:|-------------------------|------------------------------------|
+| `GET`  | `"/status"`             | Get CPU, memory, disk & Xray state |
+| `POST` | `"/restartXrayService"` | Restart Xray core service          |
+| `POST` | `"/stopXrayService"`    | Stop Xray core service             |
+| `GET`  | `"/getXrayVersion"`     | Get installed Xray version         |
+| `GET`  | `"/getConfigJson"`      | Get active Xray config.json        |
+| `GET`  | `"/getDb"`              | Download database backup           |
+| `POST` | `"/importDB"`           | Restore database from backup       |
+| `POST` | `"/logs/:count"`        | View panel log lines               |
+| `POST` | `"/xraylogs/:count"`    | View Xray core log lines           |
+| `GET`  | `"/getNewUUID"`         | Generate UUID v4                   |
+| `GET`  | `"/getNewX25519Cert"`   | Generate Reality keypair           |
 
 [<img src="https://run.pstmn.io/button.svg" alt="Run In Postman" style="width: 128px; height: 32px;">](https://app.getpostman.com/run-collection/5146551-dda3cab3-0e33-485f-96f9-d4262f437ac5?action=collection%2Ffork&source=rip_markdown&collection-url=entityId%3D5146551-dda3cab3-0e33-485f-96f9-d4262f437ac5%26entityType%3Dcollection%26workspaceId%3Dd64f609f-485a-4951-9b8f-876b3f917124)
 

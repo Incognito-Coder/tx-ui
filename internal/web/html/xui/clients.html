@@ -26,6 +26,15 @@
         color: var(--ui-text) !important;
     }
 
+    .dark .ant-table-tbody > tr.ant-table-row-selected > td,
+    .dark .ant-table-tbody > tr.ant-table-row-selected td,
+    .dark .ant-table-tbody > tr.ant-table-row-selected:hover > td,
+    .dark .ant-table-tbody > tr:hover.ant-table-row-selected > td,
+    .dark .clients-table .ant-table-tbody > tr.ant-table-row-selected > td,
+    .dark .clients-table .ant-table-tbody > tr.ant-table-row-selected td {
+        background: var(--ui-primary-soft) !important;
+    }
+
     /* Popover overlay gets the "dark" class via :overlay-class-name.
        The popover is rendered in document.body, outside the layout .dark wrapper. */
     .dark .ant-popover-inner-content,

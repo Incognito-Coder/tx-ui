@@ -6,6 +6,13 @@
         overflow-y: hidden;
     }
 
+    .dark .node-clients-table .ant-table-tbody > tr.ant-table-row-selected > td,
+    .dark .node-clients-table .ant-table-tbody > tr.ant-table-row-selected td,
+    .dark .node-clients-table .ant-table-tbody > tr.ant-table-row-selected:hover > td,
+    .dark .node-clients-table .ant-table-tbody > tr:hover.ant-table-row-selected > td {
+        background: var(--ui-primary-soft) !important;
+    }
+
     @media (min-width: 769px) {
         .ant-layout-content {
             margin: 24px 16px;

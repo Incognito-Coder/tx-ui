@@ -810,6 +810,19 @@ a:focus-visible {
     background: var(--ui-primary-soft);
 }
 
+#content-layout .ant-table-tbody>tr.ant-table-row-selected>td,
+#content-layout .ant-table-tbody>tr.ant-table-row-selected td,
+#content-layout .ant-table-tbody>tr.ant-table-row-selected:hover>td,
+#content-layout .ant-table-tbody>tr:hover.ant-table-row-selected>td,
+#content-layout .ant-table-tbody>tr.ant-table-row-selected>td.ant-table-column-sort,
+.dark .ant-table-tbody>tr.ant-table-row-selected>td,
+.dark .ant-table-tbody>tr.ant-table-row-selected td,
+.dark .ant-table-tbody>tr.ant-table-row-selected:hover>td,
+.dark .ant-table-tbody>tr:hover.ant-table-row-selected>td,
+.dark .ant-table-tbody>tr.ant-table-row-selected>td.ant-table-column-sort {
+    background: var(--ui-primary-soft) !important;
+}
+
 #content-layout .ant-table-placeholder {
     padding: 34px 16px;
     color: var(--ui-text-muted);
