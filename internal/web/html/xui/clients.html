@@ -889,8 +889,18 @@
                                         </a-button>
                                     </div>
                                     <div class="clients-refresh-box">
-                                        <a-icon :spin="refreshing" @click="manualRefresh" class="clients-refresh-icon"
+                                        <a-select :dropdown-class-name="themeSwitcher.currentTheme"
+                                                  @change="changeClientsRefreshInterval"
+                                                  style="width: 65px;"
+                                                  v-if="isClientsRefreshEnabled"
+                                                  v-model="clientsRefreshInterval">
+                                            <a-select-option :value="key*1000" v-for="key in [5,10,15,20,25,30,60]">[[ key
+                                                ]]s
+                                            </a-select-option>
+                                        </a-select>
+                                        <a-icon :spin="isLoadingClients" @click="manualRefresh" class="clients-refresh-icon"
                                             type="sync"></a-icon>
+                                        <a-switch @change="toggleClientsRefresh" v-model="isClientsRefreshEnabled"></a-switch>
                                     </div>
                                 </div>
                             </div>
@@ -1752,6 +1762,10 @@
                 persianDatepicker,
                 spinning: false,
                 refreshing: false,
+                isLoadingClients: false,
+                isClientsRefreshEnabled: localStorage.getItem("clientsRefreshEnabled") === "true",
+                clientsRefreshInterval: Number(localStorage.getItem("clientsRefreshInterval")) || 10000,
+                _clientsRefreshTimer: null,
                 clients: [],
                 allInbounds: [],
                 inboundMap: {},
@@ -1987,7 +2001,8 @@
                     this.spinning = spin;
                 },
                 async loadAllData() {
-                    this.refreshing = true;
+                    if (this.isLoadingClients) return;
+                    this.isLoadingClients = true;
                     try {
                         const [inboundsMsg, clientsMsg, onlinesMsg] = await Promise.all([
                             HttpUtil.get('/panel/api/inbounds/list'),
@@ -2028,6 +2043,7 @@
                     } catch (e) {
                         this.$message.error('Failed to load clients: ' + e.message);
                     } finally {
+                        this.isLoadingClients = false;
                         this.refreshing = false;
                         this.spinning = false;
                     }
@@ -2507,8 +2523,45 @@
                     }
                     return false;
                 },
-                manualRefresh() {
-                    this.loadAllData();
+                async manualRefresh() {
+                    if (!this.isLoadingClients) {
+                        await this.loadAllData();
+                    }
+                },
+                async startClientsRefreshLoop() {
+                    this.stopClientsRefreshLoop();
+                    const loop = async () => {
+                        if (!this.isClientsRefreshEnabled) return;
+                        try {
+                            await this.loadAllData();
+                        } catch (e) {
+                            console.error(e);
+                        }
+                        if (this.isClientsRefreshEnabled) {
+                            this._clientsRefreshTimer = setTimeout(loop, this.clientsRefreshInterval);
+                        }
+                    };
+                    this._clientsRefreshTimer = setTimeout(loop, this.clientsRefreshInterval);
+                },
+                stopClientsRefreshLoop() {
+                    if (this._clientsRefreshTimer) {
+                        clearTimeout(this._clientsRefreshTimer);
+                        this._clientsRefreshTimer = null;
+                    }
+                },
+                toggleClientsRefresh() {
+                    localStorage.setItem("clientsRefreshEnabled", this.isClientsRefreshEnabled);
+                    if (this.isClientsRefreshEnabled) {
+                        this.startClientsRefreshLoop();
+                    } else {
+                        this.stopClientsRefreshLoop();
+                    }
+                },
+                changeClientsRefreshInterval() {
+                    localStorage.setItem("clientsRefreshInterval", this.clientsRefreshInterval);
+                    if (this.isClientsRefreshEnabled) {
+                        this.startClientsRefreshLoop();
+                    }
                 },
                 async getDefaultSettings() {
                     const msg = await HttpUtil.post('/panel/setting/defaultSettings');
@@ -2575,6 +2628,9 @@
                 }
 
                 this.loadAllData();
+                if (this.isClientsRefreshEnabled) {
+                    this.startClientsRefreshLoop();
+                }
             },
         });
     </script>

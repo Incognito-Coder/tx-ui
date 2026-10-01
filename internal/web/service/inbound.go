@@ -662,7 +662,76 @@ func (s *InboundService) AddInboundClient(data *model.Inbound) (bool, error) {
 	}
 	s.xrayApi.Close()
 
+	// Ensure every client added here is also present in node_clients + node_client_links
+	// so that GetXrayConfig (which builds the Xray user list from node_clients) picks them up.
+	for i := range clients {
+		if err2 := s.ensureNodeClientLinked(tx, &clients[i], data.Id); err2 != nil {
+			logger.Warningf("AddInboundClient: failed to upsert NodeClient for %s: %v", clients[i].Email, err2)
+		}
+	}
+
 	return needRestart, tx.Save(oldInbound).Error
+}
+
+
+// ensureNodeClientLinked creates or finds a NodeClient for the given client and
+// ensures a NodeClientLink exists for the given inbound. This keeps the node_clients
+// table in sync with clients added through the legacy /addClient API endpoint,
+// so GetXrayConfig (which now reads exclusively from node_clients) sees them.
+func (s *InboundService) ensureNodeClientLinked(tx *gorm.DB, client *model.Client, inboundId int) error {
+	if client.Email == "" {
+		return nil
+	}
+
+	var nc model.NodeClient
+	err := tx.Where("LOWER(email) = LOWER(?)", client.Email).First(&nc).Error
+	if err == gorm.ErrRecordNotFound {
+		// No NodeClient yet — create one from the client data.
+		nc = model.NodeClient{
+			Email:      client.Email,
+			SubID:      client.SubID,
+			UUID:       client.ID,
+			Password:   client.Password,
+			Auth:       client.Auth,
+			Security:   client.Security,
+			Flow:       client.Flow,
+			TotalGB:    client.TotalGB,
+			ExpiryTime: client.ExpiryTime,
+			LimitIP:    client.LimitIP,
+			TgID:       client.TgID,
+			Enable:     client.Enable,
+			Reset:      client.Reset,
+			Comment:    client.Comment,
+		}
+		if err2 := tx.Create(&nc).Error; err2 != nil {
+			return fmt.Errorf("creating NodeClient: %w", err2)
+		}
+	} else if err != nil {
+		return fmt.Errorf("querying NodeClient: %w", err)
+	}
+
+	// Ensure a link between this NodeClient and the inbound exists.
+	var linkCount int64
+	tx.Model(&model.NodeClientLink{}).
+		Where("node_client_id = ? AND inbound_id = ?", nc.Id, inboundId).
+		Count(&linkCount)
+	if linkCount == 0 {
+		link := model.NodeClientLink{
+			NodeClientId: nc.Id,
+			InboundId:    inboundId,
+			Flow:         client.Flow,
+		}
+		if err2 := tx.Create(&link).Error; err2 != nil {
+			return fmt.Errorf("creating NodeClientLink: %w", err2)
+		}
+	}
+
+	// Associate the client_traffics row (if any) with this NodeClient.
+	tx.Model(&xray.ClientTraffic{}).
+		Where("email = ? AND inbound_id = ? AND (node_client_id IS NULL OR node_client_id = 0)", client.Email, inboundId).
+		Update("node_client_id", nc.Id)
+
+	return nil
 }
 
 func (s *InboundService) DelInboundClient(inboundId int, clientId string) (bool, error) {
