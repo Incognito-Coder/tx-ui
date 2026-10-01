@@ -715,6 +715,33 @@ a:focus-visible {
     background-color: var(--ui-primary);
 }
 
+.ant-checkbox-inner {
+    border-radius: 4px !important;
+    border-color: var(--ui-border-strong);
+    background-color: var(--ui-surface);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ant-checkbox-wrapper:hover .ant-checkbox-inner,
+.ant-checkbox:hover .ant-checkbox-inner,
+.ant-checkbox-input:focus + .ant-checkbox-inner {
+    border-color: var(--ui-primary);
+}
+
+.ant-checkbox-checked .ant-checkbox-inner,
+.ant-checkbox-indeterminate .ant-checkbox-inner {
+    background-color: var(--ui-primary) !important;
+    border-color: var(--ui-primary) !important;
+}
+
+.ant-checkbox-checked .ant-checkbox-inner:after {
+    border-color: #ffffff !important;
+}
+
+.ant-checkbox-indeterminate .ant-checkbox-inner:after {
+    background-color: #ffffff !important;
+}
+
 /* Tables and data density */
 #content-layout .ant-table {
     color: var(--ui-text);
@@ -2133,6 +2160,65 @@ body.dark .ant-tag-red,
     color: #fda4af;
     border-color: #713042;
     background: #2b171d;
+}
+
+/* Checkbox dark mode styles */
+body.dark .ant-checkbox-inner,
+#app.dark .ant-checkbox-inner,
+.dark .ant-checkbox-inner {
+    background-color: var(--ui-surface-muted, #1d2735) !important;
+    border: 1px solid var(--ui-border-strong, #3b4a5e) !important;
+}
+
+body.dark .ant-checkbox-wrapper:hover .ant-checkbox-inner,
+body.dark .ant-checkbox:hover .ant-checkbox-inner,
+#app.dark .ant-checkbox-wrapper:hover .ant-checkbox-inner,
+#app.dark .ant-checkbox:hover .ant-checkbox-inner,
+.dark .ant-checkbox-wrapper:hover .ant-checkbox-inner,
+.dark .ant-checkbox:hover .ant-checkbox-inner {
+    border-color: var(--ui-primary, #4f8cff) !important;
+}
+
+body.dark .ant-checkbox-checked .ant-checkbox-inner,
+#app.dark .ant-checkbox-checked .ant-checkbox-inner,
+.dark .ant-checkbox-checked .ant-checkbox-inner,
+body.dark .ant-checkbox-indeterminate .ant-checkbox-inner,
+#app.dark .ant-checkbox-indeterminate .ant-checkbox-inner,
+.dark .ant-checkbox-indeterminate .ant-checkbox-inner {
+    background-color: var(--ui-primary, #4f8cff) !important;
+    border-color: var(--ui-primary, #4f8cff) !important;
+}
+
+body.dark .ant-checkbox-checked .ant-checkbox-inner:after,
+#app.dark .ant-checkbox-checked .ant-checkbox-inner:after,
+.dark .ant-checkbox-checked .ant-checkbox-inner:after {
+    border-color: #ffffff !important;
+}
+
+body.dark .ant-checkbox-indeterminate .ant-checkbox-inner:after,
+#app.dark .ant-checkbox-indeterminate .ant-checkbox-inner:after,
+.dark .ant-checkbox-indeterminate .ant-checkbox-inner:after {
+    background-color: #ffffff !important;
+}
+
+body.dark .ant-checkbox-disabled .ant-checkbox-inner,
+#app.dark .ant-checkbox-disabled .ant-checkbox-inner,
+.dark .ant-checkbox-disabled .ant-checkbox-inner {
+    background-color: var(--ui-surface, #151c28) !important;
+    border-color: var(--ui-border, #2c3849) !important;
+    opacity: 0.5 !important;
+}
+
+body.dark .ant-checkbox-disabled + span,
+#app.dark .ant-checkbox-disabled + span,
+.dark .ant-checkbox-disabled + span {
+    color: var(--ui-text-muted, #9aa9bc) !important;
+}
+
+body.dark .ant-checkbox-wrapper,
+#app.dark .ant-checkbox-wrapper,
+.dark .ant-checkbox-wrapper {
+    color: var(--ui-text, #e8edf5);
 }
 
 #app.dark .ant-table-tbody>tr:hover:not(.ant-table-expanded-row)>td {

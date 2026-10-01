@@ -35,6 +35,21 @@
         background: var(--ui-primary-soft) !important;
     }
 
+    .dark .ant-checkbox-inner {
+        background-color: var(--ui-surface-muted, #1d2735) !important;
+        border: 1px solid var(--ui-border-strong, #3b4a5e) !important;
+    }
+
+    .dark .ant-checkbox-checked .ant-checkbox-inner,
+    .dark .ant-checkbox-indeterminate .ant-checkbox-inner {
+        background-color: var(--ui-primary, #4f8cff) !important;
+        border-color: var(--ui-primary, #4f8cff) !important;
+    }
+
+    .dark .ant-checkbox-indeterminate .ant-checkbox-inner:after {
+        background-color: #ffffff !important;
+    }
+
     /* Popover overlay gets the "dark" class via :overlay-class-name.
        The popover is rendered in document.body, outside the layout .dark wrapper. */
     .dark .ant-popover-inner-content,
@@ -776,6 +791,11 @@
     .inbound-select-grid .ant-checkbox-wrapper:hover {
         border-color: var(--ui-primary);
         background: var(--ui-primary-soft);
+    }
+
+    .inbound-select-grid .ant-checkbox-wrapper-checked {
+        border-color: var(--ui-primary) !important;
+        background: var(--ui-primary-soft) !important;
     }
 
     .inbound-select-grid .ant-checkbox-wrapper .ant-checkbox {

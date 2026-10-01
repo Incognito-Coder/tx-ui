@@ -433,9 +433,14 @@
                         background-color: ${theme.primary} !important;
                     }
 
-                    .ant-checkbox-checked .ant-checkbox-inner {
+                    .ant-checkbox-checked .ant-checkbox-inner,
+                    .ant-checkbox-indeterminate .ant-checkbox-inner {
                         background-color: ${theme.primary} !important;
                         border-color: ${theme.primary} !important;
+                    }
+
+                    .ant-checkbox-indeterminate .ant-checkbox-inner:after {
+                        background-color: #ffffff !important;
                     }
 
                     .ant-radio-button-wrapper-checked,
