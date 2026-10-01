@@ -108,7 +108,7 @@ Check whether a two-factor login secret is configured.
 ## 2. Clients API (Node Clients)
 
 Primary API for managing global client identities across inbounds.
-- **Base Route:** `/panel/api/clients` (or backward-compatible alias `/panel/api/nodeClients`)
+- **Base Route:** `/panel/api/clients`
 
 ### 2.1 List All Clients
 Retrieve all clients with traffic, status, and linked inbound details.

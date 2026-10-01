@@ -24,7 +24,6 @@ func (a *XUIController) initRouter(g *gin.RouterGroup) {
 	g.GET("/", a.index)
 	g.GET("/inbounds", a.inbounds)
 	g.GET("/clients", a.clients)
-	g.GET("/nodeClients", a.clients)
 	g.GET("/settings", a.settings)
 	g.GET("/xray", a.xraySettings)
 
