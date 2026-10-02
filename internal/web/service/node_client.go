@@ -1079,22 +1079,73 @@ func (s *NodeClientService) ResetTraffic(nodeClientId int) (bool, error) {
 		}
 	}()
 
-	updates := map[string]interface{}{"up": 0, "down": 0}
 	var nc model.NodeClient
+	if err := tx.First(&nc, nodeClientId).Error; err != nil {
+		tx.Rollback()
+		return false, err
+	}
+
+	updates := map[string]interface{}{
+		"up":             0,
+		"down":           0,
+		"node_client_id": nodeClientId,
+	}
+
+	now := time.Now().Unix() * 1000
 	reEnabled := false
-	if err := tx.First(&nc, nodeClientId).Error; err == nil {
-		now := time.Now().Unix() * 1000
-		if nc.Enable && (nc.ExpiryTime <= 0 || nc.ExpiryTime > now) {
-			updates["enable"] = true
-			reEnabled = true
+	if nc.ExpiryTime <= 0 || nc.ExpiryTime > now {
+		updates["enable"] = true
+		reEnabled = true
+		if !nc.Enable {
+			_ = tx.Model(&model.NodeClient{}).Where("id = ?", nodeClientId).Update("enable", true).Error
+			nc.Enable = true
 		}
 	}
 
+	whereClause := "node_client_id = ?"
+	whereArgs := []interface{}{nodeClientId}
+	if nc.Email != "" {
+		whereClause += " OR LOWER(email) = LOWER(?)"
+		whereArgs = append(whereArgs, nc.Email)
+	}
+
 	if err := tx.Model(&xray.ClientTraffic{}).
-		Where("node_client_id = ?", nodeClientId).
+		Where(whereClause, whereArgs...).
 		Updates(updates).Error; err != nil {
 		tx.Rollback()
 		return false, err
+	}
+
+	// If client sync is enabled and client has subId, sync reset across all clients with same subId
+	settingService := &SettingService{}
+	syncClients, serr := settingService.GetSyncClients()
+	if serr == nil && syncClients && nc.SubID != "" {
+		var siblingNCs []model.NodeClient
+		_ = tx.Where("sub_id = ? AND id != ?", nc.SubID, nodeClientId).Find(&siblingNCs).Error
+		var siblingEmails []string
+		var siblingIds []int
+		for _, snc := range siblingNCs {
+			siblingIds = append(siblingIds, snc.Id)
+			if snc.Email != "" {
+				siblingEmails = append(siblingEmails, snc.Email)
+			}
+		}
+		if len(siblingIds) > 0 && reEnabled {
+			_ = tx.Model(&model.NodeClient{}).Where("id IN ?", siblingIds).Update("enable", true).Error
+		}
+		if len(siblingEmails) > 0 || len(siblingIds) > 0 {
+			sWhere := "node_client_id IN ?"
+			sArgs := []interface{}{siblingIds}
+			if len(siblingEmails) > 0 {
+				sWhere += " OR LOWER(email) IN ?"
+				sArgs = append(sArgs, siblingEmails)
+			}
+			sUpdates := map[string]interface{}{"up": 0, "down": 0}
+			if reEnabled {
+				sUpdates["enable"] = true
+			}
+			_ = tx.Model(&xray.ClientTraffic{}).Where(sWhere, sArgs...).Updates(sUpdates).Error
+		}
 	}
 
 	if err := tx.Commit().Error; err != nil {

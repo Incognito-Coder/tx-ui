@@ -190,6 +190,7 @@
                 }
             },
             resetClientTraffic(email, dbInboundId, iconElement) {
+                const inboundId = dbInboundId || (this.clientModal.dbInbound && this.clientModal.dbInbound.id);
                 this.$confirm({
                     title: '{{ i18n "pages.inbounds.resetTraffic"}}',
                     content: '{{ i18n "pages.inbounds.resetTrafficContent"}}',
@@ -197,15 +198,25 @@
                     okText: '{{ i18n "reset"}}',
                     cancelText: '{{ i18n "cancel"}}',
                     onOk: async () => {
-                        iconElement.disabled = true;
-                        const msg = await HttpUtil.postWithModal('/panel/api/inbounds/' + dbInboundId + '/resetClientTraffic/' + email);
+                        if (iconElement) iconElement.disabled = true;
+                        const msg = await HttpUtil.post('/panel/api/inbounds/' + inboundId + '/resetClientTraffic/' + email);
                         if (msg.success) {
-                            this.clientModal.clientStats.up = 0;
-                            this.clientModal.clientStats.down = 0;
+                            this.$message.success('{{ i18n "success"}}');
+                            if (this.clientModal.clientStats) {
+                                this.$set(this.clientModal.clientStats, 'up', 0);
+                                this.$set(this.clientModal.clientStats, 'down', 0);
+                                this.$set(this.clientModal.clientStats, 'enable', true);
+                            }
+                            if (this.clientModal.client) {
+                                this.$set(this.clientModal.client, 'enable', true);
+                            }
+                            if (typeof app !== 'undefined' && typeof app.getDBInbounds === 'function') {
+                                await app.getDBInbounds();
+                            }
                         }
-                        iconElement.disabled = false;
+                        if (iconElement) iconElement.disabled = false;
                     },
-                })
+                });
             },
         },
     });

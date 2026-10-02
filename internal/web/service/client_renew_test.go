@@ -360,3 +360,144 @@ func TestDisableInvalidClients_NoFullRestart(t *testing.T) {
 	}
 }
 
+func TestNodeClientService_ResetTraffic(t *testing.T) {
+	setupTestDB(t)
+
+	db := database.GetDB()
+
+	inbound := &model.Inbound{
+		UserId:   1,
+		Remark:   "test-reset-inbound",
+		Enable:   true,
+		Protocol: model.VLESS,
+		Port:     30004,
+		Settings: `{"clients":[{"id":"c-reset","email":"reset_user@test.com"}]}`,
+		Tag:      "inbound-30004",
+	}
+	if err := db.Create(inbound).Error; err != nil {
+		t.Fatalf("Create inbound failed: %v", err)
+	}
+
+	nc := &model.NodeClient{
+		UUID:       "c-reset",
+		Email:      "reset_user@test.com",
+		TotalGB:    1000,
+		ExpiryTime: 0,
+		Enable:     false, // was disabled due to exhaustion
+	}
+	if err := db.Create(nc).Error; err != nil {
+		t.Fatalf("Create NodeClient failed: %v", err)
+	}
+
+	// ClientTraffic with node_client_id = nil (legacy or unlinked)
+	ct := &xray.ClientTraffic{
+		InboundId:  inbound.Id,
+		Email:      "reset_user@test.com",
+		Up:         500,
+		Down:       600,
+		Total:      1000,
+		ExpiryTime: 0,
+		Enable:     false,
+	}
+	if err := db.Create(ct).Error; err != nil {
+		t.Fatalf("Create ClientTraffic failed: %v", err)
+	}
+
+	ncService := &NodeClientService{}
+	_, err := ncService.ResetTraffic(nc.Id)
+	if err != nil {
+		t.Fatalf("ResetTraffic failed: %v", err)
+	}
+
+	var updatedCT xray.ClientTraffic
+	if err := db.First(&updatedCT, ct.Id).Error; err != nil {
+		t.Fatalf("Query ClientTraffic failed: %v", err)
+	}
+	if updatedCT.Up != 0 || updatedCT.Down != 0 {
+		t.Errorf("Expected Up/Down=0, got Up=%d Down=%d", updatedCT.Up, updatedCT.Down)
+	}
+	if !updatedCT.Enable {
+		t.Errorf("Expected ClientTraffic Enable=true, got false")
+	}
+	if updatedCT.NodeClientId == nil || *updatedCT.NodeClientId != nc.Id {
+		t.Errorf("Expected ClientTraffic NodeClientId=%d, got %v", nc.Id, updatedCT.NodeClientId)
+	}
+
+	var updatedNC model.NodeClient
+	if err := db.First(&updatedNC, nc.Id).Error; err != nil {
+		t.Fatalf("Query NodeClient failed: %v", err)
+	}
+	if !updatedNC.Enable {
+		t.Errorf("Expected NodeClient Enable=true, got false")
+	}
+}
+
+func TestInboundService_ResetClientTraffic(t *testing.T) {
+	setupTestDB(t)
+
+	db := database.GetDB()
+
+	inbound := &model.Inbound{
+		UserId:   1,
+		Remark:   "test-inbound-reset",
+		Enable:   true,
+		Protocol: model.VLESS,
+		Port:     30005,
+		Settings: `{"clients":[{"id":"c-inb-reset","email":"inb_reset@test.com","enable":true}]}`,
+		Tag:      "inbound-30005",
+	}
+	if err := db.Create(inbound).Error; err != nil {
+		t.Fatalf("Create inbound failed: %v", err)
+	}
+
+	nc := &model.NodeClient{
+		UUID:       "c-inb-reset",
+		Email:      "inb_reset@test.com",
+		TotalGB:    2000,
+		ExpiryTime: 0,
+		Enable:     false,
+	}
+	if err := db.Create(nc).Error; err != nil {
+		t.Fatalf("Create NodeClient failed: %v", err)
+	}
+
+	ct := &xray.ClientTraffic{
+		InboundId:  inbound.Id,
+		Email:      "inb_reset@test.com",
+		Up:         1200,
+		Down:       900,
+		Total:      2000,
+		ExpiryTime: 0,
+		Enable:     false,
+	}
+	if err := db.Create(ct).Error; err != nil {
+		t.Fatalf("Create ClientTraffic failed: %v", err)
+	}
+
+	ibService := &InboundService{}
+	_, err := ibService.ResetClientTraffic(inbound.Id, "inb_reset@test.com")
+	if err != nil {
+		t.Fatalf("ResetClientTraffic failed: %v", err)
+	}
+
+	var updatedCT xray.ClientTraffic
+	if err := db.First(&updatedCT, ct.Id).Error; err != nil {
+		t.Fatalf("Query ClientTraffic failed: %v", err)
+	}
+	if updatedCT.Up != 0 || updatedCT.Down != 0 {
+		t.Errorf("Expected Up/Down=0, got Up=%d Down=%d", updatedCT.Up, updatedCT.Down)
+	}
+	if !updatedCT.Enable {
+		t.Errorf("Expected ClientTraffic Enable=true, got false")
+	}
+
+	var updatedNC model.NodeClient
+	if err := db.First(&updatedNC, nc.Id).Error; err != nil {
+		t.Fatalf("Query NodeClient failed: %v", err)
+	}
+	if !updatedNC.Enable {
+		t.Errorf("Expected NodeClient Enable=true, got false")
+	}
+}
+
+

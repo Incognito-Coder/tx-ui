@@ -253,6 +253,16 @@
         white-space: nowrap;
     }
 
+    .client-detail-link {
+        font-size: 11px;
+        flex: 1;
+        min-width: 0;
+        word-break: break-all;
+        overflow-wrap: anywhere;
+        white-space: normal;
+        line-height: 1.4;
+    }
+
     .detail-inbounds-box {
         display: flex;
         flex-direction: column;
@@ -548,6 +558,14 @@
         .compact-code {
             max-width: 180px;
             font-size: 11px;
+        }
+
+        .client-detail-link {
+            font-size: 10.5px;
+            word-break: break-all;
+            overflow-wrap: anywhere;
+            white-space: normal;
+            line-height: 1.35;
         }
 
         .detail-inbounds-box {
@@ -1278,6 +1296,18 @@
                             <!-- Limits & Policies Section -->
                             <a-divider>{{ i18n "pages.node_clients.limitsAndPolicy" }}</a-divider>
 
+                            <a-form-item label='{{ i18n "usage" }}' v-if="clientModal.isEdit && clientModal.client && clientModal.client.id">
+                                <a-tag color="blue">
+                                    [[ sizeFormat(getTrafficData(clientModal.client).up) ]] /
+                                    [[ sizeFormat(getTrafficData(clientModal.client).down) ]]
+                                    ([[ sizeFormat(getTrafficData(clientModal.client).used) ]])
+                                </a-tag>
+                                <a-button type="danger" ghost size="small" icon="reload" style="margin-left: 8px;"
+                                    @click="resetModalClientTraffic(clientModal.client)">
+                                    {{ i18n "pages.inbounds.resetTraffic" }}
+                                </a-button>
+                            </a-form-item>
+
                             <a-form-item>
                                 <template slot="label">
                                     <a-tooltip title='0 {{ i18n "pages.inbounds.meansNoLimit" }}'>
@@ -1285,7 +1315,7 @@
                                         <a-icon type="question-circle"></a-icon>
                                     </a-tooltip>
                                 </template>
-                                <a-input-number :min="0" v-model.number="clientModal.client._totalGB"></a-input-number>
+                                <a-input-number :min="0" :step="1" v-model="clientModal.client._totalGB"></a-input-number>
                             </a-form-item>
 
                             <a-form-item label='{{ i18n "pages.client.delayedStart" }}'>
@@ -1407,7 +1437,7 @@
                             <!-- Quotas for bulk -->
                             <a-divider>{{ i18n "pages.node_clients.limitsAndPolicy" }}</a-divider>
                             <a-form-item label='{{ i18n "pages.inbounds.totalFlow" }} (GB)'>
-                                <a-input-number :min="0" v-model.number="bulkModal.totalGB"></a-input-number>
+                                <a-input-number :min="0" :step="1" v-model="bulkModal.totalGB"></a-input-number>
                             </a-form-item>
 
                             <a-form-item label='{{ i18n "pages.client.delayedStart" }}'>
@@ -1622,14 +1652,26 @@
                         </td>
                     </tr>
                     <tr v-if="subSettings.enable && detailModal.client.subId">
-                        <td>{{ i18n "pages.node_clients.subscriptionUrl" }}</td>
+                        <td style="white-space: nowrap;">{{ i18n "pages.node_clients.subscriptionUrl" }}</td>
                         <td>
-                            <div style="display: flex; align-items: center; gap: 4px;">
+                            <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 6px;">
                                 <a :href="subSettings.subURI + detailModal.client.subId" target="_blank" rel="noopener noreferrer"
-                                    style="word-break: break-all; font-size: 11px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                    class="client-detail-link">
                                     [[ subSettings.subURI + detailModal.client.subId ]]
                                 </a>
-                                <a-icon @click="copyText(subSettings.subURI + detailModal.client.subId)" style="cursor: pointer; color: var(--ui-primary); font-size: 12px; flex-shrink: 0;" type="copy"></a-icon>
+                                <a-icon @click="copyText(subSettings.subURI + detailModal.client.subId)" style="cursor: pointer; color: var(--ui-primary); font-size: 13px; flex-shrink: 0; margin-top: 2px;" type="copy"></a-icon>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr v-if="subSettings.enable && detailModal.client.subId && subSettings.subJsonURI">
+                        <td style="white-space: nowrap;">{{ i18n "pages.node_clients.subscriptionUrlJson" }}</td>
+                        <td>
+                            <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 6px;">
+                                <a :href="subSettings.subJsonURI + detailModal.client.subId" target="_blank" rel="noopener noreferrer"
+                                    class="client-detail-link">
+                                    [[ subSettings.subJsonURI + detailModal.client.subId ]]
+                                </a>
+                                <a-icon @click="copyText(subSettings.subJsonURI + detailModal.client.subId)" style="cursor: pointer; color: var(--ui-primary); font-size: 13px; flex-shrink: 0; margin-top: 2px;" type="copy"></a-icon>
                             </div>
                         </td>
                     </tr>
@@ -1892,7 +1934,7 @@
                         this.title = '{{ i18n "pages.client.edit" }}: ' + c.email;
                         this.okText = '{{ i18n "sure" }}';
                         this.client = Object.assign({}, c);
-                        this.client._totalGB = toFixed((c.totalGB || 0) / ONE_GB, 2);
+                        this.client._totalGB = Number(toFixed((c.totalGB || 0) / ONE_GB, 2));
                         this.delayedStart = c.expiryTime < 0;
                         this.delayedExpireDays = this.delayedStart ? c.expiryTime / -86400000 : 0;
                         this.expiryTimeModel = this.delayedStart ? null : (c.expiryTime > 0 && typeof moment !== 'undefined' ? moment(c.expiryTime) : null);
@@ -2472,6 +2514,46 @@
                         onOk: async () => {
                             const res = await HttpUtil.post(`/panel/api/clients/${c.id}/resetTraffic`);
                             if (res.success) {
+                                const total = (this.trafficMap[c.id] || {}).total || 0;
+                                this.$set(this.trafficMap, c.id, {
+                                    up: 0,
+                                    down: 0,
+                                    used: 0,
+                                    total: total,
+                                });
+                                this.isLoadingClients = false;
+                                await this.loadAllData();
+                            }
+                        },
+                    });
+                },
+                resetModalClientTraffic(c) {
+                    if (!c || !c.id) return;
+                    this.$confirm({
+                        title: '{{ i18n "pages.inbounds.resetTraffic" }}: ' + c.email,
+                        content: '{{ i18n "pages.inbounds.resetTrafficContent" }}',
+                        class: themeSwitcher.currentTheme,
+                        okText: '{{ i18n "reset" }}',
+                        cancelText: '{{ i18n "cancel" }}',
+                        onOk: async () => {
+                            const res = await HttpUtil.post(`/panel/api/clients/${c.id}/resetTraffic`);
+                            if (res.success) {
+                                this.$message.success('{{ i18n "success" }}');
+                                const total = (this.trafficMap[c.id] || {}).total || 0;
+                                this.$set(this.trafficMap, c.id, {
+                                    up: 0,
+                                    down: 0,
+                                    used: 0,
+                                    total: total,
+                                });
+                                if (this.clientModal.client) {
+                                    this.$set(this.clientModal.client, 'enable', true);
+                                    if (this.clientModal.client.traffic) {
+                                        this.$set(this.clientModal.client.traffic, 'up', 0);
+                                        this.$set(this.clientModal.client.traffic, 'down', 0);
+                                    }
+                                }
+                                this.isLoadingClients = false;
                                 await this.loadAllData();
                             }
                         },

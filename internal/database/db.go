@@ -8,6 +8,7 @@ import (
 	"os"
 	"path"
 	"slices"
+	"time"
 
 	"x-ui/config"
 	"x-ui/internal/database/model"
@@ -145,6 +146,20 @@ func InitDB(dbPath string) error {
 	if err != nil {
 		return err
 	}
+
+	sqlDB, err := db.DB()
+	if err != nil {
+		return err
+	}
+	// Configure connection pool for SQLite to prevent starvation and lock contention
+	sqlDB.SetMaxOpenConns(25)
+	sqlDB.SetMaxIdleConns(5)
+	sqlDB.SetConnMaxLifetime(time.Hour)
+
+	// Enable WAL mode, set a 10s busy timeout, and use NORMAL synchronous mode for high throughput without lock contention.
+	db.Exec("PRAGMA journal_mode = WAL;")
+	db.Exec("PRAGMA busy_timeout = 10000;")
+	db.Exec("PRAGMA synchronous = NORMAL;")
 
 	if err := initModels(); err != nil {
 		return err

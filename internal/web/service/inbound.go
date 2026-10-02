@@ -2596,33 +2596,37 @@ func (s *InboundService) ResetClientTraffic(id int, clientEmail string) (bool, e
 		}
 		for _, client := range clients {
 			if client.Email == clientEmail && client.Enable {
-				s.xrayApi.Init(p.GetAPIPort())
-				cipher := ""
-				if string(inbound.Protocol) == "shadowsocks" {
-					var oldSettings map[string]interface{}
-					err = json.Unmarshal([]byte(inbound.Settings), &oldSettings)
-					if err != nil {
-						return false, err
+				if p != nil && p.IsRunning() {
+					s.xrayApi.Init(p.GetAPIPort())
+					cipher := ""
+					if string(inbound.Protocol) == "shadowsocks" {
+						var oldSettings map[string]interface{}
+						err = json.Unmarshal([]byte(inbound.Settings), &oldSettings)
+						if err != nil {
+							return false, err
+						}
+						if m, ok := oldSettings["method"].(string); ok {
+							cipher = m
+						}
 					}
-					if m, ok := oldSettings["method"].(string); ok {
-						cipher = m
+					err1 := s.xrayApi.AddUser(string(inbound.Protocol), inbound.Tag, map[string]interface{}{
+						"email":    client.Email,
+						"id":       client.ID,
+						"security": client.Security,
+						"flow":     client.Flow,
+						"password": client.Password,
+						"cipher":   cipher,
+					})
+					if err1 == nil {
+						logger.Debug("Client enabled due to reset traffic:", clientEmail)
+					} else {
+						logger.Debug("Error in enabling client by api:", err1)
+						needRestart = true
 					}
-				}
-				err1 := s.xrayApi.AddUser(string(inbound.Protocol), inbound.Tag, map[string]interface{}{
-					"email":    client.Email,
-					"id":       client.ID,
-					"security": client.Security,
-					"flow":     client.Flow,
-					"password": client.Password,
-					"cipher":   cipher,
-				})
-				if err1 == nil {
-					logger.Debug("Client enabled due to reset traffic:", clientEmail)
+					s.xrayApi.Close()
 				} else {
-					logger.Debug("Error in enabling client by api:", err1)
 					needRestart = true
 				}
-				s.xrayApi.Close()
 				break
 			}
 		}
@@ -2663,8 +2667,11 @@ func (s *InboundService) ResetClientTraffic(id int, clientEmail string) (bool, e
 				}
 				if len(emails) > 0 {
 					res := db.Model(xray.ClientTraffic{}).
-						Where("email IN (?)", emails).
+						Where("email IN (?) OR LOWER(email) IN (?)", emails, emails).
 						Updates(map[string]interface{}{"enable": true, "up": 0, "down": 0})
+					_ = db.Model(&model.NodeClient{}).
+						Where("email IN (?) OR LOWER(email) IN (?) OR sub_id = ?", emails, emails, subId).
+						Update("enable", true).Error
 					if res.Error != nil {
 						logger.Warningf("failed to reset traffic for clients with subId %s: %v", subId, res.Error)
 					} else {
@@ -2679,7 +2686,7 @@ func (s *InboundService) ResetClientTraffic(id int, clientEmail string) (bool, e
 	if traffic.NodeClientId != nil && *traffic.NodeClientId > 0 {
 		ncId := *traffic.NodeClientId
 		if err := db.Model(&xray.ClientTraffic{}).
-			Where("node_client_id = ?", ncId).
+			Where("node_client_id = ? OR LOWER(email) = LOWER(?)", ncId, clientEmail).
 			Updates(map[string]interface{}{"enable": true, "up": 0, "down": 0}).Error; err != nil {
 			return false, err
 		}
@@ -2688,6 +2695,15 @@ func (s *InboundService) ResetClientTraffic(id int, clientEmail string) (bool, e
 			Update("enable", true).Error; err != nil {
 			return false, err
 		}
+		return needRestart, nil
+	}
+
+	// Also look up NodeClient by email in case traffic.NodeClientId was not set
+	var nc model.NodeClient
+	if err := db.Where("LOWER(email) = LOWER(?)", clientEmail).First(&nc).Error; err == nil {
+		_ = db.Model(&model.NodeClient{}).Where("id = ?", nc.Id).Update("enable", true).Error
+		_ = db.Model(&xray.ClientTraffic{}).Where("node_client_id = ? OR LOWER(email) = LOWER(?)", nc.Id, clientEmail).
+			Updates(map[string]interface{}{"enable": true, "up": 0, "down": 0, "node_client_id": nc.Id}).Error
 		return needRestart, nil
 	}
 

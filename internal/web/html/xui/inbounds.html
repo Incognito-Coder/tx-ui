@@ -283,22 +283,8 @@
                             </a-row>
                         </div>
                         <div :style="isMobile ? '' : 'display: flex; align-items: center; justify-content: flex-start;'">
-                            <a-tooltip :title='`{{ i18n "filter" }}`'>
-                            <a-switch style="margin-right: .5rem;" v-model="enableFilter">
-                                <a-icon slot="checkedChildren" type="search"></a-icon>
-                                <a-icon slot="unCheckedChildren" type="filter"></a-icon>
-                            </a-switch>
-                            </a-tooltip>
                             <a-input :size="isMobile ? 'small' : ''" autofocus placeholder='{{ i18n "search" }}'
-                                     style="max-width: 250px" v-if="!enableFilter" v-model.lazy="searchKey"></a-input>
-                            <a-radio-group :size="isMobile ? 'small' : ''" @change="filterInbounds" button-style="solid"
-                                           v-if="enableFilter" v-model="filterBy">
-                                <a-radio-button value="">{{ i18n "none" }}</a-radio-button>
-                                <a-radio-button value="deactive">{{ i18n "disabled" }}</a-radio-button>
-                                <a-radio-button value="depleted">{{ i18n "depleted" }}</a-radio-button>
-                                <a-radio-button value="expiring">{{ i18n "depletingSoon" }}</a-radio-button>
-                                <a-radio-button value="online">{{ i18n "online" }}</a-radio-button>
-                            </a-radio-group>
+                                     style="max-width: 250px" v-model.lazy="searchKey"></a-input>
                         </div>
                         <a-back-top></a-back-top>
                         <a-table :columns="isMobile ? mobileColumns : columns" :data-source="searchedInbounds"

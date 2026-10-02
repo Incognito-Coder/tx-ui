@@ -1,4 +1,14 @@
 {{define "inboundInfoModal"}}
+<style>
+    #inbound-info-modal .tr-info-row a,
+    #inbound-info-modal .tr-info-row code {
+        word-break: break-all !important;
+        overflow-wrap: anywhere !important;
+        white-space: normal !important;
+        line-height: 1.4 !important;
+        display: inline-block;
+    }
+</style>
 <a-modal :class="themeSwitcher.currentTheme" :closable="true" :footer="null" :mask-closable="true"
          id="inbound-info-modal" title='{{ i18n "pages.inbounds.details"}}' v-model="infoModal.visible" width="680px"
          wrap-class-name="panel-modal panel-modal-lg">
@@ -328,7 +338,8 @@
                                       size="small"></a-button>
                         </a-tooltip>
                     </tr-info-title>
-                    <a :href="infoModal.subLink" rel="noopener noreferrer" target="_blank">[[ infoModal.subLink ]]</a>
+                    <a :href="infoModal.subLink" rel="noopener noreferrer" target="_blank"
+                       style="word-break: break-all; overflow-wrap: anywhere; white-space: normal; line-height: 1.4;">[[ infoModal.subLink ]]</a>
                 </tr-info-row>
                 <tr-info-row class="tr-info-row">
                     <tr-info-title class="tr-info-title">
@@ -338,7 +349,8 @@
                                       size="small"></a-button>
                         </a-tooltip>
                     </tr-info-title>
-                    <a :href="infoModal.subJsonLink" rel="noopener noreferrer" target="_blank">[[ infoModal.subJsonLink ]]</a>
+                    <a :href="infoModal.subJsonLink" rel="noopener noreferrer" target="_blank"
+                       style="word-break: break-all; overflow-wrap: anywhere; white-space: normal; line-height: 1.4;">[[ infoModal.subJsonLink ]]</a>
                 </tr-info-row>
             </template>
             <template v-if="app.tgBotEnable && infoModal.clientSettings.tgId">

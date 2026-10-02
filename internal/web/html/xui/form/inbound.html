@@ -44,7 +44,7 @@
                 <a-icon type="question-circle"></a-icon>
             </a-tooltip>
         </template>
-        <a-input-number :min="0" v-model.number="dbInbound.totalGB"></a-input-number>
+        <a-input-number :min="0" :step="1" v-model="dbInbound.totalGB"></a-input-number>
     </a-form-item>
 
     <a-form-item>
