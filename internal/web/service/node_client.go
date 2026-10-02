@@ -297,12 +297,13 @@ func (s *NodeClientService) Update(nc *model.NodeClient) (bool, error) {
 		return false, err
 	}
 
-	// Keep settings JSON in sync for linked inbounds if credentials or enable changed
+	// Keep settings JSON in sync for linked inbounds if credentials, enable, or metadata (expiry, quota, etc.) changed
 	credsChanged := hasOld && (oldNC.Email != nc.Email || oldNC.UUID != nc.UUID || oldNC.Password != nc.Password || oldNC.Auth != nc.Auth || oldNC.Flow != nc.Flow)
 	enableChanged := hasOld && (oldNC.Enable != nc.Enable)
+	metaChanged := hasOld && (oldNC.ExpiryTime != nc.ExpiryTime || oldNC.TotalGB != nc.TotalGB || oldNC.Reset != nc.Reset || oldNC.SubID != nc.SubID || oldNC.LimitIP != nc.LimitIP || oldNC.TgID != nc.TgID || oldNC.Comment != nc.Comment)
 
 	links, _ := s.GetLinks(nc.Id)
-	if credsChanged || enableChanged {
+	if credsChanged || enableChanged || metaChanged || !hasOld {
 		for _, l := range links {
 			var inbound model.Inbound
 			if err := tx.First(&inbound, l.InboundId).Error; err == nil {
@@ -1294,6 +1295,24 @@ func (s *NodeClientService) AutoRenew(txs ...*gorm.DB) error {
 			Updates(map[string]interface{}{"up": 0, "down": 0, "expiry_time": newExpiryTime, "enable": true}).Error; err != nil {
 			tx.Rollback()
 			return fmt.Errorf("resetting traffic for NodeClient %d: %w", nc.Id, err)
+		}
+
+		// Also update settings JSON for linked inbounds so the new expiry is reflected everywhere
+		links, _ := s.GetLinks(nc.Id)
+		for _, l := range links {
+			var inbound model.Inbound
+			if err := tx.First(&inbound, l.InboundId).Error; err == nil {
+				flow := l.Flow
+				if flow == "" {
+					flow = nc.Flow
+				}
+				removeClientFromInboundSettings(&inbound, nc.Email, nc.UUID, nc.Password, nc.Auth)
+				ncWithNewExpiry := *nc
+				ncWithNewExpiry.ExpiryTime = newExpiryTime
+				ncWithNewExpiry.Enable = true
+				addClientToInboundSettings(&inbound, &ncWithNewExpiry, flow)
+				_ = tx.Model(&model.Inbound{}).Where("id = ?", inbound.Id).Update("settings", inbound.Settings).Error
+			}
 		}
 
 		logger.Debugf("AutoRenewed NodeClient %d (%s): new expiry=%d", nc.Id, nc.Email, newExpiryTime)

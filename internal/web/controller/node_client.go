@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"x-ui/internal/database/model"
 	"x-ui/internal/logger"
@@ -237,19 +238,135 @@ func (a *NodeClientController) update(c *gin.Context) {
 		return
 	}
 
+	existing, err := a.nodeClientService.GetByID(id)
+	if err != nil || existing == nil {
+		jsonMsg(c, "Client not found", err)
+		c.Status(http.StatusNotFound)
+		return
+	}
+
 	var req struct {
 		model.NodeClient
 		InboundIds *[]int `json:"inboundIds" form:"inboundIds"`
 	}
 
 	raw, _ := c.GetRawData()
+	var rawMap map[string]interface{}
 	if len(raw) > 0 {
+		_ = json.Unmarshal(raw, &rawMap)
 		_ = json.Unmarshal(raw, &req)
 	}
 	if req.NodeClient.Email == "" {
 		c.Request.Body = io.NopCloser(bytes.NewBuffer(raw))
 		_ = c.ShouldBind(&req)
 	}
+
+	mergedNC := *existing
+	if rawMap != nil {
+		if val, ok := rawMap["expiryTime"]; ok {
+			mergedNC.ExpiryTime = toInt64(val)
+		} else if val, ok := rawMap["expiry_time"]; ok {
+			mergedNC.ExpiryTime = toInt64(val)
+		}
+		if val, ok := rawMap["totalGB"]; ok {
+			mergedNC.TotalGB = toInt64(val)
+		} else if val, ok := rawMap["total_gb"]; ok {
+			mergedNC.TotalGB = toInt64(val)
+		}
+		if val, ok := rawMap["email"]; ok && val != nil {
+			if s, ok := val.(string); ok && strings.TrimSpace(s) != "" {
+				mergedNC.Email = strings.TrimSpace(s)
+			}
+		}
+		if val, ok := rawMap["enable"]; ok && val != nil {
+			if b, ok := val.(bool); ok {
+				mergedNC.Enable = b
+			}
+		}
+		if val, ok := rawMap["reset"]; ok {
+			mergedNC.Reset = toInt(val)
+		}
+		if val, ok := rawMap["subId"]; ok && val != nil {
+			mergedNC.SubID = fmt.Sprintf("%v", val)
+		} else if val, ok := rawMap["sub_id"]; ok && val != nil {
+			mergedNC.SubID = fmt.Sprintf("%v", val)
+		}
+		if val, ok := rawMap["limitIp"]; ok {
+			mergedNC.LimitIP = toInt(val)
+		} else if val, ok := rawMap["limit_ip"]; ok {
+			mergedNC.LimitIP = toInt(val)
+		}
+		if val, ok := rawMap["tgId"]; ok {
+			mergedNC.TgID = toInt64(val)
+		} else if val, ok := rawMap["tg_id"]; ok {
+			mergedNC.TgID = toInt64(val)
+		}
+		if val, ok := rawMap["comment"]; ok && val != nil {
+			mergedNC.Comment = fmt.Sprintf("%v", val)
+		}
+		if val, ok := rawMap["flow"]; ok && val != nil {
+			mergedNC.Flow = fmt.Sprintf("%v", val)
+		}
+		if val, ok := rawMap["uuid"]; ok && val != nil {
+			mergedNC.UUID = fmt.Sprintf("%v", val)
+		}
+		if val, ok := rawMap["password"]; ok && val != nil {
+			mergedNC.Password = fmt.Sprintf("%v", val)
+		}
+		if val, ok := rawMap["auth"]; ok && val != nil {
+			mergedNC.Auth = fmt.Sprintf("%v", val)
+		}
+		if val, ok := rawMap["security"]; ok && val != nil {
+			mergedNC.Security = fmt.Sprintf("%v", val)
+		}
+	} else {
+		if c.PostForm("expiryTime") != "" {
+			if n, perr := strconv.ParseInt(c.PostForm("expiryTime"), 10, 64); perr == nil {
+				mergedNC.ExpiryTime = n
+			}
+		} else if c.PostForm("expiry_time") != "" {
+			if n, perr := strconv.ParseInt(c.PostForm("expiry_time"), 10, 64); perr == nil {
+				mergedNC.ExpiryTime = n
+			}
+		}
+		if c.PostForm("totalGB") != "" {
+			if n, perr := strconv.ParseInt(c.PostForm("totalGB"), 10, 64); perr == nil {
+				mergedNC.TotalGB = n
+			}
+		} else if c.PostForm("total_gb") != "" {
+			if n, perr := strconv.ParseInt(c.PostForm("total_gb"), 10, 64); perr == nil {
+				mergedNC.TotalGB = n
+			}
+		}
+		if req.NodeClient.Email != "" {
+			mergedNC.Email = req.NodeClient.Email
+		}
+		if c.PostForm("enable") != "" {
+			mergedNC.Enable = c.PostForm("enable") == "true"
+		}
+		if c.PostForm("reset") != "" {
+			if n, perr := strconv.Atoi(c.PostForm("reset")); perr == nil {
+				mergedNC.Reset = n
+			}
+		}
+		if req.NodeClient.SubID != "" {
+			mergedNC.SubID = req.NodeClient.SubID
+		}
+		if req.NodeClient.Comment != "" {
+			mergedNC.Comment = req.NodeClient.Comment
+		}
+		if req.NodeClient.Flow != "" {
+			mergedNC.Flow = req.NodeClient.Flow
+		}
+		if req.NodeClient.UUID != "" {
+			mergedNC.UUID = req.NodeClient.UUID
+		}
+		if req.NodeClient.Password != "" {
+			mergedNC.Password = req.NodeClient.Password
+		}
+	}
+	mergedNC.Id = id
+
 	if req.InboundIds == nil {
 		formIds := c.PostFormArray("inboundIds")
 		if len(formIds) == 0 {
@@ -265,9 +382,8 @@ func (a *NodeClientController) update(c *gin.Context) {
 			req.InboundIds = &ids
 		}
 	}
-	req.NodeClient.Id = id
 
-	needRestart, err := a.nodeClientService.Update(&req.NodeClient)
+	needRestart, err := a.nodeClientService.Update(&mergedNC)
 	if err != nil {
 		jsonMsg(c, "Failed to update node client: "+err.Error(), err)
 		return
@@ -278,7 +394,7 @@ func (a *NodeClientController) update(c *gin.Context) {
 		for i, inId := range *req.InboundIds {
 			links[i] = service.NodeClientLinkInput{
 				InboundId: inId,
-				Flow:      req.NodeClient.Flow,
+				Flow:      mergedNC.Flow,
 			}
 		}
 		linkRestart, errLink := a.nodeClientService.SetLinks(id, links)
@@ -479,3 +595,52 @@ func (a *NodeClientController) toggle(c *gin.Context) {
 	}
 	jsonMsg(c, "Node client toggled", nil)
 }
+
+func toInt64(val interface{}) int64 {
+	switch v := val.(type) {
+	case int64:
+		return v
+	case int:
+		return int64(v)
+	case int32:
+		return int64(v)
+	case float64:
+		return int64(v)
+	case float32:
+		return int64(v)
+	case json.Number:
+		if n, err := v.Int64(); err == nil {
+			return n
+		}
+	case string:
+		if n, err := strconv.ParseInt(strings.TrimSpace(v), 10, 64); err == nil {
+			return n
+		}
+	}
+	return 0
+}
+
+func toInt(val interface{}) int {
+	switch v := val.(type) {
+	case int:
+		return v
+	case int64:
+		return int(v)
+	case int32:
+		return int(v)
+	case float64:
+		return int(v)
+	case float32:
+		return int(v)
+	case json.Number:
+		if n, err := v.Int64(); err == nil {
+			return int(n)
+		}
+	case string:
+		if n, err := strconv.Atoi(strings.TrimSpace(v)); err == nil {
+			return n
+		}
+	}
+	return 0
+}
+

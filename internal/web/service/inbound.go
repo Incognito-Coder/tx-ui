@@ -769,6 +769,205 @@ func (s *InboundService) removeNodeClientForInbound(db *gorm.DB, email string, i
 	}
 }
 
+// syncNodeClientOnUpdate keeps the node_clients table, linked client_traffics rows,
+// and other linked inbounds' settings in sync when a client is updated via UpdateInboundClient.
+func (s *InboundService) syncNodeClientOnUpdate(tx *gorm.DB, oldEmail string, client *model.Client, currentInboundId int) error {
+	lookupEmail := oldEmail
+	if lookupEmail == "" {
+		lookupEmail = client.Email
+	}
+	if lookupEmail == "" {
+		return nil
+	}
+
+	var nc model.NodeClient
+	err := tx.Where("LOWER(email) = LOWER(?)", lookupEmail).First(&nc).Error
+	if err == gorm.ErrRecordNotFound {
+		if client.Email != "" && !strings.EqualFold(client.Email, lookupEmail) {
+			err = tx.Where("LOWER(email) = LOWER(?)", client.Email).First(&nc).Error
+		}
+		if err == gorm.ErrRecordNotFound && client.ID != "" {
+			err = tx.Where("uuid = ?", client.ID).First(&nc).Error
+		}
+		if err == gorm.ErrRecordNotFound && client.Password != "" {
+			err = tx.Where("password = ?", client.Password).First(&nc).Error
+		}
+	}
+
+	if err == gorm.ErrRecordNotFound {
+		return s.ensureNodeClientLinked(tx, client, currentInboundId)
+	} else if err != nil {
+		return fmt.Errorf("querying NodeClient: %w", err)
+	}
+
+	ncUpdates := map[string]interface{}{
+		"total_gb":    client.TotalGB,
+		"expiry_time": client.ExpiryTime,
+		"enable":      client.Enable,
+		"reset":       client.Reset,
+	}
+	if client.Email != "" {
+		ncUpdates["email"] = client.Email
+	}
+	if client.SubID != "" {
+		ncUpdates["sub_id"] = client.SubID
+	}
+	if client.LimitIP >= 0 {
+		ncUpdates["limit_ip"] = client.LimitIP
+	}
+	if client.TgID != 0 {
+		ncUpdates["tg_id"] = client.TgID
+	}
+	if client.Comment != "" {
+		ncUpdates["comment"] = client.Comment
+	}
+	if client.Flow != "" {
+		ncUpdates["flow"] = client.Flow
+	}
+	if client.Security != "" {
+		ncUpdates["security"] = client.Security
+	}
+	if client.ID != "" {
+		ncUpdates["uuid"] = client.ID
+	}
+	if client.Password != "" {
+		ncUpdates["password"] = client.Password
+	}
+	if client.Auth != "" {
+		ncUpdates["auth"] = client.Auth
+	}
+
+	if err := tx.Model(&model.NodeClient{}).Where("id = ?", nc.Id).Updates(ncUpdates).Error; err != nil {
+		return fmt.Errorf("updating NodeClient %d: %w", nc.Id, err)
+	}
+
+	trafficUpdates := map[string]interface{}{
+		"total":       client.TotalGB,
+		"expiry_time": client.ExpiryTime,
+		"reset":       client.Reset,
+		"enable":      client.Enable,
+	}
+	if client.Email != "" {
+		trafficUpdates["email"] = client.Email
+	}
+
+	if err := tx.Model(&xray.ClientTraffic{}).
+		Where("node_client_id = ? OR LOWER(email) = LOWER(?) OR LOWER(email) = LOWER(?)", nc.Id, lookupEmail, client.Email).
+		Updates(trafficUpdates).Error; err != nil {
+		return fmt.Errorf("updating linked traffic rows for NodeClient %d: %w", nc.Id, err)
+	}
+
+	var linkCount int64
+	tx.Model(&model.NodeClientLink{}).
+		Where("node_client_id = ? AND inbound_id = ?", nc.Id, currentInboundId).
+		Count(&linkCount)
+	if linkCount == 0 {
+		flow := client.Flow
+		if flow == "" {
+			flow = nc.Flow
+		}
+		link := model.NodeClientLink{
+			NodeClientId: nc.Id,
+			InboundId:    currentInboundId,
+			Flow:         flow,
+		}
+		_ = tx.Create(&link).Error
+	}
+
+	var links []model.NodeClientLink
+	_ = tx.Where("node_client_id = ?", nc.Id).Find(&links).Error
+	for _, l := range links {
+		if l.InboundId == currentInboundId {
+			continue
+		}
+		var otherInbound model.Inbound
+		if err := tx.First(&otherInbound, l.InboundId).Error; err == nil {
+			if s.updateClientInInboundSettings(&otherInbound, lookupEmail, client) {
+				_ = tx.Model(&model.Inbound{}).Where("id = ?", otherInbound.Id).Update("settings", otherInbound.Settings).Error
+			}
+		}
+	}
+
+	return nil
+}
+
+// updateClientInInboundSettings updates client fields (expiryTime, totalGB, email, enable, reset, etc.)
+// inside an inbound's settings JSON string. Returns true if modified.
+func (s *InboundService) updateClientInInboundSettings(inbound *model.Inbound, matchEmail string, client *model.Client) bool {
+	if inbound.Settings == "" {
+		return false
+	}
+	var settings map[string]interface{}
+	if err := json.Unmarshal([]byte(inbound.Settings), &settings); err != nil {
+		return false
+	}
+	key := "clients"
+	if inbound.Protocol == model.WireGuard {
+		key = "peers"
+	}
+	raw, ok := settings[key].([]interface{})
+	if !ok || len(raw) == 0 {
+		return false
+	}
+
+	modified := false
+	for i, item := range raw {
+		c, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		cEmail, _ := c["email"].(string)
+		cId, _ := c["id"].(string)
+		cPass, _ := c["password"].(string)
+
+		matches := false
+		if matchEmail != "" && strings.EqualFold(cEmail, matchEmail) {
+			matches = true
+		} else if client.Email != "" && strings.EqualFold(cEmail, client.Email) {
+			matches = true
+		} else if client.ID != "" && cId == client.ID {
+			matches = true
+		} else if client.Password != "" && cPass == client.Password {
+			matches = true
+		}
+
+		if matches {
+			c["expiryTime"] = client.ExpiryTime
+			c["totalGB"] = client.TotalGB
+			c["enable"] = client.Enable
+			c["reset"] = client.Reset
+			if client.Email != "" {
+				c["email"] = client.Email
+			}
+			if client.SubID != "" {
+				c["subId"] = client.SubID
+			}
+			if client.LimitIP >= 0 {
+				c["limitIp"] = client.LimitIP
+			}
+			if client.TgID != 0 {
+				c["tgId"] = client.TgID
+			}
+			if client.Comment != "" {
+				c["comment"] = client.Comment
+			}
+			raw[i] = c
+			modified = true
+			break
+		}
+	}
+
+	if modified {
+		settings[key] = raw
+		if b, err := json.MarshalIndent(settings, "", "  "); err == nil {
+			inbound.Settings = string(b)
+			return true
+		}
+	}
+	return false
+}
+
+
 func (s *InboundService) DelInboundClient(inboundId int, clientId string) (bool, error) {
 	oldInbound, err := s.GetInbound(inboundId)
 	if err != nil {
@@ -1025,6 +1224,10 @@ func (s *InboundService) UpdateInboundClient(data *model.Inbound, clientId strin
 				return false, err
 			}
 
+			if err := s.syncNodeClientOnUpdate(tx, oldEmail, &clients[0], data.Id); err != nil {
+				logger.Warningf("UpdateInboundClient: syncNodeClientOnUpdate failed for %s: %v", clients[0].Email, err)
+			}
+
 			// Sync expiry time for clients with same subId
 			settingService := &SettingService{}
 			syncClients, err := settingService.GetSyncClients()
@@ -1091,6 +1294,9 @@ func (s *InboundService) UpdateInboundClient(data *model.Inbound, clientId strin
 								logger.Warningf("failed to sync expiry time for clients with subId %s: %v", clients[0].SubID, err)
 							}
 						}
+						_ = tx.Model(&model.NodeClient{}).
+							Where("sub_id = ?", clients[0].SubID).
+							Update("expiry_time", clients[0].ExpiryTime).Error
 					}
 				}
 			}
@@ -1101,6 +1307,9 @@ func (s *InboundService) UpdateInboundClient(data *model.Inbound, clientId strin
 			}
 		} else {
 			s.AddClientStat(tx, data.Id, &clients[0])
+			if err := s.syncNodeClientOnUpdate(tx, "", &clients[0], data.Id); err != nil {
+				logger.Warningf("UpdateInboundClient: syncNodeClientOnUpdate failed for %s: %v", clients[0].Email, err)
+			}
 		}
 	} else {
 		err = s.DelClientStat(tx, oldEmail)
@@ -1114,44 +1323,46 @@ func (s *InboundService) UpdateInboundClient(data *model.Inbound, clientId strin
 	}
 	needRestart := false
 	if len(oldEmail) > 0 {
-		s.xrayApi.Init(p.GetAPIPort())
-		if oldClients[clientIndex].Enable {
-			err1 := s.xrayApi.RemoveUser(oldInbound.Tag, oldEmail)
-			if err1 == nil {
-				logger.Debug("Old client deleted by api:", oldEmail)
-			} else {
-				if strings.Contains(err1.Error(), fmt.Sprintf("User %s not found.", oldEmail)) {
-					logger.Debug("User is already deleted. Nothing to do more...")
+		if p != nil {
+			s.xrayApi.Init(p.GetAPIPort())
+			if oldClients[clientIndex].Enable {
+				err1 := s.xrayApi.RemoveUser(oldInbound.Tag, oldEmail)
+				if err1 == nil {
+					logger.Debug("Old client deleted by api:", oldEmail)
 				} else {
-					logger.Debug("Error in deleting client by api:", err1)
+					if strings.Contains(err1.Error(), fmt.Sprintf("User %s not found.", oldEmail)) {
+						logger.Debug("User is already deleted. Nothing to do more...")
+					} else {
+						logger.Debug("Error in deleting client by api:", err1)
+						needRestart = true
+					}
+				}
+			}
+			if clients[0].Enable {
+				cipher := ""
+				if oldInbound.Protocol == "shadowsocks" {
+					if m, ok := oldSettings["method"].(string); ok {
+						cipher = m
+					}
+				}
+				err1 := s.xrayApi.AddUser(string(oldInbound.Protocol), oldInbound.Tag, map[string]interface{}{
+					"email":    clients[0].Email,
+					"id":       clients[0].ID,
+					"security": clients[0].Security,
+					"flow":     clients[0].Flow,
+					"auth":     clients[0].Auth,
+					"password": clients[0].Password,
+					"cipher":   cipher,
+				})
+				if err1 == nil {
+					logger.Debug("Client edited by api:", clients[0].Email)
+				} else {
+					logger.Debug("Error in adding client by api:", err1)
 					needRestart = true
 				}
 			}
+			s.xrayApi.Close()
 		}
-		if clients[0].Enable {
-			cipher := ""
-			if oldInbound.Protocol == "shadowsocks" {
-				if m, ok := oldSettings["method"].(string); ok {
-					cipher = m
-				}
-			}
-			err1 := s.xrayApi.AddUser(string(oldInbound.Protocol), oldInbound.Tag, map[string]interface{}{
-				"email":    clients[0].Email,
-				"id":       clients[0].ID,
-				"security": clients[0].Security,
-				"flow":     clients[0].Flow,
-				"auth":     clients[0].Auth,
-				"password": clients[0].Password,
-				"cipher":   cipher,
-			})
-			if err1 == nil {
-				logger.Debug("Client edited by api:", clients[0].Email)
-			} else {
-				logger.Debug("Error in adding client by api:", err1)
-				needRestart = true
-			}
-		}
-		s.xrayApi.Close()
 	} else {
 		logger.Debug("Client old email not found")
 		needRestart = true
@@ -1404,17 +1615,29 @@ func (s *InboundService) addClientTraffic(tx *gorm.DB, traffics []*xray.ClientTr
 				}
 			}
 
+			// Ensure we use the latest non-zero expiry time among clients in the group to avoid rolling back renewals
+			maxExpiryTime := maxTrafficClient.ExpiryTime
+			for _, traffic := range groupTraffics {
+				if traffic.ExpiryTime > maxExpiryTime {
+					maxExpiryTime = traffic.ExpiryTime
+				}
+			}
+
 			// Sync traffic to all clients in the group
 			err = tx.Model(&xray.ClientTraffic{}).
 				Where("email IN (?)", emailsInGroup).
 				Updates(map[string]interface{}{
 					"up":          maxTrafficClient.Up,
 					"down":        maxTrafficClient.Down,
-					"expiry_time": maxTrafficClient.ExpiryTime,
+					"expiry_time": maxExpiryTime,
 				}).Error
 			if err != nil {
 				logger.Warningf("failed to sync traffic for clients with subId %s: %v", subId, err)
 			}
+
+			_ = tx.Model(&model.NodeClient{}).
+				Where("sub_id = ?", subId).
+				Update("expiry_time", maxExpiryTime).Error
 
 			// Update inbounds settings (expiryTime)
 			for _, inbound := range inbounds {
@@ -1439,7 +1662,7 @@ func (s *InboundService) addClientTraffic(tx *gorm.DB, traffics []*xray.ClientTr
 						continue
 					}
 					if cSubId, ok := clientMap["subId"].(string); ok && cSubId == subId {
-						clientMap["expiryTime"] = float64(maxTrafficClient.ExpiryTime)
+						clientMap["expiryTime"] = float64(maxExpiryTime)
 						clientsInInbound[i] = clientMap
 						needsUpdate = true
 					}
@@ -1676,6 +1899,13 @@ func (s *InboundService) autoRenewClients(tx *gorm.DB) (bool, int64, error) {
 					traffics[traffic_index].ExpiryTime = newExpiryTime
 					traffics[traffic_index].Down = 0
 					traffics[traffic_index].Up = 0
+					if traffic.NodeClientId != nil && *traffic.NodeClientId > 0 {
+						_ = tx.Model(&model.NodeClient{}).Where("id = ?", *traffic.NodeClientId).
+							Updates(map[string]interface{}{"expiry_time": newExpiryTime, "enable": true}).Error
+					} else if traffic.Email != "" {
+						_ = tx.Model(&model.NodeClient{}).Where("LOWER(email) = LOWER(?)", traffic.Email).
+							Updates(map[string]interface{}{"expiry_time": newExpiryTime, "enable": true}).Error
+					}
 					if !traffic.Enable {
 						traffics[traffic_index].Enable = true
 						clientsToAdd = append(clientsToAdd,
