@@ -32,10 +32,7 @@ func (j *XrayTrafficJob) Run() {
 		logger.Warning("add outbound traffic failed:", err)
 	}
 	if needRestart0 || needRestart1 {
-		logger.Info("Restarting Xray immediately to disconnect exhausted or expired clients")
-		if err := j.xrayService.RestartXray(true); err != nil {
-			logger.Error("Failed to restart Xray immediately:", err)
-			j.xrayService.SetToNeedRestart()
-		}
+		logger.Info("Traffic check detected core change; scheduling graceful restart")
+		j.xrayService.SetToNeedRestart()
 	}
 }

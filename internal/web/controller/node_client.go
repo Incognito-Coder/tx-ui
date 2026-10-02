@@ -213,12 +213,14 @@ func (a *NodeClientController) resetAllTraffics(c *gin.Context) {
 }
 
 func (a *NodeClientController) delDepleted(c *gin.Context) {
-	err := a.nodeClientService.DeleteDepleted()
+	needRestart, err := a.nodeClientService.DeleteDepleted()
 	if err != nil {
 		jsonMsg(c, "Failed to delete depleted clients", err)
 		return
 	}
-	a.xrayService.SetToNeedRestart()
+	if needRestart {
+		a.xrayService.SetToNeedRestart()
+	}
 	jsonMsg(c, "Depleted clients deleted", nil)
 }
 

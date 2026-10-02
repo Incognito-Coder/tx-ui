@@ -2,6 +2,7 @@ package service
 
 import (
 	"encoding/json"
+	"fmt"
 	"path/filepath"
 	"testing"
 	"time"
@@ -300,3 +301,62 @@ func TestNodeClientServiceUpdate_RenewsExpiryTimeAndSyncsInbound(t *testing.T) {
 		t.Errorf("Inbound Settings JSON ExpiryTime mismatch: got %d, want %d", expiryFromJSON, newExpiry)
 	}
 }
+
+func TestDisableInvalidClients_NoFullRestart(t *testing.T) {
+	setupTestDB(t)
+
+	db := database.GetDB()
+	expiredTime := time.Now().Unix()*1000 - 3600000 // 1 hour ago
+
+	inbound := &model.Inbound{
+		UserId:   1,
+		Remark:   "test-inbound",
+		Enable:   true,
+		Protocol: model.VLESS,
+		Port:     30003,
+		Settings: fmt.Sprintf(`{"clients":[{"id":"c-1","email":"expired@test.com","expiryTime":%d}]}`, expiredTime),
+		Tag:      "inbound-30003",
+	}
+	if err := db.Create(inbound).Error; err != nil {
+		t.Fatalf("Failed to create inbound: %v", err)
+	}
+
+	ct := &xray.ClientTraffic{
+		InboundId:  inbound.Id,
+		Email:      "expired@test.com",
+		Up:         1000,
+		Down:       2000,
+		Total:      1000, // over quota
+		ExpiryTime: expiredTime, // expired
+		Enable:     true,
+	}
+	if err := db.Create(ct).Error; err != nil {
+		t.Fatalf("Failed to create ClientTraffic: %v", err)
+	}
+
+	inboundService := &InboundService{}
+	tx := db.Begin()
+	needRestart, count, err := inboundService.disableInvalidClients(tx)
+	if err != nil {
+		tx.Rollback()
+		t.Fatalf("disableInvalidClients error: %v", err)
+	}
+	tx.Commit()
+
+	if count != 1 {
+		t.Errorf("Expected 1 client disabled, got %d", count)
+	}
+
+	if needRestart {
+		t.Errorf("Expected needRestart=false to prevent dropping connected users, got true")
+	}
+
+	var updated xray.ClientTraffic
+	if err := db.First(&updated, ct.Id).Error; err != nil {
+		t.Fatalf("Failed to query ClientTraffic: %v", err)
+	}
+	if updated.Enable {
+		t.Errorf("Expected client to be disabled (enable=false), but enable=true")
+	}
+}
+

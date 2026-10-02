@@ -1200,6 +1200,7 @@ func (s *NodeClientService) DisableExhausted(txs ...*gorm.DB) (bool, error) {
 
 	now := time.Now().Unix() * 1000
 	var idsToDisable []int
+	var clientsToDisable []*model.NodeClient
 
 	for _, nc := range nodeClients {
 		shouldDisable := false
@@ -1226,6 +1227,7 @@ func (s *NodeClientService) DisableExhausted(txs ...*gorm.DB) (bool, error) {
 
 		if shouldDisable {
 			idsToDisable = append(idsToDisable, nc.Id)
+			clientsToDisable = append(clientsToDisable, nc)
 		}
 	}
 
@@ -1242,6 +1244,24 @@ func (s *NodeClientService) DisableExhausted(txs ...*gorm.DB) (bool, error) {
 	}
 
 	logger.Debugf("Marked %d exhausted node client traffic rows disabled", res.RowsAffected)
+
+	// Dynamically remove exhausted users from running inbounds via API so no full Xray restart is needed
+	if p != nil && p.IsRunning() && len(clientsToDisable) > 0 {
+		var xrayApi xray.XrayAPI
+		if err := xrayApi.Init(p.GetAPIPort()); err == nil {
+			defer xrayApi.Close()
+			for _, nc := range clientsToDisable {
+				links, _ := s.GetLinks(nc.Id)
+				for _, l := range links {
+					var inbound model.Inbound
+					if err := db.First(&inbound, l.InboundId).Error; err == nil {
+						s.hotRemoveUserFromInbound(&xrayApi, &inbound, nc.Email)
+					}
+				}
+			}
+		}
+	}
+
 	return res.RowsAffected > 0, nil
 }
 
@@ -1830,11 +1850,11 @@ func (s *NodeClientService) ResetAllTraffics() error {
 }
 
 // DeleteDepleted deletes all clients whose quota is exhausted or expiry time has passed.
-func (s *NodeClientService) DeleteDepleted() error {
+func (s *NodeClientService) DeleteDepleted() (bool, error) {
 	db := database.GetDB()
 	var clients []*model.NodeClient
 	if err := db.Find(&clients).Error; err != nil {
-		return err
+		return false, err
 	}
 	now := time.Now().Unix() * 1000
 	var idsToDelete []int
@@ -1851,10 +1871,9 @@ func (s *NodeClientService) DeleteDepleted() error {
 		}
 	}
 	if len(idsToDelete) > 0 {
-		_, err := s.BulkDelete(idsToDelete)
-		return err
+		return s.BulkDelete(idsToDelete)
 	}
-	return nil
+	return false, nil
 }
 
 // GetLinkedInboundsCounts returns a map of inboundId -> linked clients count.
