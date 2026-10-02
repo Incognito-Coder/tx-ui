@@ -229,20 +229,29 @@ func (s *NodeClientService) Create(nc *model.NodeClient) error {
 // ---------------------------------------------------------------------------
 
 // Update validates uniqueness (excluding the current record) and persists
-// changes. Flags xray for restart.
+// changes. If credentials or enable status changed, it hot-syncs with running Xray
+// without restarting Xray unless WireGuard or API error.
 // Requirements: 8.1, 8.2
-func (s *NodeClientService) Update(nc *model.NodeClient) error {
+func (s *NodeClientService) Update(nc *model.NodeClient) (bool, error) {
 	if err := s.checkEmailUnique(nc.Email, nc.Id); err != nil {
-		return err
+		return false, err
 	}
 	if err := s.checkSubIDUnique(nc.SubID, nc.Id); err != nil {
-		return err
+		return false, err
 	}
 
 	db := database.GetDB()
+
+	// Capture previous state to check if credentials or enable status changed
+	oldNC := &model.NodeClient{}
+	hasOld := false
+	if err := db.First(oldNC, nc.Id).Error; err == nil {
+		hasOld = true
+	}
+
 	tx := db.Begin()
 	if tx.Error != nil {
-		return tx.Error
+		return false, tx.Error
 	}
 	defer func() {
 		if r := recover(); r != nil {
@@ -253,7 +262,7 @@ func (s *NodeClientService) Update(nc *model.NodeClient) error {
 
 	if err := tx.Save(nc).Error; err != nil {
 		tx.Rollback()
-		return err
+		return false, err
 	}
 
 	// Keep each linked traffic row's node-client metadata in sync while
@@ -285,16 +294,69 @@ func (s *NodeClientService) Update(nc *model.NodeClient) error {
 		Where("node_client_id = ?", nc.Id).
 		Updates(trafficUpdates).Error; err != nil {
 		tx.Rollback()
-		return err
+		return false, err
+	}
+
+	// Keep settings JSON in sync for linked inbounds if credentials or enable changed
+	credsChanged := hasOld && (oldNC.Email != nc.Email || oldNC.UUID != nc.UUID || oldNC.Password != nc.Password || oldNC.Auth != nc.Auth || oldNC.Flow != nc.Flow)
+	enableChanged := hasOld && (oldNC.Enable != nc.Enable)
+
+	links, _ := s.GetLinks(nc.Id)
+	if credsChanged || enableChanged {
+		for _, l := range links {
+			var inbound model.Inbound
+			if err := tx.First(&inbound, l.InboundId).Error; err == nil {
+				flow := l.Flow
+				if flow == "" {
+					flow = nc.Flow
+				}
+				removeClientFromInboundSettings(&inbound, oldNC.Email, oldNC.UUID, oldNC.Password, oldNC.Auth)
+				if nc.Enable {
+					addClientToInboundSettings(&inbound, nc, flow)
+				}
+				_ = tx.Model(&model.Inbound{}).Where("id = ?", inbound.Id).Update("settings", inbound.Settings).Error
+			}
+		}
 	}
 
 	if err := tx.Commit().Error; err != nil {
-		return err
+		return false, err
 	}
 
-	// Flag xray restart so updated credentials are reflected at next restart.
-	isNeedXrayRestart.Store(true)
-	return nil
+	// If credentials or enable state changed, hot-sync with running Xray without dropping other users' connections.
+	needRestart := false
+	if hasOld && (credsChanged || enableChanged) {
+		if p != nil && p.IsRunning() {
+			var xrayApi xray.XrayAPI
+			if err := xrayApi.Init(p.GetAPIPort()); err != nil {
+				needRestart = true
+			} else {
+				defer xrayApi.Close()
+				for _, l := range links {
+					var inbound model.Inbound
+					if err := db.First(&inbound, l.InboundId).Error; err == nil {
+						if s.hotRemoveUserFromInbound(&xrayApi, &inbound, oldNC.Email) {
+							needRestart = true
+						}
+						if nc.Enable {
+							flow := l.Flow
+							if flow == "" {
+								flow = nc.Flow
+							}
+							if s.hotAddUserToInbound(&xrayApi, &inbound, nc, flow) {
+								needRestart = true
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	if needRestart {
+		isNeedXrayRestart.Store(true)
+	}
+	return needRestart, nil
 }
 
 // ---------------------------------------------------------------------------
@@ -303,10 +365,17 @@ func (s *NodeClientService) Update(nc *model.NodeClient) error {
 
 // Delete removes a NodeClient, all its NodeClientLink records, and NULL-outs
 // the node_client_id column on associated ClientTraffic rows — all in a single
-// transaction. Flags xray restart.
+// transaction. Hot-removes users from running Xray if active.
 // Requirements: 8.3, 3.4
-func (s *NodeClientService) Delete(id int) error {
+func (s *NodeClientService) Delete(id int) (bool, error) {
 	db := database.GetDB()
+
+	// 1. Find all links before deletion so we can hot-remove from Xray
+	var links []model.NodeClientLink
+	_ = db.Where("node_client_id = ?", id).Find(&links).Error
+
+	nc := &model.NodeClient{}
+	_ = db.First(nc, id).Error
 
 	tx := db.Begin()
 	defer func() {
@@ -317,15 +386,35 @@ func (s *NodeClientService) Delete(id int) error {
 
 	if err := s.deleteInTx(tx, id); err != nil {
 		tx.Rollback()
-		return err
+		return false, err
 	}
 
 	if err := tx.Commit().Error; err != nil {
-		return err
+		return false, err
 	}
 
-	isNeedXrayRestart.Store(true)
-	return nil
+	needRestart := false
+	if p != nil && p.IsRunning() && nc.Email != "" && len(links) > 0 {
+		var xrayApi xray.XrayAPI
+		if err := xrayApi.Init(p.GetAPIPort()); err != nil {
+			needRestart = true
+		} else {
+			defer xrayApi.Close()
+			for _, l := range links {
+				var inbound model.Inbound
+				if err := db.First(&inbound, l.InboundId).Error; err == nil {
+					if s.hotRemoveUserFromInbound(&xrayApi, &inbound, nc.Email) {
+						needRestart = true
+					}
+				}
+			}
+		}
+	}
+
+	if needRestart {
+		isNeedXrayRestart.Store(true)
+	}
+	return needRestart, nil
 }
 
 // removeClientFromInboundSettings removes any matching client from an inbound's settings JSON ("clients" and "peers").
@@ -348,7 +437,7 @@ func removeClientFromInboundSettings(inbound *model.Inbound, email, uuid, passwo
 		if !ok || len(list) == 0 {
 			continue
 		}
-		var newList []interface{}
+		newList := make([]interface{}, 0, len(list))
 		for _, item := range list {
 			c, ok := item.(map[string]interface{})
 			if !ok {
@@ -389,6 +478,209 @@ func removeClientFromInboundSettings(inbound *model.Inbound, email, uuid, passwo
 			inbound.Settings = string(newSettings)
 			return true
 		}
+	}
+	return false
+}
+
+// addClientToInboundSettings adds a client to an inbound's settings JSON ("clients" or "peers") if not present.
+// Returns true if modified.
+func addClientToInboundSettings(inbound *model.Inbound, nc *model.NodeClient, flow string) bool {
+	if inbound.Settings == "" {
+		return false
+	}
+	var settings map[string]interface{}
+	if err := json.Unmarshal([]byte(inbound.Settings), &settings); err != nil {
+		return false
+	}
+
+	key := "clients"
+	if inbound.Protocol == model.WireGuard {
+		key = "peers"
+	}
+
+	var list []interface{}
+	if raw, ok := settings[key]; ok && raw != nil {
+		if l, ok := raw.([]interface{}); ok {
+			list = l
+		}
+	}
+
+	// Check if already present
+	for _, item := range list {
+		c, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		cEmail, _ := c["email"].(string)
+		cId, _ := c["id"].(string)
+		if (nc.Email != "" && cEmail != "" && strings.EqualFold(strings.TrimSpace(cEmail), strings.TrimSpace(nc.Email))) ||
+			(nc.UUID != "" && cId != "" && strings.EqualFold(strings.TrimSpace(cId), strings.TrimSpace(nc.UUID))) {
+			return false
+		}
+	}
+
+	clientFlow := flow
+	if clientFlow == "" {
+		clientFlow = nc.Flow
+	}
+
+	newClientMap := map[string]interface{}{
+		"email":      nc.Email,
+		"enable":     nc.Enable,
+		"expiryTime": nc.ExpiryTime,
+		"limitIp":    nc.LimitIP,
+		"reset":      nc.Reset,
+		"subId":      nc.SubID,
+		"tgId":       nc.TgID,
+		"totalGB":    nc.TotalGB,
+		"comment":    nc.Comment,
+	}
+
+	switch inbound.Protocol {
+	case "trojan":
+		newClientMap["password"] = nc.Password
+	case "shadowsocks":
+		newClientMap["password"] = nc.Password
+		if m, ok := settings["method"]; ok {
+			newClientMap["method"] = m
+		}
+	case "hysteria":
+		newClientMap["auth"] = nc.Auth
+	case "wireguard":
+		newClientMap["publicKey"] = nc.UUID
+		newClientMap["privateKey"] = nc.Password
+	default:
+		newClientMap["id"] = nc.UUID
+		newClientMap["flow"] = clientFlow
+	}
+
+	list = append(list, newClientMap)
+	settings[key] = list
+
+	newSettings, err := json.MarshalIndent(settings, "", "  ")
+	if err == nil {
+		inbound.Settings = string(newSettings)
+		return true
+	}
+	return false
+}
+
+// updateClientFlowInInboundSettings updates client flow in an inbound's settings JSON.
+func updateClientFlowInInboundSettings(inbound *model.Inbound, email, uuid, newFlow string) bool {
+	if inbound.Settings == "" {
+		return false
+	}
+	var settings map[string]interface{}
+	if err := json.Unmarshal([]byte(inbound.Settings), &settings); err != nil {
+		return false
+	}
+	raw, ok := settings["clients"]
+	if !ok || raw == nil {
+		return false
+	}
+	list, ok := raw.([]interface{})
+	if !ok || len(list) == 0 {
+		return false
+	}
+	modified := false
+	for _, item := range list {
+		c, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		cEmail, _ := c["email"].(string)
+		cId, _ := c["id"].(string)
+		if (email != "" && cEmail != "" && strings.EqualFold(strings.TrimSpace(cEmail), strings.TrimSpace(email))) ||
+			(uuid != "" && cId != "" && strings.EqualFold(strings.TrimSpace(cId), strings.TrimSpace(uuid))) {
+			c["flow"] = newFlow
+			modified = true
+		}
+	}
+	if modified {
+		newSettings, err := json.MarshalIndent(settings, "", "  ")
+		if err == nil {
+			inbound.Settings = string(newSettings)
+			return true
+		}
+	}
+	return false
+}
+
+// hotAddUserToInbound dynamically adds a client to a running inbound using Xray's HandlerService API.
+// Returns true if Xray needs to be restarted (e.g. wireguard or API error).
+func (s *NodeClientService) hotAddUserToInbound(xrayApi *xray.XrayAPI, inbound *model.Inbound, nc *model.NodeClient, flow string) bool {
+	if inbound.Protocol == model.WireGuard {
+		return true
+	}
+	if !nc.Enable {
+		return false
+	}
+	now := time.Now().Unix() * 1000
+	if nc.ExpiryTime > 0 && nc.ExpiryTime <= now {
+		return false
+	}
+	if nc.TotalGB > 0 {
+		db := database.GetDB()
+		var totalTraffic struct {
+			Up   int64
+			Down int64
+		}
+		_ = db.Table("client_traffics").
+			Select("COALESCE(MAX(up), 0) as up, COALESCE(MAX(down), 0) as down").
+			Where("node_client_id = ? OR email = ?", nc.Id, nc.Email).
+			Scan(&totalTraffic).Error
+		if (totalTraffic.Up + totalTraffic.Down) >= nc.TotalGB {
+			return false
+		}
+	}
+
+	cipher := ""
+	if inbound.Protocol == "shadowsocks" {
+		var settings map[string]interface{}
+		_ = json.Unmarshal([]byte(inbound.Settings), &settings)
+		if m, ok := settings["method"].(string); ok {
+			cipher = m
+		}
+	}
+
+	clientFlow := flow
+	if clientFlow == "" {
+		clientFlow = nc.Flow
+	}
+
+	err := xrayApi.AddUser(string(inbound.Protocol), inbound.Tag, map[string]interface{}{
+		"email":    nc.Email,
+		"id":       nc.UUID,
+		"auth":     nc.Auth,
+		"security": nc.Security,
+		"flow":     clientFlow,
+		"password": nc.Password,
+		"cipher":   cipher,
+	})
+	if err != nil {
+		if strings.Contains(err.Error(), "already exists") {
+			return false
+		}
+		logger.Warningf("hotAddUserToInbound: failed to add %s to %s: %v", nc.Email, inbound.Tag, err)
+		return true
+	}
+	return false
+}
+
+// hotRemoveUserFromInbound dynamically removes a client from a running inbound using Xray's HandlerService API.
+// Returns true if Xray needs to be restarted (e.g. wireguard or API error).
+func (s *NodeClientService) hotRemoveUserFromInbound(xrayApi *xray.XrayAPI, inbound *model.Inbound, email string) bool {
+	if inbound.Protocol == model.WireGuard {
+		return true
+	}
+	err := xrayApi.RemoveUser(inbound.Tag, email)
+	if err != nil {
+		if strings.Contains(err.Error(), fmt.Sprintf("User %s not found.", email)) ||
+			strings.Contains(err.Error(), "not found") {
+			return false
+		}
+		logger.Warningf("hotRemoveUserFromInbound: failed to remove %s from %s: %v", email, inbound.Tag, err)
+		return true
 	}
 	return false
 }
@@ -441,14 +733,33 @@ func (s *NodeClientService) deleteInTx(tx *gorm.DB, id int) error {
 // ---------------------------------------------------------------------------
 
 // BulkDelete wraps individual delete logic in a single transaction. If any
-// deletion fails, the entire operation is rolled back.
+// deletion fails, the entire operation is rolled back. Hot-removes users from
+// running inbounds via Xray API if active.
 // Requirements: 8.4
-func (s *NodeClientService) BulkDelete(ids []int) error {
+func (s *NodeClientService) BulkDelete(ids []int) (bool, error) {
 	if len(ids) == 0 {
-		return nil
+		return false, nil
 	}
 
 	db := database.GetDB()
+
+	type linkInfo struct {
+		inboundId int
+		email     string
+	}
+	var toRemove []linkInfo
+	for _, id := range ids {
+		var nc model.NodeClient
+		if err := db.First(&nc, id).Error; err == nil && nc.Email != "" {
+			var links []model.NodeClientLink
+			if err := db.Where("node_client_id = ?", id).Find(&links).Error; err == nil {
+				for _, l := range links {
+					toRemove = append(toRemove, linkInfo{inboundId: l.InboundId, email: nc.Email})
+				}
+			}
+		}
+	}
+
 	tx := db.Begin()
 	defer func() {
 		if r := recover(); r != nil {
@@ -459,16 +770,36 @@ func (s *NodeClientService) BulkDelete(ids []int) error {
 	for _, id := range ids {
 		if err := s.deleteInTx(tx, id); err != nil {
 			tx.Rollback()
-			return fmt.Errorf("bulk delete failed at id %d: %w", id, err)
+			return false, fmt.Errorf("bulk delete failed at id %d: %w", id, err)
 		}
 	}
 
 	if err := tx.Commit().Error; err != nil {
-		return err
+		return false, err
 	}
 
-	isNeedXrayRestart.Store(true)
-	return nil
+	needRestart := false
+	if p != nil && p.IsRunning() && len(toRemove) > 0 {
+		var xrayApi xray.XrayAPI
+		if err := xrayApi.Init(p.GetAPIPort()); err != nil {
+			needRestart = true
+		} else {
+			defer xrayApi.Close()
+			for _, item := range toRemove {
+				var inbound model.Inbound
+				if err := db.First(&inbound, item.inboundId).Error; err == nil {
+					if s.hotRemoveUserFromInbound(&xrayApi, &inbound, item.email) {
+						needRestart = true
+					}
+				}
+			}
+		}
+	}
+
+	if needRestart {
+		isNeedXrayRestart.Store(true)
+	}
+	return needRestart, nil
 }
 
 // ---------------------------------------------------------------------------
@@ -477,26 +808,33 @@ func (s *NodeClientService) BulkDelete(ids []int) error {
 
 // AddLink creates a NodeClientLink between the given node client and inbound.
 // It also ensures a ClientTraffic row exists for the (email, inboundId) pair
-// with NodeClientId set. Flags xray restart on success.
+// with NodeClientId set, and syncs settings JSON.
+// Dynamically adds user to running Xray via API without restarting Xray.
 // Requirements: 2.1, 2.2, 2.3, 4.1
-func (s *NodeClientService) AddLink(nodeClientId, inboundId int, flow string) error {
+func (s *NodeClientService) AddLink(nodeClientId, inboundId int, flow string) (bool, error) {
 	db := database.GetDB()
 
 	// 1. Fetch the NodeClient — error if not found.
 	nc := &model.NodeClient{}
 	if err := db.First(nc, nodeClientId).Error; err != nil {
-		return fmt.Errorf("node client not found (id=%d): %w", nodeClientId, err)
+		return false, fmt.Errorf("node client not found (id=%d): %w", nodeClientId, err)
 	}
 
-	// 2. Check for duplicate (nodeClientId, inboundId) pair.
+	// 2. Fetch the Inbound — error if not found.
+	var inbound model.Inbound
+	if err := db.First(&inbound, inboundId).Error; err != nil {
+		return false, fmt.Errorf("inbound not found (id=%d): %w", inboundId, err)
+	}
+
+	// 3. Check for duplicate (nodeClientId, inboundId) pair.
 	var linkCount int64
 	if err := db.Model(&model.NodeClientLink{}).
 		Where("node_client_id = ? AND inbound_id = ?", nodeClientId, inboundId).
 		Count(&linkCount).Error; err != nil {
-		return err
+		return false, err
 	}
 	if linkCount > 0 {
-		return fmt.Errorf("link already exists for node client %d and inbound %d", nodeClientId, inboundId)
+		return false, fmt.Errorf("link already exists for node client %d and inbound %d", nodeClientId, inboundId)
 	}
 
 	tx := db.Begin()
@@ -506,7 +844,7 @@ func (s *NodeClientService) AddLink(nodeClientId, inboundId int, flow string) er
 		}
 	}()
 
-	// 3. Create the NodeClientLink record.
+	// 4. Create the NodeClientLink record.
 	link := &model.NodeClientLink{
 		NodeClientId: nodeClientId,
 		InboundId:    inboundId,
@@ -514,21 +852,23 @@ func (s *NodeClientService) AddLink(nodeClientId, inboundId int, flow string) er
 	}
 	if err := tx.Create(link).Error; err != nil {
 		tx.Rollback()
-		return fmt.Errorf("creating node client link: %w", err)
+		return false, fmt.Errorf("creating node client link: %w", err)
 	}
 
-	// 4. Upsert the ClientTraffic row.
-	//    ClientTraffic is keyed by (email, inbound_id), so use FirstOrCreate on both.
-	//    If the row already exists, update NodeClientId; otherwise create it fresh.
+	// 5. Add to inbound.Settings if not already present.
+	if addClientToInboundSettings(&inbound, nc, flow) {
+		_ = tx.Model(&model.Inbound{}).Where("id = ?", inbound.Id).Update("settings", inbound.Settings).Error
+	}
+
+	// 6. Upsert the ClientTraffic row.
 	ct := &xray.ClientTraffic{}
 	result := tx.Where("email = ? AND inbound_id = ?", nc.Email, inboundId).First(ct)
 	if result.Error != nil && result.Error != gorm.ErrRecordNotFound {
 		tx.Rollback()
-		return fmt.Errorf("querying client traffic for email %s and inbound %d: %w", nc.Email, inboundId, result.Error)
+		return false, fmt.Errorf("querying client traffic for email %s and inbound %d: %w", nc.Email, inboundId, result.Error)
 	}
 
 	if result.Error == gorm.ErrRecordNotFound {
-		// Row does not exist — create it.
 		ct = &xray.ClientTraffic{
 			InboundId:    inboundId,
 			Email:        nc.Email,
@@ -542,11 +882,9 @@ func (s *NodeClientService) AddLink(nodeClientId, inboundId int, flow string) er
 		}
 		if err := tx.Create(ct).Error; err != nil {
 			tx.Rollback()
-			return fmt.Errorf("creating client traffic for email %s and inbound %d: %w", nc.Email, inboundId, err)
+			return false, fmt.Errorf("creating client traffic for email %s and inbound %d: %w", nc.Email, inboundId, err)
 		}
 	} else {
-		// Row exists — attach it and synchronize the node-client limits while
-		// preserving its accumulated upload and download counters.
 		if err := tx.Model(ct).Updates(map[string]interface{}{
 			"node_client_id": nodeClientId,
 			"total":          nc.TotalGB,
@@ -554,24 +892,40 @@ func (s *NodeClientService) AddLink(nodeClientId, inboundId int, flow string) er
 			"reset":          nc.Reset,
 		}).Error; err != nil {
 			tx.Rollback()
-			return fmt.Errorf("updating client traffic for email %s and inbound %d: %w", nc.Email, inboundId, err)
+			return false, fmt.Errorf("updating client traffic for email %s and inbound %d: %w", nc.Email, inboundId, err)
 		}
 	}
 
 	if err := tx.Commit().Error; err != nil {
-		return err
+		return false, err
 	}
 
-	// 5. Flag xray restart.
-	isNeedXrayRestart.Store(true)
-	return nil
+	// 7. Hot-add user via Xray API if Xray is running, same as AddInboundClient.
+	needRestart := false
+	if p != nil && p.IsRunning() {
+		var xrayApi xray.XrayAPI
+		if err := xrayApi.Init(p.GetAPIPort()); err != nil {
+			needRestart = true
+		} else {
+			defer xrayApi.Close()
+			if s.hotAddUserToInbound(&xrayApi, &inbound, nc, flow) {
+				needRestart = true
+			}
+		}
+	}
+
+	if needRestart {
+		isNeedXrayRestart.Store(true)
+	}
+	return needRestart, nil
 }
 
 // RemoveLink deletes the NodeClientLink for the given (nodeClientId, inboundId)
 // pair and NULL-outs node_client_id on the corresponding ClientTraffic row
-// (preserving the row for historical data). Flags xray restart on success.
+// (preserving the row for historical data), and strips from inbound.Settings.
+// Dynamically removes user from running Xray via API without restarting Xray.
 // Requirements: 2.5, 4.4
-func (s *NodeClientService) RemoveLink(nodeClientId, inboundId int) error {
+func (s *NodeClientService) RemoveLink(nodeClientId, inboundId int) (bool, error) {
 	db := database.GetDB()
 
 	// 1. Find the NodeClientLink.
@@ -579,15 +933,21 @@ func (s *NodeClientService) RemoveLink(nodeClientId, inboundId int) error {
 	if err := db.Where("node_client_id = ? AND inbound_id = ?", nodeClientId, inboundId).
 		First(link).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return fmt.Errorf("link not found for node client %d and inbound %d", nodeClientId, inboundId)
+			return false, fmt.Errorf("link not found for node client %d and inbound %d", nodeClientId, inboundId)
 		}
-		return err
+		return false, err
 	}
 
 	// 2. Fetch the NodeClient to get its email.
 	nc := &model.NodeClient{}
 	if err := db.First(nc, nodeClientId).Error; err != nil {
-		return fmt.Errorf("node client not found (id=%d): %w", nodeClientId, err)
+		return false, fmt.Errorf("node client not found (id=%d): %w", nodeClientId, err)
+	}
+
+	// 3. Fetch the Inbound.
+	var inbound model.Inbound
+	if err := db.First(&inbound, inboundId).Error; err != nil {
+		return false, fmt.Errorf("inbound not found (id=%d): %w", inboundId, err)
 	}
 
 	tx := db.Begin()
@@ -597,35 +957,47 @@ func (s *NodeClientService) RemoveLink(nodeClientId, inboundId int) error {
 		}
 	}()
 
-	// 3. Delete the NodeClientLink record.
+	// 4. Delete the NodeClientLink record.
 	if err := tx.Delete(link).Error; err != nil {
 		tx.Rollback()
-		return fmt.Errorf("deleting node client link: %w", err)
+		return false, fmt.Errorf("deleting node client link: %w", err)
 	}
 
-	// Remove from inbound.Settings for this specific inbound so MigrateLegacyClients won't resurrect the link.
-	var inbound model.Inbound
-	if err := tx.First(&inbound, inboundId).Error; err == nil {
-		if removeClientFromInboundSettings(&inbound, nc.Email, nc.UUID, nc.Password, nc.Auth) {
-			_ = tx.Model(&model.Inbound{}).Where("id = ?", inbound.Id).Update("settings", inbound.Settings).Error
-		}
+	// 5. Remove from inbound.Settings for this specific inbound so MigrateLegacyClients won't resurrect the link.
+	if removeClientFromInboundSettings(&inbound, nc.Email, nc.UUID, nc.Password, nc.Auth) {
+		_ = tx.Model(&model.Inbound{}).Where("id = ?", inbound.Id).Update("settings", inbound.Settings).Error
 	}
 
-	// 4. NULL-out node_client_id on the ClientTraffic row (preserve the row).
+	// 6. NULL-out node_client_id on the ClientTraffic row (preserve the row).
 	if err := tx.Model(&xray.ClientTraffic{}).
 		Where("email = ? AND node_client_id = ?", nc.Email, nodeClientId).
 		Update("node_client_id", nil).Error; err != nil {
 		tx.Rollback()
-		return fmt.Errorf("nulling node_client_id on client traffic for email %s: %w", nc.Email, err)
+		return false, fmt.Errorf("nulling node_client_id on client traffic for email %s: %w", nc.Email, err)
 	}
 
 	if err := tx.Commit().Error; err != nil {
-		return err
+		return false, err
 	}
 
-	// 5. Flag xray restart.
-	isNeedXrayRestart.Store(true)
-	return nil
+	// 7. Hot-remove user via Xray API if Xray is running, same as DelInboundClient.
+	needRestart := false
+	if p != nil && p.IsRunning() {
+		var xrayApi xray.XrayAPI
+		if err := xrayApi.Init(p.GetAPIPort()); err != nil {
+			needRestart = true
+		} else {
+			defer xrayApi.Close()
+			if s.hotRemoveUserFromInbound(&xrayApi, &inbound, nc.Email) {
+				needRestart = true
+			}
+		}
+	}
+
+	if needRestart {
+		isNeedXrayRestart.Store(true)
+	}
+	return needRestart, nil
 }
 
 // ---------------------------------------------------------------------------
@@ -694,8 +1066,7 @@ func (s *NodeClientService) GetAggregatedTraffic(nodeClientId int, txs ...*gorm.
 }
 
 // ResetTraffic zeros out Up and Down on all ClientTraffic rows for the given node client
-// inside a single transaction. Sets isNeedXrayRestart to true on success.
-// Returns (needsRestart=true, nil) on success.
+// inside a single transaction. Hot-adds the user to running Xray via API if re-enabled.
 // Requirements: 4.5, 6.3
 func (s *NodeClientService) ResetTraffic(nodeClientId int) (bool, error) {
 	db := database.GetDB()
@@ -709,10 +1080,12 @@ func (s *NodeClientService) ResetTraffic(nodeClientId int) (bool, error) {
 
 	updates := map[string]interface{}{"up": 0, "down": 0}
 	var nc model.NodeClient
+	reEnabled := false
 	if err := tx.First(&nc, nodeClientId).Error; err == nil {
 		now := time.Now().Unix() * 1000
 		if nc.Enable && (nc.ExpiryTime <= 0 || nc.ExpiryTime > now) {
 			updates["enable"] = true
+			reEnabled = true
 		}
 	}
 
@@ -727,8 +1100,33 @@ func (s *NodeClientService) ResetTraffic(nodeClientId int) (bool, error) {
 		return false, err
 	}
 
-	isNeedXrayRestart.Store(true)
-	return true, nil
+	needRestart := false
+	if reEnabled && p != nil && p.IsRunning() {
+		var xrayApi xray.XrayAPI
+		if err := xrayApi.Init(p.GetAPIPort()); err != nil {
+			needRestart = true
+		} else {
+			defer xrayApi.Close()
+			links, _ := s.GetLinks(nodeClientId)
+			for _, l := range links {
+				var inbound model.Inbound
+				if err := db.First(&inbound, l.InboundId).Error; err == nil {
+					flow := l.Flow
+					if flow == "" {
+						flow = nc.Flow
+					}
+					if s.hotAddUserToInbound(&xrayApi, &inbound, &nc, flow) {
+						needRestart = true
+					}
+				}
+			}
+		}
+	}
+
+	if needRestart {
+		isNeedXrayRestart.Store(true)
+	}
+	return needRestart, nil
 }
 
 // IsNodeClientEmail queries the node_clients table to determine whether the given
@@ -1122,11 +1520,12 @@ type NodeClientLinkInput struct {
 }
 
 // SetLinks replaces all links for a client with the provided list.
-func (s *NodeClientService) SetLinks(nodeClientId int, links []NodeClientLinkInput) error {
+// Dynamically adds and removes users from running Xray via API without restarting Xray.
+func (s *NodeClientService) SetLinks(nodeClientId int, links []NodeClientLinkInput) (bool, error) {
 	db := database.GetDB()
 	nc := &model.NodeClient{}
 	if err := db.First(nc, nodeClientId).Error; err != nil {
-		return fmt.Errorf("client not found (id=%d): %w", nodeClientId, err)
+		return false, fmt.Errorf("client not found (id=%d): %w", nodeClientId, err)
 	}
 
 	tx := db.Begin()
@@ -1139,7 +1538,7 @@ func (s *NodeClientService) SetLinks(nodeClientId int, links []NodeClientLinkInp
 	var currentLinks []model.NodeClientLink
 	if err := tx.Where("node_client_id = ?", nodeClientId).Find(&currentLinks).Error; err != nil {
 		tx.Rollback()
-		return err
+		return false, err
 	}
 
 	newInboundMap := make(map[int]string, len(links))
@@ -1147,12 +1546,17 @@ func (s *NodeClientService) SetLinks(nodeClientId int, links []NodeClientLinkInp
 		newInboundMap[l.InboundId] = l.Flow
 	}
 
+	var removedInboundIds []int
+	var addedLinks []NodeClientLinkInput
+	var updatedFlowLinks []NodeClientLinkInput
+
 	// Remove links not in new set
 	for _, cl := range currentLinks {
 		if _, keep := newInboundMap[cl.InboundId]; !keep {
+			removedInboundIds = append(removedInboundIds, cl.InboundId)
 			if err := tx.Delete(&cl).Error; err != nil {
 				tx.Rollback()
-				return err
+				return false, err
 			}
 			_ = tx.Model(&xray.ClientTraffic{}).
 				Where("LOWER(email) = LOWER(?) AND node_client_id = ? AND inbound_id = ?", nc.Email, nodeClientId, cl.InboundId).
@@ -1172,6 +1576,7 @@ func (s *NodeClientService) SetLinks(nodeClientId int, links []NodeClientLinkInp
 		var existing model.NodeClientLink
 		err := tx.Where("node_client_id = ? AND inbound_id = ?", nodeClientId, l.InboundId).First(&existing).Error
 		if err == gorm.ErrRecordNotFound {
+			addedLinks = append(addedLinks, l)
 			newLink := model.NodeClientLink{
 				NodeClientId: nodeClientId,
 				InboundId:    l.InboundId,
@@ -1179,7 +1584,14 @@ func (s *NodeClientService) SetLinks(nodeClientId int, links []NodeClientLinkInp
 			}
 			if err := tx.Create(&newLink).Error; err != nil {
 				tx.Rollback()
-				return err
+				return false, err
+			}
+
+			var inbound model.Inbound
+			if err := tx.First(&inbound, l.InboundId).Error; err == nil {
+				if addClientToInboundSettings(&inbound, nc, l.Flow) {
+					_ = tx.Model(&model.Inbound{}).Where("id = ?", inbound.Id).Update("settings", inbound.Settings).Error
+				}
 			}
 
 			var ct xray.ClientTraffic
@@ -1209,20 +1621,73 @@ func (s *NodeClientService) SetLinks(nodeClientId int, links []NodeClientLinkInp
 			if existing.Flow != l.Flow {
 				existing.Flow = l.Flow
 				_ = tx.Save(&existing).Error
+				updatedFlowLinks = append(updatedFlowLinks, l)
+
+				var inbound model.Inbound
+				if err := tx.First(&inbound, l.InboundId).Error; err == nil {
+					if updateClientFlowInInboundSettings(&inbound, nc.Email, nc.UUID, l.Flow) {
+						_ = tx.Model(&model.Inbound{}).Where("id = ?", inbound.Id).Update("settings", inbound.Settings).Error
+					}
+				}
 			}
 		}
 	}
 
 	if err := tx.Commit().Error; err != nil {
-		return err
+		return false, err
 	}
 
-	isNeedXrayRestart.Store(true)
-	return nil
+	// Hot-sync changes with running Xray
+	needRestart := false
+	if p != nil && p.IsRunning() {
+		var xrayApi xray.XrayAPI
+		if err := xrayApi.Init(p.GetAPIPort()); err != nil {
+			needRestart = true
+		} else {
+			defer xrayApi.Close()
+
+			// 1. Remove users from unlinked inbounds
+			for _, inId := range removedInboundIds {
+				var inbound model.Inbound
+				if err := db.First(&inbound, inId).Error; err == nil {
+					if s.hotRemoveUserFromInbound(&xrayApi, &inbound, nc.Email) {
+						needRestart = true
+					}
+				}
+			}
+
+			// 2. For updated flow links: remove and re-add with new flow
+			for _, l := range updatedFlowLinks {
+				var inbound model.Inbound
+				if err := db.First(&inbound, l.InboundId).Error; err == nil {
+					s.hotRemoveUserFromInbound(&xrayApi, &inbound, nc.Email)
+					if s.hotAddUserToInbound(&xrayApi, &inbound, nc, l.Flow) {
+						needRestart = true
+					}
+				}
+			}
+
+			// 3. For newly added links: add user
+			for _, l := range addedLinks {
+				var inbound model.Inbound
+				if err := db.First(&inbound, l.InboundId).Error; err == nil {
+					if s.hotAddUserToInbound(&xrayApi, &inbound, nc, l.Flow) {
+						needRestart = true
+					}
+				}
+			}
+		}
+	}
+
+	if needRestart {
+		isNeedXrayRestart.Store(true)
+	}
+	return needRestart, nil
 }
 
 // BulkCreate creates multiple clients and links each to the specified inbounds.
-func (s *NodeClientService) BulkCreate(clients []model.NodeClient, inboundIds []int) error {
+// Hot-adds users to running Xray via API without restarting Xray.
+func (s *NodeClientService) BulkCreate(clients []model.NodeClient, inboundIds []int) (bool, error) {
 	db := database.GetDB()
 	tx := db.Begin()
 	defer func() {
@@ -1235,16 +1700,16 @@ func (s *NodeClientService) BulkCreate(clients []model.NodeClient, inboundIds []
 		nc := &clients[i]
 		if err := s.checkEmailUnique(nc.Email, 0); err != nil {
 			tx.Rollback()
-			return err
+			return false, err
 		}
 		if err := s.checkSubIDUnique(nc.SubID, 0); err != nil {
 			tx.Rollback()
-			return err
+			return false, err
 		}
 
 		if err := tx.Create(nc).Error; err != nil {
 			tx.Rollback()
-			return err
+			return false, err
 		}
 
 		for _, inId := range inboundIds {
@@ -1255,7 +1720,14 @@ func (s *NodeClientService) BulkCreate(clients []model.NodeClient, inboundIds []
 			}
 			if err := tx.Create(&link).Error; err != nil {
 				tx.Rollback()
-				return err
+				return false, err
+			}
+
+			var inbound model.Inbound
+			if err := tx.First(&inbound, inId).Error; err == nil {
+				if addClientToInboundSettings(&inbound, nc, nc.Flow) {
+					_ = tx.Model(&model.Inbound{}).Where("id = ?", inbound.Id).Update("settings", inbound.Settings).Error
+				}
 			}
 
 			ct := xray.ClientTraffic{
@@ -1271,17 +1743,49 @@ func (s *NodeClientService) BulkCreate(clients []model.NodeClient, inboundIds []
 			}
 			if err := tx.Create(&ct).Error; err != nil {
 				tx.Rollback()
-				return err
+				return false, err
 			}
 		}
 	}
 
 	if err := tx.Commit().Error; err != nil {
-		return err
+		return false, err
 	}
 
-	isNeedXrayRestart.Store(true)
-	return nil
+	needRestart := false
+	if p != nil && p.IsRunning() && len(inboundIds) > 0 {
+		var xrayApi xray.XrayAPI
+		if err := xrayApi.Init(p.GetAPIPort()); err != nil {
+			needRestart = true
+		} else {
+			defer xrayApi.Close()
+			for _, inId := range inboundIds {
+				var inbound model.Inbound
+				if err := db.First(&inbound, inId).Error; err == nil {
+					for i := range clients {
+						if s.hotAddUserToInbound(&xrayApi, &inbound, &clients[i], clients[i].Flow) {
+							needRestart = true
+						}
+					}
+				}
+			}
+		}
+	}
+
+	if needRestart {
+		isNeedXrayRestart.Store(true)
+	}
+	return needRestart, nil
+}
+
+// Toggle toggles the enable flag of a NodeClient and hot-adds/removes it from Xray.
+func (s *NodeClientService) Toggle(id int) (bool, error) {
+	nc, err := s.GetByID(id)
+	if err != nil {
+		return false, err
+	}
+	nc.Enable = !nc.Enable
+	return s.Update(nc)
 }
 
 // ResetAllTraffics resets upload and download counters on all clients.
@@ -1328,7 +1832,8 @@ func (s *NodeClientService) DeleteDepleted() error {
 		}
 	}
 	if len(idsToDelete) > 0 {
-		return s.BulkDelete(idsToDelete)
+		_, err := s.BulkDelete(idsToDelete)
+		return err
 	}
 	return nil
 }

@@ -104,6 +104,7 @@ func (a *NodeClientController) create(c *gin.Context) {
 		return
 	}
 
+	needRestart := false
 	if len(req.InboundIds) > 0 {
 		links := make([]service.NodeClientLinkInput, len(req.InboundIds))
 		for i, inboundId := range req.InboundIds {
@@ -112,10 +113,12 @@ func (a *NodeClientController) create(c *gin.Context) {
 				Flow:      nc.Flow,
 			}
 		}
-		_ = a.nodeClientService.SetLinks(nc.Id, links)
+		needRestart, _ = a.nodeClientService.SetLinks(nc.Id, links)
 	}
 
-	a.xrayService.SetToNeedRestart()
+	if needRestart {
+		a.xrayService.SetToNeedRestart()
+	}
 	jsonMsg(c, "Client created", nil)
 }
 
@@ -149,13 +152,15 @@ func (a *NodeClientController) bulkCreate(c *gin.Context) {
 		}
 	}
 
-	err := a.nodeClientService.BulkCreate(req.Clients, req.InboundIds)
+	needRestart, err := a.nodeClientService.BulkCreate(req.Clients, req.InboundIds)
 	if err != nil {
 		jsonMsg(c, "Bulk create failed: "+err.Error(), err)
 		return
 	}
 
-	a.xrayService.SetToNeedRestart()
+	if needRestart {
+		a.xrayService.SetToNeedRestart()
+	}
 	jsonMsg(c, fmt.Sprintf("Successfully created %d clients", len(req.Clients)), nil)
 }
 
@@ -184,13 +189,15 @@ func (a *NodeClientController) setLinks(c *gin.Context) {
 		}
 	}
 
-	err = a.nodeClientService.SetLinks(id, req.Links)
+	needRestart, err := a.nodeClientService.SetLinks(id, req.Links)
 	if err != nil {
 		jsonMsg(c, "Failed to set links: "+err.Error(), err)
 		return
 	}
 
-	a.xrayService.SetToNeedRestart()
+	if needRestart {
+		a.xrayService.SetToNeedRestart()
+	}
 	jsonMsg(c, "Links updated", nil)
 }
 
@@ -260,7 +267,7 @@ func (a *NodeClientController) update(c *gin.Context) {
 	}
 	req.NodeClient.Id = id
 
-	err = a.nodeClientService.Update(&req.NodeClient)
+	needRestart, err := a.nodeClientService.Update(&req.NodeClient)
 	if err != nil {
 		jsonMsg(c, "Failed to update node client: "+err.Error(), err)
 		return
@@ -274,12 +281,18 @@ func (a *NodeClientController) update(c *gin.Context) {
 				Flow:      req.NodeClient.Flow,
 			}
 		}
-		if err := a.nodeClientService.SetLinks(id, links); err != nil {
-			logger.Warningf("Failed to update links for client %d: %v", id, err)
+		linkRestart, errLink := a.nodeClientService.SetLinks(id, links)
+		if errLink != nil {
+			logger.Warningf("Failed to update links for client %d: %v", id, errLink)
+		}
+		if linkRestart {
+			needRestart = true
 		}
 	}
 
-	a.xrayService.SetToNeedRestart()
+	if needRestart {
+		a.xrayService.SetToNeedRestart()
+	}
 	jsonMsg(c, "Node client updated", nil)
 }
 
@@ -290,13 +303,15 @@ func (a *NodeClientController) del(c *gin.Context) {
 		return
 	}
 
-	err = a.nodeClientService.Delete(id)
+	needRestart, err := a.nodeClientService.Delete(id)
 	if err != nil {
 		jsonMsg(c, "Failed to delete node client", err)
 		return
 	}
 
-	a.xrayService.SetToNeedRestart()
+	if needRestart {
+		a.xrayService.SetToNeedRestart()
+	}
 	jsonMsg(c, "Node client deleted", nil)
 }
 
@@ -330,13 +345,15 @@ func (a *NodeClientController) bulkDel(c *gin.Context) {
 		return
 	}
 
-	err := a.nodeClientService.BulkDelete(req.Ids)
+	needRestart, err := a.nodeClientService.BulkDelete(req.Ids)
 	if err != nil {
 		jsonMsg(c, "Bulk delete failed: "+err.Error(), err)
 		return
 	}
 
-	a.xrayService.SetToNeedRestart()
+	if needRestart {
+		a.xrayService.SetToNeedRestart()
+	}
 	jsonMsg(c, "Node clients deleted", nil)
 }
 
@@ -373,13 +390,15 @@ func (a *NodeClientController) addLink(c *gin.Context) {
 		return
 	}
 
-	err = a.nodeClientService.AddLink(id, req.InboundId, req.Flow)
+	needRestart, err := a.nodeClientService.AddLink(id, req.InboundId, req.Flow)
 	if err != nil {
 		jsonMsg(c, "Failed to add link", err)
 		return
 	}
 
-	a.xrayService.SetToNeedRestart()
+	if needRestart {
+		a.xrayService.SetToNeedRestart()
+	}
 	jsonMsg(c, "Link added", nil)
 }
 
@@ -396,13 +415,15 @@ func (a *NodeClientController) removeLink(c *gin.Context) {
 		return
 	}
 
-	err = a.nodeClientService.RemoveLink(id, inboundId)
+	needRestart, err := a.nodeClientService.RemoveLink(id, inboundId)
 	if err != nil {
 		jsonMsg(c, "Failed to remove link", err)
 		return
 	}
 
-	a.xrayService.SetToNeedRestart()
+	if needRestart {
+		a.xrayService.SetToNeedRestart()
+	}
 	jsonMsg(c, "Link removed", nil)
 }
 
@@ -447,21 +468,14 @@ func (a *NodeClientController) toggle(c *gin.Context) {
 		return
 	}
 
-	nc, err := a.nodeClientService.GetByID(id)
-	if err != nil {
-		jsonMsg(c, "Node client not found", err)
-		c.Status(http.StatusNotFound)
-		return
-	}
-
-	nc.Enable = !nc.Enable
-
-	err = a.nodeClientService.Update(nc)
+	needRestart, err := a.nodeClientService.Toggle(id)
 	if err != nil {
 		jsonMsg(c, "Failed to toggle node client", err)
 		return
 	}
 
-	a.xrayService.SetToNeedRestart()
+	if needRestart {
+		a.xrayService.SetToNeedRestart()
+	}
 	jsonMsg(c, "Node client toggled", nil)
 }

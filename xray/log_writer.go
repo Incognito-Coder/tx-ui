@@ -8,6 +8,11 @@ import (
 	"x-ui/internal/logger"
 )
 
+var (
+	crashRegex = regexp.MustCompile(`(?i)(panic|exception|stack trace|fatal error)`)
+	logRegex   = regexp.MustCompile(`^(\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2}\.\d{6}) \[([^\]]+)\] (.+)$`)
+)
+
 func NewLogWriter() *LogWriter {
 	return &LogWriter{}
 }
@@ -17,8 +22,6 @@ type LogWriter struct {
 }
 
 func (lw *LogWriter) Write(m []byte) (n int, err error) {
-	crashRegex := regexp.MustCompile(`(?i)(panic|exception|stack trace|fatal error)`)
-
 	// Convert the data to a string
 	message := strings.TrimSpace(string(m))
 	msgLowerAll := strings.ToLower(message)
@@ -39,11 +42,11 @@ func (lw *LogWriter) Write(m []byte) (n int, err error) {
 		return len(m), nil
 	}
 
-	regex := regexp.MustCompile(`^(\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2}\.\d{6}) \[([^\]]+)\] (.+)$`)
+	isDebug := logger.IsDebug()
 	messages := strings.SplitSeq(message, "\n")
 
 	for msg := range messages {
-		matches := regex.FindStringSubmatch(msg)
+		matches := logRegex.FindStringSubmatch(msg)
 
 		if len(matches) > 3 {
 			level := matches[2]
@@ -52,7 +55,9 @@ func (lw *LogWriter) Write(m []byte) (n int, err error) {
 
 			if strings.Contains(msgBodyLower, "tls handshake error") ||
 				strings.Contains(msgBodyLower, "connection ends") {
-				logger.Debug("XRAY: " + msgBody)
+				if isDebug {
+					logger.Debug("XRAY: " + msgBody)
+				}
 				lw.lastLine = ""
 				continue
 			}
@@ -62,7 +67,9 @@ func (lw *LogWriter) Write(m []byte) (n int, err error) {
 			} else {
 				switch level {
 				case "Debug":
-					logger.Debug("XRAY: " + msgBody)
+					if isDebug {
+						logger.Debug("XRAY: " + msgBody)
+					}
 				case "Info":
 					logger.Info("XRAY: " + msgBody)
 				case "Warning":
@@ -70,7 +77,9 @@ func (lw *LogWriter) Write(m []byte) (n int, err error) {
 				case "Error":
 					logger.Error("XRAY: " + msgBody)
 				default:
-					logger.Debug("XRAY: " + msg)
+					if isDebug {
+						logger.Debug("XRAY: " + msg)
+					}
 				}
 			}
 			lw.lastLine = ""
@@ -79,7 +88,9 @@ func (lw *LogWriter) Write(m []byte) (n int, err error) {
 
 			if strings.Contains(msgLower, "tls handshake error") ||
 				strings.Contains(msgLower, "connection ends") {
-				logger.Debug("XRAY: " + msg)
+				if isDebug {
+					logger.Debug("XRAY: " + msg)
+				}
 				lw.lastLine = msg
 				continue
 			}
@@ -87,7 +98,9 @@ func (lw *LogWriter) Write(m []byte) (n int, err error) {
 			if strings.Contains(msgLower, "failed") {
 				logger.Error("XRAY: " + msg)
 			} else {
-				logger.Debug("XRAY: " + msg)
+				if isDebug {
+					logger.Debug("XRAY: " + msg)
+				}
 			}
 			lw.lastLine = msg
 		}

@@ -758,12 +758,12 @@ func (s *InboundService) removeNodeClientForInbound(db *gorm.DB, email string, i
 
 	if linkCount <= 1 {
 		// Only this inbound linked — delete the whole NodeClient (cascades links + nulls traffics).
-		if err := s.nodeClientService.Delete(nc.Id); err != nil {
+		if _, err := s.nodeClientService.Delete(nc.Id); err != nil {
 			logger.Warningf("removeNodeClientForInbound: failed to delete NodeClient %d: %v", nc.Id, err)
 		}
 	} else {
 		// Still linked to other inbounds — only remove this specific link.
-		if err := s.nodeClientService.RemoveLink(nc.Id, inboundId); err != nil {
+		if _, err := s.nodeClientService.RemoveLink(nc.Id, inboundId); err != nil {
 			logger.Warningf("removeNodeClientForInbound: failed to remove link for NodeClient %d, inbound %d: %v", nc.Id, inboundId, err)
 		}
 	}
