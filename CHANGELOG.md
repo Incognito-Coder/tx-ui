@@ -7,6 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v0.8.7] - 2026-10-03
+
+### 🚀 Features & Enhancements
+- **Client Traffic Reset in Edit Modals**:
+  - Added a direct "Reset Traffic" action button and real-time upload/download usage indicators inside the Client Edit Modal (both Node Clients `/panel/clients` and Inbound Clients modal `/panel/inbounds`).
+  - Resets usage (`up = 0`, `down = 0`) reactively in both the database and UI without requiring a full page refresh.
+  - Automatically re-enables the client across both `NodeClient` and `ClientTraffic` records when reset (provided the client is not expired), preventing background jobs from immediately re-exhausting the client.
+  - Robustly matches traffic records by both `node_client_id` and email, ensuring legacy records with NULL IDs are properly reset.
+- **Subscription JSON URL in Client Info**:
+  - Added Sub JSON URL row (`subJsonURI + subId`) with a one-click copy button to the Client Details modal (`detailModal`) alongside standard subscription links.
+
+### 🐛 Bug Fixes & Stability
+- **Zero-Downtime Client Expiration & Quota Management**:
+  - Revoke expired and traffic-exhausted clients in-memory dynamically via the Xray `AlterInbound` `RemoveUser` API rather than performing a full core restart.
+  - Removed disruptive `needRestart` triggers in `disableInvalidClients` and `DisableExhausted`, preventing disconnection of active connected users when other users expire or exceed data caps.
+  - Replaced immediate hard restarts in `XrayTrafficJob` with graceful conditional restarts only when dealing with protocols that do not support dynamic user alteration (e.g., WireGuard).
+- **Client Renewal & Expiration Synchronization**:
+  - Fixed client renewal via API keeping old expiration timestamps: `NodeClientController.update` now merges partial updates and handles snake_case JSON keys (`expiry_time`, `total_gb`).
+  - Bidirectionally synchronized `expiry_time`, `total_gb`, `enable`, and `reset` between `node_clients`, `client_traffics`, and inbound settings JSON during client updates and renewals.
+  - Synchronized group traffic calculations and auto-renew jobs (`autoRenewClients` and `NodeClientService.AutoRenew`) to update `node_clients` alongside `client_traffics`.
+- **Dynamic Client Provisioning & Inbound Sync**:
+  - Dynamically add and remove clients on active inbounds via Xray API without service interruption.
+  - Synchronized `inbounds.settings` JSON with `node_client_links` to prevent resurrection or migration inconsistencies upon restart.
+- **Modal Stepper Input Fix**:
+  - Fixed numeric stepper `<a-input-number>` controls across all client and inbound modals (`clients.html`, `client_modal.html`, `client_bulk_modal.html`, `form/client.html`, `form/inbound.html`) where clicking the up/down arrows failed to increment or decrement Total GB flow.
+
+### ⚡ Performance & Database Optimization
+- **SQLite Concurrency & Lock Prevention**:
+  - Enabled SQLite Write-Ahead Logging (`PRAGMA journal_mode = WAL;`), increased `busy_timeout` to 10 seconds (`10000ms`), and set `PRAGMA synchronous = NORMAL;` to eliminate `database is locked` / `database is busy` errors under concurrent operations.
+  - Configured Go database connection pool (`SetMaxOpenConns(25)`, `SetMaxIdleConns(5)`, `SetConnMaxLifetime(time.Hour)`) to avoid transaction deadlocks while maximizing read throughput.
+- **Logging & Core Performance**:
+  - Optimized internal logger with early-return short-circuits on non-debug levels, thread-safe buffering, and precompiled regexes in log writers to minimize CPU and allocation overhead.
+
+### 🎨 UI & Mobile Polish
+- **Mobile Long Link Text Wrapping**:
+  - Added robust word wrapping (`word-break: break-all; overflow-wrap: anywhere; white-space: normal`) for long subscription, Sub JSON, and configuration URLs in Client Info (`clients.html`) and Inbound Info (`inbound_info_modal.html`) modals to prevent text overflow on mobile screens.
+- **Inbounds Page Simplification**:
+  - Cleaned up Inbounds management page (`inbounds.html`) by removing the redundant filter switch and radio controls, maintaining a cleaner search bar interface.
+
+---
+
 ## [v0.8.6] - 2026-10-01
 
 ### 🚀 Features & Enhancements
