@@ -1315,7 +1315,9 @@
                                         <a-icon type="question-circle"></a-icon>
                                     </a-tooltip>
                                 </template>
-                                <a-input-number :min="0" :step="1" v-model="clientModal.client._totalGB"></a-input-number>
+                                <a-input-number :min="0" :step="1" :precision="2"
+                                                :value="clientModal.client._totalGB"
+                                                @change="v => clientModal.client._totalGB = (v == null ? 0 : v)"></a-input-number>
                             </a-form-item>
 
                             <a-form-item label='{{ i18n "pages.client.delayedStart" }}'>

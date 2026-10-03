@@ -2042,19 +2042,17 @@ func (s *InboundService) disableInvalidClients(tx *gorm.DB) (bool, int64, error)
 	if err != nil {
 		return needRestart, count, err
 	}
-	if count > 0 {
-		// Removing credentials via API prevents new authentication, but Xray does not
-		// terminate a user's existing established connections. Restart the core
-		// immediately so an exhausted client cannot keep transferring extra data.
-		needRestart = true
-	}
+	// NOTE: We do NOT set needRestart here when count > 0. Clients were
+	// already removed from Xray's in-memory state via the AlterInbound
+	// RemoveUser API above (zero-downtime). A full core restart would
+	// unnecessarily drop ALL active users' connections.
 
-	// Disable exhausted/expired NodeClients
-	ncChanged, err := s.nodeClientService.DisableExhausted(tx)
+	// Disable exhausted/expired NodeClients via hot API removal (no restart needed).
+	// DisableExhausted calls hotRemoveUserFromInbound internally, so users are
+	// already removed from Xray's in-memory state without a full core restart.
+	_, err = s.nodeClientService.DisableExhausted(tx)
 	if err != nil {
 		logger.Warning("Error in disabling exhausted node clients:", err)
-	} else if ncChanged {
-		needRestart = true
 	}
 
 	return needRestart, count, err

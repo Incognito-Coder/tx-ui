@@ -32,10 +32,11 @@ func (j *XrayTrafficJob) Run() {
 		logger.Warning("add outbound traffic failed:", err)
 	}
 	if needRestart0 || needRestart1 {
-		logger.Info("Restarting Xray immediately to disconnect exhausted or expired clients")
-		if err := j.xrayService.RestartXray(true); err != nil {
-			logger.Error("Failed to restart Xray immediately:", err)
-			j.xrayService.SetToNeedRestart()
-		}
+		// Expired/exhausted clients are removed from Xray in-memory via the
+		// AlterInbound RemoveUser API (zero-downtime). A full core restart is
+		// only scheduled here as a fallback for protocols that do not support
+		// hot user removal (e.g. WireGuard) or when the API call failed.
+		logger.Info("Traffic check detected client change; scheduling graceful restart if needed")
+		j.xrayService.SetToNeedRestart()
 	}
 }

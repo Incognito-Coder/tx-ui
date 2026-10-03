@@ -19,9 +19,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added Sub JSON URL row (`subJsonURI + subId`) with a one-click copy button to the Client Details modal (`detailModal`) alongside standard subscription links.
 
 ### 🐛 Bug Fixes & Stability
-- **Active Connection Termination on Quota Exhaustion & Expiry**:
-  - Re-enabled immediate core restart upon client quota exhaustion and expiration. Because Xray-core's `AlterInbound` `RemoveUser` API only blocks new authentication and cannot force-terminate established TCP/WS/gRPC proxy sessions, an immediate core restart is required to sever active connections and prevent clients from consuming excess data.
-- **Client Renewal & Expiration Synchronization**:
+- **Zero-Downtime Client Expiration & Quota Management (Hot Reload)**:
+  - Restored zero-downtime approach for expired and traffic-exhausted clients: users are removed from Xray's in-memory state via the `AlterInbound` `RemoveUser` API without triggering a full core restart.
+  - Other active users' established TCP/WS/gRPC connections are no longer dropped when a peer client expires or exhausts their quota.
+  - A graceful restart is only scheduled as a fallback when the API call itself fails (e.g., for WireGuard which does not support hot user removal).
+  - `DisableExhausted` on NodeClients also uses hot API removal internally — no restart needed there either.
+- **Total Flow GB Stepper Fix**:
+  - Fixed `<a-input-number>` stepper for the Total Flow (GB) field in client modals (`form/client.html`, `clients.html`). The up/down arrows and typed input now correctly update the underlying `totalGB` value.
+  - Root cause: Vue 2 does not observe prototype getter/setter pairs (`_totalGB`) reactively through `v-model`; replaced with explicit `:value` + `@change` binding and added `:precision="2"` for proper decimal GB support.
   - Fixed client renewal via API keeping old expiration timestamps: `NodeClientController.update` now merges partial updates and handles snake_case JSON keys (`expiry_time`, `total_gb`).
   - Bidirectionally synchronized `expiry_time`, `total_gb`, `enable`, and `reset` between `node_clients`, `client_traffics`, and inbound settings JSON during client updates and renewals.
   - Synchronized group traffic calculations and auto-renew jobs (`autoRenewClients` and `NodeClientService.AutoRenew`) to update `node_clients` alongside `client_traffics`.
