@@ -28,6 +28,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Deduplicated total client counts and status popovers in `inbounds.html` (`total.clients`, `total.deactive`, `total.depleted`, `total.expiring`) to prevent clients linked to multiple inbounds from being counted multiple times in top summary metrics.
 - **Log Viewer Debug Level Formatting**:
   - Fixed log level trimming and case conversion in `logger.GetLogs` and corrected `levelIndex` lookup in `logModal.formatLogs` (`index.html`) so `DEBUG` logs display with proper formatting in the panel log viewer.
+- **CommonClass toHeaders TypeError Fix**:
+  - Added missing `toHeaders` and `toV2Headers` static helper methods to `CommonClass` in `outbound.js`, resolving runtime `TypeError: CommonClass.toHeaders is not a function` when parsing stream settings (such as Masque headers).
 - **Total Flow GB Stepper Fix**:
   - Fixed `<a-input-number>` stepper for the Total Flow (GB) field in client modals (`form/client.html`, `clients.html`). The up/down arrows and typed input now correctly update the underlying `totalGB` value.
   - Root cause: Vue 2 does not observe prototype getter/setter pairs (`_totalGB`) reactively through `v-model`; replaced with explicit `:value` + `@change` binding and added `:precision="2"` for proper decimal GB support.
