@@ -17,8 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Robustly matches traffic records by both `node_client_id` and email, ensuring legacy records with NULL IDs are properly reset.
 - **Subscription JSON URL in Client Info**:
   - Added Sub JSON URL row (`subJsonURI + subId`) with a one-click copy button to the Client Details modal (`detailModal`) alongside standard subscription links.
-- **Outbound Duplicate Protocols & Configuration**:
-  - Added display and validation support for duplicate protocols and outbound settings across outbound configurations.
+- **Outbound Modal Protocol Dropdown Duplicate Fix**:
+  - Defined uppercase alias keys (`VMESS`, `TROJAN`, `SHADOWSOCKS`, `WIREGUARD`, `HYSTERIA`, `MASQUE`) as non-enumerable properties on `Protocols` in `outbound.js`, preventing duplicate uppercase items (e.g. `Trojan` and `TROJAN`) from displaying in the Outbound modal protocol dropdown selector.
 
 ### 🐛 Bug Fixes & Stability
 - **Immediate Core Restart on Traffic Limit Exhaustion**:

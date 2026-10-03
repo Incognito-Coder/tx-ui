@@ -3,21 +3,32 @@ const Protocols = {
     Blackhole: "blackhole",
     DNS: "dns",
     VMess: "vmess",
-    VMESS: "vmess",
     VLESS: "vless",
     Trojan: "trojan",
-    TROJAN: "trojan",
     Shadowsocks: "shadowsocks",
-    SHADOWSOCKS: "shadowsocks",
     Socks: "socks",
     HTTP: "http",
     Wireguard: "wireguard",
-    WIREGUARD: "wireguard",
     Hysteria: "hysteria",
-    HYSTERIA: "hysteria",
     Masque: "masque",
-    MASQUE: "masque",
 };
+
+// Define alias properties non-enumerable so dropdowns do not display duplicate protocol entries
+[
+    ["VMESS", "vmess"],
+    ["TROJAN", "trojan"],
+    ["SHADOWSOCKS", "shadowsocks"],
+    ["WIREGUARD", "wireguard"],
+    ["HYSTERIA", "hysteria"],
+    ["MASQUE", "masque"]
+].forEach(([key, val]) => {
+    Object.defineProperty(Protocols, key, {
+        value: val,
+        enumerable: false,
+        writable: true,
+        configurable: true
+    });
+});
 
 const SSMethods = {
     AES_256_GCM: 'aes-256-gcm',
