@@ -19,11 +19,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added Sub JSON URL row (`subJsonURI + subId`) with a one-click copy button to the Client Details modal (`detailModal`) alongside standard subscription links.
 
 ### 🐛 Bug Fixes & Stability
-- **Zero-Downtime Client Expiration & Quota Management (Hot Reload)**:
-  - Restored zero-downtime approach for expired and traffic-exhausted clients: users are removed from Xray's in-memory state via the `AlterInbound` `RemoveUser` API without triggering a full core restart.
-  - Other active users' established TCP/WS/gRPC connections are no longer dropped when a peer client expires or exhausts their quota.
-  - A graceful restart is only scheduled as a fallback when the API call itself fails (e.g., for WireGuard which does not support hot user removal).
-  - `DisableExhausted` on NodeClients also uses hot API removal internally — no restart needed there either.
+- **Immediate Core Restart on Traffic Limit Exhaustion**:
+  - Restored immediate Xray core process restart (`RestartXray(true)`) upon client quota or expiration limit detection in traffic collection jobs (`XrayTrafficJob`), ensuring active TCP/WebSocket/gRPC connections for exhausted clients are terminated immediately.
+- **Inbound Deletion Link Cleanup & Stale Link Removal**:
+  - Fixed orphaned links remaining when deleting an inbound: `DelInbound` now automatically cleans up all associated `node_client_links` and removes orphaned `node_clients` with zero remaining links.
+  - Joined `inbounds` table in `GetAllWithDetails`, `GetLinks`, and `GetLinkedInboundsCounts` to filter out links pointing to non-existent inbounds, and updated client modal link selection logic.
+- **Client Count Deduplication**:
+  - Deduplicated total client counts and status popovers in `inbounds.html` (`total.clients`, `total.deactive`, `total.depleted`, `total.expiring`) to prevent clients linked to multiple inbounds from being counted multiple times in top summary metrics.
+- **Log Viewer Debug Level Formatting**:
+  - Fixed log level trimming and case conversion in `logger.GetLogs` and corrected `levelIndex` lookup in `logModal.formatLogs` (`index.html`) so `DEBUG` logs display with proper formatting in the panel log viewer.
 - **Total Flow GB Stepper Fix**:
   - Fixed `<a-input-number>` stepper for the Total Flow (GB) field in client modals (`form/client.html`, `clients.html`). The up/down arrows and typed input now correctly update the underlying `totalGB` value.
   - Root cause: Vue 2 does not observe prototype getter/setter pairs (`_totalGB`) reactively through `v-model`; replaced with explicit `:value` + `@change` binding and added `:precision="2"` for proper decimal GB support.
