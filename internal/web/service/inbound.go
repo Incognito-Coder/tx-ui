@@ -394,7 +394,14 @@ func (s *InboundService) DelInbound(id int) (bool, error) {
 		if err != nil {
 			return false, err
 		}
+		s.removeNodeClientForInbound(db, client.Email, id)
 	}
+
+	// Remove all remaining NodeClientLink rows associated with this inbound
+	db.Where("inbound_id = ?", id).Delete(&model.NodeClientLink{})
+
+	// Clean up any orphaned NodeClients that have zero remaining links
+	db.Exec("DELETE FROM node_clients WHERE id NOT IN (SELECT DISTINCT node_client_id FROM node_client_links)")
 
 	return needRestart, db.Delete(model.Inbound{}, id).Error
 }
@@ -1483,31 +1490,26 @@ func (s *InboundService) addClientTraffic(tx *gorm.DB, traffics []*xray.ClientTr
 		return err
 	}
 
-	emailToIndex := make(map[string]int, len(dbClientTraffics))
+	emailToIndices := make(map[string][]int, len(dbClientTraffics))
 	for index, dbTraffic := range dbClientTraffics {
 		if dbTraffic.Email == "" {
 			continue
 		}
-		existingIndex, ok := emailToIndex[dbTraffic.Email]
-		if !ok {
-			emailToIndex[dbTraffic.Email] = index
-			continue
-		}
-		if dbClientTraffics[existingIndex].NodeClientId == nil && dbTraffic.NodeClientId != nil {
-			emailToIndex[dbTraffic.Email] = index
-		}
+		emailToIndices[dbTraffic.Email] = append(emailToIndices[dbTraffic.Email], index)
 	}
 
 	for _, traffic := range traffics {
 		if traffic.Email == "" {
 			continue
 		}
-		index, ok := emailToIndex[traffic.Email]
+		indices, ok := emailToIndices[traffic.Email]
 		if !ok {
 			continue
 		}
-		dbClientTraffics[index].Up += traffic.Up
-		dbClientTraffics[index].Down += traffic.Down
+		for _, index := range indices {
+			dbClientTraffics[index].Up += traffic.Up
+			dbClientTraffics[index].Down += traffic.Down
+		}
 
 		if traffic.Up+traffic.Down > 0 {
 			onlineClientsSet[traffic.Email] = struct{}{}
@@ -2003,29 +2005,33 @@ func (s *InboundService) disableInvalidClients(tx *gorm.DB) (bool, int64, error)
 	now := time.Now().Unix() * 1000
 	needRestart := false
 
-	if p != nil {
-		var results []struct {
-			Tag   string
-			Email string
-		}
+	var results []struct {
+		Tag   string
+		Email string
+	}
 
-		err := tx.Table("inbounds").
-			Select("inbounds.tag, client_traffics.email").
-			Joins("JOIN client_traffics ON inbounds.id = client_traffics.inbound_id").
-			Where("((client_traffics.total > 0 AND client_traffics.up + client_traffics.down >= client_traffics.total) OR (client_traffics.expiry_time > 0 AND client_traffics.expiry_time <= ?)) AND client_traffics.enable = ?", now, true).
-			Scan(&results).Error
-		if err != nil {
-			return false, 0, err
-		}
+	err := tx.Table("inbounds").
+		Select("inbounds.tag, client_traffics.email").
+		Joins("JOIN client_traffics ON inbounds.id = client_traffics.inbound_id").
+		Where("((client_traffics.total > 0 AND client_traffics.up + client_traffics.down >= client_traffics.total) OR (client_traffics.expiry_time > 0 AND client_traffics.expiry_time <= ?)) AND client_traffics.enable = ?", now, true).
+		Scan(&results).Error
+	if err != nil {
+		return false, 0, err
+	}
+
+	tagsToReload := make(map[string]bool)
+	if p != nil && p.IsRunning() && len(results) > 0 {
 		s.xrayApi.Init(p.GetAPIPort())
 		for _, result := range results {
 			err1 := s.xrayApi.RemoveUser(result.Tag, result.Email)
 			if err1 == nil {
 				logger.Debug("Client disabled by api:", result.Email)
+				tagsToReload[result.Tag] = true
 			} else {
 				if strings.Contains(err1.Error(), fmt.Sprintf("User %s not found.", result.Email)) ||
 					strings.Contains(err1.Error(), "not found") {
 					logger.Debug("User is already disabled. Nothing to do more...")
+					tagsToReload[result.Tag] = true
 				} else {
 					logger.Debug("Error in disabling client by api:", err1)
 					needRestart = true
@@ -2034,28 +2040,416 @@ func (s *InboundService) disableInvalidClients(tx *gorm.DB) (bool, int64, error)
 		}
 		s.xrayApi.Close()
 	}
+
 	result := tx.Model(xray.ClientTraffic{}).
 		Where("((total > 0 and up + down >= total) or (expiry_time > 0 and expiry_time <= ?)) and enable = ?", now, true).
 		Update("enable", false)
-	err := result.Error
+	err = result.Error
 	count := result.RowsAffected
-	if err != nil {
-		return needRestart, count, err
+	if count > 0 {
+		// Removing credentials prevents new authentication, but Xray does not
+		// expose an API for closing this user's existing connections. Restart the
+		// core immediately so an exhausted client cannot keep transferring data.
+		needRestart = true
 	}
-	// NOTE: We do NOT set needRestart here when count > 0. Clients were
-	// already removed from Xray's in-memory state via the AlterInbound
-	// RemoveUser API above (zero-downtime). A full core restart would
-	// unnecessarily drop ALL active users' connections.
 
-	// Disable exhausted/expired NodeClients via hot API removal (no restart needed).
-	// DisableExhausted calls hotRemoveUserFromInbound internally, so users are
-	// already removed from Xray's in-memory state without a full core restart.
-	_, err = s.nodeClientService.DisableExhausted(tx)
+	// Disable exhausted/expired NodeClients
+	ncChanged, err := s.nodeClientService.DisableExhausted(tx)
 	if err != nil {
 		logger.Warning("Error in disabling exhausted node clients:", err)
 	}
+	if ncChanged {
+		needRestart = true
+	}
 
 	return needRestart, count, err
+}
+
+func (s *InboundService) HotReloadInboundByTag(tag string, txs ...*gorm.DB) error {
+	if p == nil || !p.IsRunning() {
+		return nil
+	}
+	db := database.GetDB()
+	if len(txs) > 0 && txs[0] != nil {
+		db = txs[0]
+	}
+	var inbound model.Inbound
+	if err := db.Where("tag = ?", tag).First(&inbound).Error; err != nil {
+		return err
+	}
+
+	s.xrayApi.Init(p.GetAPIPort())
+	defer s.xrayApi.Close()
+
+	if !inbound.Enable {
+		return s.xrayApi.DelInbound(tag)
+	}
+
+	inboundConfig, err := s.BuildInboundConfig(&inbound, txs...)
+	if err != nil {
+		return err
+	}
+	inboundJson, err := json.MarshalIndent(inboundConfig, "", "  ")
+	if err != nil {
+		return err
+	}
+
+	// DelInbound closes the inbound handler and severs all active connections on this inbound
+	s.xrayApi.DelInbound(tag)
+
+	// AddInbound starts a fresh inbound handler with only active clients
+	err = s.xrayApi.AddInbound(inboundJson)
+	if err != nil {
+		logger.Warningf("Failed to re-add inbound %s after hot reload: %v", tag, err)
+		return err
+	}
+	logger.Debugf("Hot-reloaded inbound %s to sever exhausted client connections", tag)
+	return nil
+}
+
+func (s *InboundService) BuildInboundConfig(inbound *model.Inbound, txs ...*gorm.DB) (*xray.InboundConfig, error) {
+	db := database.GetDB()
+	if len(txs) > 0 && txs[0] != nil {
+		db = txs[0]
+	}
+	if db != nil {
+		var clientStats []xray.ClientTraffic
+		if err := db.Model(&xray.ClientTraffic{}).Where("inbound_id = ?", inbound.Id).Find(&clientStats).Error; err == nil {
+			inbound.ClientStats = clientStats
+		}
+	}
+
+	settings := map[string]interface{}{}
+	json.Unmarshal([]byte(inbound.Settings), &settings)
+	clients, ok := settings["clients"].([]interface{})
+	if !ok && inbound.Protocol == model.WireGuard {
+		clients, ok = settings["peers"].([]interface{})
+	}
+	if ok {
+		disabledEmails := make(map[string]bool)
+		for _, clientTraffic := range inbound.ClientStats {
+			if !clientTraffic.Enable {
+				disabledEmails[clientTraffic.Email] = true
+			}
+		}
+
+		activeClients := make([]interface{}, 0, len(clients))
+		for _, client := range clients {
+			c, isMap := client.(map[string]interface{})
+			if !isMap {
+				continue
+			}
+			email, _ := c["email"].(string)
+			if email != "" && disabledEmails[email] {
+				logger.Infof("Remove Inbound User %s due to expiration or traffic limit", email)
+				continue
+			}
+			activeClients = append(activeClients, c)
+		}
+		clients = activeClients
+
+		existingModelClients := make([]model.Client, 0, len(clients))
+		for _, client := range clients {
+			c, isMap := client.(map[string]interface{})
+			if !isMap {
+				continue
+			}
+			if inbound.Protocol == "vmess" {
+				normalizeLegacyVMessUser(c)
+			}
+			mc := model.Client{}
+			if v, ok := c["email"].(string); ok {
+				mc.Email = v
+			}
+			if v, ok := c["id"].(string); ok {
+				mc.ID = v
+			}
+			if v, ok := c["publicKey"].(string); ok {
+				mc.PublicKey = v
+			}
+			if v, ok := c["privateKey"].(string); ok {
+				mc.PrivateKey = v
+			}
+			if v, ok := c["security"].(string); ok {
+				mc.Security = v
+			}
+			if v, ok := c["password"].(string); ok {
+				mc.Password = v
+			}
+			if v, ok := c["auth"].(string); ok {
+				mc.Auth = v
+			}
+			if v, ok := c["flow"].(string); ok {
+				mc.Flow = v
+			}
+			if v, ok := c["enable"].(bool); ok {
+				mc.Enable = v
+			} else {
+				mc.Enable = true
+			}
+			existingModelClients = append(existingModelClients, mc)
+		}
+		mergedClients, err := s.nodeClientService.MergeIntoInboundConfig(inbound.Id, existingModelClients)
+		if err != nil {
+			logger.Warningf("BuildInboundConfig: MergeIntoInboundConfig failed for inbound %d: %v", inbound.Id, err)
+			mergedClients = existingModelClients
+		}
+		clients = make([]interface{}, 0, len(mergedClients))
+		for _, nc := range mergedClients {
+			entry := map[string]interface{}{
+				"email":      nc.Email,
+				"id":         nc.ID,
+				"publicKey":  nc.PublicKey,
+				"privateKey": nc.PrivateKey,
+				"allowedIPs": nc.AllowedIPs,
+				"psk":        nc.Psk,
+				"security":   nc.Security,
+				"password":   nc.Password,
+				"auth":       nc.Auth,
+				"flow":       nc.Flow,
+				"enable":     nc.Enable,
+			}
+			if inbound.Protocol == "vmess" {
+				normalizeLegacyVMessUser(entry)
+			}
+			clients = append(clients, entry)
+		}
+
+		if inbound.Protocol == model.WireGuard {
+			if addr, ok := settings["address"]; ok && addr != nil {
+				switch a := addr.(type) {
+				case []string:
+					settings["address"] = a
+				case []interface{}:
+					arr := make([]string, 0, len(a))
+					for _, item := range a {
+						if s, ok := item.(string); ok && s != "" {
+							arr = append(arr, s)
+						}
+					}
+					if len(arr) > 0 {
+						settings["address"] = arr
+					} else {
+						settings["address"] = []string{"10.0.0.1/24"}
+					}
+				case string:
+					if a != "" {
+						settings["address"] = []string{a}
+					} else {
+						settings["address"] = []string{"10.0.0.1/24"}
+					}
+				default:
+					settings["address"] = []string{"10.0.0.1/24"}
+				}
+			} else {
+				settings["address"] = []string{"10.0.0.1/24"}
+			}
+
+			var final_peers []interface{}
+			seenPeerPubKeys := make(map[string]bool)
+			for _, client := range clients {
+				c, isMap := client.(map[string]interface{})
+				if !isMap {
+					continue
+				}
+				if c["enable"] != nil {
+					if enable, ok := c["enable"].(bool); ok && !enable {
+						continue
+					}
+				}
+				peer := map[string]interface{}{}
+				pubKey := ""
+				if v, ok := c["publicKey"].(string); ok && v != "" {
+					pubKey = v
+				} else if v, ok := c["id"].(string); ok && v != "" {
+					pubKey = v
+				}
+				if pubKey == "" || seenPeerPubKeys[pubKey] {
+					continue
+				}
+				seenPeerPubKeys[pubKey] = true
+				peer["publicKey"] = pubKey
+				if v, ok := c["psk"].(string); ok && v != "" {
+					peer["preSharedKey"] = v
+				} else if v, ok := c["preSharedKey"].(string); ok && v != "" {
+					peer["preSharedKey"] = v
+				}
+				if v, ok := c["allowedIPs"]; ok && v != nil {
+					switch a := v.(type) {
+					case []string:
+						peer["allowedIPs"] = a
+					case []interface{}:
+						arr := make([]string, 0, len(a))
+						for _, item := range a {
+							if s, ok := item.(string); ok && s != "" {
+								arr = append(arr, s)
+							}
+						}
+						if len(arr) > 0 {
+							peer["allowedIPs"] = arr
+						} else {
+							peer["allowedIPs"] = []string{"10.0.0.2/32"}
+						}
+					case string:
+						if a != "" {
+							peer["allowedIPs"] = []string{a}
+						} else {
+							peer["allowedIPs"] = []string{"10.0.0.2/32"}
+						}
+					default:
+						peer["allowedIPs"] = []string{"10.0.0.2/32"}
+					}
+				} else {
+					peer["allowedIPs"] = []string{"10.0.0.2/32"}
+				}
+				if v, ok := c["email"].(string); ok && v != "" {
+					peer["email"] = v
+				}
+				final_peers = append(final_peers, peer)
+			}
+			if sec, ok := settings["privateKey"].(string); ok && sec != "" {
+				settings["secretKey"] = sec
+			}
+			settings["peers"] = final_peers
+			delete(settings, "clients")
+		} else if inbound.Protocol == model.Masque {
+			if addr, ok := settings["address"]; ok && addr != nil {
+				switch a := addr.(type) {
+				case []string:
+					settings["address"] = a
+				case []interface{}:
+					arr := make([]string, 0, len(a))
+					for _, item := range a {
+						if s, ok := item.(string); ok && s != "" {
+							arr = append(arr, s)
+						}
+					}
+					if len(arr) > 0 {
+						settings["address"] = arr
+					} else {
+						settings["address"] = []string{"10.13.0.1/24"}
+					}
+				case string:
+					if a != "" {
+						settings["address"] = []string{a}
+					} else {
+						settings["address"] = []string{"10.13.0.1/24"}
+					}
+				default:
+					settings["address"] = []string{"10.13.0.1/24"}
+				}
+			} else {
+				settings["address"] = []string{"10.13.0.1/24"}
+			}
+
+			var final_clients []interface{}
+			seenFinalEmails := make(map[string]bool)
+			for _, client := range clients {
+				c, isMap := client.(map[string]interface{})
+				if !isMap {
+					continue
+				}
+				if c["enable"] != nil {
+					if enable, ok := c["enable"].(bool); ok && !enable {
+						continue
+					}
+				}
+				email, _ := c["email"].(string)
+				emailKey := strings.ToLower(strings.TrimSpace(email))
+				if emailKey == "" || seenFinalEmails[emailKey] {
+					continue
+				}
+				seenFinalEmails[emailKey] = true
+				pass := ""
+				if p, ok := c["pass"].(string); ok && p != "" {
+					pass = p
+				} else if p, ok := c["password"].(string); ok && p != "" {
+					pass = p
+				} else if p, ok := c["id"].(string); ok && p != "" {
+					pass = p
+				}
+				mc := map[string]interface{}{
+					"email": email,
+					"pass":  pass,
+				}
+				if level, ok := c["level"]; ok {
+					mc["level"] = level
+				}
+				final_clients = append(final_clients, mc)
+			}
+			settings["clients"] = final_clients
+			delete(settings, "users")
+			if mtu, ok := settings["mtu"].(float64); !ok || mtu == 0 {
+				settings["mtu"] = 1500
+			}
+		} else {
+			var final_clients []interface{}
+			seenFinalEmails := make(map[string]bool)
+			seenFinalIDs := make(map[string]bool)
+			for _, client := range clients {
+				c, isMap := client.(map[string]interface{})
+				if !isMap {
+					continue
+				}
+				if c["enable"] != nil {
+					if enable, ok := c["enable"].(bool); ok && !enable {
+						continue
+					}
+				}
+				email, _ := c["email"].(string)
+				id, _ := c["id"].(string)
+				emailKey := strings.ToLower(strings.TrimSpace(email))
+				idKey := strings.ToLower(strings.TrimSpace(id))
+				if emailKey != "" && seenFinalEmails[emailKey] {
+					continue
+				}
+				if idKey != "" && seenFinalIDs[idKey] {
+					continue
+				}
+				if emailKey != "" {
+					seenFinalEmails[emailKey] = true
+				}
+				if idKey != "" {
+					seenFinalIDs[idKey] = true
+				}
+				for key := range c {
+					if key != "email" && key != "id" && key != "password" && key != "flow" && key != "method" && key != "auth" && key != "reverse" {
+						delete(c, key)
+					}
+					if flow, ok := c["flow"].(string); ok && flow == "xtls-rprx-vision-udp443" {
+						c["flow"] = "xtls-rprx-vision"
+					}
+				}
+				final_clients = append(final_clients, interface{}(c))
+			}
+			settings["clients"] = final_clients
+		}
+
+		modifiedSettings, err := json.MarshalIndent(settings, "", "  ")
+		if err != nil {
+			return nil, err
+		}
+		inbound.Settings = string(modifiedSettings)
+	}
+
+	if len(inbound.StreamSettings) > 0 {
+		var stream map[string]interface{}
+		json.Unmarshal([]byte(inbound.StreamSettings), &stream)
+		if tlsSettings, ok := stream["tlsSettings"].(map[string]interface{}); ok {
+			delete(tlsSettings, "settings")
+		}
+		if realitySettings, ok := stream["realitySettings"].(map[string]interface{}); ok {
+			delete(realitySettings, "settings")
+		}
+		delete(stream, "externalProxy")
+		newStream, err := json.MarshalIndent(stream, "", "  ")
+		if err != nil {
+			return nil, err
+		}
+		inbound.StreamSettings = string(newStream)
+	}
+
+	return inbound.GenXrayInboundConfig(), nil
 }
 
 func (s *InboundService) GetInboundTags() (string, error) {

@@ -1596,24 +1596,34 @@
         computed: {
             total() {
                 let down = 0, up = 0;
-                let clients = 0, deactive = [], depleted = [], expiring = [];
+                let deactive = [], depleted = [], expiring = [];
+                const allClientEmails = new Set();
                 this.dbInbounds.forEach(dbInbound => {
                     down += dbInbound.down;
                     up += dbInbound.up;
                     if (this.clientCount[dbInbound.id]) {
-                        clients += this.clientCount[dbInbound.id].clients;
-                        deactive = deactive.concat(this.clientCount[dbInbound.id].deactive);
-                        depleted = depleted.concat(this.clientCount[dbInbound.id].depleted);
-                        expiring = expiring.concat(this.clientCount[dbInbound.id].expiring);
+                        (this.clientCount[dbInbound.id].active || []).forEach(e => allClientEmails.add(e));
+                        (this.clientCount[dbInbound.id].deactive || []).forEach(e => {
+                            allClientEmails.add(e);
+                            deactive.push(e);
+                        });
+                        (this.clientCount[dbInbound.id].depleted || []).forEach(e => {
+                            allClientEmails.add(e);
+                            depleted.push(e);
+                        });
+                        (this.clientCount[dbInbound.id].expiring || []).forEach(e => {
+                            allClientEmails.add(e);
+                            expiring.push(e);
+                        });
                     }
                 });
                 return {
                     down: down,
                     up: up,
-                    clients: clients,
-                    deactive: deactive,
-                    depleted: depleted,
-                    expiring: expiring,
+                    clients: allClientEmails.size,
+                    deactive: [...new Set(deactive)],
+                    depleted: [...new Set(depleted)],
+                    expiring: [...new Set(expiring)],
                 };
             }
         },

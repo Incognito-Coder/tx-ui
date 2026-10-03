@@ -672,13 +672,15 @@
                     const d = parts[0];
                     const t = parts[1];
                     const level = parts[2];
-                    const levelIndex = levels.indexOf(level, levels) || 5;
+                    const idx = levels.indexOf(level);
+                    const levelIndex = idx !== -1 ? idx : 5;
 
                     //formattedLogs += `<span style="color: gray;">${index + 1}.</span>`;
                     formattedLogs += `<span style="color: ${levelColors[0]};">${d} ${t}</span> `;
                     formattedLogs += `<span style="color: ${levelColors[levelIndex]}">${level}</span>`;
                 } else {
-                    const levelIndex = levels.indexOf(data, levels) || 5;
+                    const idx = levels.indexOf(data);
+                    const levelIndex = idx !== -1 ? idx : 5;
                     formattedLogs += `<span style="color: ${levelColors[levelIndex]}">${data}</span>`;
                 }
 

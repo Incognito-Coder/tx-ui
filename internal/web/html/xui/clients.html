@@ -1941,7 +1941,9 @@
                         this.delayedExpireDays = this.delayedStart ? c.expiryTime / -86400000 : 0;
                         this.expiryTimeModel = this.delayedStart ? null : (c.expiryTime > 0 && typeof moment !== 'undefined' ? moment(c.expiryTime) : null);
                         const links = (c.links && c.links.length > 0) ? c.links : (app.clientLinksMap[c.id] || []);
-                        this.selectedInboundIds = links.map(l => Number(typeof l === 'object' && l !== null ? l.inboundId : l));
+                        this.selectedInboundIds = links
+                            .map(l => Number(typeof l === 'object' && l !== null ? l.inboundId : l))
+                            .filter(id => !!app.inboundMap[id]);
                         this.visible = true;
                     },
                 },

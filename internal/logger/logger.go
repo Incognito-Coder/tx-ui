@@ -3,6 +3,7 @@ package logger
 import (
 	"fmt"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -55,89 +56,86 @@ func InitLogger(level logging.Level) {
 }
 
 func Debug(args ...interface{}) {
+	addToBuffer(logging.DEBUG, fmt.Sprint(args...))
 	if currentLevel < logging.DEBUG {
 		return
 	}
 	logger.Debug(args...)
-	addToBuffer(logging.DEBUG, fmt.Sprint(args...))
 }
 
 func Debugf(format string, args ...interface{}) {
+	addToBuffer(logging.DEBUG, fmt.Sprintf(format, args...))
 	if currentLevel < logging.DEBUG {
 		return
 	}
 	logger.Debugf(format, args...)
-	addToBuffer(logging.DEBUG, fmt.Sprintf(format, args...))
 }
 
 func Info(args ...interface{}) {
+	addToBuffer(logging.INFO, fmt.Sprint(args...))
 	if currentLevel < logging.INFO {
 		return
 	}
 	logger.Info(args...)
-	addToBuffer(logging.INFO, fmt.Sprint(args...))
 }
 
 func Infof(format string, args ...interface{}) {
+	addToBuffer(logging.INFO, fmt.Sprintf(format, args...))
 	if currentLevel < logging.INFO {
 		return
 	}
 	logger.Infof(format, args...)
-	addToBuffer(logging.INFO, fmt.Sprintf(format, args...))
 }
 
 func Notice(args ...interface{}) {
+	addToBuffer(logging.NOTICE, fmt.Sprint(args...))
 	if currentLevel < logging.NOTICE {
 		return
 	}
 	logger.Notice(args...)
-	addToBuffer(logging.NOTICE, fmt.Sprint(args...))
 }
 
 func Noticef(format string, args ...interface{}) {
+	addToBuffer(logging.NOTICE, fmt.Sprintf(format, args...))
 	if currentLevel < logging.NOTICE {
 		return
 	}
 	logger.Noticef(format, args...)
-	addToBuffer(logging.NOTICE, fmt.Sprintf(format, args...))
 }
 
 func Warning(args ...interface{}) {
+	addToBuffer(logging.WARNING, fmt.Sprint(args...))
 	if currentLevel < logging.WARNING {
 		return
 	}
 	logger.Warning(args...)
-	addToBuffer(logging.WARNING, fmt.Sprint(args...))
 }
 
 func Warningf(format string, args ...interface{}) {
+	addToBuffer(logging.WARNING, fmt.Sprintf(format, args...))
 	if currentLevel < logging.WARNING {
 		return
 	}
 	logger.Warningf(format, args...)
-	addToBuffer(logging.WARNING, fmt.Sprintf(format, args...))
 }
 
 func Error(args ...interface{}) {
+	addToBuffer(logging.ERROR, fmt.Sprint(args...))
 	if currentLevel < logging.ERROR {
 		return
 	}
 	logger.Error(args...)
-	addToBuffer(logging.ERROR, fmt.Sprint(args...))
 }
 
 func Errorf(format string, args ...interface{}) {
+	addToBuffer(logging.ERROR, fmt.Sprintf(format, args...))
 	if currentLevel < logging.ERROR {
 		return
 	}
 	logger.Errorf(format, args...)
-	addToBuffer(logging.ERROR, fmt.Sprintf(format, args...))
 }
 
 func addToBuffer(level logging.Level, newLog string) {
-	if level > currentLevel {
-		return
-	}
 	t := time.Now()
 	logMu.Lock()
 	defer logMu.Unlock()
@@ -159,12 +157,16 @@ func addToBuffer(level logging.Level, newLog string) {
 
 func GetLogs(c int, level string) []string {
 	var output []string
-	logLevel, _ := logging.LogLevel(level)
+	cleanLevel := strings.ToUpper(strings.TrimSpace(level))
+	logLevel, err := logging.LogLevel(cleanLevel)
+	if err != nil || logLevel == 0 {
+		logLevel = logging.DEBUG
+	}
 
 	logMu.RLock()
 	defer logMu.RUnlock()
 
-	for i := len(logBuffer) - 1; i >= 0 && len(output) <= c; i-- {
+	for i := len(logBuffer) - 1; i >= 0 && len(output) < c; i-- {
 		if logBuffer[i].level <= logLevel {
 			output = append(output, fmt.Sprintf("%s %s - %s", logBuffer[i].time, logBuffer[i].level, logBuffer[i].log))
 		}

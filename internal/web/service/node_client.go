@@ -51,7 +51,10 @@ func (s *NodeClientService) GetAllWithDetails() ([]*ClientDetail, error) {
 	}
 
 	var allLinks []model.NodeClientLink
-	_ = db.Find(&allLinks).Error
+	_ = db.Table("node_client_links").
+		Joins("JOIN inbounds ON inbounds.id = node_client_links.inbound_id").
+		Select("node_client_links.*").
+		Find(&allLinks).Error
 
 	linksByClient := make(map[int][]model.NodeClientLink, len(allLinks))
 	for _, l := range allLinks {
@@ -1202,7 +1205,11 @@ func (s *NodeClientService) IsNodeClientEmail(email string) (bool, error) {
 func (s *NodeClientService) GetLinks(nodeClientId int) ([]*model.NodeClientLink, error) {
 	db := database.GetDB()
 	var links []*model.NodeClientLink
-	err := db.Where("node_client_id = ?", nodeClientId).Find(&links).Error
+	err := db.Table("node_client_links").
+		Joins("JOIN inbounds ON inbounds.id = node_client_links.inbound_id").
+		Where("node_client_links.node_client_id = ?", nodeClientId).
+		Select("node_client_links.*").
+		Find(&links).Error
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return nil, err
 	}
@@ -1307,6 +1314,8 @@ func (s *NodeClientService) DisableExhausted(txs ...*gorm.DB) (bool, error) {
 					var inbound model.Inbound
 					if err := db.First(&inbound, l.InboundId).Error; err == nil {
 						s.hotRemoveUserFromInbound(&xrayApi, &inbound, nc.Email)
+						inboundService := InboundService{}
+						inboundService.HotReloadInboundByTag(inbound.Tag, db)
 					}
 				}
 			}
@@ -1503,7 +1512,8 @@ func (s *NodeClientService) MergeIntoInboundConfig(inboundId int, existingClient
 			node_clients.reset,
 			node_clients.comment`).
 		Joins("JOIN node_clients ON node_clients.id = node_client_links.node_client_id").
-		Where("node_client_links.inbound_id = ? AND node_clients.enable = ?", inboundId, true).
+		Joins("LEFT JOIN client_traffics ON client_traffics.node_client_id = node_clients.id AND client_traffics.inbound_id = node_client_links.inbound_id").
+		Where("node_client_links.inbound_id = ? AND node_clients.enable = ? AND (client_traffics.enable IS NULL OR client_traffics.enable = ?)", inboundId, true, true).
 		Order("node_clients.id ASC").
 		Scan(&rows).Error
 	if err != nil {
@@ -1937,8 +1947,9 @@ func (s *NodeClientService) GetLinkedInboundsCounts() (map[int]int, error) {
 	}
 	var rows []countRow
 	err := db.Table("node_client_links").
-		Select("inbound_id, count(*) as count").
-		Group("inbound_id").
+		Joins("JOIN inbounds ON inbounds.id = node_client_links.inbound_id").
+		Select("node_client_links.inbound_id, count(*) as count").
+		Group("node_client_links.inbound_id").
 		Scan(&rows).Error
 	if err != nil {
 		return nil, err
