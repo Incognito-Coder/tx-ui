@@ -2001,6 +2001,7 @@ func (s *InboundService) disableInvalidInbounds(tx *gorm.DB) (bool, int64, error
 
 func (s *InboundService) disableInvalidClients(tx *gorm.DB) (bool, int64, error) {
 	now := time.Now().Unix() * 1000
+	needRestart := false
 
 	if p != nil {
 		var results []struct {
@@ -2027,6 +2028,7 @@ func (s *InboundService) disableInvalidClients(tx *gorm.DB) (bool, int64, error)
 					logger.Debug("User is already disabled. Nothing to do more...")
 				} else {
 					logger.Debug("Error in disabling client by api:", err1)
+					needRestart = true
 				}
 			}
 		}
@@ -2038,19 +2040,24 @@ func (s *InboundService) disableInvalidClients(tx *gorm.DB) (bool, int64, error)
 	err := result.Error
 	count := result.RowsAffected
 	if err != nil {
-		return false, count, err
+		return needRestart, count, err
+	}
+	if count > 0 {
+		// Removing credentials via API prevents new authentication, but Xray does not
+		// terminate a user's existing established connections. Restart the core
+		// immediately so an exhausted client cannot keep transferring extra data.
+		needRestart = true
 	}
 
 	// Disable exhausted/expired NodeClients
-	_, err = s.nodeClientService.DisableExhausted(tx)
+	ncChanged, err := s.nodeClientService.DisableExhausted(tx)
 	if err != nil {
 		logger.Warning("Error in disabling exhausted node clients:", err)
+	} else if ncChanged {
+		needRestart = true
 	}
 
-	// Do NOT restart Xray after disabling clients due to expiration or traffic limit,
-	// because a full restart drops all connected users. The user was already removed
-	// from memory via HandlerService AlterInbound RemoveUser API.
-	return false, count, err
+	return needRestart, count, err
 }
 
 func (s *InboundService) GetInboundTags() (string, error) {

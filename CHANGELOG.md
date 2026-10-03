@@ -19,10 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added Sub JSON URL row (`subJsonURI + subId`) with a one-click copy button to the Client Details modal (`detailModal`) alongside standard subscription links.
 
 ### 🐛 Bug Fixes & Stability
-- **Zero-Downtime Client Expiration & Quota Management**:
-  - Revoke expired and traffic-exhausted clients in-memory dynamically via the Xray `AlterInbound` `RemoveUser` API rather than performing a full core restart.
-  - Removed disruptive `needRestart` triggers in `disableInvalidClients` and `DisableExhausted`, preventing disconnection of active connected users when other users expire or exceed data caps.
-  - Replaced immediate hard restarts in `XrayTrafficJob` with graceful conditional restarts only when dealing with protocols that do not support dynamic user alteration (e.g., WireGuard).
+- **Active Connection Termination on Quota Exhaustion & Expiry**:
+  - Re-enabled immediate core restart upon client quota exhaustion and expiration. Because Xray-core's `AlterInbound` `RemoveUser` API only blocks new authentication and cannot force-terminate established TCP/WS/gRPC proxy sessions, an immediate core restart is required to sever active connections and prevent clients from consuming excess data.
 - **Client Renewal & Expiration Synchronization**:
   - Fixed client renewal via API keeping old expiration timestamps: `NodeClientController.update` now merges partial updates and handles snake_case JSON keys (`expiry_time`, `total_gb`).
   - Bidirectionally synchronized `expiry_time`, `total_gb`, `enable`, and `reset` between `node_clients`, `client_traffics`, and inbound settings JSON during client updates and renewals.

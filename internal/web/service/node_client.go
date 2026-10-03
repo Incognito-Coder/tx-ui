@@ -1922,7 +1922,8 @@ func (s *NodeClientService) DeleteDepleted() (bool, error) {
 		}
 	}
 	if len(idsToDelete) > 0 {
-		return s.BulkDelete(idsToDelete)
+		_, err := s.BulkDelete(idsToDelete)
+		return true, err
 	}
 	return false, nil
 }
