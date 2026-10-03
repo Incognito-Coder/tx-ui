@@ -811,9 +811,9 @@
             },
             getClientCounts(dbInbound, inbound) {
                 let clientCount = 0, active = [], deactive = [], depleted = [], expiring = [], online = [];
-                clients = inbound.clients;
-                clientStats = dbInbound.clientStats
-                now = new Date().getTime()
+                const clients = inbound.clients;
+                const clientStats = dbInbound.clientStats || [];
+                const now = new Date().getTime();
                 if (clients) {
                     clientCount = clients.length;
                     if (dbInbound.enable) {
