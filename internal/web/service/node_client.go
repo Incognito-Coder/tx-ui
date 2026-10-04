@@ -1266,7 +1266,6 @@ func (s *NodeClientService) DisableExhausted(txs ...*gorm.DB) (bool, error) {
 		// Check expiry
 		if nc.ExpiryTime > 0 && nc.ExpiryTime <= now {
 			shouldDisable = true
-			logger.Debugf("NodeClient %d (%s) expired at %d (now=%d)", nc.Id, nc.Email, nc.ExpiryTime, now)
 		}
 
 		// Check traffic quota
@@ -1279,7 +1278,6 @@ func (s *NodeClientService) DisableExhausted(txs ...*gorm.DB) (bool, error) {
 			totalUsed := aggregated.Up + aggregated.Down
 			if totalUsed >= nc.TotalGB {
 				shouldDisable = true
-				logger.Debugf("NodeClient %d (%s) exhausted: %d >= %d", nc.Id, nc.Email, totalUsed, nc.TotalGB)
 			}
 		}
 
@@ -1296,19 +1294,40 @@ func (s *NodeClientService) DisableExhausted(txs ...*gorm.DB) (bool, error) {
 	// Only disable linked client_traffics rows so every inbound reflects the exhaustion in Xray.
 	// We do NOT update node_clients.enable to false, because the switch represents manual deactivation;
 	// exhausted/expired clients are disconnected at the network/core level while keeping the switch on.
+	//
+	// We must track which node clients actually had rows newly disabled so that we only trigger the
+	// Xray hot-reload once. Without this guard the hot-reload (and its log spam) would fire every
+	// second because the NodeClient's own enable flag is intentionally never cleared.
+	newlyDisabledIDs := make(map[int]bool)
+	for _, id := range idsToDisable {
+		var count int64
+		if err := db.Model(&xray.ClientTraffic{}).Where("node_client_id = ? AND enable = ?", id, true).Count(&count).Error; err == nil && count > 0 {
+			newlyDisabledIDs[id] = true
+		}
+	}
+
 	res := db.Model(&xray.ClientTraffic{}).Where("node_client_id IN ? AND enable = ?", idsToDisable, true).Update("enable", false)
 	if res.Error != nil {
 		return false, res.Error
 	}
 
-	logger.Debugf("Marked %d exhausted node client traffic rows disabled", res.RowsAffected)
 
-	// Dynamically remove exhausted users from running inbounds via API so no full Xray restart is needed
-	if p != nil && p.IsRunning() && len(clientsToDisable) > 0 {
+	// Dynamically remove exhausted users from running inbounds via API so no full Xray restart is needed.
+	// Only act on clients that actually had rows newly disabled this iteration.
+	if p != nil && p.IsRunning() && len(newlyDisabledIDs) > 0 {
+		logger.Debugf("Disabled %d exhausted node client traffic rows", res.RowsAffected)
 		var xrayApi xray.XrayAPI
 		if err := xrayApi.Init(p.GetAPIPort()); err == nil {
 			defer xrayApi.Close()
 			for _, nc := range clientsToDisable {
+				if !newlyDisabledIDs[nc.Id] {
+					continue
+				}
+				if nc.ExpiryTime > 0 && nc.ExpiryTime <= now {
+					logger.Debugf("NodeClient %d (%s) expired, removing from active inbounds", nc.Id, nc.Email)
+				} else {
+					logger.Debugf("NodeClient %d (%s) traffic exhausted, removing from active inbounds", nc.Id, nc.Email)
+				}
 				links, _ := s.GetLinks(nc.Id)
 				for _, l := range links {
 					var inbound model.Inbound
