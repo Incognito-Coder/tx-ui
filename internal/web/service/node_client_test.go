@@ -1,7 +1,9 @@
 package service
 
 import (
+	"fmt"
 	"path/filepath"
+	"sync"
 	"testing"
 
 	"x-ui/internal/database"
@@ -116,5 +118,113 @@ func TestBulkSetLinks(t *testing.T) {
 	links1Empty, _ := ncService.GetLinks(1)
 	if len(links1Empty) != 0 {
 		t.Errorf("expected 0 links for client 1 after empty set, got %d", len(links1Empty))
+	}
+}
+
+func TestBulkSetLinks_ConcurrencyAndNoLock(t *testing.T) {
+	setupTestDB(t)
+
+	db := database.GetDB()
+	ncService := &NodeClientService{}
+
+	// Create 5 inbounds
+	inboundIds := []int{201, 202, 203, 204, 205}
+	for _, id := range inboundIds {
+		ib := &model.Inbound{
+			Id:       id,
+			UserId:   1,
+			Tag:      fmt.Sprintf("inbound-%d", id),
+			Port:     id * 10,
+			Protocol: model.VLESS,
+			Enable:   true,
+			Settings: `{"clients":[]}`,
+		}
+		if err := db.Create(ib).Error; err != nil {
+			t.Fatalf("create ib %d failed: %v", id, err)
+		}
+	}
+
+	// Create 20 clients
+	var clientIds []int
+	for i := 10; i < 30; i++ {
+		c := &model.NodeClient{
+			Id:     i,
+			Email:  "stress" + string(rune('a'+i-10)) + "@test.com",
+			SubID:  "sub-stress-" + string(rune('a'+i-10)),
+			UUID:   "uuid-stress-" + string(rune('a'+i-10)),
+			Enable: true,
+		}
+		if err := db.Create(c).Error; err != nil {
+			t.Fatalf("create client %d failed: %v", i, err)
+		}
+		clientIds = append(clientIds, i)
+	}
+
+	// Run concurrent writers and readers
+	var wg sync.WaitGroup
+	errCh := make(chan error, 50)
+
+	// Writer 1: BulkSetLinks on all clients
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for j := 0; j < 5; j++ {
+			if _, err := ncService.BulkSetLinks(clientIds, inboundIds, "set", "xtls-rprx-vision"); err != nil {
+				errCh <- err
+			}
+		}
+	}()
+
+	// Writer 2: BulkSetLinks add & remove
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for j := 0; j < 5; j++ {
+			if _, err := ncService.BulkSetLinks(clientIds[:5], []int{201, 202}, "add", ""); err != nil {
+				errCh <- err
+			}
+			if _, err := ncService.BulkSetLinks(clientIds[:5], []int{201}, "remove", ""); err != nil {
+				errCh <- err
+			}
+		}
+	}()
+
+	// Writer 3: Single SetLinks
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for j := 0; j < 5; j++ {
+			links := []NodeClientLinkInput{
+				{InboundId: 203, Flow: "xtls-rprx-vision"},
+				{InboundId: 204, Flow: ""},
+			}
+			if _, err := ncService.SetLinks(10, links); err != nil {
+				errCh <- err
+			}
+		}
+	}()
+
+	// Readers: Concurrent reads simulating frontend background polling
+	for r := 0; r < 3; r++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for j := 0; j < 10; j++ {
+				var inbounds []model.Inbound
+				if err := db.Find(&inbounds).Error; err != nil {
+					errCh <- err
+				}
+				if _, err := ncService.GetAllWithDetails(); err != nil {
+					errCh <- err
+				}
+			}
+		}()
+	}
+
+	wg.Wait()
+	close(errCh)
+
+	for err := range errCh {
+		t.Errorf("encountered error during concurrent stress test: %v", err)
 	}
 }

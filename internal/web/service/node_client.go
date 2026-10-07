@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"x-ui/internal/database"
@@ -744,6 +745,9 @@ func (s *NodeClientService) BulkDelete(ids []int) (bool, error) {
 	if len(ids) == 0 {
 		return false, nil
 	}
+
+	nodeClientOpMutex.Lock()
+	defer nodeClientOpMutex.Unlock()
 
 	db := database.GetDB()
 
@@ -1638,14 +1642,29 @@ type NodeClientLinkInput struct {
 	Flow      string `json:"flow"      form:"flow"`
 }
 
+var nodeClientOpMutex sync.Mutex
+
 // SetLinks replaces all links for a client with the provided list.
 // Dynamically adds and removes users from running Xray via API without restarting Xray.
 func (s *NodeClientService) SetLinks(nodeClientId int, links []NodeClientLinkInput) (bool, error) {
+	nodeClientOpMutex.Lock()
+	defer nodeClientOpMutex.Unlock()
+
 	db := database.GetDB()
 	nc := &model.NodeClient{}
 	if err := db.First(nc, nodeClientId).Error; err != nil {
 		return false, fmt.Errorf("client not found (id=%d): %w", nodeClientId, err)
 	}
+
+	var allInbounds []model.Inbound
+	if err := db.Find(&allInbounds).Error; err != nil {
+		return false, err
+	}
+	inboundMap := make(map[int]*model.Inbound, len(allInbounds))
+	for i := range allInbounds {
+		inboundMap[allInbounds[i].Id] = &allInbounds[i]
+	}
+	modifiedInbounds := make(map[int]bool)
 
 	tx := db.Begin()
 	defer func() {
@@ -1681,10 +1700,9 @@ func (s *NodeClientService) SetLinks(nodeClientId int, links []NodeClientLinkInp
 				Where("LOWER(email) = LOWER(?) AND node_client_id = ? AND inbound_id = ?", nc.Email, nodeClientId, cl.InboundId).
 				Update("node_client_id", nil).Error
 
-			var inbound model.Inbound
-			if err := tx.First(&inbound, cl.InboundId).Error; err == nil {
-				if removeClientFromInboundSettings(&inbound, nc.Email, nc.UUID, nc.Password, nc.Auth) {
-					_ = tx.Model(&model.Inbound{}).Where("id = ?", inbound.Id).Update("settings", inbound.Settings).Error
+			if ib, ok := inboundMap[cl.InboundId]; ok {
+				if removeClientFromInboundSettings(ib, nc.Email, nc.UUID, nc.Password, nc.Auth) {
+					modifiedInbounds[ib.Id] = true
 				}
 			}
 		}
@@ -1706,10 +1724,9 @@ func (s *NodeClientService) SetLinks(nodeClientId int, links []NodeClientLinkInp
 				return false, err
 			}
 
-			var inbound model.Inbound
-			if err := tx.First(&inbound, l.InboundId).Error; err == nil {
-				if addClientToInboundSettings(&inbound, nc, l.Flow) {
-					_ = tx.Model(&model.Inbound{}).Where("id = ?", inbound.Id).Update("settings", inbound.Settings).Error
+			if ib, ok := inboundMap[l.InboundId]; ok {
+				if addClientToInboundSettings(ib, nc, l.Flow) {
+					modifiedInbounds[ib.Id] = true
 				}
 			}
 
@@ -1742,12 +1759,21 @@ func (s *NodeClientService) SetLinks(nodeClientId int, links []NodeClientLinkInp
 				_ = tx.Save(&existing).Error
 				updatedFlowLinks = append(updatedFlowLinks, l)
 
-				var inbound model.Inbound
-				if err := tx.First(&inbound, l.InboundId).Error; err == nil {
-					if updateClientFlowInInboundSettings(&inbound, nc.Email, nc.UUID, l.Flow) {
-						_ = tx.Model(&model.Inbound{}).Where("id = ?", inbound.Id).Update("settings", inbound.Settings).Error
+				if ib, ok := inboundMap[l.InboundId]; ok {
+					if updateClientFlowInInboundSettings(ib, nc.Email, nc.UUID, l.Flow) {
+						modifiedInbounds[ib.Id] = true
 					}
 				}
+			}
+		}
+	}
+
+	// Flush modified inbound settings once per inbound
+	for inId := range modifiedInbounds {
+		if ib, ok := inboundMap[inId]; ok {
+			if err := tx.Model(&model.Inbound{}).Where("id = ?", ib.Id).Update("settings", ib.Settings).Error; err != nil {
+				tx.Rollback()
+				return false, err
 			}
 		}
 	}
@@ -1767,9 +1793,8 @@ func (s *NodeClientService) SetLinks(nodeClientId int, links []NodeClientLinkInp
 
 			// 1. Remove users from unlinked inbounds
 			for _, inId := range removedInboundIds {
-				var inbound model.Inbound
-				if err := db.First(&inbound, inId).Error; err == nil {
-					if s.hotRemoveUserFromInbound(&xrayApi, &inbound, nc.Email) {
+				if ib, ok := inboundMap[inId]; ok {
+					if s.hotRemoveUserFromInbound(&xrayApi, ib, nc.Email) {
 						needRestart = true
 					}
 				}
@@ -1777,10 +1802,9 @@ func (s *NodeClientService) SetLinks(nodeClientId int, links []NodeClientLinkInp
 
 			// 2. For updated flow links: remove and re-add with new flow
 			for _, l := range updatedFlowLinks {
-				var inbound model.Inbound
-				if err := db.First(&inbound, l.InboundId).Error; err == nil {
-					s.hotRemoveUserFromInbound(&xrayApi, &inbound, nc.Email)
-					if s.hotAddUserToInbound(&xrayApi, &inbound, nc, l.Flow) {
+				if ib, ok := inboundMap[l.InboundId]; ok {
+					s.hotRemoveUserFromInbound(&xrayApi, ib, nc.Email)
+					if s.hotAddUserToInbound(&xrayApi, ib, nc, l.Flow) {
 						needRestart = true
 					}
 				}
@@ -1788,9 +1812,8 @@ func (s *NodeClientService) SetLinks(nodeClientId int, links []NodeClientLinkInp
 
 			// 3. For newly added links: add user
 			for _, l := range addedLinks {
-				var inbound model.Inbound
-				if err := db.First(&inbound, l.InboundId).Error; err == nil {
-					if s.hotAddUserToInbound(&xrayApi, &inbound, nc, l.Flow) {
+				if ib, ok := inboundMap[l.InboundId]; ok {
+					if s.hotAddUserToInbound(&xrayApi, ib, nc, l.Flow) {
 						needRestart = true
 					}
 				}
@@ -1814,18 +1837,68 @@ func (s *NodeClientService) BulkSetLinks(clientIds []int, inboundIds []int, acti
 		return false, nil
 	}
 
-	anyNeedRestart := false
-	for _, cid := range clientIds {
-		var targetLinks []NodeClientLinkInput
+	nodeClientOpMutex.Lock()
+	defer nodeClientOpMutex.Unlock()
 
+	db := database.GetDB()
+
+	// 1. Fetch all requested clients
+	var clients []model.NodeClient
+	if err := db.Where("id IN ?", clientIds).Find(&clients).Error; err != nil {
+		return false, err
+	}
+	if len(clients) == 0 {
+		return false, nil
+	}
+
+	// 2. Fetch all current links for these clients
+	var allCurrentLinks []model.NodeClientLink
+	if err := db.Where("node_client_id IN ?", clientIds).Find(&allCurrentLinks).Error; err != nil {
+		return false, err
+	}
+	currentLinksByClient := make(map[int][]model.NodeClientLink, len(clients))
+	for _, l := range allCurrentLinks {
+		currentLinksByClient[l.NodeClientId] = append(currentLinksByClient[l.NodeClientId], l)
+	}
+
+	// 3. Cache all inbounds that could be affected
+	var inbounds []model.Inbound
+	if err := db.Find(&inbounds).Error; err != nil {
+		return false, err
+	}
+	inboundMap := make(map[int]*model.Inbound, len(inbounds))
+	for i := range inbounds {
+		inboundMap[inbounds[i].Id] = &inbounds[i]
+	}
+
+	type hotSyncAction struct {
+		inboundId int
+		email     string
+		nc        *model.NodeClient
+		flow      string
+		isRemove  bool
+	}
+	var hotSyncItems []hotSyncAction
+	modifiedInbounds := make(map[int]bool)
+
+	// 4. Perform all database changes inside a SINGLE atomic transaction
+	tx := db.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	for i := range clients {
+		nc := &clients[i]
+		curLinks := currentLinksByClient[nc.Id]
+
+		// Determine target links for this client
+		var targetLinks []NodeClientLinkInput
 		switch action {
 		case "add":
-			existing, err := s.GetLinks(cid)
-			if err != nil {
-				return anyNeedRestart, fmt.Errorf("failed to get links for client %d: %w", cid, err)
-			}
-			linkMap := make(map[int]string, len(existing)+len(inboundIds))
-			for _, l := range existing {
+			linkMap := make(map[int]string, len(curLinks)+len(inboundIds))
+			for _, l := range curLinks {
 				linkMap[l.InboundId] = l.Flow
 			}
 			for _, inId := range inboundIds {
@@ -1844,16 +1917,12 @@ func (s *NodeClientService) BulkSetLinks(clientIds []int, inboundIds []int, acti
 			}
 
 		case "remove":
-			existing, err := s.GetLinks(cid)
-			if err != nil {
-				return anyNeedRestart, fmt.Errorf("failed to get links for client %d: %w", cid, err)
-			}
 			removeSet := make(map[int]bool, len(inboundIds))
 			for _, inId := range inboundIds {
 				removeSet[inId] = true
 			}
-			targetLinks = make([]NodeClientLinkInput, 0, len(existing))
-			for _, l := range existing {
+			targetLinks = make([]NodeClientLinkInput, 0, len(curLinks))
+			for _, l := range curLinks {
 				if !removeSet[l.InboundId] {
 					targetLinks = append(targetLinks, NodeClientLinkInput{
 						InboundId: l.InboundId,
@@ -1872,22 +1941,193 @@ func (s *NodeClientService) BulkSetLinks(clientIds []int, inboundIds []int, acti
 			}
 		}
 
-		needRestart, err := s.SetLinks(cid, targetLinks)
-		if err != nil {
-			return anyNeedRestart, fmt.Errorf("failed to update links for client %d: %w", cid, err)
+		newInboundMap := make(map[int]string, len(targetLinks))
+		for _, l := range targetLinks {
+			newInboundMap[l.InboundId] = l.Flow
 		}
-		if needRestart {
-			anyNeedRestart = true
+
+		// Remove links not in target set
+		for _, cl := range curLinks {
+			if _, keep := newInboundMap[cl.InboundId]; !keep {
+				if err := tx.Delete(&cl).Error; err != nil {
+					tx.Rollback()
+					return false, err
+				}
+				_ = tx.Model(&xray.ClientTraffic{}).
+					Where("LOWER(email) = LOWER(?) AND node_client_id = ? AND inbound_id = ?", nc.Email, nc.Id, cl.InboundId).
+					Update("node_client_id", nil).Error
+
+				if ib, ok := inboundMap[cl.InboundId]; ok {
+					if removeClientFromInboundSettings(ib, nc.Email, nc.UUID, nc.Password, nc.Auth) {
+						modifiedInbounds[ib.Id] = true
+					}
+				}
+				hotSyncItems = append(hotSyncItems, hotSyncAction{
+					inboundId: cl.InboundId,
+					email:     nc.Email,
+					isRemove:  true,
+				})
+			}
+		}
+
+		// Add or update links
+		curMap := make(map[int]model.NodeClientLink, len(curLinks))
+		for _, cl := range curLinks {
+			curMap[cl.InboundId] = cl
+		}
+
+		for _, l := range targetLinks {
+			if existing, exists := curMap[l.InboundId]; !exists {
+				newLink := model.NodeClientLink{
+					NodeClientId: nc.Id,
+					InboundId:    l.InboundId,
+					Flow:         l.Flow,
+				}
+				if err := tx.Create(&newLink).Error; err != nil {
+					tx.Rollback()
+					return false, err
+				}
+
+				if ib, ok := inboundMap[l.InboundId]; ok {
+					if addClientToInboundSettings(ib, nc, l.Flow) {
+						modifiedInbounds[ib.Id] = true
+					}
+				}
+
+				var ct xray.ClientTraffic
+				res := tx.Where("LOWER(email) = LOWER(?) AND inbound_id = ?", nc.Email, l.InboundId).First(&ct)
+				if res.Error == gorm.ErrRecordNotFound {
+					ct = xray.ClientTraffic{
+						InboundId:    l.InboundId,
+						Email:        nc.Email,
+						Enable:       true,
+						Up:           0,
+						Down:         0,
+						Total:        nc.TotalGB,
+						ExpiryTime:   nc.ExpiryTime,
+						Reset:        nc.Reset,
+						NodeClientId: &nc.Id,
+					}
+					_ = tx.Create(&ct).Error
+				} else if res.Error == nil {
+					_ = tx.Model(&ct).Updates(map[string]interface{}{
+						"node_client_id": nc.Id,
+						"total":          nc.TotalGB,
+						"expiry_time":    nc.ExpiryTime,
+						"reset":          nc.Reset,
+					}).Error
+				}
+
+				hotSyncItems = append(hotSyncItems, hotSyncAction{
+					inboundId: l.InboundId,
+					email:     nc.Email,
+					nc:        nc,
+					flow:      l.Flow,
+					isRemove:  false,
+				})
+			} else {
+				if existing.Flow != l.Flow {
+					existing.Flow = l.Flow
+					_ = tx.Save(&existing).Error
+
+					if ib, ok := inboundMap[l.InboundId]; ok {
+						if updateClientFlowInInboundSettings(ib, nc.Email, nc.UUID, l.Flow) {
+							modifiedInbounds[ib.Id] = true
+						}
+					}
+					hotSyncItems = append(hotSyncItems, hotSyncAction{
+						inboundId: l.InboundId,
+						email:     nc.Email,
+						isRemove:  true,
+					})
+					hotSyncItems = append(hotSyncItems, hotSyncAction{
+						inboundId: l.InboundId,
+						email:     nc.Email,
+						nc:        nc,
+						flow:      l.Flow,
+						isRemove:  false,
+					})
+				}
+			}
 		}
 	}
 
-	return anyNeedRestart, nil
+	// Flush modified inbound settings once per inbound
+	for inId := range modifiedInbounds {
+		if ib, ok := inboundMap[inId]; ok {
+			if err := tx.Model(&model.Inbound{}).Where("id = ?", ib.Id).Update("settings", ib.Settings).Error; err != nil {
+				tx.Rollback()
+				return false, err
+			}
+		}
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		return false, err
+	}
+
+	// 5. Hot-sync changes with running Xray outside of the DB transaction
+	needRestart := false
+	if p != nil && p.IsRunning() && len(hotSyncItems) > 0 {
+		var xrayApi xray.XrayAPI
+		if err := xrayApi.Init(p.GetAPIPort()); err != nil {
+			needRestart = true
+		} else {
+			defer xrayApi.Close()
+			for _, item := range hotSyncItems {
+				if ib, ok := inboundMap[item.inboundId]; ok {
+					if item.isRemove {
+						if s.hotRemoveUserFromInbound(&xrayApi, ib, item.email) {
+							needRestart = true
+						}
+					} else {
+						if s.hotAddUserToInbound(&xrayApi, ib, item.nc, item.flow) {
+							needRestart = true
+						}
+					}
+				}
+			}
+		}
+	}
+
+	if needRestart {
+		isNeedXrayRestart.Store(true)
+	}
+	return needRestart, nil
 }
 
 // BulkCreate creates multiple clients and links each to the specified inbounds.
 // Hot-adds users to running Xray via API without restarting Xray.
 func (s *NodeClientService) BulkCreate(clients []model.NodeClient, inboundIds []int) (bool, error) {
+	nodeClientOpMutex.Lock()
+	defer nodeClientOpMutex.Unlock()
+
 	db := database.GetDB()
+
+	// Pre-fetch inbounds
+	var inbounds []model.Inbound
+	if len(inboundIds) > 0 {
+		if err := db.Where("id IN ?", inboundIds).Find(&inbounds).Error; err != nil {
+			return false, err
+		}
+	}
+	inboundMap := make(map[int]*model.Inbound, len(inbounds))
+	for i := range inbounds {
+		inboundMap[inbounds[i].Id] = &inbounds[i]
+	}
+	modifiedInbounds := make(map[int]bool)
+
+	// Validate emails and subIDs before opening write transaction
+	for i := range clients {
+		nc := &clients[i]
+		if err := s.checkEmailUnique(nc.Email, 0); err != nil {
+			return false, err
+		}
+		if err := s.checkSubIDUnique(nc.SubID, 0); err != nil {
+			return false, err
+		}
+	}
+
 	tx := db.Begin()
 	defer func() {
 		if r := recover(); r != nil {
@@ -1897,15 +2137,6 @@ func (s *NodeClientService) BulkCreate(clients []model.NodeClient, inboundIds []
 
 	for i := range clients {
 		nc := &clients[i]
-		if err := s.checkEmailUnique(nc.Email, 0); err != nil {
-			tx.Rollback()
-			return false, err
-		}
-		if err := s.checkSubIDUnique(nc.SubID, 0); err != nil {
-			tx.Rollback()
-			return false, err
-		}
-
 		if err := tx.Create(nc).Error; err != nil {
 			tx.Rollback()
 			return false, err
@@ -1922,10 +2153,9 @@ func (s *NodeClientService) BulkCreate(clients []model.NodeClient, inboundIds []
 				return false, err
 			}
 
-			var inbound model.Inbound
-			if err := tx.First(&inbound, inId).Error; err == nil {
-				if addClientToInboundSettings(&inbound, nc, nc.Flow) {
-					_ = tx.Model(&model.Inbound{}).Where("id = ?", inbound.Id).Update("settings", inbound.Settings).Error
+			if ib, ok := inboundMap[inId]; ok {
+				if addClientToInboundSettings(ib, nc, nc.Flow) {
+					modifiedInbounds[ib.Id] = true
 				}
 			}
 
@@ -1947,6 +2177,16 @@ func (s *NodeClientService) BulkCreate(clients []model.NodeClient, inboundIds []
 		}
 	}
 
+	// Flush modified inbound settings once per inbound
+	for inId := range modifiedInbounds {
+		if ib, ok := inboundMap[inId]; ok {
+			if err := tx.Model(&model.Inbound{}).Where("id = ?", ib.Id).Update("settings", ib.Settings).Error; err != nil {
+				tx.Rollback()
+				return false, err
+			}
+		}
+	}
+
 	if err := tx.Commit().Error; err != nil {
 		return false, err
 	}
@@ -1959,10 +2199,9 @@ func (s *NodeClientService) BulkCreate(clients []model.NodeClient, inboundIds []
 		} else {
 			defer xrayApi.Close()
 			for _, inId := range inboundIds {
-				var inbound model.Inbound
-				if err := db.First(&inbound, inId).Error; err == nil {
+				if ib, ok := inboundMap[inId]; ok {
 					for i := range clients {
-						if s.hotAddUserToInbound(&xrayApi, &inbound, &clients[i], clients[i].Flow) {
+						if s.hotAddUserToInbound(&xrayApi, ib, &clients[i], clients[i].Flow) {
 							needRestart = true
 						}
 					}

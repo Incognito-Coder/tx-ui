@@ -2558,6 +2558,7 @@
                     }
 
                     bm.confirmLoading = true;
+                    this.isLoadingClients = true;
                     try {
                         const inbIds = (bm.selectedInboundIds || []).map(Number);
                         const res = await HttpUtil.postJson('/panel/api/clients/bulkCreate', {
@@ -2566,25 +2567,30 @@
                         });
                         if (res.success) {
                             bm.visible = false;
+                            this.isLoadingClients = false;
                             await this.loadAllData();
                         }
                     } finally {
                         bm.confirmLoading = false;
+                        this.isLoadingClients = false;
                     }
                 },
                 async handleDrawerSave() {
                     const ld = this.linkDrawer;
                     if (!ld.client) return;
                     ld.loading = true;
+                    this.isLoadingClients = true;
                     try {
                         const payload = ld.selectedLinks.map(l => ({ inboundId: Number(l.inboundId), flow: l.flow || '' }));
                         const res = await HttpUtil.postJson(`/panel/api/clients/${ld.client.id}/setLinks`, { links: payload });
                         if (res.success) {
                             ld.close();
+                            this.isLoadingClients = false;
                             await this.loadAllData();
                         }
                     } finally {
                         ld.loading = false;
+                        this.isLoadingClients = false;
                     }
                 },
                 clickAction(action, c) {
@@ -2754,10 +2760,16 @@
                         okText: '{{ i18n "delete" }}',
                         cancelText: '{{ i18n "cancel" }}',
                         onOk: async () => {
-                            const res = await HttpUtil.postJson('/panel/api/clients/bulkDel', { ids: this.selectedRowKeys });
-                            if (res.success) {
-                                this.selectedRowKeys = [];
-                                await this.loadAllData();
+                            this.isLoadingClients = true;
+                            try {
+                                const res = await HttpUtil.postJson('/panel/api/clients/bulkDel', { ids: this.selectedRowKeys });
+                                if (res.success) {
+                                    this.selectedRowKeys = [];
+                                    this.isLoadingClients = false;
+                                    await this.loadAllData();
+                                }
+                            } finally {
+                                this.isLoadingClients = false;
                             }
                         },
                     });
@@ -2777,6 +2789,7 @@
                         return;
                     }
                     bm.confirmLoading = true;
+                    this.isLoadingClients = true;
                     try {
                         const res = await HttpUtil.postJson('/panel/api/clients/bulkSetLinks', {
                             clientIds: this.selectedRowKeys.map(Number),
@@ -2786,10 +2799,12 @@
                         });
                         if (res.success) {
                             bm.close();
+                            this.isLoadingClients = false;
                             await this.loadAllData();
                         }
                     } finally {
                         bm.confirmLoading = false;
+                        this.isLoadingClients = false;
                     }
                 },
                 handleSelectMenu(item) {
