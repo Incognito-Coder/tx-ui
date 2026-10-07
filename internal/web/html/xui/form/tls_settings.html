@@ -112,10 +112,10 @@
             </a-form-item>
         </template>
         <a-form-item label='ECH key'>
-            <a-input v-model="inbound.stream.tls.echServerKeys"></a-input>
+            <a-input v-model.trim="inbound.stream.tls.echServerKeys"></a-input>
         </a-form-item>
         <a-form-item label='ECH config'>
-            <a-input v-model="inbound.stream.tls.settings.echConfigList"></a-input>
+            <a-input v-model.trim="inbound.stream.tls.settings.echConfigList"></a-input>
         </a-form-item>
         <a-form-item label='ECH force query'>
             <a-select :dropdown-class-name="themeSwitcher.currentTheme"

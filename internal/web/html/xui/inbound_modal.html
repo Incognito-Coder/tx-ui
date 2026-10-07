@@ -239,18 +239,28 @@
                 certObj.key = msg.obj.key;
             },
             async getNewEchCert() {
+                const sni = inModal.inbound?.stream?.tls?.sni ? inModal.inbound.stream.tls.sni.trim() : '';
+                if (!sni) {
+                    Vue.prototype.$message.warning('{{ i18n "pages.inbounds.toasts.sniRequiredForEch" }}');
+                    return;
+                }
                 inModal.loading(true);
-                const msg = await HttpUtil.post('/panel/api/server/getNewEchCert', {sni: inModal.inbound.stream.tls.sni});
+                const msg = await HttpUtil.post('/panel/api/server/getNewEchCert', {sni: sni});
                 inModal.loading(false);
                 if (!msg.success) {
                     return;
                 }
-                inModal.inbound.stream.tls.echServerKeys = msg.obj.echServerKeys;
-                inModal.inbound.stream.tls.settings.echConfigList = msg.obj.echConfigList;
+                if (!inModal.inbound.stream.tls.settings) {
+                    inModal.inbound.stream.tls.settings = new TlsStreamSettings.Settings();
+                }
+                inModal.inbound.stream.tls.echServerKeys = msg.obj.echServerKeys ? msg.obj.echServerKeys.trim() : '';
+                inModal.inbound.stream.tls.settings.echConfigList = msg.obj.echConfigList ? msg.obj.echConfigList.trim() : '';
             },
             clearEchCert() {
                 this.inbound.stream.tls.echServerKeys = '';
-                this.inbound.stream.tls.settings.echConfigList = '';
+                if (this.inbound.stream.tls.settings) {
+                    this.inbound.stream.tls.settings.echConfigList = '';
+                }
             },
             async getNewVlessEnc() {
                 const selected = inModal.inbound.settings.selectedAuth;

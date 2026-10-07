@@ -2436,7 +2436,36 @@ func (s *InboundService) BuildInboundConfig(inbound *model.Inbound, txs ...*gorm
 		var stream map[string]interface{}
 		json.Unmarshal([]byte(inbound.StreamSettings), &stream)
 		if tlsSettings, ok := stream["tlsSettings"].(map[string]interface{}); ok {
+			if echServerKeys, ok := tlsSettings["echServerKeys"].(string); ok {
+				trimmed := strings.TrimSpace(echServerKeys)
+				if trimmed != "" {
+					tlsSettings["echServerKeys"] = trimmed
+				} else {
+					delete(tlsSettings, "echServerKeys")
+				}
+			}
+			if certs, ok := tlsSettings["certificates"].([]interface{}); ok {
+				var validCerts []interface{}
+				for _, c := range certs {
+					if cMap, ok := c.(map[string]interface{}); ok {
+						certFile, _ := cMap["certificateFile"].(string)
+						keyFile, _ := cMap["keyFile"].(string)
+						certBytes, _ := cMap["certificate"].([]interface{})
+						keyBytes, _ := cMap["key"].([]interface{})
+						if strings.TrimSpace(certFile) != "" || strings.TrimSpace(keyFile) != "" || len(certBytes) > 0 || len(keyBytes) > 0 {
+							validCerts = append(validCerts, c)
+						}
+					}
+				}
+				if len(validCerts) > 0 {
+					tlsSettings["certificates"] = validCerts
+				} else {
+					delete(tlsSettings, "certificates")
+				}
+			}
 			delete(tlsSettings, "settings")
+			delete(tlsSettings, "echConfigList")
+			delete(tlsSettings, "echForceQuery")
 		}
 		if realitySettings, ok := stream["realitySettings"].(map[string]interface{}); ok {
 			delete(realitySettings, "settings")

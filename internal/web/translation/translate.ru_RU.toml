@@ -719,6 +719,7 @@ successLogin = "Успешный вход"
 obtain = "Получить"
 getNewmldsa65Error = "Ошибка при получении сертификата mldsa65."
 getNewVlessEncError = "Ошибка при получении сертификата VlessEnc."
+sniRequiredForEch = "Пожалуйста, сначала укажите SNI для генерации сертификата ECH."
 
 [pages.settings.security]
 admin = "Админ"

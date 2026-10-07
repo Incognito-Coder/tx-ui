@@ -636,6 +636,16 @@ func (s *SubService) genHysteriaLink(inbound *model.Inbound, email string) strin
 				params["insecure"] = "1"
 			}
 		}
+		if echValue, ok := searchKey(tlsSettings, "echConfigList"); ok {
+			if ech, ok := echValue.(string); ok && strings.TrimSpace(ech) != "" {
+				params["ech"] = strings.TrimSpace(ech)
+			}
+		}
+	}
+	if echValue, ok := searchKey(tlsSetting, "echConfigList"); ok && params["ech"] == "" {
+		if ech, ok := echValue.(string); ok && strings.TrimSpace(ech) != "" {
+			params["ech"] = strings.TrimSpace(ech)
+		}
 	}
 
 	var settings map[string]interface{}
@@ -652,7 +662,7 @@ func (s *SubService) genHysteriaLink(inbound *model.Inbound, email string) strin
 	for k, v := range params {
 		q.Add(k, v)
 	}
-	url.RawQuery = q.Encode()
+	url.RawQuery = formatRawQuery(q)
 	url.Fragment = s.genRemark(inbound, email, "")
 	return url.String()
 }
@@ -768,6 +778,16 @@ func (s *SubService) genVmessLink(inbound *model.Inbound, email string) string {
 			if fpValue, ok := searchKey(tlsSettings, "fingerprint"); ok {
 				obj["fp"], _ = fpValue.(string)
 			}
+			if echValue, ok := searchKey(tlsSettings, "echConfigList"); ok {
+				if ech, ok := echValue.(string); ok && strings.TrimSpace(ech) != "" {
+					obj["ech"] = strings.TrimSpace(ech)
+				}
+			}
+		}
+		if echValue, ok := searchKey(tlsSetting, "echConfigList"); ok && obj["ech"] == nil {
+			if ech, ok := echValue.(string); ok && strings.TrimSpace(ech) != "" {
+				obj["ech"] = strings.TrimSpace(ech)
+			}
 		}
 	}
 
@@ -797,7 +817,7 @@ func (s *SubService) genVmessLink(inbound *model.Inbound, email string) string {
 			newSecurity, _ := ep["forceTls"].(string)
 			newObj := map[string]interface{}{}
 			for key, value := range obj {
-				if !(newSecurity == "none" && (key == "alpn" || key == "sni" || key == "fp")) {
+				if !(newSecurity == "none" && (key == "alpn" || key == "sni" || key == "fp" || key == "ech")) {
 					newObj[key] = value
 				}
 			}
@@ -831,6 +851,17 @@ func (s *SubService) genVmessLink(inbound *model.Inbound, email string) string {
 	return "vmess://" + base64.StdEncoding.EncodeToString(jsonStr)
 }
 
+var queryReplacer = strings.NewReplacer(
+	"%2C", ",",
+	"%2F", "/",
+	"%3A", ":",
+	"%2B", "+",
+)
+
+func formatRawQuery(q url.Values) string {
+	return queryReplacer.Replace(q.Encode())
+}
+
 func (s *SubService) genVlessLink(inbound *model.Inbound, email string) string {
 	address := s.address
 	if inbound.Protocol != model.VLESS {
@@ -860,8 +891,12 @@ func (s *SubService) genVlessLink(inbound *model.Inbound, email string) string {
 
 	var settings map[string]any
 	json.Unmarshal([]byte(inbound.Settings), &settings)
-	if encryption, ok := settings["encryption"].(string); ok {
+	if encryption, ok := settings["encryption"].(string); ok && encryption != "" && encryption != "none" {
 		params["encryption"] = encryption
+	} else if decryption, ok := settings["decryption"].(string); ok && decryption != "" && decryption != "none" {
+		params["encryption"] = decryption
+	} else {
+		params["encryption"] = "none"
 	}
 
 	switch streamNetwork {
@@ -965,6 +1000,16 @@ func (s *SubService) genVlessLink(inbound *model.Inbound, email string) string {
 			if fpValue, ok := searchKey(tlsSettings, "fingerprint"); ok {
 				params["fp"], _ = fpValue.(string)
 			}
+			if echValue, ok := searchKey(tlsSettings, "echConfigList"); ok {
+				if ech, ok := echValue.(string); ok && strings.TrimSpace(ech) != "" {
+					params["ech"] = strings.TrimSpace(ech)
+				}
+			}
+		}
+		if echValue, ok := searchKey(tlsSetting, "echConfigList"); ok && params["ech"] == "" {
+			if ech, ok := echValue.(string); ok && strings.TrimSpace(ech) != "" {
+				params["ech"] = strings.TrimSpace(ech)
+			}
 		}
 
 		if streamNetwork == "tcp" && len(clients[clientIndex].Flow) > 0 {
@@ -1050,13 +1095,13 @@ func (s *SubService) genVlessLink(inbound *model.Inbound, email string) string {
 			q := url.Query()
 
 			for k, v := range params {
-				if !(newSecurity == "none" && (k == "alpn" || k == "sni" || k == "fp")) {
+				if !(newSecurity == "none" && (k == "alpn" || k == "sni" || k == "fp" || k == "ech")) {
 					q.Add(k, v)
 				}
 			}
 
 			// Set the new query values on the URL
-			url.RawQuery = q.Encode()
+			url.RawQuery = formatRawQuery(q)
 
 			remark, _ := ep["remark"].(string)
 			url.Fragment = s.genRemark(inbound, email, remark)
@@ -1078,7 +1123,7 @@ func (s *SubService) genVlessLink(inbound *model.Inbound, email string) string {
 	}
 
 	// Set the new query values on the URL
-	url.RawQuery = q.Encode()
+	url.RawQuery = formatRawQuery(q)
 
 	url.Fragment = s.genRemark(inbound, email, "")
 	return url.String()
@@ -1209,6 +1254,16 @@ func (s *SubService) genTrojanLink(inbound *model.Inbound, email string) string 
 			if fpValue, ok := searchKey(tlsSettings, "fingerprint"); ok {
 				params["fp"], _ = fpValue.(string)
 			}
+			if echValue, ok := searchKey(tlsSettings, "echConfigList"); ok {
+				if ech, ok := echValue.(string); ok && strings.TrimSpace(ech) != "" {
+					params["ech"] = strings.TrimSpace(ech)
+				}
+			}
+		}
+		if echValue, ok := searchKey(tlsSetting, "echConfigList"); ok && params["ech"] == "" {
+			if ech, ok := echValue.(string); ok && strings.TrimSpace(ech) != "" {
+				params["ech"] = strings.TrimSpace(ech)
+			}
 		}
 	}
 
@@ -1290,13 +1345,13 @@ func (s *SubService) genTrojanLink(inbound *model.Inbound, email string) string 
 			q := url.Query()
 
 			for k, v := range params {
-				if !(newSecurity == "none" && (k == "alpn" || k == "sni" || k == "fp")) {
+				if !(newSecurity == "none" && (k == "alpn" || k == "sni" || k == "fp" || k == "ech")) {
 					q.Add(k, v)
 				}
 			}
 
 			// Set the new query values on the URL
-			url.RawQuery = q.Encode()
+			url.RawQuery = formatRawQuery(q)
 
 			remark, _ := ep["remark"].(string)
 			url.Fragment = s.genRemark(inbound, email, remark)
@@ -1319,7 +1374,7 @@ func (s *SubService) genTrojanLink(inbound *model.Inbound, email string) string 
 	}
 
 	// Set the new query values on the URL
-	url.RawQuery = q.Encode()
+	url.RawQuery = formatRawQuery(q)
 
 	url.Fragment = s.genRemark(inbound, email, "")
 	return url.String()
@@ -1454,6 +1509,16 @@ func (s *SubService) genShadowsocksLink(inbound *model.Inbound, email string) st
 			if fpValue, ok := searchKey(tlsSettings, "fingerprint"); ok {
 				params["fp"], _ = fpValue.(string)
 			}
+			if echValue, ok := searchKey(tlsSettings, "echConfigList"); ok {
+				if ech, ok := echValue.(string); ok && strings.TrimSpace(ech) != "" {
+					params["ech"] = strings.TrimSpace(ech)
+				}
+			}
+		}
+		if echValue, ok := searchKey(tlsSetting, "echConfigList"); ok && params["ech"] == "" {
+			if ech, ok := echValue.(string); ok && strings.TrimSpace(ech) != "" {
+				params["ech"] = strings.TrimSpace(ech)
+			}
 		}
 	}
 
@@ -1490,13 +1555,13 @@ func (s *SubService) genShadowsocksLink(inbound *model.Inbound, email string) st
 			q := url.Query()
 
 			for k, v := range params {
-				if !(newSecurity == "none" && (k == "alpn" || k == "sni" || k == "fp")) {
+				if !(newSecurity == "none" && (k == "alpn" || k == "sni" || k == "fp" || k == "ech")) {
 					q.Add(k, v)
 				}
 			}
 
 			// Set the new query values on the URL
-			url.RawQuery = q.Encode()
+			url.RawQuery = formatRawQuery(q)
 
 			remark, _ := ep["remark"].(string)
 			url.Fragment = s.genRemark(inbound, email, remark)
@@ -1518,13 +1583,16 @@ func (s *SubService) genShadowsocksLink(inbound *model.Inbound, email string) st
 	}
 
 	// Set the new query values on the URL
-	url.RawQuery = q.Encode()
+	url.RawQuery = formatRawQuery(q)
 
 	url.Fragment = s.genRemark(inbound, email, "")
 	return url.String()
 }
 
 func (s *SubService) genRemark(inbound *model.Inbound, email string, extra string) string {
+	if s.remarkModel == "" {
+		s.remarkModel = "-ieo"
+	}
 	separationChar := string(s.remarkModel[0])
 	orderChars := s.remarkModel[1:]
 	orders := map[byte]string{

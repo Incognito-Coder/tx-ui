@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -364,7 +365,21 @@ func (a *ServerController) getNewX25519Cert(c *gin.Context) {
 	jsonObj(c, cert, nil)
 }
 func (a *ServerController) getNewEchCert(c *gin.Context) {
-	sni := c.PostForm("sni")
+	var body struct {
+		SNI string `json:"sni" form:"sni"`
+	}
+	_ = c.ShouldBind(&body)
+	sni := strings.TrimSpace(body.SNI)
+	if sni == "" {
+		sni = strings.TrimSpace(c.PostForm("sni"))
+	}
+	if sni == "" {
+		sni = strings.TrimSpace(c.Query("sni"))
+	}
+	if sni == "" {
+		jsonMsg(c, I18nWeb(c, "pages.inbounds.toasts.sniRequiredForEch"), errors.New("sni cannot be empty"))
+		return
+	}
 	cert, err := a.serverService.GetNewEchCert(sni)
 	if err != nil {
 		jsonMsg(c, "get ech certificate", err)

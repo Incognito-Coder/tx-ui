@@ -868,14 +868,14 @@ class TlsStreamSettings extends XrayCommonClass {
 
     static fromJson(json = {}) {
         let certs;
-        let settings;
         if (!ObjectUtil.isEmpty(json.certificates)) {
             certs = json.certificates.map(cert => TlsStreamSettings.Cert.fromJson(cert));
         }
 
-        if (!ObjectUtil.isEmpty(json.settings)) {
-            settings = new TlsStreamSettings.Settings(json.settings.fingerprint, json.settings.echConfigList);
-        }
+        const echConfigList = json.settings?.echConfigList || json.echConfigList || '';
+        const fingerprint = json.settings?.fingerprint || json.fingerprint || UTLS_FINGERPRINT.UTLS_CHROME;
+        const settings = new TlsStreamSettings.Settings(fingerprint, echConfigList);
+
         return new TlsStreamSettings(
             json.serverName,
             json.minVersion,
@@ -886,7 +886,7 @@ class TlsStreamSettings extends XrayCommonClass {
             json.enableSessionResumption,
             certs,
             json.alpn,
-            json.echServerKeys,
+            json.echServerKeys ? json.echServerKeys.trim() : '',
             json.echForceQuery,
             settings,
         );
@@ -901,6 +901,8 @@ class TlsStreamSettings extends XrayCommonClass {
     }
 
     toJson() {
+        const echServerKeys = this.echServerKeys ? this.echServerKeys.trim() : '';
+        const echConfigList = this.settings?.echConfigList ? this.settings.echConfigList.trim() : '';
         return {
             serverName: this.sni,
             minVersion: this.minVersion,
@@ -911,7 +913,8 @@ class TlsStreamSettings extends XrayCommonClass {
             enableSessionResumption: this.enableSessionResumption,
             certificates: TlsStreamSettings.toJsonArray(this.certs),
             alpn: this.alpn,
-            echServerKeys: this.echServerKeys,
+            echServerKeys: echServerKeys,
+            echConfigList: echConfigList,
             echForceQuery: this.echForceQuery,
             settings: this.settings,
         };
@@ -1811,6 +1814,10 @@ class Inbound extends XrayCommonClass {
             if (this.stream.tls.alpn.length > 0) {
                 obj.alpn = this.stream.tls.alpn.join(',');
             }
+            const echConfig = this.stream.tls.settings?.echConfigList || this.stream.tls.echConfigList;
+            if (echConfig?.length > 0) {
+                obj.ech = echConfig.trim();
+            }
         }
 
         return 'vmess://' + base64(JSON.stringify(obj, null, 2));
@@ -1875,8 +1882,9 @@ class Inbound extends XrayCommonClass {
                 if (!ObjectUtil.isEmpty(this.stream.tls.sni)) {
                     params.set("sni", this.stream.tls.sni);
                 }
-                if (this.stream.tls.settings.echConfigList?.length > 0) {
-                    params.set("ech", this.stream.tls.settings.echConfigList);
+                const echConfig = this.stream.tls.settings?.echConfigList || this.stream.tls.echConfigList;
+                if (echConfig?.length > 0) {
+                    params.set("ech", echConfig.trim());
                 }
                 if (type == "tcp" && !ObjectUtil.isEmpty(flow)) {
                     params.set("flow", flow);
@@ -1919,7 +1927,15 @@ class Inbound extends XrayCommonClass {
             url.searchParams.set(key, value)
         }
         url.hash = encodeURIComponent(remark);
-        return url.toString();
+        return this.cleanUrl(url);
+    }
+
+    cleanUrl(url) {
+        return url.toString()
+            .replace(/%2C/gi, ',')
+            .replace(/%2F/gi, '/')
+            .replace(/%3A/gi, ':')
+            .replace(/%2B/gi, '+');
     }
 
     genSSLink(address = '', port = this.port, forceTls, remark = '', clientPassword) {
@@ -1976,8 +1992,9 @@ class Inbound extends XrayCommonClass {
             if (this.stream.isTls) {
                 params.set("fp", this.stream.tls.settings.fingerprint);
                 params.set("alpn", this.stream.tls.alpn);
-                if (this.stream.tls.settings.echConfigList?.length > 0) {
-                    params.set("ech", this.stream.tls.settings.echConfigList);
+                const echConfig = this.stream.tls.settings?.echConfigList || this.stream.tls.echConfigList;
+                if (echConfig?.length > 0) {
+                    params.set("ech", echConfig.trim());
                 }
                 if (!ObjectUtil.isEmpty(this.stream.tls.sni)) {
                     params.set("sni", this.stream.tls.sni);
@@ -1996,7 +2013,7 @@ class Inbound extends XrayCommonClass {
             url.searchParams.set(key, value)
         }
         url.hash = encodeURIComponent(remark);
-        return url.toString();
+        return this.cleanUrl(url);
     }
 
     genTrojanLink(address = '', port = this.port, forceTls, remark = '', clientPassword) {
@@ -2052,8 +2069,9 @@ class Inbound extends XrayCommonClass {
             if (this.stream.isTls) {
                 params.set("fp", this.stream.tls.settings.fingerprint);
                 params.set("alpn", this.stream.tls.alpn);
-                if (this.stream.tls.settings.echConfigList?.length > 0) {
-                    params.set("ech", this.stream.tls.settings.echConfigList);
+                const echConfig = this.stream.tls.settings?.echConfigList || this.stream.tls.echConfigList;
+                if (echConfig?.length > 0) {
+                    params.set("ech", echConfig.trim());
                 }
                 if (!ObjectUtil.isEmpty(this.stream.tls.sni)) {
                     params.set("sni", this.stream.tls.sni);
@@ -2085,7 +2103,7 @@ class Inbound extends XrayCommonClass {
             url.searchParams.set(key, value)
         }
         url.hash = encodeURIComponent(remark);
-        return url.toString();
+        return this.cleanUrl(url);
     }
 
     genHysteriaLink(address = '', port = this.port, remark = '', clientAuth) {
@@ -2096,7 +2114,8 @@ class Inbound extends XrayCommonClass {
         params.set("security", "tls");
         if (this.stream.tls.settings.fingerprint?.length > 0) params.set("fp", this.stream.tls.settings.fingerprint);
         if (this.stream.tls.alpn?.length > 0) params.set("alpn", this.stream.tls.alpn);
-        if (this.stream.tls.settings.echConfigList?.length > 0) params.set("ech", this.stream.tls.settings.echConfigList);
+        const echConfig = this.stream.tls.settings?.echConfigList || this.stream.tls.echConfigList;
+        if (echConfig?.length > 0) params.set("ech", echConfig.trim());
         if (this.stream.tls.sni?.length > 0) params.set("sni", this.stream.tls.sni);
 
         const url = new URL(link);
@@ -2104,7 +2123,7 @@ class Inbound extends XrayCommonClass {
             url.searchParams.set(key, value);
         }
         url.hash = encodeURIComponent(remark);
-        return url.toString();
+        return this.cleanUrl(url);
     }
 
     getWireguardLink(address, port, remark, peerId) {

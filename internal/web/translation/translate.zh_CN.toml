@@ -719,6 +719,7 @@ successLogin = "登录"
 obtain = "获取"
 getNewmldsa65Error = "获取mldsa65证书时出错。"
 getNewVlessEncError = "获取VlessEnc证书时出错。"
+sniRequiredForEch = "请先输入 SNI 以生成 ECH 证书。"
 
 [pages.settings.security]
 admin = "管理员"

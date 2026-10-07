@@ -198,8 +198,13 @@ func (s *SubJsonService) getConfig(inbound *model.Inbound, client model.Client, 
 			var vlessSettings model.VLESSSettings
 			_ = json.Unmarshal([]byte(inbound.Settings), &vlessSettings)
 
+			enc := vlessSettings.Encryption
+			if (enc == "" || enc == "none") && vlessSettings.Decryption != "" && vlessSettings.Decryption != "none" {
+				enc = vlessSettings.Decryption
+			}
+
 			newOutbounds = append(newOutbounds,
-				s.genVnext(inbound, streamSettings, client, vlessSettings.Encryption))
+				s.genVnext(inbound, streamSettings, client, enc))
 		case "trojan", "shadowsocks":
 			newOutbounds = append(newOutbounds, s.genServer(inbound, streamSettings, client))
 		case "hysteria":
@@ -323,6 +328,16 @@ func (s *SubJsonService) tlsData(tData map[string]interface{}) map[string]interf
 	tlsData["alpn"] = tData["alpn"]
 	if fingerprint, ok := tlsClientSettings["fingerprint"].(string); ok {
 		tlsData["fingerprint"] = fingerprint
+	}
+	if echConfigList, ok := tlsClientSettings["echConfigList"].(string); ok && strings.TrimSpace(echConfigList) != "" {
+		tlsData["echConfigList"] = strings.TrimSpace(echConfigList)
+	} else if echConfigList, ok := tData["echConfigList"].(string); ok && strings.TrimSpace(echConfigList) != "" {
+		tlsData["echConfigList"] = strings.TrimSpace(echConfigList)
+	}
+	if echForceQuery, ok := tlsClientSettings["echForceQuery"].(string); ok && strings.TrimSpace(echForceQuery) != "" && echForceQuery != "none" {
+		tlsData["echForceQuery"] = strings.TrimSpace(echForceQuery)
+	} else if echForceQuery, ok := tData["echForceQuery"].(string); ok && strings.TrimSpace(echForceQuery) != "" && echForceQuery != "none" {
+		tlsData["echForceQuery"] = strings.TrimSpace(echForceQuery)
 	}
 	return tlsData
 }

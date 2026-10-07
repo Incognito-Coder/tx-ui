@@ -1526,6 +1526,10 @@ func (s *ServerService) GetNewCert() (any, error) {
 }
 
 func (s *ServerService) GetNewEchCert(sni string) (interface{}, error) {
+	sni = strings.TrimSpace(sni)
+	if sni == "" {
+		return nil, common.NewError("sni cannot be empty")
+	}
 	// Run the command
 	cmd := exec.Command(xray.GetBinaryPath(), "tls", "ech", "--serverName", sni)
 	var out bytes.Buffer
@@ -1535,13 +1539,20 @@ func (s *ServerService) GetNewEchCert(sni string) (interface{}, error) {
 		return nil, err
 	}
 
-	lines := strings.Split(out.String(), "\n")
-	if len(lines) < 4 {
-		return nil, common.NewError("invalid ech cert")
+	lines := strings.Split(strings.ReplaceAll(out.String(), "\r\n", "\n"), "\n")
+	var configList, serverKeys string
+	for i := 0; i < len(lines); i++ {
+		line := strings.TrimSpace(lines[i])
+		if strings.HasPrefix(line, "ECH config list:") && i+1 < len(lines) {
+			configList = strings.TrimSpace(lines[i+1])
+		} else if strings.HasPrefix(line, "ECH server keys:") && i+1 < len(lines) {
+			serverKeys = strings.TrimSpace(lines[i+1])
+		}
 	}
 
-	configList := lines[1]
-	serverKeys := lines[3]
+	if configList == "" || serverKeys == "" {
+		return nil, common.NewError("invalid ech cert")
+	}
 
 	return map[string]interface{}{
 		"echServerKeys": serverKeys,

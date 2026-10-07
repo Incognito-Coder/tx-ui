@@ -719,6 +719,7 @@ successLogin = "ورود"
 obtain = "فراهم\u200cسازی"
 getNewmldsa65Error = "خطا در دریافت گواهی mldsa65."
 getNewVlessEncError = "خطا در دریافت گواهی VlessEnc."
+sniRequiredForEch = "لطفاً ابتدا SNI را برای تولید گواهی ECH وارد کنید."
 
 [pages.settings.security]
 admin = "مدیر"

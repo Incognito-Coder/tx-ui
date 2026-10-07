@@ -719,6 +719,7 @@ successLogin = "Login"
 obtain = "Obtain"
 getNewmldsa65Error = "Error while obtaining mldsa65."
 getNewVlessEncError = "Error while obtaining VlessEnc."
+sniRequiredForEch = "Please enter SNI first to generate ECH certificate."
 
 [pages.settings.security]
 admin = "Admin"

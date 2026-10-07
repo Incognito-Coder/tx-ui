@@ -61,3 +61,50 @@ func TestHotReloadInboundByTagWhenProcessNotRunning(t *testing.T) {
 		t.Fatalf("expected nil error when Xray process is not running, got %v", err)
 	}
 }
+
+func TestBuildInboundConfigSanitizesECH(t *testing.T) {
+	inboundService := InboundService{}
+	inbound := &model.Inbound{
+		Id:             2,
+		UserId:         1,
+		Tag:            "inbound-443",
+		Port:           443,
+		Protocol:       model.VLESS,
+		Listen:         "0.0.0.0",
+		Enable:         true,
+		Settings:       `{"clients":[{"id":"uuid-1","email":"user1@example.com"}]}`,
+		StreamSettings: `{"network":"tcp","security":"tls","tlsSettings":{"serverName":"example.com","echServerKeys":"ACC03HO...==\r\n","echConfigList":"AF7+DQBaAA...","echForceQuery":"full","settings":{"fingerprint":"chrome","echConfigList":"AF7+DQBaAA..."}}}`,
+	}
+
+	config, err := inboundService.BuildInboundConfig(inbound)
+	if err != nil {
+		t.Fatalf("BuildInboundConfig returned unexpected error: %v", err)
+	}
+
+	var stream map[string]interface{}
+	if err := json.Unmarshal(config.StreamSettings, &stream); err != nil {
+		t.Fatalf("failed to unmarshal streamSettings: %v", err)
+	}
+
+	tlsSettings, ok := stream["tlsSettings"].(map[string]interface{})
+	if !ok {
+		t.Fatal("expected tlsSettings in streamSettings")
+	}
+
+	if echServerKeys, ok := tlsSettings["echServerKeys"].(string); !ok || echServerKeys != "ACC03HO...==" {
+		t.Fatalf("expected trimmed echServerKeys 'ACC03HO...==', got '%v'", echServerKeys)
+	}
+
+	if _, ok := tlsSettings["settings"]; ok {
+		t.Fatal("expected 'settings' to be removed from tlsSettings")
+	}
+
+	if _, ok := tlsSettings["echConfigList"]; ok {
+		t.Fatal("expected client-only 'echConfigList' to be removed from inbound tlsSettings")
+	}
+
+	if _, ok := tlsSettings["echForceQuery"]; ok {
+		t.Fatal("expected 'echForceQuery' to be removed from inbound tlsSettings")
+	}
+}
+
