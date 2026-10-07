@@ -939,6 +939,51 @@
                                                 </a-menu-item>
                                             </a-menu>
                                         </a-dropdown>
+                                        <!-- Selection helper dropdown -->
+                                        <a-dropdown :trigger="['click']">
+                                            <a-button icon="check-square">
+                                                <template v-if="!isMobile">{{ i18n "pages.node_clients.select" }}</template>
+                                                <a-icon type="down" style="font-size: 10px;"></a-icon>
+                                            </a-button>
+                                            <a-menu :theme="themeSwitcher.currentTheme" @click="handleSelectMenu" slot="overlay">
+                                                <a-menu-item key="selectAll">
+                                                    <a-icon type="check-square"></a-icon>
+                                                    {{ i18n "pages.node_clients.selectAll" }} ([[ clients.length ]])
+                                                </a-menu-item>
+                                                <a-menu-item key="selectFiltered" v-if="filteredClients.length !== clients.length">
+                                                    <a-icon type="filter"></a-icon>
+                                                    {{ i18n "pages.node_clients.selectFiltered" }} ([[ filteredClients.length ]])
+                                                </a-menu-item>
+                                                <a-menu-divider></a-menu-divider>
+                                                <a-menu-item key="selectLinked">
+                                                    <a-icon type="link"></a-icon>
+                                                    {{ i18n "pages.node_clients.selectLinked" }}
+                                                </a-menu-item>
+                                                <a-menu-item key="selectUnlinked">
+                                                    <a-icon type="disconnect"></a-icon>
+                                                    {{ i18n "pages.node_clients.selectUnlinked" }}
+                                                </a-menu-item>
+                                                <a-menu-item key="selectByInbound" v-if="filterInboundId !== ''">
+                                                    <a-icon type="api"></a-icon>
+                                                    {{ i18n "pages.node_clients.selectCurrentInbound" }}
+                                                </a-menu-item>
+                                                <a-menu-divider v-if="selectedRowKeys.length > 0"></a-menu-divider>
+                                                <a-menu-item key="clearSelection" v-if="selectedRowKeys.length > 0">
+                                                    <a-icon type="close-square"></a-icon>
+                                                    {{ i18n "pages.node_clients.selectNone" }}
+                                                </a-menu-item>
+                                            </a-menu>
+                                        </a-dropdown>
+
+                                        <!-- Bulk Manage Links Button -->
+                                        <a-button @click="openBulkLinksModal" icon="link" type="primary" ghost
+                                            v-if="selectedRowKeys.length > 0">
+                                            <template v-if="!isMobile">{{ i18n "pages.node_clients.bulkManageLinks" }} ([[ selectedRowKeys.length ]])</template>
+                                            <template v-else>
+                                                <a-icon type="link"></a-icon> ([[ selectedRowKeys.length ]])
+                                            </template>
+                                        </a-button>
+
                                         <a-button @click="confirmBulkDelete" icon="delete" type="danger"
                                             v-if="selectedRowKeys.length > 0">
                                             <template v-if="!isMobile">{{ i18n "delete" }} ([[ selectedRowKeys.length ]])</template>
@@ -1474,6 +1519,69 @@
             </a-layout-content>
         </a-layout>
 
+        <!-- Bulk Manage Links Modal -->
+        <a-modal :class="themeSwitcher.currentTheme" :closable="true"
+            :confirm-loading="bulkLinksModal.confirmLoading" :mask-closable="false" ok-text='{{ i18n "sure" }}'
+            cancel-text='{{ i18n "close" }}' @ok="handleBulkLinksOk"
+            :title="'{{ i18n "pages.node_clients.bulkLinksModalTitle" }} (' + selectedRowKeys.length + ')'"
+            v-model="bulkLinksModal.visible" wrap-class-name="panel-modal panel-modal-lg">
+            <a-form :colon="false" :label-col="{ md: {span:6} }" :wrapper-col="{ md: {span:18} }">
+                <div style="margin-bottom: 16px;">
+                    <a-alert :message="selectedRowKeys.length + ' {{ i18n "pages.node_clients.clientsSelected" }}'" type="info" show-icon>
+                    </a-alert>
+                </div>
+
+                <a-form-item label='{{ i18n "pages.node_clients.bulkAction" }}'>
+                    <a-radio-group v-model="bulkLinksModal.action" button-style="solid">
+                        <a-radio-button value="add">
+                            <a-icon type="plus" style="margin-right: 4px;"></a-icon>
+                            {{ i18n "pages.node_clients.bulkActionAdd" }}
+                        </a-radio-button>
+                        <a-radio-button value="set">
+                            <a-icon type="swap" style="margin-right: 4px;"></a-icon>
+                            {{ i18n "pages.node_clients.bulkActionReplace" }}
+                        </a-radio-button>
+                        <a-radio-button value="remove">
+                            <a-icon type="minus" style="margin-right: 4px;"></a-icon>
+                            {{ i18n "pages.node_clients.bulkActionRemove" }}
+                        </a-radio-button>
+                    </a-radio-group>
+                </a-form-item>
+
+                <a-form-item label='{{ i18n "inbounds" }}'>
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                        <div>
+                            <a-button size="small" @click="bulkLinksModal.selectAll(allInbounds)" style="margin-right: 6px;">
+                                {{ i18n "all" }}
+                            </a-button>
+                            <a-button size="small" @click="bulkLinksModal.clearAll()">
+                                {{ i18n "none" }}
+                            </a-button>
+                        </div>
+                        <span style="font-size: 12px; color: var(--ui-text-muted);">
+                            [[ bulkLinksModal.selectedInboundIds.length ]] / [[ allInbounds.length ]] {{ i18n "inbounds" }}
+                        </span>
+                    </div>
+                    <div class="inbound-select-grid" style="max-height: 260px; overflow-y: auto; padding: 4px;">
+                        <a-checkbox v-for="ib in allInbounds" :key="ib.id"
+                            :checked="bulkLinksModal.selectedInboundIds.includes(Number(ib.id))"
+                            @change="e => bulkLinksModal.toggleInbound(ib.id, e.target.checked)">
+                            [[ ib.remark || ('#' + ib.id) ]]
+                            <span style="font-size: 11px; color: #888;">([[ ib.protocol ]]:[[ ib.port ]])</span>
+                        </a-checkbox>
+                    </div>
+                </a-form-item>
+
+                <a-form-item label='{{ i18n "pages.node_clients.flowOverride" }}' v-if="bulkLinksModal.action !== 'remove'">
+                    <a-input v-model="bulkLinksModal.flow" placeholder="e.g. xtls-rprx-vision">
+                        <a-tag slot="addonAfter" style="cursor: pointer; margin: 0;" @click="bulkLinksModal.flow = 'xtls-rprx-vision'">
+                            xtls-rprx-vision
+                        </a-tag>
+                    </a-input>
+                </a-form-item>
+            </a-form>
+        </a-modal>
+
         <!-- Manage Links Drawer -->
         <a-drawer :wrap-class-name="themeSwitcher.currentTheme" :closable="true"
             :title="'{{ i18n "pages.node_clients.manageLinksFor" }}: ' + (linkDrawer.client ? linkDrawer.client.email : '')"
@@ -1483,6 +1591,18 @@
                 <div style="margin-bottom: 16px;">
                     <a-alert message='{{ i18n "pages.node_clients.linkDrawerHint" }}' type="info" show-icon closable>
                     </a-alert>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <span style="font-weight: 500;">{{ i18n "inbounds" }} ([[ linkDrawer.selectedLinks.length ]] / [[ linkDrawer.allInbounds.length ]])</span>
+                    <div>
+                        <a-button size="small" @click="linkDrawer.selectAll()" style="margin-right: 6px;">
+                            {{ i18n "pages.node_clients.selectAll" }}
+                        </a-button>
+                        <a-button size="small" @click="linkDrawer.clearAll()">
+                            {{ i18n "pages.node_clients.selectNone" }}
+                        </a-button>
+                    </div>
                 </div>
 
                 <a-list :data-source="linkDrawer.allInbounds" bordered size="small">
@@ -2015,6 +2135,52 @@
                         const numId = Number(inboundId);
                         const link = this.selectedLinks.find(l => Number(l.inboundId) === numId);
                         if (link) link.flow = flow || '';
+                    },
+                    selectAll() {
+                        const existingMap = {};
+                        (this.selectedLinks || []).forEach(l => {
+                            existingMap[Number(l.inboundId)] = l.flow || '';
+                        });
+                        this.selectedLinks = this.allInbounds.map(ib => ({
+                            inboundId: Number(ib.id),
+                            flow: existingMap[Number(ib.id)] || '',
+                        }));
+                    },
+                    clearAll() {
+                        this.selectedLinks = [];
+                    },
+                },
+                bulkLinksModal: {
+                    visible: false,
+                    confirmLoading: false,
+                    action: 'add',
+                    selectedInboundIds: [],
+                    flow: '',
+                    open() {
+                        this.action = 'add';
+                        this.selectedInboundIds = [];
+                        this.flow = '';
+                        this.confirmLoading = false;
+                        this.visible = true;
+                    },
+                    close() {
+                        this.visible = false;
+                    },
+                    selectAll(allInbounds) {
+                        this.selectedInboundIds = (allInbounds || []).map(i => Number(i.id));
+                    },
+                    clearAll() {
+                        this.selectedInboundIds = [];
+                    },
+                    toggleInbound(id, checked) {
+                        const numId = Number(id);
+                        if (checked) {
+                            if (!this.selectedInboundIds.includes(numId)) {
+                                this.selectedInboundIds.push(numId);
+                            }
+                        } else {
+                            this.selectedInboundIds = this.selectedInboundIds.filter(i => i !== numId);
+                        }
                     },
                 },
             },
@@ -2595,6 +2761,63 @@
                             }
                         },
                     });
+                },
+                openBulkLinksModal() {
+                    if (this.selectedRowKeys.length === 0) {
+                        this.$message.warning('{{ i18n "pages.node_clients.noClientsSelected" }}');
+                        return;
+                    }
+                    this.bulkLinksModal.open();
+                },
+                async handleBulkLinksOk() {
+                    const bm = this.bulkLinksModal;
+                    if (this.selectedRowKeys.length === 0) return;
+                    if (bm.selectedInboundIds.length === 0 && (bm.action === 'add' || bm.action === 'remove')) {
+                        this.$message.warning('{{ i18n "pages.node_clients.noInboundsSelected" }}');
+                        return;
+                    }
+                    bm.confirmLoading = true;
+                    try {
+                        const res = await HttpUtil.postJson('/panel/api/clients/bulkSetLinks', {
+                            clientIds: this.selectedRowKeys.map(Number),
+                            inboundIds: bm.selectedInboundIds.map(Number),
+                            action: bm.action,
+                            flow: bm.flow || '',
+                        });
+                        if (res.success) {
+                            bm.close();
+                            await this.loadAllData();
+                        }
+                    } finally {
+                        bm.confirmLoading = false;
+                    }
+                },
+                handleSelectMenu(item) {
+                    if (item.key === 'selectAll') {
+                        this.selectedRowKeys = this.clients.map(c => c.id);
+                    } else if (item.key === 'selectFiltered') {
+                        this.selectedRowKeys = this.filteredClients.map(c => c.id);
+                    } else if (item.key === 'selectLinked') {
+                        this.selectedRowKeys = this.clients
+                            .filter(c => (this.clientLinksMap[c.id] || []).length > 0)
+                            .map(c => c.id);
+                    } else if (item.key === 'selectUnlinked') {
+                        this.selectedRowKeys = this.clients
+                            .filter(c => (this.clientLinksMap[c.id] || []).length === 0)
+                            .map(c => c.id);
+                    } else if (item.key === 'selectByInbound') {
+                        if (this.filterInboundId !== '') {
+                            const targetId = Number(this.filterInboundId);
+                            this.selectedRowKeys = this.clients
+                                .filter(c => {
+                                    const links = this.clientLinksMap[c.id] || [];
+                                    return links.some(l => Number(typeof l === 'object' && l !== null ? l.inboundId : l) === targetId);
+                                })
+                                .map(c => c.id);
+                        }
+                    } else if (item.key === 'clearSelection') {
+                        this.selectedRowKeys = [];
+                    }
                 },
                 handleGeneralAction(item) {
                     if (item.key === 'resetAllTraffics') {

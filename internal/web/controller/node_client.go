@@ -38,6 +38,7 @@ func (a *NodeClientController) initRouter(g *gin.RouterGroup) {
 	g.GET("/:id/links", a.getLinks)
 	g.POST("/:id/addLink", a.addLink)
 	g.POST("/:id/setLinks", a.setLinks)
+	g.POST("/bulkSetLinks", a.bulkSetLinks)
 	g.POST("/:id/removeLink/:inboundId", a.removeLink)
 	g.GET("/:id/traffic", a.getTraffic)
 	g.POST("/:id/resetTraffic", a.resetTraffic)
@@ -200,6 +201,61 @@ func (a *NodeClientController) setLinks(c *gin.Context) {
 		a.xrayService.SetToNeedRestart()
 	}
 	jsonMsg(c, "Links updated", nil)
+}
+
+func (a *NodeClientController) bulkSetLinks(c *gin.Context) {
+	var req struct {
+		ClientIds  []int  `json:"clientIds" form:"clientIds"`
+		InboundIds []int  `json:"inboundIds" form:"inboundIds"`
+		Action     string `json:"action" form:"action"`
+		Flow       string `json:"flow" form:"flow"`
+	}
+
+	raw, _ := c.GetRawData()
+	if len(raw) > 0 {
+		_ = json.Unmarshal(raw, &req)
+	}
+	if len(req.ClientIds) == 0 {
+		c.Request.Body = io.NopCloser(bytes.NewBuffer(raw))
+		_ = c.ShouldBind(&req)
+	}
+	if len(req.ClientIds) == 0 {
+		formIds := c.PostFormArray("clientIds")
+		if len(formIds) == 0 {
+			formIds = c.PostFormArray("clientIds[]")
+		}
+		for _, fid := range formIds {
+			if n, perr := strconv.Atoi(fid); perr == nil {
+				req.ClientIds = append(req.ClientIds, n)
+			}
+		}
+	}
+	if len(req.ClientIds) == 0 {
+		jsonMsg(c, "No clients selected", nil)
+		return
+	}
+	if len(req.InboundIds) == 0 && req.Action != "set" && req.Action != "replace" {
+		formIds := c.PostFormArray("inboundIds")
+		if len(formIds) == 0 {
+			formIds = c.PostFormArray("inboundIds[]")
+		}
+		for _, fid := range formIds {
+			if n, perr := strconv.Atoi(fid); perr == nil {
+				req.InboundIds = append(req.InboundIds, n)
+			}
+		}
+	}
+
+	needRestart, err := a.nodeClientService.BulkSetLinks(req.ClientIds, req.InboundIds, req.Action, req.Flow)
+	if err != nil {
+		jsonMsg(c, "Bulk update links failed: "+err.Error(), err)
+		return
+	}
+
+	if needRestart {
+		a.xrayService.SetToNeedRestart()
+	}
+	jsonMsg(c, fmt.Sprintf("Successfully updated links for %d clients", len(req.ClientIds)), nil)
 }
 
 func (a *NodeClientController) resetAllTraffics(c *gin.Context) {

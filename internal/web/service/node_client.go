@@ -1804,6 +1804,86 @@ func (s *NodeClientService) SetLinks(nodeClientId int, links []NodeClientLinkInp
 	return needRestart, nil
 }
 
+// BulkSetLinks updates links for multiple clients according to the specified action.
+// Supported actions:
+//   - "set" / "replace": replaces all links of each client with inboundIds
+//   - "add": preserves existing links and adds inboundIds (optionally updating flow)
+//   - "remove": removes inboundIds from each client's existing links
+func (s *NodeClientService) BulkSetLinks(clientIds []int, inboundIds []int, action string, flow string) (bool, error) {
+	if len(clientIds) == 0 {
+		return false, nil
+	}
+
+	anyNeedRestart := false
+	for _, cid := range clientIds {
+		var targetLinks []NodeClientLinkInput
+
+		switch action {
+		case "add":
+			existing, err := s.GetLinks(cid)
+			if err != nil {
+				return anyNeedRestart, fmt.Errorf("failed to get links for client %d: %w", cid, err)
+			}
+			linkMap := make(map[int]string, len(existing)+len(inboundIds))
+			for _, l := range existing {
+				linkMap[l.InboundId] = l.Flow
+			}
+			for _, inId := range inboundIds {
+				if flow != "" {
+					linkMap[inId] = flow
+				} else if _, ok := linkMap[inId]; !ok {
+					linkMap[inId] = ""
+				}
+			}
+			targetLinks = make([]NodeClientLinkInput, 0, len(linkMap))
+			for inId, fl := range linkMap {
+				targetLinks = append(targetLinks, NodeClientLinkInput{
+					InboundId: inId,
+					Flow:      fl,
+				})
+			}
+
+		case "remove":
+			existing, err := s.GetLinks(cid)
+			if err != nil {
+				return anyNeedRestart, fmt.Errorf("failed to get links for client %d: %w", cid, err)
+			}
+			removeSet := make(map[int]bool, len(inboundIds))
+			for _, inId := range inboundIds {
+				removeSet[inId] = true
+			}
+			targetLinks = make([]NodeClientLinkInput, 0, len(existing))
+			for _, l := range existing {
+				if !removeSet[l.InboundId] {
+					targetLinks = append(targetLinks, NodeClientLinkInput{
+						InboundId: l.InboundId,
+						Flow:      l.Flow,
+					})
+				}
+			}
+
+		default: // "set" or "replace"
+			targetLinks = make([]NodeClientLinkInput, 0, len(inboundIds))
+			for _, inId := range inboundIds {
+				targetLinks = append(targetLinks, NodeClientLinkInput{
+					InboundId: inId,
+					Flow:      flow,
+				})
+			}
+		}
+
+		needRestart, err := s.SetLinks(cid, targetLinks)
+		if err != nil {
+			return anyNeedRestart, fmt.Errorf("failed to update links for client %d: %w", cid, err)
+		}
+		if needRestart {
+			anyNeedRestart = true
+		}
+	}
+
+	return anyNeedRestart, nil
+}
+
 // BulkCreate creates multiple clients and links each to the specified inbounds.
 // Hot-adds users to running Xray via API without restarting Xray.
 func (s *NodeClientService) BulkCreate(clients []model.NodeClient, inboundIds []int) (bool, error) {
