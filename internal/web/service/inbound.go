@@ -359,28 +359,38 @@ func (s *InboundService) AddClient(inboundId int, client *model.Client) (bool, e
 func (s *InboundService) DelInbound(id int) (bool, error) {
 	db := database.GetDB()
 
+	// Flush any in-flight traffic from Xray before deletion so db is up to date
+	if p != nil && p.IsRunning() {
+		var xrayApi xray.XrayAPI
+		if err := xrayApi.Init(p.GetAPIPort()); err == nil {
+			if traffics, clientTraffics, err := xrayApi.GetTraffic(true); err == nil {
+				_, _ = s.AddTraffic(traffics, clientTraffics)
+			}
+			xrayApi.Close()
+		}
+	}
+
 	var tag string
 	needRestart := false
 	result := db.Model(model.Inbound{}).Select("tag").Where("id = ? and enable = ?", id, true).First(&tag)
 	if result.Error == nil {
-		s.xrayApi.Init(p.GetAPIPort())
-		err1 := s.xrayApi.DelInbound(tag)
-		if err1 == nil {
-			logger.Debug("Inbound deleted by api:", tag)
+		if p != nil && p.IsRunning() {
+			s.xrayApi.Init(p.GetAPIPort())
+			err1 := s.xrayApi.DelInbound(tag)
+			if err1 == nil {
+				logger.Debug("Inbound deleted by api:", tag)
+			} else {
+				logger.Debug("Unable to delete inbound by api:", err1)
+				needRestart = true
+			}
+			s.xrayApi.Close()
 		} else {
-			logger.Debug("Unable to delete inbound by api:", err1)
 			needRestart = true
 		}
-		s.xrayApi.Close()
 	} else {
 		logger.Debug("No enabled inbound founded to removing by api", tag)
 	}
 
-	// Delete client traffics of inbounds
-	err := db.Where("inbound_id = ?", id).Delete(xray.ClientTraffic{}).Error
-	if err != nil {
-		return false, err
-	}
 	inbound, err := s.GetInbound(id)
 	if err != nil {
 		return false, err
@@ -389,6 +399,20 @@ func (s *InboundService) DelInbound(id int) (bool, error) {
 	if err != nil {
 		return false, err
 	}
+
+	// Fetch all client traffic rows of this inbound before deleting
+	var inboundClientTraffics []xray.ClientTraffic
+	_ = db.Where("inbound_id = ?", id).Find(&inboundClientTraffics).Error
+
+	// Preserve / sync client traffics to remaining inbounds where clients exist
+	s.preserveClientTrafficsOnInboundDelete(db, id, inboundClientTraffics, clients)
+
+	// Delete client traffics of this inbound
+	err = db.Where("inbound_id = ?", id).Delete(xray.ClientTraffic{}).Error
+	if err != nil {
+		return false, err
+	}
+
 	for _, client := range clients {
 		err := s.DelClientIPs(db, client.Email)
 		if err != nil {
@@ -512,7 +536,7 @@ func (s *InboundService) updateClientTraffics(tx *gorm.DB, oldInbound *model.Inb
 			}
 		}
 		if !emailExists {
-			err = s.DelClientStat(tx, oldClient.Email)
+			err = s.DelClientStat(tx, oldClient.Email, oldInbound.Id)
 			if err != nil {
 				return err
 			}
@@ -744,10 +768,170 @@ func (s *InboundService) ensureNodeClientLinked(tx *gorm.DB, client *model.Clien
 	return nil
 }
 
+func (s *InboundService) isEmailInOtherInbounds(db *gorm.DB, email string, excludeInboundId int) (bool, error) {
+	if email == "" {
+		return false, nil
+	}
+	var count int64
+	err := db.Raw(`
+		SELECT COUNT(1) FROM (
+			SELECT 1 FROM inbounds,
+				JSON_EACH(JSON_EXTRACT(inbounds.settings, '$.clients')) AS client
+			WHERE inbounds.id != ? AND inbounds.settings IS NOT NULL
+			  AND LOWER(JSON_EXTRACT(client.value, '$.email')) = LOWER(?)
+			UNION ALL
+			SELECT 1 FROM inbounds,
+				JSON_EACH(JSON_EXTRACT(inbounds.settings, '$.peers')) AS peer
+			WHERE inbounds.id != ? AND inbounds.settings IS NOT NULL
+			  AND LOWER(JSON_EXTRACT(peer.value, '$.email')) = LOWER(?)
+		)
+	`, excludeInboundId, email, excludeInboundId, email).Scan(&count).Error
+	if err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}
+
+func (s *InboundService) preserveClientTrafficsOnInboundDelete(db *gorm.DB, inboundId int, deletedTraffics []xray.ClientTraffic, clients []model.Client) {
+	if len(deletedTraffics) == 0 {
+		return
+	}
+
+	emailToSubId := make(map[string]string)
+	for _, c := range clients {
+		if c.Email != "" && c.SubID != "" {
+			emailToSubId[strings.ToLower(c.Email)] = c.SubID
+		}
+	}
+
+	for _, dt := range deletedTraffics {
+		if dt.Email == "" || (dt.Up == 0 && dt.Down == 0) {
+			continue
+		}
+
+		lowerEmail := strings.ToLower(dt.Email)
+
+		// 1. Sync to other rows by node_client_id if linked
+		var ncId int
+		if dt.NodeClientId != nil && *dt.NodeClientId > 0 {
+			ncId = *dt.NodeClientId
+		} else {
+			var nc model.NodeClient
+			if err := db.Where("LOWER(email) = ?", lowerEmail).First(&nc).Error; err == nil {
+				ncId = nc.Id
+			}
+		}
+
+		if ncId > 0 {
+			var otherNcRows []xray.ClientTraffic
+			if err := db.Where("(node_client_id = ? OR LOWER(email) = ?) AND inbound_id != ?", ncId, lowerEmail, inboundId).Find(&otherNcRows).Error; err == nil {
+				for _, other := range otherNcRows {
+					updates := make(map[string]interface{})
+					if dt.Up > other.Up {
+						updates["up"] = dt.Up
+					}
+					if dt.Down > other.Down {
+						updates["down"] = dt.Down
+					}
+					if dt.ExpiryTime > other.ExpiryTime {
+						updates["expiry_time"] = dt.ExpiryTime
+					}
+					if len(updates) > 0 {
+						_ = db.Model(&xray.ClientTraffic{}).Where("id = ?", other.Id).Updates(updates).Error
+					}
+				}
+			}
+
+			// Also ensure that if the NodeClient is linked to other inbounds, any missing ClientTraffic row is created with preserved traffic
+			var otherLinks []model.NodeClientLink
+			if err := db.Where("node_client_id = ? AND inbound_id != ?", ncId, inboundId).Find(&otherLinks).Error; err == nil {
+				for _, link := range otherLinks {
+					var count int64
+					db.Model(&xray.ClientTraffic{}).Where("LOWER(email) = ? AND inbound_id = ?", lowerEmail, link.InboundId).Count(&count)
+					if count == 0 {
+						var nc model.NodeClient
+						if err := db.First(&nc, ncId).Error; err == nil {
+							newRow := xray.ClientTraffic{
+								InboundId:    link.InboundId,
+								Email:        nc.Email,
+								Enable:       true,
+								Up:           dt.Up,
+								Down:         dt.Down,
+								Total:        nc.TotalGB,
+								ExpiryTime:   dt.ExpiryTime,
+								Reset:        nc.Reset,
+								NodeClientId: &ncId,
+							}
+							_ = db.Create(&newRow).Error
+						}
+					}
+				}
+			}
+		}
+
+		// 2. Sync to any other rows with the same email across other inbounds
+		var otherEmailRows []xray.ClientTraffic
+		if err := db.Where("LOWER(email) = ? AND inbound_id != ?", lowerEmail, inboundId).Find(&otherEmailRows).Error; err == nil {
+			for _, other := range otherEmailRows {
+				updates := make(map[string]interface{})
+				if dt.Up > other.Up {
+					updates["up"] = dt.Up
+				}
+				if dt.Down > other.Down {
+					updates["down"] = dt.Down
+				}
+				if dt.ExpiryTime > other.ExpiryTime {
+					updates["expiry_time"] = dt.ExpiryTime
+				}
+				if len(updates) > 0 {
+					_ = db.Model(&xray.ClientTraffic{}).Where("id = ?", other.Id).Updates(updates).Error
+				}
+			}
+		}
+
+		// 3. Sync to any other clients sharing the same SubID across other inbounds
+		if subId, ok := emailToSubId[lowerEmail]; ok && subId != "" {
+			allInbounds, err := s.GetAllInbounds()
+			if err == nil {
+				for _, ib := range allInbounds {
+					if ib.Id == inboundId {
+						continue
+					}
+					ibClients, err := s.GetClients(ib)
+					if err != nil {
+						continue
+					}
+					for _, ibc := range ibClients {
+						if ibc.SubID == subId && ibc.Email != "" && !strings.EqualFold(ibc.Email, dt.Email) {
+							var subRows []xray.ClientTraffic
+							if err := db.Where("LOWER(email) = ? AND inbound_id = ?", strings.ToLower(ibc.Email), ib.Id).Find(&subRows).Error; err == nil {
+								for _, other := range subRows {
+									updates := make(map[string]interface{})
+									if dt.Up > other.Up {
+										updates["up"] = dt.Up
+									}
+									if dt.Down > other.Down {
+										updates["down"] = dt.Down
+									}
+									if dt.ExpiryTime > other.ExpiryTime {
+										updates["expiry_time"] = dt.ExpiryTime
+									}
+									if len(updates) > 0 {
+										_ = db.Model(&xray.ClientTraffic{}).Where("id = ?", other.Id).Updates(updates).Error
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
 // removeNodeClientForInbound is the delete-side counterpart of ensureNodeClientLinked.
 // It removes the NodeClientLink between the given email and inbound.
-// If the NodeClient has no remaining links it is fully deleted so the client
-// disappears from the panel completely.
+// If the NodeClient has no remaining links and does not exist in any other inbound it is fully deleted.
 func (s *InboundService) removeNodeClientForInbound(db *gorm.DB, email string, inboundId int) {
 	if email == "" {
 		return
@@ -759,20 +943,38 @@ func (s *InboundService) removeNodeClientForInbound(db *gorm.DB, email string, i
 		return
 	}
 
-	// Count remaining links for this NodeClient.
-	var linkCount int64
-	db.Model(&model.NodeClientLink{}).Where("node_client_id = ?", nc.Id).Count(&linkCount)
+	// Check if this NodeClient is actually linked to this inbound
+	var linkToThisInbound int64
+	db.Model(&model.NodeClientLink{}).Where("node_client_id = ? AND inbound_id = ?", nc.Id, inboundId).Count(&linkToThisInbound)
+	if linkToThisInbound == 0 {
+		return
+	}
 
-	if linkCount <= 1 {
-		// Only this inbound linked — delete the whole NodeClient (cascades links + nulls traffics).
-		if _, err := s.nodeClientService.Delete(nc.Id); err != nil {
-			logger.Warningf("removeNodeClientForInbound: failed to delete NodeClient %d: %v", nc.Id, err)
-		}
-	} else {
+	// Count remaining links to other inbounds
+	var otherLinksCount int64
+	db.Model(&model.NodeClientLink{}).Where("node_client_id = ? AND inbound_id != ?", nc.Id, inboundId).Count(&otherLinksCount)
+
+	if otherLinksCount > 0 {
 		// Still linked to other inbounds — only remove this specific link.
 		if _, err := s.nodeClientService.RemoveLink(nc.Id, inboundId); err != nil {
 			logger.Warningf("removeNodeClientForInbound: failed to remove link for NodeClient %d, inbound %d: %v", nc.Id, inboundId, err)
 		}
+		return
+	}
+
+	// Check if this email exists in any other inbound settings JSON
+	otherInboundsExist, _ := s.isEmailInOtherInbounds(db, email, inboundId)
+	if otherInboundsExist {
+		// Still present in other inbounds — only remove this specific link
+		if _, err := s.nodeClientService.RemoveLink(nc.Id, inboundId); err != nil {
+			logger.Warningf("removeNodeClientForInbound: failed to remove link for NodeClient %d, inbound %d: %v", nc.Id, inboundId, err)
+		}
+		return
+	}
+
+	// Only this inbound linked and not in any other inbound — delete the NodeClient
+	if _, err := s.nodeClientService.Delete(nc.Id); err != nil {
+		logger.Warningf("removeNodeClientForInbound: failed to delete NodeClient %d: %v", nc.Id, err)
 	}
 }
 
@@ -1058,7 +1260,7 @@ func (s *InboundService) DelInboundClient(inboundId int, clientId string) (bool,
 			logger.Error("Get stats error")
 			return false, err
 		}
-		err = s.DelClientStat(db, email)
+		err = s.DelClientStat(db, email, inboundId)
 		if err != nil {
 			logger.Error("Delete stats Data Error")
 			return false, err
@@ -1319,7 +1521,7 @@ func (s *InboundService) UpdateInboundClient(data *model.Inbound, clientId strin
 			}
 		}
 	} else {
-		err = s.DelClientStat(tx, oldEmail)
+		err = s.DelClientStat(tx, oldEmail, data.Id)
 		if err != nil {
 			return false, err
 		}
@@ -1818,13 +2020,25 @@ func (s *InboundService) ensureClientTrafficRowsForNodeClients(tx *gorm.DB, emai
 		}
 
 		if result.RowsAffected == 0 {
+			var existingTraffics []xray.ClientTraffic
+			_ = tx.Where("node_client_id = ? OR LOWER(email) = LOWER(?)", info.Id, info.Email).Find(&existingTraffics).Error
+			var maxUp, maxDown int64
+			for _, et := range existingTraffics {
+				if et.Up > maxUp {
+					maxUp = et.Up
+				}
+				if et.Down > maxDown {
+					maxDown = et.Down
+				}
+			}
+
 			nodeClientId := info.Id
 			ct = &xray.ClientTraffic{
 				InboundId:    info.InboundId,
 				Email:        info.Email,
 				Enable:       true,
-				Up:           0,
-				Down:         0,
+				Up:           maxUp,
+				Down:         maxDown,
 				Total:        info.TotalGB,
 				ExpiryTime:   info.ExpiryTime,
 				Reset:        info.Reset,
@@ -2537,8 +2751,12 @@ func (s *InboundService) UpdateClientIPs(tx *gorm.DB, oldEmail string, newEmail 
 	return tx.Model(model.InboundClientIps{}).Where("client_email = ?", oldEmail).Update("client_email", newEmail).Error
 }
 
-func (s *InboundService) DelClientStat(tx *gorm.DB, email string) error {
-	return tx.Where("email = ?", email).Delete(xray.ClientTraffic{}).Error
+func (s *InboundService) DelClientStat(tx *gorm.DB, email string, inboundId ...int) error {
+	q := tx.Where("email = ?", email)
+	if len(inboundId) > 0 && inboundId[0] > 0 {
+		q = q.Where("inbound_id = ?", inboundId[0])
+	}
+	return q.Delete(xray.ClientTraffic{}).Error
 }
 
 func (s *InboundService) DelClientIPs(tx *gorm.DB, email string) error {
@@ -3753,7 +3971,7 @@ func (s *InboundService) DelInboundClientByEmail(inboundId int, email string) (b
 			return false, err
 		}
 		if traffic != nil {
-			if err := s.DelClientStat(db, email); err != nil {
+			if err := s.DelClientStat(db, email, inboundId); err != nil {
 				logger.Error("Delete stats Data Error")
 				return false, err
 			}

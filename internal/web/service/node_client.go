@@ -877,12 +877,24 @@ func (s *NodeClientService) AddLink(nodeClientId, inboundId int, flow string) (b
 	}
 
 	if result.Error == gorm.ErrRecordNotFound {
+		var existingTraffics []xray.ClientTraffic
+		_ = tx.Where("node_client_id = ? OR LOWER(email) = LOWER(?)", nodeClientId, nc.Email).Find(&existingTraffics).Error
+		var maxUp, maxDown int64
+		for _, et := range existingTraffics {
+			if et.Up > maxUp {
+				maxUp = et.Up
+			}
+			if et.Down > maxDown {
+				maxDown = et.Down
+			}
+		}
+
 		ct = &xray.ClientTraffic{
 			InboundId:    inboundId,
 			Email:        nc.Email,
 			Enable:       true,
-			Up:           0,
-			Down:         0,
+			Up:           maxUp,
+			Down:         maxDown,
 			Total:        nc.TotalGB,
 			ExpiryTime:   nc.ExpiryTime,
 			Reset:        nc.Reset,
@@ -976,12 +988,33 @@ func (s *NodeClientService) RemoveLink(nodeClientId, inboundId int) (bool, error
 		_ = tx.Model(&model.Inbound{}).Where("id = ?", inbound.Id).Update("settings", inbound.Settings).Error
 	}
 
-	// 6. NULL-out node_client_id on the ClientTraffic row (preserve the row).
+	// 6. Preserve traffic on remaining links if this inbound had higher usage, then NULL-out node_client_id for this inbound only.
+	var thisTraffic xray.ClientTraffic
+	if err := tx.Where("email = ? AND inbound_id = ?", nc.Email, inboundId).First(&thisTraffic).Error; err == nil {
+		if thisTraffic.Up > 0 || thisTraffic.Down > 0 {
+			var otherTraffics []xray.ClientTraffic
+			if err := tx.Where("(node_client_id = ? OR LOWER(email) = LOWER(?)) AND inbound_id != ?", nodeClientId, nc.Email, inboundId).Find(&otherTraffics).Error; err == nil {
+				for _, other := range otherTraffics {
+					updates := make(map[string]interface{})
+					if thisTraffic.Up > other.Up {
+						updates["up"] = thisTraffic.Up
+					}
+					if thisTraffic.Down > other.Down {
+						updates["down"] = thisTraffic.Down
+					}
+					if len(updates) > 0 {
+						_ = tx.Model(&xray.ClientTraffic{}).Where("id = ?", other.Id).Updates(updates).Error
+					}
+				}
+			}
+		}
+	}
+
 	if err := tx.Model(&xray.ClientTraffic{}).
-		Where("email = ? AND node_client_id = ?", nc.Email, nodeClientId).
+		Where("email = ? AND node_client_id = ? AND inbound_id = ?", nc.Email, nodeClientId, inboundId).
 		Update("node_client_id", nil).Error; err != nil {
 		tx.Rollback()
-		return false, fmt.Errorf("nulling node_client_id on client traffic for email %s: %w", nc.Email, err)
+		return false, fmt.Errorf("nulling node_client_id on client traffic for email %s and inbound %d: %w", nc.Email, inboundId, err)
 	}
 
 	if err := tx.Commit().Error; err != nil {
@@ -1997,12 +2030,24 @@ func (s *NodeClientService) BulkSetLinks(clientIds []int, inboundIds []int, acti
 				var ct xray.ClientTraffic
 				res := tx.Where("LOWER(email) = LOWER(?) AND inbound_id = ?", nc.Email, l.InboundId).First(&ct)
 				if res.Error == gorm.ErrRecordNotFound {
+					var existingTraffics []xray.ClientTraffic
+					_ = tx.Where("node_client_id = ? OR LOWER(email) = LOWER(?)", nc.Id, nc.Email).Find(&existingTraffics).Error
+					var maxUp, maxDown int64
+					for _, et := range existingTraffics {
+						if et.Up > maxUp {
+							maxUp = et.Up
+						}
+						if et.Down > maxDown {
+							maxDown = et.Down
+						}
+					}
+
 					ct = xray.ClientTraffic{
 						InboundId:    l.InboundId,
 						Email:        nc.Email,
 						Enable:       true,
-						Up:           0,
-						Down:         0,
+						Up:           maxUp,
+						Down:         maxDown,
 						Total:        nc.TotalGB,
 						ExpiryTime:   nc.ExpiryTime,
 						Reset:        nc.Reset,
