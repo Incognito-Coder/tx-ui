@@ -189,8 +189,7 @@
             </a-tooltip>
         </template>
         <a-input-number :min="0" :step="1" :precision="2"
-                        :value="client._totalGB"
-                        @change="v => client._totalGB = (v == null ? 0 : v)"></a-input-number>
+                        v-model.number="client._totalGB"></a-input-number>
     </a-form-item>
     <a-form-item label='{{ i18n "usage" }}' v-if="isEdit && clientStats">
         <a-tag :color="clientUsageColor(clientStats, app.trafficDiff)">

@@ -198,10 +198,15 @@
                     okText: '{{ i18n "reset"}}',
                     cancelText: '{{ i18n "cancel"}}',
                     onOk: async () => {
-                        if (iconElement) iconElement.disabled = true;
-                        const msg = await HttpUtil.post('/panel/api/inbounds/' + inboundId + '/resetClientTraffic/' + email);
+                        let msg;
+                        if (inboundId && Number(inboundId) > 0) {
+                            msg = await HttpUtil.post('/panel/api/inbounds/' + inboundId + '/resetClientTraffic/' + encodeURIComponent(email));
+                        } else if (this.clientModal.client && this.clientModal.client.id) {
+                            msg = await HttpUtil.post('/panel/api/clients/' + this.clientModal.client.id + '/resetTraffic');
+                        } else {
+                            msg = await HttpUtil.post('/panel/api/inbounds/0/resetClientTraffic/' + encodeURIComponent(email));
+                        }
                         if (msg.success) {
-                            this.$message.success('{{ i18n "success"}}');
                             if (this.clientModal.clientStats) {
                                 this.$set(this.clientModal.clientStats, 'up', 0);
                                 this.$set(this.clientModal.clientStats, 'down', 0);

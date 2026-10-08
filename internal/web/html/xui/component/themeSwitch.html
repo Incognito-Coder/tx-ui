@@ -102,7 +102,8 @@
 {{define "component/themeSwitcher"}}
 <script>
     function createThemeSwitcher() {
-        const isDarkTheme = localStorage.getItem('dark-mode') === 'true';
+        const storedDark = localStorage.getItem('dark-mode');
+        const isDarkTheme = storedDark !== null ? storedDark === 'true' : true;
         const isUltra = localStorage.getItem('isUltraDarkThemeEnabled') === 'true';
         const currentColorKey = localStorage.getItem('panel-theme-color') || 'default';
         const customColor = localStorage.getItem('panel-custom-color') || '#2563eb';
@@ -506,6 +507,8 @@
         } else {
             document.documentElement.removeAttribute('data-theme');
         }
+        document.documentElement.classList.toggle('dark', isDarkTheme);
+        document.documentElement.classList.toggle('light', !isDarkTheme);
         document.body.classList.toggle('dark', isDarkTheme);
         document.body.classList.toggle('light', !isDarkTheme);
 
@@ -569,7 +572,9 @@
             },
             toggleTheme() {
                 this.isDarkTheme = !this.isDarkTheme;
-                localStorage.setItem('dark-mode', this.isDarkTheme);
+                localStorage.setItem('dark-mode', this.isDarkTheme.toString());
+                document.documentElement.classList.toggle('dark', this.isDarkTheme);
+                document.documentElement.classList.toggle('light', !this.isDarkTheme);
                 document.body.classList.toggle('dark', this.isDarkTheme);
                 document.body.classList.toggle('light', !this.isDarkTheme);
                 const appEl = document.getElementById('app');

@@ -749,6 +749,14 @@ func (s *NodeClientService) BulkDelete(ids []int) (bool, error) {
 	nodeClientOpMutex.Lock()
 	defer nodeClientOpMutex.Unlock()
 
+	return s.bulkDeleteUnlocked(ids)
+}
+
+func (s *NodeClientService) bulkDeleteUnlocked(ids []int) (bool, error) {
+	if len(ids) == 0 {
+		return false, nil
+	}
+
 	db := database.GetDB()
 
 	type linkInfo struct {
@@ -1110,6 +1118,13 @@ func (s *NodeClientService) GetAggregatedTraffic(nodeClientId int, txs ...*gorm.
 // inside a single transaction. Hot-adds the user to running Xray via API if re-enabled.
 // Requirements: 4.5, 6.3
 func (s *NodeClientService) ResetTraffic(nodeClientId int) (bool, error) {
+	nodeClientOpMutex.Lock()
+	defer nodeClientOpMutex.Unlock()
+
+	return s.resetTrafficUnlocked(nodeClientId)
+}
+
+func (s *NodeClientService) resetTrafficUnlocked(nodeClientId int) (bool, error) {
 	db := database.GetDB()
 
 	tx := db.Begin()
@@ -2273,50 +2288,95 @@ func (s *NodeClientService) Toggle(id int) (bool, error) {
 
 // ResetAllTraffics resets upload and download counters on all clients.
 func (s *NodeClientService) ResetAllTraffics() error {
+	nodeClientOpMutex.Lock()
+	defer nodeClientOpMutex.Unlock()
+
 	db := database.GetDB()
-	if err := db.Model(&xray.ClientTraffic{}).
+	tx := db.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	if err := tx.Model(&xray.ClientTraffic{}).
 		Where("node_client_id IS NOT NULL").
 		Updates(map[string]interface{}{"up": 0, "down": 0}).Error; err != nil {
+		tx.Rollback()
 		return err
 	}
 	now := time.Now().Unix() * 1000
 	var enabledClientIds []int
-	db.Model(&model.NodeClient{}).
+	tx.Model(&model.NodeClient{}).
 		Where("enable = ? AND (expiry_time <= 0 OR expiry_time > ?)", true, now).
 		Pluck("id", &enabledClientIds)
 	if len(enabledClientIds) > 0 {
-		db.Model(&xray.ClientTraffic{}).
+		if err := tx.Model(&xray.ClientTraffic{}).
 			Where("node_client_id IN ?", enabledClientIds).
-			Update("enable", true)
+			Update("enable", true).Error; err != nil {
+			tx.Rollback()
+			return err
+		}
 	}
+
+	if err := tx.Commit().Error; err != nil {
+		return err
+	}
+
 	isNeedXrayRestart.Store(true)
 	return nil
 }
 
 // DeleteDepleted deletes all clients whose quota is exhausted or expiry time has passed.
 func (s *NodeClientService) DeleteDepleted() (bool, error) {
+	nodeClientOpMutex.Lock()
+	defer nodeClientOpMutex.Unlock()
+
+	return s.deleteDepletedUnlocked()
+}
+
+func (s *NodeClientService) deleteDepletedUnlocked() (bool, error) {
 	db := database.GetDB()
 	var clients []*model.NodeClient
 	if err := db.Find(&clients).Error; err != nil {
 		return false, err
 	}
 	now := time.Now().Unix() * 1000
+
+	type trafficSum struct {
+		NodeClientId int   `gorm:"column:node_client_id"`
+		TotalUp      int64 `gorm:"column:total_up"`
+		TotalDown    int64 `gorm:"column:total_down"`
+	}
+	var sums []trafficSum
+	_ = db.Model(&xray.ClientTraffic{}).
+		Where("node_client_id IS NOT NULL").
+		Select("node_client_id, SUM(up) as total_up, SUM(down) as total_down").
+		Group("node_client_id").
+		Scan(&sums).Error
+
+	trafficByNc := make(map[int]int64, len(sums))
+	for _, sum := range sums {
+		trafficByNc[sum.NodeClientId] = sum.TotalUp + sum.TotalDown
+	}
+
 	var idsToDelete []int
 	for _, nc := range clients {
 		if nc.ExpiryTime > 0 && nc.ExpiryTime <= now {
 			idsToDelete = append(idsToDelete, nc.Id)
 			continue
 		}
-		if nc.TotalGB > 0 {
-			agg, err := s.GetAggregatedTraffic(nc.Id)
-			if err == nil && (agg.Up+agg.Down) >= nc.TotalGB {
-				idsToDelete = append(idsToDelete, nc.Id)
-			}
+		used := trafficByNc[nc.Id]
+		if nc.TotalGB > 0 && used >= nc.TotalGB {
+			idsToDelete = append(idsToDelete, nc.Id)
+			continue
+		}
+		if !nc.Enable && nc.TotalGB > 0 && used >= nc.TotalGB {
+			idsToDelete = append(idsToDelete, nc.Id)
 		}
 	}
 	if len(idsToDelete) > 0 {
-		_, err := s.BulkDelete(idsToDelete)
-		return true, err
+		return s.bulkDeleteUnlocked(idsToDelete)
 	}
 	return false, nil
 }
@@ -2330,9 +2390,8 @@ func (s *NodeClientService) GetLinkedInboundsCounts() (map[int]int, error) {
 	}
 	var rows []countRow
 	err := db.Table("node_client_links").
-		Joins("JOIN inbounds ON inbounds.id = node_client_links.inbound_id").
-		Select("node_client_links.inbound_id, count(*) as count").
-		Group("node_client_links.inbound_id").
+		Select("inbound_id, count(*) as count").
+		Group("inbound_id").
 		Scan(&rows).Error
 	if err != nil {
 		return nil, err

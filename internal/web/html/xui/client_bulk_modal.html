@@ -87,7 +87,7 @@
                     <a-icon type="question-circle"></a-icon>
                 </a-tooltip>
             </template>
-            <a-input-number :min="0" :step="1" v-model="clientsBulkModal.totalGB"></a-input-number>
+            <a-input-number :min="0" :step="1" :precision="2" v-model.number="clientsBulkModal.totalGB"></a-input-number>
         </a-form-item>
         <a-form-item label='{{ i18n "pages.client.delayedStart" }}'>
             <a-switch @click="clientsBulkModal.expiryTime=0" v-model="clientsBulkModal.delayedStart"></a-switch>

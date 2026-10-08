@@ -95,7 +95,7 @@
                     <a-progress :percent="100" :show-info="false" stroke-color="var(--ui-primary)"></a-progress>
                 </td>
                 <td class="tr-table-lt">
-                    <template v-if="client.totalGB > 0">[[ client._totalGB + "GB" ]]</template>
+                    <template v-if="client.totalGB > 0">[[ sizeFormat(client.totalGB) ]]</template>
                     <span class="tr-infinity-ch" v-else>&infin;</span>
                 </td>
             </tr>
@@ -229,7 +229,7 @@
                                     stroke-color="var(--ui-primary)"></a-progress>
                     </td>
                     <td width="80px">
-                        <template v-if="client.totalGB > 0">[[ client._totalGB + "GB" ]]</template>
+                        <template v-if="client.totalGB > 0">[[ sizeFormat(client.totalGB) ]]</template>
                         <span class="tr-infinity-ch" v-else>&infin;</span>
                     </td>
                 </tr>

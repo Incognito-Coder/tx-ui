@@ -2478,11 +2478,12 @@ Inbound.ClientBase = class extends XrayCommonClass {
     }
 
     get _totalGB() {
-        return toFixed(this.totalGB / ONE_GB, 2);
+        return (this.totalGB && this.totalGB > 0) ? toFixed(this.totalGB / ONE_GB, 2) : 0;
     }
 
     set _totalGB(gb) {
-        this.totalGB = toFixed(gb * ONE_GB, 0);
+        const num = Number(gb);
+        this.totalGB = (!isNaN(num) && num > 0) ? Math.round(num * ONE_GB) : 0;
     }
 
     static commonArgsFromJson(json = {}) {

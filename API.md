@@ -185,20 +185,27 @@ Create a new client identity and optionally link it to inbounds.
   *(Note: `totalGB` is passed in bytes. E.g., `50 * 1024 * 1024 * 1024 = 53687091200` for 50 GB. Set `0` for unlimited).*
 
 ### 2.4 Bulk Create Clients
-Generate multiple clients at once.
+Generate multiple clients at once and link them to designated inbounds.
 
 - **Method:** `POST`
 - **Path:** `/panel/api/clients/bulkCreate`
 - **Request Body:**
   ```json
   {
-    "count": 5,
-    "prefix": "client_",
-    "totalGB": 21474836480,
-    "expiryTime": 0,
-    "limitIp": 0,
-    "flow": "",
-    "inboundIds": [1]
+    "clients": [
+      {
+        "email": "user_1@example.com",
+        "subId": "custom_sub_id",
+        "uuid": "auto_or_custom_uuid",
+        "password": "optional_password",
+        "flow": "",
+        "totalGB": 21474836480,
+        "expiryTime": 0,
+        "limitIp": 0,
+        "enable": true
+      }
+    ],
+    "inboundIds": [1, 2]
   }
   ```
 
@@ -249,13 +256,14 @@ Enable or disable a client.
 - **`GET /panel/api/clients/:id/links`**: Get list of inbound IDs linked to this client.
 - **`POST /panel/api/clients/:id/addLink`**: Add inbound link (`inboundId`, `flow`).
 - **`POST /panel/api/clients/:id/setLinks`**: Replace all inbound links (`links: [{ inboundId: 1, flow: "" }]`).
+- **`POST /panel/api/clients/bulkSetLinks`**: Bulk replace or assign links across multiple clients (`clientIds: [1, 2]`, `inboundIds: [1, 2]`).
 - **`POST /panel/api/clients/:id/removeLink/:inboundId`**: Remove link between client and an inbound.
 
 ### 2.10 Client Traffic Management
-- **`GET /panel/api/clients/:id/traffic`**: Get real-time upload/download bytes.
-- **`POST /panel/api/clients/:id/resetTraffic`**: Reset traffic statistics for a client to 0.
-- **`POST /panel/api/clients/resetAllTraffics`**: Reset traffic statistics for all clients.
-- **`POST /panel/api/clients/delDepleted`**: Delete all clients whose traffic or expiration date is depleted.
+- **`GET /panel/api/clients/:id/traffic`**: Get real-time upload/download bytes for a node client.
+- **`POST /panel/api/clients/:id/resetTraffic`**: Reset traffic statistics (up and down counters to 0) for a client and re-enable client if not expired.
+- **`POST /panel/api/clients/resetAllTraffics`**: Reset traffic statistics for all node clients.
+- **`POST /panel/api/clients/delDepleted`**: Delete all node clients whose traffic quota or expiration date is depleted.
 - **`GET /panel/api/clients/inboundLinkCounts`**: Get count of clients linked to each inbound.
 
 ---
@@ -329,10 +337,11 @@ Update the display sort order of inbounds.
 - **`POST /panel/api/inbounds/updateClientTraffic/:email`**: Adjust client upload/download traffic in bytes (`upload`, `download`).
 - **`POST /panel/api/inbounds/clientIps/:email`**: Get recorded IP addresses for a client.
 - **`POST /panel/api/inbounds/clearClientIps/:email`**: Clear recorded IP addresses for a client.
-- **`POST /panel/api/inbounds/:id/resetClientTraffic/:email`**: Reset a client's traffic counters.
-- **`POST /panel/api/inbounds/resetAllTraffics`**: Reset traffic for all inbounds.
-- **`POST /panel/api/inbounds/resetAllClientTraffics/:id`**: Reset all client traffic for an inbound.
-- **`POST /panel/api/inbounds/delDepletedClients/:id`**: Delete expired/depleted clients from an inbound (`-1` for all inbounds).
+- **`POST /panel/api/inbounds/:id/resetClientTraffic/:email`**: Reset a client's traffic counters for the specified inbound/email and re-enable client.
+- **`POST /panel/api/inbounds/resetAllTraffics`**: Reset aggregate up and down traffic counters for all inbounds.
+- **`POST /panel/api/inbounds/resetAllClientTraffics/:id`**: Reset all client traffic for inbound `:id` (pass `-1` to reset client traffic across all inbounds).
+- **`POST /panel/api/inbounds/delDepletedClients/:id`**: Delete expired/depleted clients from inbound `:id` (pass `-1` for all inbounds). Removes clients from inbound settings and associated node client links.
+- **`POST /panel/api/inbounds/:id/delClientByEmail/:email`**: Delete a specific client by email from an inbound.
 - **`POST /panel/api/inbounds/onlines`**: Get list of currently online client emails.
 - **`POST /panel/api/inbounds/depleted`**: Get list of depleted client emails.
 - **`POST /panel/api/inbounds/disabled`**: Get list of disabled client emails.

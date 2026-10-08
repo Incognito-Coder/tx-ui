@@ -2,6 +2,7 @@ package controller
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -13,6 +14,7 @@ import (
 	"x-ui/internal/web/session"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 type InboundController struct {
@@ -54,8 +56,16 @@ func (a *InboundController) initRouter(g *gin.RouterGroup) {
 
 func (a *InboundController) getInbounds(c *gin.Context) {
 	user := session.GetLoginUser(c)
-	inbounds, err := a.inboundService.GetInbounds(user.Id)
+	userId := 0
+	if user != nil {
+		userId = user.Id
+	}
+	inbounds, err := a.inboundService.GetInbounds(userId)
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			jsonObj(c, []*model.Inbound{}, nil)
+			return
+		}
 		jsonMsg(c, I18nWeb(c, "pages.inbounds.toasts.obtain"), err)
 		return
 	}
@@ -70,6 +80,10 @@ func (a *InboundController) getInbound(c *gin.Context) {
 	}
 	inbound, err := a.inboundService.GetInbound(id)
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			jsonObj(c, nil, nil)
+			return
+		}
 		jsonMsg(c, I18nWeb(c, "pages.inbounds.toasts.obtain"), err)
 		return
 	}

@@ -1361,8 +1361,7 @@
                                     </a-tooltip>
                                 </template>
                                 <a-input-number :min="0" :step="1" :precision="2"
-                                                :value="clientModal.client._totalGB"
-                                                @change="v => clientModal.client._totalGB = (v == null ? 0 : v)"></a-input-number>
+                                                v-model.number="clientModal.client._totalGB"></a-input-number>
                             </a-form-item>
 
                             <a-form-item label='{{ i18n "pages.client.delayedStart" }}'>
@@ -1484,7 +1483,7 @@
                             <!-- Quotas for bulk -->
                             <a-divider>{{ i18n "pages.node_clients.limitsAndPolicy" }}</a-divider>
                             <a-form-item label='{{ i18n "pages.inbounds.totalFlow" }} (GB)'>
-                                <a-input-number :min="0" :step="1" v-model="bulkModal.totalGB"></a-input-number>
+                                <a-input-number :min="0" :step="1" :precision="2" v-model.number="bulkModal.totalGB"></a-input-number>
                             </a-form-item>
 
                             <a-form-item label='{{ i18n "pages.client.delayedStart" }}'>
@@ -2055,8 +2054,10 @@
                         this.isEdit = true;
                         this.title = '{{ i18n "pages.client.edit" }}: ' + c.email;
                         this.okText = '{{ i18n "sure" }}';
-                        this.client = Object.assign({}, c);
-                        this.client._totalGB = Number(toFixed((c.totalGB || 0) / ONE_GB, 2));
+                        const clientTotalGB = Number(c.totalGB) || 0;
+                        this.client = Object.assign({}, c, {
+                            _totalGB: clientTotalGB > 0 ? Number(toFixed(clientTotalGB / ONE_GB, 2)) : 0
+                        });
                         this.delayedStart = c.expiryTime < 0;
                         this.delayedExpireDays = this.delayedStart ? c.expiryTime / -86400000 : 0;
                         this.expiryTimeModel = this.delayedStart ? null : (c.expiryTime > 0 && typeof moment !== 'undefined' ? moment(c.expiryTime) : null);
@@ -2495,7 +2496,8 @@
                     cm.client.expiryTime = cm.delayedStart
                         ? -86400000 * (Number(cm.delayedExpireDays) || 0)
                         : (cm.expiryTimeModel && typeof cm.expiryTimeModel.valueOf === 'function' ? cm.expiryTimeModel.valueOf() : (cm.expiryTimeModel || 0));
-                    cm.client.totalGB = toFixed((cm.client._totalGB || 0) * ONE_GB, 0);
+                    const gbVal = Number(cm.client._totalGB);
+                    cm.client.totalGB = (!isNaN(gbVal) && gbVal > 0) ? Math.round(gbVal * ONE_GB) : 0;
 
                     cm.confirmLoading = true;
                     try {
@@ -2543,13 +2545,14 @@
                         else if (bm.emailMethod === 2) email = bm.emailPrefix + i.toString();
                         else if (bm.emailMethod === 3) email = bm.emailPrefix + i.toString() + bm.emailPostfix;
 
+                        const bulkGb = Number(bm.totalGB);
                         clients.push({
                             email: email,
                             subId: RandomUtil.randomLowerAndNum(16),
                             uuid: RandomUtil.randomUUID(),
                             password: RandomUtil.randomSeq(10),
                             auth: RandomUtil.randomSeq(10),
-                            totalGB: toFixed((bm.totalGB || 0) * ONE_GB, 0),
+                            totalGB: (!isNaN(bulkGb) && bulkGb > 0) ? Math.round(bulkGb * ONE_GB) : 0,
                             expiryTime: expTime,
                             limitIp: bm.limitIp || 0,
                             reset: bm.reset || 0,
