@@ -7,6 +7,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v0.8.8] - 2026-10-08
+
+### 🚀 Features & Enhancements
+- **Bulk Client Inbound Link Management**:
+  - Added multi-select batch assignment (`bulkSetLinks`) allowing administrators to select multiple clients and associate or replace inbound links simultaneously (`04d72ea2`).
+  - Added batch link management drawer and bulk action menu integration in the Clients view (`/panel/clients`).
+- **Encrypted Client Hello (ECH) Generation & Propagation**:
+  - Implemented automatic ECH certificate and keypair generation for TLS/Reality inbounds (`11b5d963`).
+  - Automatically propagated generated ECH configurations into outbound settings and subscription endpoints.
+- **REST API Reference Updates (`API.md`)**:
+  - Corrected `POST /panel/api/clients/bulkCreate` payload specifications to accurately document `{ clients: [...], inboundIds: [...] }`.
+  - Added documentation for `POST /panel/api/clients/bulkSetLinks`, client traffic reset endpoints, and depleted client deletion endpoints.
+
+### 🐛 Bug Fixes & Stability
+- **Inbound Deletion Client & Link Preservation**:
+  - Preserved client traffic statistics and existing link bindings when deleting an individual inbound (`10a27e13`). Clients linked to multiple inbounds retain active records and traffic counters without unintended cascading deletions.
+- **SQLite Concurrency & Traffic Reset Locks**:
+  - Fixed intermittent `database is locked` errors during client traffic reset operations by synchronizing write queries with `nodeClientOpMutex` and atomic database transactions.
+  - Separated external gRPC / Xray API calls from the SQLite transaction window to minimize database write lock hold times.
+  - Fixed client modal reset button endpoint resolution to prevent malformed API requests when `inboundId` is omitted.
+- **Depleted Client Deletion via API**:
+  - Resolved issue where API requests (`/panel/api/inbounds/delDepletedClients/:id` and `/panel/api/clients/delDepleted`) failed to delete depleted node clients.
+  - Removed restrictive `node_client_id IS NULL` filtering in `DelDepletedClients`, cascading removal to associated inbound settings JSON, node client links, and orphaned node client records.
+  - Removed nested `s.DelInbound` calls inside open transactions to prevent database deadlocks.
+- **"Obtain Failed: record not found" Toast Elimination**:
+  - Handled `gorm.ErrRecordNotFound` gracefully in inbound controller methods (`getInbound` and `getInbounds`), returning clean empty responses and eliminating toast error popups on stale or missing records.
+  - Preloaded `ClientStats` in `GetInbound` to ensure full client traffic statistics are immediately available on single inbound queries.
+- **Total GB Input & Formatting**:
+  - Fixed `[[ client._totalGB + "GB" ]]` displaying `"undefinedGB"` on plain client objects in inbound client tables by formatting with `sizeFormat(client.totalGB)`.
+  - Fixed Vue 2 reactivity when opening client edit modals by initializing `_totalGB` inside `Object.assign`.
+  - Added `:precision="2"` and `v-model.number` to total GB inputs across client modals, preventing backspace from snapping directly to `0`.
+  - Safeguarded `Inbound.ClientBase._totalGB` getter and setter against `NaN` and `null` values with integer byte rounding on save.
+- **Clean Theme Session Synchronization**:
+  - Fixed hybrid light/dark theme collision occurring on new browser sessions where `localStorage` was uninitialized.
+  - Standardized fallback theme to dark mode across both `head.html` and `themeSwitch.html`.
+  - Synchronized `.dark` and `.light` classes simultaneously across `document.documentElement`, `document.body`, and `#app` both on initialization and during theme toggle.
+
+### ⚡ Performance & Database Optimization
+- **Batch Traffic Aggregation for Depleted Client Queries**:
+  - Optimized `NodeClientService.DeleteDepleted` by replacing the O(N) query loop with a single grouped aggregate SQL query, eliminating N+1 database queries.
+- **Optimized Link Counter Scans**:
+  - Removed unnecessary join on `inbounds` in `GetLinkedInboundsCounts`, directly querying `node_client_links` with indexed group scanning.
+- **Bulk Operation Mutex Protection**:
+  - Guarded bulk client linking and deletion operations with `nodeClientOpMutex` to prevent concurrent transaction collision (`9c02e220`).
+
+---
+
 ## [v0.8.7] - 2026-10-03
 
 ### 🚀 Features & Enhancements
