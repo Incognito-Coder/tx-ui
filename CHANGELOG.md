@@ -31,6 +31,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added comprehensive localization across all 13 supported languages (`en_US`, `fa_IR`, `zh_CN`, `zh_TW`, `ru_RU`, `ar_EG`, `es_ES`, `id_ID`, `ja_JP`, `pt_BR`, `tr_TR`, `uk_UA`, `vi_VN`) for all new maintenance controls, prompts, and toasts.
 
 ### 🐛 Bug Fixes & Stability
+- **Fix Depleted Client Reconnection on Traffic Reset**:
+  - Resolved variable shadowing in `resetTrafficUnlocked` where `reEnabled` was masked inside the database retry closure, preventing depleted clients from being dynamically added back to running inbounds in Xray-core via API upon resetting traffic.
+  - Depleted clients whose traffic is reset now reconnect immediately without requiring a manual Xray-core restart.
+  - Guarded `hotAddUserToInbound` with inbound enable state and dynamically re-adds sibling clients when client sync is active.
+  - Routed `ResetClientTrafficByEmail` through `ResetClientTraffic` to ensure external resets (e.g., Telegram bot) properly hot-add clients to Xray-core and flag core restart when needed.
 - **Elimination of Database Locks on Multi-Inbound Client Deletion**:
   - Resolved `database is locked` error occurring when deleting clients linked to multiple inbounds on the first attempt.
   - Synchronized `DelInboundClient` and `DelInboundClientByEmail` with `nodeClientOpMutex` to prevent race conditions with background node client operations.

@@ -8,6 +8,7 @@ import (
 
 	"x-ui/internal/database"
 	"x-ui/internal/database/model"
+	"x-ui/xray"
 )
 
 func setupTestDB(t *testing.T) {
@@ -226,5 +227,105 @@ func TestBulkSetLinks_ConcurrencyAndNoLock(t *testing.T) {
 
 	for err := range errCh {
 		t.Errorf("encountered error during concurrent stress test: %v", err)
+	}
+}
+
+func TestResetTraffic_DepletedClient(t *testing.T) {
+	setupTestDB(t)
+
+	db := database.GetDB()
+	ncService := &NodeClientService{}
+	inboundService := &InboundService{}
+
+	// Create test inbound
+	ib := &model.Inbound{
+		Id:       301,
+		UserId:   1,
+		Tag:      "inbound-301",
+		Port:     3010,
+		Protocol: model.VLESS,
+		Enable:   true,
+		Settings: `{"clients":[]}`,
+	}
+	if err := db.Create(ib).Error; err != nil {
+		t.Fatalf("create ib failed: %v", err)
+	}
+
+	// Create test node client (exhausted traffic quota: TotalGB = 1GB, Used = 2GB)
+	c := &model.NodeClient{
+		Id:      50,
+		Email:   "depleted@example.com",
+		SubID:   "sub-depleted",
+		UUID:    "uuid-depleted",
+		TotalGB: 1073741824, // 1 GB
+		Enable:  true,
+	}
+	if err := db.Create(c).Error; err != nil {
+		t.Fatalf("create client failed: %v", err)
+	}
+
+	// Create link
+	link := &model.NodeClientLink{
+		NodeClientId: 50,
+		InboundId:    301,
+	}
+	if err := db.Create(link).Error; err != nil {
+		t.Fatalf("create link failed: %v", err)
+	}
+
+	// Create depleted ClientTraffic record (enable=false due to exhaustion)
+	nodeClientId := 50
+	ct := &xray.ClientTraffic{
+		InboundId:    301,
+		NodeClientId: &nodeClientId,
+		Email:        "depleted@example.com",
+		Total:        1073741824,
+		Up:           1000000000,
+		Down:         1500000000,
+		Enable:       false,
+	}
+	if err := db.Create(ct).Error; err != nil {
+		t.Fatalf("create client traffic failed: %v", err)
+	}
+
+	// 1. Reset traffic via NodeClientService
+	needRestart, err := ncService.ResetTraffic(50)
+	if err != nil {
+		t.Fatalf("ResetTraffic failed: %v", err)
+	}
+	_ = needRestart
+
+	// Verify ClientTraffic is re-enabled and zeroed
+	var updatedCT xray.ClientTraffic
+	if err := db.Where("email = ?", "depleted@example.com").First(&updatedCT).Error; err != nil {
+		t.Fatalf("failed to query updated client traffic: %v", err)
+	}
+	if !updatedCT.Enable {
+		t.Errorf("expected ClientTraffic.Enable to be true after reset, got false")
+	}
+	if updatedCT.Up != 0 || updatedCT.Down != 0 {
+		t.Errorf("expected Up and Down to be 0 after reset, got Up=%d Down=%d", updatedCT.Up, updatedCT.Down)
+	}
+
+	// 2. Set client to depleted again and test ResetClientTrafficByEmail
+	db.Model(&xray.ClientTraffic{}).Where("email = ?", "depleted@example.com").Updates(map[string]interface{}{
+		"enable": false,
+		"up":     2000000000,
+		"down":   2000000000,
+	})
+
+	err = inboundService.ResetClientTrafficByEmail("depleted@example.com")
+	if err != nil {
+		t.Fatalf("ResetClientTrafficByEmail failed: %v", err)
+	}
+
+	if err := db.Where("email = ?", "depleted@example.com").First(&updatedCT).Error; err != nil {
+		t.Fatalf("failed to query updated client traffic: %v", err)
+	}
+	if !updatedCT.Enable {
+		t.Errorf("expected ClientTraffic.Enable to be true after ResetClientTrafficByEmail, got false")
+	}
+	if updatedCT.Up != 0 || updatedCT.Down != 0 {
+		t.Errorf("expected Up and Down to be 0 after ResetClientTrafficByEmail, got Up=%d Down=%d", updatedCT.Up, updatedCT.Down)
 	}
 }

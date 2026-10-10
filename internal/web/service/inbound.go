@@ -3232,13 +3232,11 @@ func (s *InboundService) ResetClientTrafficLimitByEmail(clientEmail string, tota
 }
 
 func (s *InboundService) ResetClientTrafficByEmail(clientEmail string) error {
-	db := database.GetDB()
-
-	return database.ExecWithRetry(5, func() error {
-		return db.Model(xray.ClientTraffic{}).
-			Where("email = ?", clientEmail).
-			Updates(map[string]interface{}{"enable": true, "up": 0, "down": 0}).Error
-	})
+	needRestart, err := s.ResetClientTraffic(0, clientEmail)
+	if needRestart {
+		isNeedXrayRestart.Store(true)
+	}
+	return err
 }
 
 func (s *InboundService) ResetClientTraffic(id int, clientEmail string) (bool, error) {
@@ -3266,8 +3264,13 @@ func (s *InboundService) ResetClientTraffic(id int, clientEmail string) (bool, e
 		return s.nodeClientService.resetTrafficUnlocked(*traffic.NodeClientId)
 	}
 
-	if !traffic.Enable && id > 0 {
-		inbound, err := s.GetInbound(id)
+	inboundId := id
+	if inboundId <= 0 && traffic.InboundId > 0 {
+		inboundId = traffic.InboundId
+	}
+
+	if !traffic.Enable && inboundId > 0 {
+		inbound, err := s.GetInbound(inboundId)
 		if err == nil {
 			clients, err := s.GetClients(inbound)
 			if err == nil {
@@ -3325,6 +3328,10 @@ func (s *InboundService) ResetClientTraffic(id int, clientEmail string) (bool, e
 
 	if err := tx.Commit().Error; err != nil {
 		return false, err
+	}
+
+	if needRestart {
+		isNeedXrayRestart.Store(true)
 	}
 
 	return needRestart, nil

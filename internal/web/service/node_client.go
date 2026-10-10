@@ -620,7 +620,7 @@ func (s *NodeClientService) hotAddUserToInbound(xrayApi *xray.XrayAPI, inbound *
 	if inbound.Protocol == model.WireGuard {
 		return true
 	}
-	if !nc.Enable {
+	if !inbound.Enable || !nc.Enable {
 		return false
 	}
 	now := time.Now().Unix() * 1000
@@ -633,10 +633,13 @@ func (s *NodeClientService) hotAddUserToInbound(xrayApi *xray.XrayAPI, inbound *
 			Up   int64
 			Down int64
 		}
-		_ = db.Table("client_traffics").
-			Select("COALESCE(MAX(up), 0) as up, COALESCE(MAX(down), 0) as down").
-			Where("node_client_id = ? OR email = ?", nc.Id, nc.Email).
-			Scan(&totalTraffic).Error
+		q := db.Table("client_traffics").Select("COALESCE(MAX(up), 0) as up, COALESCE(MAX(down), 0) as down")
+		if nc.Email != "" {
+			q = q.Where("node_client_id = ? OR LOWER(email) = LOWER(?)", nc.Id, nc.Email)
+		} else {
+			q = q.Where("node_client_id = ?", nc.Id)
+		}
+		_ = q.Scan(&totalTraffic).Error
 		if (totalTraffic.Up + totalTraffic.Down) >= nc.TotalGB {
 			return false
 		}
@@ -1138,6 +1141,8 @@ func (s *NodeClientService) resetTrafficUnlocked(nodeClientId int) (bool, error)
 
 	var nc model.NodeClient
 	var reEnabled bool
+	var siblingNCs []model.NodeClient
+	var syncClients bool
 
 	err := database.ExecWithRetry(5, func() error {
 		tx := db.Begin()
@@ -1152,29 +1157,29 @@ func (s *NodeClientService) resetTrafficUnlocked(nodeClientId int) (bool, error)
 			return err
 		}
 
-	updates := map[string]interface{}{
-		"up":             0,
-		"down":           0,
-		"node_client_id": nodeClientId,
-	}
-
-	now := time.Now().Unix() * 1000
-	reEnabled := false
-	if nc.ExpiryTime <= 0 || nc.ExpiryTime > now {
-		updates["enable"] = true
-		reEnabled = true
-		if !nc.Enable {
-			_ = tx.Model(&model.NodeClient{}).Where("id = ?", nodeClientId).Update("enable", true).Error
-			nc.Enable = true
+		updates := map[string]interface{}{
+			"up":             0,
+			"down":           0,
+			"node_client_id": nodeClientId,
 		}
-	}
 
-	whereClause := "node_client_id = ?"
-	whereArgs := []interface{}{nodeClientId}
-	if nc.Email != "" {
-		whereClause += " OR LOWER(email) = LOWER(?)"
-		whereArgs = append(whereArgs, nc.Email)
-	}
+		now := time.Now().Unix() * 1000
+		reEnabled = false
+		if nc.ExpiryTime <= 0 || nc.ExpiryTime > now {
+			updates["enable"] = true
+			reEnabled = true
+			if !nc.Enable {
+				_ = tx.Model(&model.NodeClient{}).Where("id = ?", nodeClientId).Update("enable", true).Error
+				nc.Enable = true
+			}
+		}
+
+		whereClause := "node_client_id = ?"
+		whereArgs := []interface{}{nodeClientId}
+		if nc.Email != "" {
+			whereClause += " OR LOWER(email) = LOWER(?)"
+			whereArgs = append(whereArgs, nc.Email)
+		}
 
 		if err := tx.Model(&xray.ClientTraffic{}).
 			Where(whereClause, whereArgs...).
@@ -1183,37 +1188,38 @@ func (s *NodeClientService) resetTrafficUnlocked(nodeClientId int) (bool, error)
 			return err
 		}
 
-	// If client sync is enabled and client has subId, sync reset across all clients with same subId
-	settingService := &SettingService{}
-	syncClients, serr := settingService.GetSyncClients()
-	if serr == nil && syncClients && nc.SubID != "" {
-		var siblingNCs []model.NodeClient
-		_ = tx.Where("sub_id = ? AND id != ?", nc.SubID, nodeClientId).Find(&siblingNCs).Error
-		var siblingEmails []string
-		var siblingIds []int
-		for _, snc := range siblingNCs {
-			siblingIds = append(siblingIds, snc.Id)
-			if snc.Email != "" {
-				siblingEmails = append(siblingEmails, snc.Email)
+		// If client sync is enabled and client has subId, sync reset across all clients with same subId
+		settingService := &SettingService{}
+		var serr error
+		syncClients, serr = settingService.GetSyncClients()
+		if serr == nil && syncClients && nc.SubID != "" {
+			siblingNCs = nil
+			_ = tx.Where("sub_id = ? AND id != ?", nc.SubID, nodeClientId).Find(&siblingNCs).Error
+			var siblingEmails []string
+			var siblingIds []int
+			for _, snc := range siblingNCs {
+				siblingIds = append(siblingIds, snc.Id)
+				if snc.Email != "" {
+					siblingEmails = append(siblingEmails, snc.Email)
+				}
+			}
+			if len(siblingIds) > 0 && reEnabled {
+				_ = tx.Model(&model.NodeClient{}).Where("id IN ?", siblingIds).Update("enable", true).Error
+			}
+			if len(siblingEmails) > 0 || len(siblingIds) > 0 {
+				sWhere := "node_client_id IN ?"
+				sArgs := []interface{}{siblingIds}
+				if len(siblingEmails) > 0 {
+					sWhere += " OR LOWER(email) IN ?"
+					sArgs = append(sArgs, siblingEmails)
+				}
+				sUpdates := map[string]interface{}{"up": 0, "down": 0}
+				if reEnabled {
+					sUpdates["enable"] = true
+				}
+				_ = tx.Model(&xray.ClientTraffic{}).Where(sWhere, sArgs...).Updates(sUpdates).Error
 			}
 		}
-		if len(siblingIds) > 0 && reEnabled {
-			_ = tx.Model(&model.NodeClient{}).Where("id IN ?", siblingIds).Update("enable", true).Error
-		}
-		if len(siblingEmails) > 0 || len(siblingIds) > 0 {
-			sWhere := "node_client_id IN ?"
-			sArgs := []interface{}{siblingIds}
-			if len(siblingEmails) > 0 {
-				sWhere += " OR LOWER(email) IN ?"
-				sArgs = append(sArgs, siblingEmails)
-			}
-			sUpdates := map[string]interface{}{"up": 0, "down": 0}
-			if reEnabled {
-				sUpdates["enable"] = true
-			}
-			_ = tx.Model(&xray.ClientTraffic{}).Where(sWhere, sArgs...).Updates(sUpdates).Error
-		}
-	}
 
 		return tx.Commit().Error
 	})
@@ -1238,6 +1244,23 @@ func (s *NodeClientService) resetTrafficUnlocked(nodeClientId int) (bool, error)
 					}
 					if s.hotAddUserToInbound(&xrayApi, &inbound, &nc, flow) {
 						needRestart = true
+					}
+				}
+			}
+			if syncClients && len(siblingNCs) > 0 {
+				for _, snc := range siblingNCs {
+					slinks, _ := s.GetLinks(snc.Id)
+					for _, sl := range slinks {
+						var inbound model.Inbound
+						if err := db.First(&inbound, sl.InboundId).Error; err == nil {
+							flow := sl.Flow
+							if flow == "" {
+								flow = snc.Flow
+							}
+							if s.hotAddUserToInbound(&xrayApi, &inbound, &snc, flow) {
+								needRestart = true
+							}
+						}
 					}
 				}
 			}
