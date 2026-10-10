@@ -46,6 +46,11 @@ func (a *SettingController) initRouter(g *gin.RouterGroup) {
 	g.GET("/getDefaultJsonConfig", a.getDefaultXrayConfig)
 	g.POST("/updateUserSecret", a.updateSecret)
 	g.POST("/getUserSecret", a.getUserSecret)
+	g.POST("/dbStatus", a.getDBStatus)
+	g.GET("/dbStatus", a.getDBStatus)
+	g.POST("/optimizeDatabase", a.optimizeDatabase)
+	g.POST("/vacuumDatabase", a.vacuumDatabase)
+	g.POST("/cleanDatabase", a.cleanDatabase)
 }
 
 func (a *SettingController) getAllSetting(c *gin.Context) {
@@ -139,3 +144,41 @@ func (a *SettingController) getDefaultXrayConfig(c *gin.Context) {
 	}
 	jsonObj(c, defaultJsonConfig, nil)
 }
+
+func (a *SettingController) getDBStatus(c *gin.Context) {
+	status, err := a.settingService.GetDBStatus()
+	if err != nil {
+		jsonMsg(c, "Failed to get database status", err)
+		return
+	}
+	jsonObj(c, status, nil)
+}
+
+func (a *SettingController) optimizeDatabase(c *gin.Context) {
+	err := a.settingService.OptimizeDB()
+	if err != nil {
+		jsonMsg(c, "Failed to optimize database", err)
+		return
+	}
+	status, _ := a.settingService.GetDBStatus()
+	jsonObj(c, status, nil)
+}
+
+func (a *SettingController) vacuumDatabase(c *gin.Context) {
+	result, err := a.settingService.VacuumDB()
+	if err != nil {
+		jsonMsg(c, "Failed to vacuum database", err)
+		return
+	}
+	jsonObj(c, result, nil)
+}
+
+func (a *SettingController) cleanDatabase(c *gin.Context) {
+	result, err := a.settingService.CleanCorruptedRows()
+	if err != nil {
+		jsonMsg(c, "Failed to clean corrupted rows", err)
+		return
+	}
+	jsonObj(c, result, nil)
+}
+

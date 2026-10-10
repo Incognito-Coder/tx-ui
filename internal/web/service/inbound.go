@@ -1182,6 +1182,9 @@ func (s *InboundService) updateClientInInboundSettings(inbound *model.Inbound, m
 
 
 func (s *InboundService) DelInboundClient(inboundId int, clientId string) (bool, error) {
+	nodeClientOpMutex.Lock()
+	defer nodeClientOpMutex.Unlock()
+
 	oldInbound, err := s.GetInbound(inboundId)
 	if err != nil {
 		logger.Error("Load Old Data Error")
@@ -1247,9 +1250,19 @@ func (s *InboundService) DelInboundClient(inboundId int, clientId string) (bool,
 
 	db := database.GetDB()
 
-	err = s.DelClientIPs(db, email)
+	err = database.ExecWithRetry(5, func() error {
+		if err := s.DelClientIPs(db, email); err != nil {
+			return err
+		}
+		if len(email) > 0 {
+			if err := s.DelClientStat(db, email, inboundId); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 	if err != nil {
-		logger.Error("Error in delete client IPs")
+		logger.Error("Error in delete client IPs/stats:", err)
 		return false, err
 	}
 	needRestart := false
@@ -1262,11 +1275,6 @@ func (s *InboundService) DelInboundClient(inboundId int, clientId string) (bool,
 		err = db.Model(xray.ClientTraffic{}).Select("enable").Where("email = ?", email).First(&notDepleted).Error
 		if err != nil && err != gorm.ErrRecordNotFound {
 			logger.Error("Get stats error")
-			return false, err
-		}
-		err = s.DelClientStat(db, email, inboundId)
-		if err != nil {
-			logger.Error("Delete stats Data Error")
 			return false, err
 		}
 		if needApiDel && notDepleted && oldInbound.Protocol != "wireguard" {
@@ -1289,7 +1297,11 @@ func (s *InboundService) DelInboundClient(inboundId int, clientId string) (bool,
 		// Remove NodeClient / NodeClientLink so the client disappears from the panel.
 		s.removeNodeClientForInbound(db, email, inboundId)
 	}
-	return needRestart, db.Save(oldInbound).Error
+
+	err = database.ExecWithRetry(5, func() error {
+		return db.Save(oldInbound).Error
+	})
+	return needRestart, err
 }
 
 func (s *InboundService) UpdateInboundClient(data *model.Inbound, clientId string) (bool, error) {
@@ -1584,47 +1596,53 @@ func (s *InboundService) UpdateInboundClient(data *model.Inbound, clientId strin
 }
 
 func (s *InboundService) AddTraffic(inboundTraffics []*xray.Traffic, clientTraffics []*xray.ClientTraffic) (error, bool) {
-	var err error
 	db := database.GetDB()
-	tx := db.Begin()
+	var needRestart0, needRestart1, needRestart2 bool
 
-	defer func() {
-		if err != nil {
+	err := database.ExecWithRetry(3, func() error {
+		tx := db.Begin()
+		defer func() {
+			if r := recover(); r != nil {
+				tx.Rollback()
+			}
+		}()
+
+		if err := s.addInboundTraffic(tx, inboundTraffics); err != nil {
 			tx.Rollback()
-		} else {
-			tx.Commit()
+			return err
 		}
-	}()
-	err = s.addInboundTraffic(tx, inboundTraffics)
-	if err != nil {
-		return err, false
-	}
-	err = s.addClientTraffic(tx, clientTraffics)
-	if err != nil {
-		return err, false
-	}
+		if err := s.addClientTraffic(tx, clientTraffics); err != nil {
+			tx.Rollback()
+			return err
+		}
 
-	needRestart0, count, err := s.autoRenewClients(tx)
-	if err != nil {
-		logger.Warning("Error in renew clients:", err)
-	} else if count > 0 {
-		logger.Debugf("%v clients renewed", count)
-	}
+		var err error
+		var count int64
+		needRestart0, count, err = s.autoRenewClients(tx)
+		if err != nil {
+			logger.Warning("Error in renew clients:", err)
+		} else if count > 0 {
+			logger.Debugf("%v clients renewed", count)
+		}
 
-	needRestart1, count, err := s.disableInvalidClients(tx)
-	if err != nil {
-		logger.Warning("Error in disabling invalid clients:", err)
-	} else if count > 0 {
-		logger.Debugf("%v clients disabled", count)
-	}
+		needRestart1, count, err = s.disableInvalidClients(tx)
+		if err != nil {
+			logger.Warning("Error in disabling invalid clients:", err)
+		} else if count > 0 {
+			logger.Debugf("%v clients disabled", count)
+		}
 
-	needRestart2, count, err := s.disableInvalidInbounds(tx)
-	if err != nil {
-		logger.Warning("Error in disabling invalid inbounds:", err)
-	} else if count > 0 {
-		logger.Debugf("%v inbounds disabled", count)
-	}
-	return nil, (needRestart0 || needRestart1 || needRestart2)
+		needRestart2, count, err = s.disableInvalidInbounds(tx)
+		if err != nil {
+			logger.Warning("Error in disabling invalid inbounds:", err)
+		} else if count > 0 {
+			logger.Debugf("%v inbounds disabled", count)
+		}
+
+		return tx.Commit().Error
+	})
+
+	return err, (needRestart0 || needRestart1 || needRestart2)
 }
 
 func (s *InboundService) addInboundTraffic(tx *gorm.DB, traffics []*xray.Traffic) error {
@@ -3216,15 +3234,11 @@ func (s *InboundService) ResetClientTrafficLimitByEmail(clientEmail string, tota
 func (s *InboundService) ResetClientTrafficByEmail(clientEmail string) error {
 	db := database.GetDB()
 
-	result := db.Model(xray.ClientTraffic{}).
-		Where("email = ?", clientEmail).
-		Updates(map[string]interface{}{"enable": true, "up": 0, "down": 0})
-
-	err := result.Error
-	if err != nil {
-		return err
-	}
-	return nil
+	return database.ExecWithRetry(5, func() error {
+		return db.Model(xray.ClientTraffic{}).
+			Where("email = ?", clientEmail).
+			Updates(map[string]interface{}{"enable": true, "up": 0, "down": 0}).Error
+	})
 }
 
 func (s *InboundService) ResetClientTraffic(id int, clientEmail string) (bool, error) {
@@ -3328,31 +3342,33 @@ func (s *InboundService) ResetAllClientTraffics(id int) error {
 		whereText += " = ?"
 	}
 
-	tx := db.Begin()
-	defer func() {
-		if r := recover(); r != nil {
+	return database.ExecWithRetry(5, func() error {
+		tx := db.Begin()
+		defer func() {
+			if r := recover(); r != nil {
+				tx.Rollback()
+			}
+		}()
+
+		if err := tx.Model(xray.ClientTraffic{}).
+			Where(whereText, id).
+			Updates(map[string]interface{}{"enable": true, "up": 0, "down": 0}).Error; err != nil {
 			tx.Rollback()
+			return err
 		}
-	}()
 
-	if err := tx.Model(xray.ClientTraffic{}).
-		Where(whereText, id).
-		Updates(map[string]interface{}{"enable": true, "up": 0, "down": 0}).Error; err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	if id == -1 {
-		_ = tx.Model(&model.NodeClient{}).Where("1=1").Update("enable", true).Error
-	} else {
-		var ncIds []int
-		tx.Table("node_client_links").Where("inbound_id = ?", id).Pluck("node_client_id", &ncIds)
-		if len(ncIds) > 0 {
-			_ = tx.Model(&model.NodeClient{}).Where("id IN ?", ncIds).Update("enable", true).Error
+		if id == -1 {
+			_ = tx.Model(&model.NodeClient{}).Where("1=1").Update("enable", true).Error
+		} else {
+			var ncIds []int
+			tx.Table("node_client_links").Where("inbound_id = ?", id).Pluck("node_client_id", &ncIds)
+			if len(ncIds) > 0 {
+				_ = tx.Model(&model.NodeClient{}).Where("id IN ?", ncIds).Update("enable", true).Error
+			}
 		}
-	}
 
-	return tx.Commit().Error
+		return tx.Commit().Error
+	})
 }
 
 func (s *InboundService) ResetAllTraffics() error {
@@ -3360,9 +3376,11 @@ func (s *InboundService) ResetAllTraffics() error {
 	defer nodeClientOpMutex.Unlock()
 
 	db := database.GetDB()
-	return db.Model(model.Inbound{}).
-		Where("user_id >= ?", 0).
-		Updates(map[string]interface{}{"up": 0, "down": 0}).Error
+	return database.ExecWithRetry(5, func() error {
+		return db.Model(model.Inbound{}).
+			Where("user_id >= ?", 0).
+			Updates(map[string]interface{}{"up": 0, "down": 0}).Error
+	})
 }
 
 func (s *InboundService) DelDepletedClients(id int) (err error) {
@@ -3877,6 +3895,9 @@ func (s *InboundService) GetOnlineClients() []string {
 }
 
 func (s *InboundService) DelInboundClientByEmail(inboundId int, email string) (bool, error) {
+	nodeClientOpMutex.Lock()
+	defer nodeClientOpMutex.Unlock()
+
 	oldInbound, err := s.GetInbound(inboundId)
 	if err != nil {
 		logger.Error("Load Old Data Error")
@@ -3928,9 +3949,20 @@ func (s *InboundService) DelInboundClientByEmail(inboundId int, email string) (b
 
 	db := database.GetDB()
 
-	// remove IP bindings
-	if err := s.DelClientIPs(db, email); err != nil {
-		logger.Error("Error in delete client IPs")
+	// remove IP bindings & stats
+	err = database.ExecWithRetry(5, func() error {
+		if err := s.DelClientIPs(db, email); err != nil {
+			return err
+		}
+		if len(email) > 0 {
+			if err := s.DelClientStat(db, email, inboundId); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		logger.Error("Error in delete client IPs/stats:", err)
 		return false, err
 	}
 
@@ -3938,17 +3970,6 @@ func (s *InboundService) DelInboundClientByEmail(inboundId int, email string) (b
 
 	// remove stats too
 	if len(email) > 0 {
-		traffic, err := s.GetClientTrafficByEmail(email)
-		if err != nil {
-			return false, err
-		}
-		if traffic != nil {
-			if err := s.DelClientStat(db, email, inboundId); err != nil {
-				logger.Error("Delete stats Data Error")
-				return false, err
-			}
-		}
-
 		if needApiDel {
 			s.xrayApi.Init(p.GetAPIPort())
 			if err1 := s.xrayApi.RemoveUser(oldInbound.Tag, email); err1 == nil {
@@ -3969,5 +3990,8 @@ func (s *InboundService) DelInboundClientByEmail(inboundId int, email string) (b
 		s.removeNodeClientForInbound(db, email, inboundId)
 	}
 
-	return needRestart, db.Save(oldInbound).Error
+	err = database.ExecWithRetry(5, func() error {
+		return db.Save(oldInbound).Error
+	})
+	return needRestart, err
 }

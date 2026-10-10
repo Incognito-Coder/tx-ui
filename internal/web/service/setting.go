@@ -713,3 +713,20 @@ func (s *SettingService) SetGeositeVersion(v string) error {
 	return s.setString("geositeVersion", v)
 }
 
+func (s *SettingService) GetDBStatus() (*database.DBStatus, error) {
+	return database.GetDBStatus()
+}
+
+func (s *SettingService) OptimizeDB() error {
+	return database.Optimize()
+}
+
+func (s *SettingService) VacuumDB() (*database.VacuumResult, error) {
+	return database.Vacuum()
+}
+
+func (s *SettingService) CleanCorruptedRows() (*database.CleanResult, error) {
+	return database.CleanCorruptedRows()
+}
+
+

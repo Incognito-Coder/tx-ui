@@ -241,6 +241,90 @@
                                 <setting-list-item desc='{{ i18n "pages.settings.showInsecureWarningDesc"}}' title='{{ i18n "pages.settings.showInsecureWarning"}}'
                                                    type="switch"
                                                    v-model="allSetting.showInsecureWarning"></setting-list-item>
+                                <a-list-item style="padding: 20px;">
+                                    <div style="width: 100%;">
+                                        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
+                                            <div>
+                                                <div style="font-weight: 600; font-size: 15px; display: flex; align-items: center; gap: 8px;">
+                                                    <a-icon type="database" style="color: var(--ui-primary); font-size: 18px;"></a-icon>
+                                                    {{ i18n "pages.settings.databaseMaintenance" }}
+                                                </div>
+                                                <div style="font-size: 12px; color: var(--ui-text-muted); margin-top: 4px;">
+                                                    {{ i18n "pages.settings.databaseMaintenanceDesc" }}
+                                                </div>
+                                            </div>
+                                            <a-button size="small" icon="sync" :spin="dbStatusLoading" @click="fetchDBStatus">
+                                                {{ i18n "pages.settings.refreshDbStatus" }}
+                                            </a-button>
+                                        </div>
+
+                                        <div style="background: var(--ui-surface-muted); border: 1px solid var(--ui-border); border-radius: var(--ui-radius); padding: 14px; margin-bottom: 14px;">
+                                            <a-row :gutter="[16, 12]" type="flex" align="middle">
+                                                <a-col :xs="12" :sm="6">
+                                                    <div style="font-size: 11px; color: var(--ui-text-muted); text-transform: uppercase;">{{ i18n "pages.settings.dbSize" }}</div>
+                                                    <div style="font-size: 15px; font-weight: 700; margin-top: 2px;">[[ dbStatus.sizeFormatted || '0 B' ]]</div>
+                                                </a-col>
+                                                <a-col :xs="12" :sm="6">
+                                                    <div style="font-size: 11px; color: var(--ui-text-muted); text-transform: uppercase;">{{ i18n "pages.settings.dbWalSize" }}</div>
+                                                    <div style="font-size: 15px; font-weight: 700; margin-top: 2px;">[[ dbStatus.walSizeFormatted || '0 B' ]]</div>
+                                                </a-col>
+                                                <a-col :xs="12" :sm="6">
+                                                    <div style="font-size: 11px; color: var(--ui-text-muted); text-transform: uppercase;">{{ i18n "pages.settings.dbIntegrity" }}</div>
+                                                    <div style="margin-top: 2px;">
+                                                        <a-tag :color="dbStatus.integrityCheck === 'ok' ? 'green' : 'red'">
+                                                            <a-icon :type="dbStatus.integrityCheck === 'ok' ? 'check-circle' : 'close-circle'"></a-icon>
+                                                            [[ dbStatus.integrityCheck || 'checking' ]]
+                                                        </a-tag>
+                                                    </div>
+                                                </a-col>
+                                                <a-col :xs="12" :sm="6">
+                                                    <div style="font-size: 11px; color: var(--ui-text-muted); text-transform: uppercase;">{{ i18n "pages.settings.corruptedRows" }}</div>
+                                                    <div style="margin-top: 2px;">
+                                                        <a-tag :color="dbStatus.corruptedRows > 0 ? 'orange' : 'green'">
+                                                            [[ dbStatus.corruptedRows ]]
+                                                        </a-tag>
+                                                    </div>
+                                                </a-col>
+                                            </a-row>
+                                        </div>
+
+                                        <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                                            <a-tooltip>
+                                                <template slot="title">{{ i18n "pages.settings.optimizeDbDesc" }}</template>
+                                                <a-button type="primary" icon="thunderbolt" :loading="dbOptimizing" @click="optimizeDatabase">
+                                                    {{ i18n "pages.settings.optimizeDb" }}
+                                                </a-button>
+                                            </a-tooltip>
+
+                                            <a-popconfirm :overlay-class-name="themeSwitcher.currentTheme"
+                                                          @confirm="vacuumDatabase"
+                                                          cancel-text='{{ i18n "cancel" }}'
+                                                          ok-text='{{ i18n "confirm" }}'
+                                                          title='{{ i18n "pages.settings.vacuumDbConfirm" }}'>
+                                                <a-tooltip>
+                                                    <template slot="title">{{ i18n "pages.settings.vacuumDbDesc" }}</template>
+                                                    <a-button icon="inbox" :loading="dbVacuuming">
+                                                        {{ i18n "pages.settings.vacuumDb" }}
+                                                    </a-button>
+                                                </a-tooltip>
+                                            </a-popconfirm>
+
+                                            <a-popconfirm :overlay-class-name="themeSwitcher.currentTheme"
+                                                          @confirm="cleanDatabase"
+                                                          cancel-text='{{ i18n "cancel" }}'
+                                                          ok-text='{{ i18n "delete" }}'
+                                                          ok-type="danger"
+                                                          title='{{ i18n "pages.settings.cleanCorruptedRowsConfirm" }}'>
+                                                <a-tooltip>
+                                                    <template slot="title">{{ i18n "pages.settings.cleanCorruptedRowsDesc" }}</template>
+                                                    <a-button type="danger" icon="tool" :loading="dbCleaning">
+                                                        {{ i18n "pages.settings.cleanCorruptedRows" }}
+                                                    </a-button>
+                                                </a-tooltip>
+                                            </a-popconfirm>
+                                        </div>
+                                    </div>
+                                </a-list-item>
                             </a-list>
                         </a-tab-pane>
                         <a-tab-pane key="2" style="padding: 20px;" tab='{{ i18n "pages.settings.securitySettings"}}'>
@@ -767,6 +851,19 @@
                 value: 'jalalian'
             }],
             remarkSample: '',
+            dbStatus: {
+                path: '',
+                sizeFormatted: '0 B',
+                walSizeFormatted: '0 B',
+                totalSizeFormatted: '0 B',
+                integrityCheck: '',
+                corruptedRows: 0,
+                details: {}
+            },
+            dbStatusLoading: false,
+            dbOptimizing: false,
+            dbVacuuming: false,
+            dbCleaning: false,
             subTemplateModal: {
                 visible: false,
                 loading: false,
@@ -1108,6 +1205,78 @@
                 updatedNoises[index] = {...updatedNoises[index], delay: value};
                 this.noisesArray = updatedNoises;
             },
+            async fetchDBStatus() {
+                this.dbStatusLoading = true;
+                try {
+                    const res = await HttpUtil.post("/panel/setting/dbStatus");
+                    if (res && res.success && res.obj) {
+                        this.dbStatus = res.obj;
+                    }
+                } catch (e) {
+                    console.error("fetchDBStatus error:", e);
+                } finally {
+                    this.dbStatusLoading = false;
+                }
+            },
+            async optimizeDatabase() {
+                this.dbOptimizing = true;
+                try {
+                    const res = await HttpUtil.post("/panel/setting/optimizeDatabase");
+                    if (res && res.success) {
+                        this.$message.success('{{ i18n "pages.settings.toasts.optimizeSuccess" }}');
+                        if (res.obj) {
+                            this.dbStatus = res.obj;
+                        } else {
+                            await this.fetchDBStatus();
+                        }
+                    } else {
+                        this.$message.error(res ? res.msg : 'Error optimizing database');
+                    }
+                } catch (e) {
+                    this.$message.error(e.message || 'Error optimizing database');
+                } finally {
+                    this.dbOptimizing = false;
+                }
+            },
+            async vacuumDatabase() {
+                this.dbVacuuming = true;
+                try {
+                    const res = await HttpUtil.post("/panel/setting/vacuumDatabase");
+                    if (res && res.success) {
+                        if (res.obj && res.obj.reclaimedFormatted) {
+                            const tmpl = '{{ i18n "pages.settings.toasts.vacuumSuccessReclaimed" }}';
+                            this.$message.success(tmpl.replace('{size}', res.obj.reclaimedFormatted));
+                        } else {
+                            this.$message.success('{{ i18n "pages.settings.toasts.vacuumSuccess" }}');
+                        }
+                        await this.fetchDBStatus();
+                    } else {
+                        this.$message.error(res ? res.msg : 'Error vacuuming database');
+                    }
+                } catch (e) {
+                    this.$message.error(e.message || 'Error vacuuming database');
+                } finally {
+                    this.dbVacuuming = false;
+                }
+            },
+            async cleanDatabase() {
+                this.dbCleaning = true;
+                try {
+                    const res = await HttpUtil.post("/panel/setting/cleanDatabase");
+                    if (res && res.success) {
+                        const count = res.obj ? (res.obj.totalCleaned || 0) : 0;
+                        const tmpl = '{{ i18n "pages.settings.toasts.cleanSuccess" }}';
+                        this.$message.success(tmpl.replace('{count}', count));
+                        await this.fetchDBStatus();
+                    } else {
+                        this.$message.error(res ? res.msg : 'Error cleaning database');
+                    }
+                } catch (e) {
+                    this.$message.error(e.message || 'Error cleaning database');
+                } finally {
+                    this.dbCleaning = false;
+                }
+            },
         },
         computed: {
             fragment: {
@@ -1315,6 +1484,7 @@
             this.entryProtocol = window.location.protocol;
             this.entryIsIP = this._isIp(this.entryHost);
             await this.getAllSetting();
+            await this.fetchDBStatus();
             while (true) {
                 await PromiseUtil.sleep(1000);
                 this.saveBtnDisable = this.oldAllSetting.equals(this.allSetting);

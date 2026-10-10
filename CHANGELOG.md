@@ -7,6 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v0.8.9] - 2026-10-10
+
+### 🚀 Features & Enhancements
+- **Database Maintenance in Panel Settings (`/panel/settings`)**:
+  - Added dedicated **Database Maintenance** section displaying real-time database storage metrics, WAL size, SQLite integrity status, and corrupted/orphaned row counts.
+  - **Database Status & Integrity Check**: Integrated real-time inspection querying file size, WAL size, and running `PRAGMA integrity_check(1);`.
+  - **Optimize Database**: Added one-click database optimization executing `PRAGMA wal_checkpoint(TRUNCATE);`, `PRAGMA optimize;`, and `ANALYZE;` to rebuild query planner statistics and optimize table index access.
+  - **Database Vacuum (Space Reclamation)**: Added database VACUUM functionality to defragment database pages and reclaim unused disk space, reporting the exact amount of reclaimed storage.
+  - **Purge Corrupted & Orphaned Rows**: Built automated multi-table scanner and cleaner to safely remove:
+    - Orphaned traffic records (`client_traffics`) with empty emails or pointing to deleted inbounds.
+    - Ghost traffic records belonging to clients no longer present in node clients or inbound settings.
+    - Broken and duplicate node client links (`node_client_links`).
+    - Corrupted node client records (`node_clients`) with missing emails.
+    - Orphaned and invalid client IP bindings (`inbound_client_ips`).
+- **Database Maintenance REST API**:
+  - Added new REST API endpoints documented in `API.md`:
+    - `POST` / `GET` `/panel/setting/dbStatus` - Retrieve database size, WAL size, integrity check, and corrupted row counts.
+    - `POST` `/panel/setting/optimizeDatabase` - Run WAL checkpoint, analyze, and optimize pragmas.
+    - `POST` `/panel/setting/vacuumDatabase` - Defragment database and reclaim storage.
+    - `POST` `/panel/setting/cleanDatabase` - Purge corrupted and orphaned database entries.
+- **Multilingual Localization**:
+  - Added comprehensive localization across all 13 supported languages (`en_US`, `fa_IR`, `zh_CN`, `zh_TW`, `ru_RU`, `ar_EG`, `es_ES`, `id_ID`, `ja_JP`, `pt_BR`, `tr_TR`, `uk_UA`, `vi_VN`) for all new maintenance controls, prompts, and toasts.
+
+### 🐛 Bug Fixes & Stability
+- **Elimination of Database Locks on Multi-Inbound Client Deletion**:
+  - Resolved `database is locked` error occurring when deleting clients linked to multiple inbounds on the first attempt.
+  - Synchronized `DelInboundClient` and `DelInboundClientByEmail` with `nodeClientOpMutex` to prevent race conditions with background node client operations.
+  - Wrapped multi-inbound client deletion and unlink routines in exponential backoff retry loops (`database.ExecWithRetry`).
+- **Elimination of Database Locks on Traffic Resets**:
+  - Fixed database lock contention when resetting client and inbound traffic (`ResetClientTrafficByEmail`, `ResetAllClientTraffics`, `ResetAllTraffics`) by wrapping transactions in retry loops with progressive backoff.
+- **Type Correction in Traffic Addition**:
+  - Corrected return variable typing in `autoRenewClients` call within `AddTraffic` to prevent compilation and runtime evaluation mismatch.
+
+### ⚡ Performance & Database Optimization
+- **Immediate Transaction Locking (`_txlock=immediate`)**:
+  - Configured SQLite connection DSN with `_txlock=immediate` along with WAL mode and busy timeout (`_journal_mode=WAL&_busy_timeout=10000&_synchronous=NORMAL&_txlock=immediate`).
+  - Preemptively obtains SQLite write locks on transaction start, completely eliminating lock-upgrade deadlocks caused by concurrent read-then-write transactions during background traffic synchronization.
+- **Transaction Retry Engine (`retry.go`)**:
+  - Introduced `database.ExecWithRetry` and `database.WithRetry[T]` utility functions with exponential backoff and random jitter to absorb transient SQLite lock contention without failing user-facing requests.
+
+---
+
 ## [v0.8.8] - 2026-10-08
 
 ### 🚀 Features & Enhancements

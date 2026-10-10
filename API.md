@@ -418,6 +418,10 @@ Retrieve CPU, memory, disk, network, and uptime metrics.
 - **`GET /panel/setting/getDefaultJsonConfig`**: Retrieve default template config.
 - **`POST /panel/setting/getUserSecret`**: Get 2FA QR code and secret URI.
 - **`POST /panel/setting/updateUserSecret`**: Enable or disable 2FA (`secret`).
+- **`POST /panel/setting/dbStatus`** (or `GET`): Retrieve SQLite database status including database file size, WAL file size, PRAGMA integrity check result, and count of corrupted or orphaned records across tables.
+- **`POST /panel/setting/optimizeDatabase`**: Optimize SQLite database performance by executing `PRAGMA wal_checkpoint(TRUNCATE)`, `PRAGMA optimize`, and `ANALYZE`. Returns updated database status.
+- **`POST /panel/setting/vacuumDatabase`**: Reclaim unused disk space and defragment database pages via `VACUUM`. Returns `beforeSize`, `afterSize`, and `reclaimedBytes` (with human-readable formats).
+- **`POST /panel/setting/cleanDatabase`**: Scan and delete corrupted or orphaned database rows (orphaned `client_traffics`, broken `node_client_links`, duplicate links, corrupted `node_clients`, and orphaned `inbound_client_ips`). Returns summary of cleaned records.
 
 ---
 

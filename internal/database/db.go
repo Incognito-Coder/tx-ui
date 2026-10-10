@@ -21,7 +21,10 @@ import (
 	"gorm.io/gorm/logger"
 )
 
-var db *gorm.DB
+var (
+	db            *gorm.DB
+	currentDBPath string
+)
 
 const (
 	defaultUsername = "admin"
@@ -144,9 +147,14 @@ func InitDB(dbPath string) error {
 		Logger: gormLogger,
 	}
 
+	currentDBPath = dbPath
 	dsn := dbPath
-	if !strings.Contains(dsn, "?") {
-		dsn += "?_journal_mode=WAL&_busy_timeout=10000&_synchronous=NORMAL"
+	sep := "?"
+	if strings.Contains(dsn, "?") {
+		sep = "&"
+	}
+	if !strings.Contains(dsn, "_busy_timeout") {
+		dsn += sep + "_journal_mode=WAL&_busy_timeout=10000&_synchronous=NORMAL&_txlock=immediate"
 	}
 	db, err = gorm.Open(sqlite.Open(dsn), c)
 	if err != nil {

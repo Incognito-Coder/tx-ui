@@ -382,19 +382,22 @@ func (s *NodeClientService) Delete(id int) (bool, error) {
 	nc := &model.NodeClient{}
 	_ = db.First(nc, id).Error
 
-	tx := db.Begin()
-	defer func() {
-		if r := recover(); r != nil {
+	err := database.ExecWithRetry(5, func() error {
+		tx := db.Begin()
+		defer func() {
+			if r := recover(); r != nil {
+				tx.Rollback()
+			}
+		}()
+
+		if err := s.deleteInTx(tx, id); err != nil {
 			tx.Rollback()
+			return err
 		}
-	}()
 
-	if err := s.deleteInTx(tx, id); err != nil {
-		tx.Rollback()
-		return false, err
-	}
-
-	if err := tx.Commit().Error; err != nil {
+		return tx.Commit().Error
+	})
+	if err != nil {
 		return false, err
 	}
 
@@ -776,21 +779,24 @@ func (s *NodeClientService) bulkDeleteUnlocked(ids []int) (bool, error) {
 		}
 	}
 
-	tx := db.Begin()
-	defer func() {
-		if r := recover(); r != nil {
-			tx.Rollback()
-		}
-	}()
+	err := database.ExecWithRetry(5, func() error {
+		tx := db.Begin()
+		defer func() {
+			if r := recover(); r != nil {
+				tx.Rollback()
+			}
+		}()
 
-	for _, id := range ids {
-		if err := s.deleteInTx(tx, id); err != nil {
-			tx.Rollback()
-			return false, fmt.Errorf("bulk delete failed at id %d: %w", id, err)
+		for _, id := range ids {
+			if err := s.deleteInTx(tx, id); err != nil {
+				tx.Rollback()
+				return fmt.Errorf("bulk delete failed at id %d: %w", id, err)
+			}
 		}
-	}
 
-	if err := tx.Commit().Error; err != nil {
+		return tx.Commit().Error
+	})
+	if err != nil {
 		return false, err
 	}
 
@@ -978,54 +984,57 @@ func (s *NodeClientService) RemoveLink(nodeClientId, inboundId int) (bool, error
 		return false, fmt.Errorf("inbound not found (id=%d): %w", inboundId, err)
 	}
 
-	tx := db.Begin()
-	defer func() {
-		if r := recover(); r != nil {
+	err := database.ExecWithRetry(5, func() error {
+		tx := db.Begin()
+		defer func() {
+			if r := recover(); r != nil {
+				tx.Rollback()
+			}
+		}()
+
+		// 4. Delete the NodeClientLink record.
+		if err := tx.Delete(link).Error; err != nil {
 			tx.Rollback()
+			return fmt.Errorf("deleting node client link: %w", err)
 		}
-	}()
 
-	// 4. Delete the NodeClientLink record.
-	if err := tx.Delete(link).Error; err != nil {
-		tx.Rollback()
-		return false, fmt.Errorf("deleting node client link: %w", err)
-	}
+		// 5. Remove from inbound.Settings for this specific inbound so MigrateLegacyClients won't resurrect the link.
+		if removeClientFromInboundSettings(&inbound, nc.Email, nc.UUID, nc.Password, nc.Auth) {
+			_ = tx.Model(&model.Inbound{}).Where("id = ?", inbound.Id).Update("settings", inbound.Settings).Error
+		}
 
-	// 5. Remove from inbound.Settings for this specific inbound so MigrateLegacyClients won't resurrect the link.
-	if removeClientFromInboundSettings(&inbound, nc.Email, nc.UUID, nc.Password, nc.Auth) {
-		_ = tx.Model(&model.Inbound{}).Where("id = ?", inbound.Id).Update("settings", inbound.Settings).Error
-	}
-
-	// 6. Preserve traffic on remaining links if this inbound had higher usage, then NULL-out node_client_id for this inbound only.
-	var thisTraffic xray.ClientTraffic
-	if err := tx.Where("email = ? AND inbound_id = ?", nc.Email, inboundId).First(&thisTraffic).Error; err == nil {
-		if thisTraffic.Up > 0 || thisTraffic.Down > 0 {
-			var otherTraffics []xray.ClientTraffic
-			if err := tx.Where("(node_client_id = ? OR LOWER(email) = LOWER(?)) AND inbound_id != ?", nodeClientId, nc.Email, inboundId).Find(&otherTraffics).Error; err == nil {
-				for _, other := range otherTraffics {
-					updates := make(map[string]interface{})
-					if thisTraffic.Up > other.Up {
-						updates["up"] = thisTraffic.Up
-					}
-					if thisTraffic.Down > other.Down {
-						updates["down"] = thisTraffic.Down
-					}
-					if len(updates) > 0 {
-						_ = tx.Model(&xray.ClientTraffic{}).Where("id = ?", other.Id).Updates(updates).Error
+		// 6. Preserve traffic on remaining links if this inbound had higher usage, then NULL-out node_client_id for this inbound only.
+		var thisTraffic xray.ClientTraffic
+		if err := tx.Where("email = ? AND inbound_id = ?", nc.Email, inboundId).First(&thisTraffic).Error; err == nil {
+			if thisTraffic.Up > 0 || thisTraffic.Down > 0 {
+				var otherTraffics []xray.ClientTraffic
+				if err := tx.Where("(node_client_id = ? OR LOWER(email) = LOWER(?)) AND inbound_id != ?", nodeClientId, nc.Email, inboundId).Find(&otherTraffics).Error; err == nil {
+					for _, other := range otherTraffics {
+						updates := make(map[string]interface{})
+						if thisTraffic.Up > other.Up {
+							updates["up"] = thisTraffic.Up
+						}
+						if thisTraffic.Down > other.Down {
+							updates["down"] = thisTraffic.Down
+						}
+						if len(updates) > 0 {
+							_ = tx.Model(&xray.ClientTraffic{}).Where("id = ?", other.Id).Updates(updates).Error
+						}
 					}
 				}
 			}
 		}
-	}
 
-	if err := tx.Model(&xray.ClientTraffic{}).
-		Where("email = ? AND node_client_id = ? AND inbound_id = ?", nc.Email, nodeClientId, inboundId).
-		Update("node_client_id", nil).Error; err != nil {
-		tx.Rollback()
-		return false, fmt.Errorf("nulling node_client_id on client traffic for email %s and inbound %d: %w", nc.Email, inboundId, err)
-	}
+		if err := tx.Model(&xray.ClientTraffic{}).
+			Where("email = ? AND node_client_id = ? AND inbound_id = ?", nc.Email, nodeClientId, inboundId).
+			Update("node_client_id", nil).Error; err != nil {
+			tx.Rollback()
+			return fmt.Errorf("nulling node_client_id on client traffic for email %s and inbound %d: %w", nc.Email, inboundId, err)
+		}
 
-	if err := tx.Commit().Error; err != nil {
+		return tx.Commit().Error
+	})
+	if err != nil {
 		return false, err
 	}
 
@@ -1127,18 +1136,21 @@ func (s *NodeClientService) ResetTraffic(nodeClientId int) (bool, error) {
 func (s *NodeClientService) resetTrafficUnlocked(nodeClientId int) (bool, error) {
 	db := database.GetDB()
 
-	tx := db.Begin()
-	defer func() {
-		if r := recover(); r != nil {
-			tx.Rollback()
-		}
-	}()
-
 	var nc model.NodeClient
-	if err := tx.First(&nc, nodeClientId).Error; err != nil {
-		tx.Rollback()
-		return false, err
-	}
+	var reEnabled bool
+
+	err := database.ExecWithRetry(5, func() error {
+		tx := db.Begin()
+		defer func() {
+			if r := recover(); r != nil {
+				tx.Rollback()
+			}
+		}()
+
+		if err := tx.First(&nc, nodeClientId).Error; err != nil {
+			tx.Rollback()
+			return err
+		}
 
 	updates := map[string]interface{}{
 		"up":             0,
@@ -1164,12 +1176,12 @@ func (s *NodeClientService) resetTrafficUnlocked(nodeClientId int) (bool, error)
 		whereArgs = append(whereArgs, nc.Email)
 	}
 
-	if err := tx.Model(&xray.ClientTraffic{}).
-		Where(whereClause, whereArgs...).
-		Updates(updates).Error; err != nil {
-		tx.Rollback()
-		return false, err
-	}
+		if err := tx.Model(&xray.ClientTraffic{}).
+			Where(whereClause, whereArgs...).
+			Updates(updates).Error; err != nil {
+			tx.Rollback()
+			return err
+		}
 
 	// If client sync is enabled and client has subId, sync reset across all clients with same subId
 	settingService := &SettingService{}
@@ -1203,7 +1215,9 @@ func (s *NodeClientService) resetTrafficUnlocked(nodeClientId int) (bool, error)
 		}
 	}
 
-	if err := tx.Commit().Error; err != nil {
+		return tx.Commit().Error
+	})
+	if err != nil {
 		return false, err
 	}
 
