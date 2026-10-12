@@ -785,6 +785,7 @@ class HysteriaMasquerade extends XrayCommonClass {
         dir = '',
         url = '',
         rewriteHost = false,
+        xForwarded = false,
         insecure = false,
         content = '',
         headers = [],
@@ -795,6 +796,7 @@ class HysteriaMasquerade extends XrayCommonClass {
         this.dir = dir;
         this.url = url;
         this.rewriteHost = rewriteHost;
+        this.xForwarded = xForwarded;
         this.insecure = insecure;
         this.content = content;
         this.headers = headers;
@@ -815,6 +817,7 @@ class HysteriaMasquerade extends XrayCommonClass {
             json.dir,
             json.url,
             json.rewriteHost,
+            json.xForwarded ?? false,
             json.insecure,
             json.content,
             XrayCommonClass.toHeaders(json.headers),
@@ -828,6 +831,7 @@ class HysteriaMasquerade extends XrayCommonClass {
             dir: this.dir,
             url: this.url,
             rewriteHost: this.rewriteHost,
+            xForwarded: this.xForwarded,
             insecure: this.insecure,
             content: this.content,
             headers: XrayCommonClass.toV2Headers(this.headers, false),
@@ -2108,15 +2112,33 @@ class Inbound extends XrayCommonClass {
 
     genHysteriaLink(address = '', port = this.port, remark = '', clientAuth) {
         const protocol = this.settings.version === 2 ? "hysteria2" : "hysteria";
-        const link = `${protocol}://${clientAuth}@${address}:${port}`;
+        const auth = (clientAuth && clientAuth.length > 0) ? clientAuth : (this.stream.hysteria?.auth || '');
+        const link = `${protocol}://${auth}@${address}:${port}`;
 
         const params = new Map();
         params.set("security", "tls");
-        if (this.stream.tls.settings.fingerprint?.length > 0) params.set("fp", this.stream.tls.settings.fingerprint);
+        if (this.stream.tls.settings?.fingerprint?.length > 0) params.set("fp", this.stream.tls.settings.fingerprint);
         if (this.stream.tls.alpn?.length > 0) params.set("alpn", this.stream.tls.alpn);
+        if (this.stream.tls.settings?.allowInsecure || this.stream.tls.allowInsecure) params.set("insecure", "1");
         const echConfig = this.stream.tls.settings?.echConfigList || this.stream.tls.echConfigList;
         if (echConfig?.length > 0) params.set("ech", echConfig.trim());
         if (this.stream.tls.sni?.length > 0) params.set("sni", this.stream.tls.sni);
+
+        // Obfuscation and udpHop from FinalMask UDP masks
+        if (this.stream.finalmask && Array.isArray(this.stream.finalmask.udp)) {
+            for (const mask of this.stream.finalmask.udp) {
+                if (mask.type === 'salamander' && mask.settings?.password) {
+                    params.set("obfs", "salamander");
+                    params.set("obfs-password", mask.settings.password);
+                }
+                if (mask.type === 'udpHop' && mask.settings?.ports) {
+                    params.set("mport", mask.settings.ports);
+                }
+            }
+        }
+        if (!params.has("mport") && this.stream.hysteria?.udphopPort) {
+            params.set("mport", this.stream.hysteria.udphopPort);
+        }
 
         const url = new URL(link);
         for (const [key, value] of params) {

@@ -35,6 +35,10 @@
                 <a-switch
                         v-model="inbound.stream.hysteria.masquerade.rewriteHost"></a-switch>
             </a-form-item>
+            <a-form-item label='X-Forwarded'>
+                <a-switch
+                        v-model="inbound.stream.hysteria.masquerade.xForwarded"></a-switch>
+            </a-form-item>
             <a-form-item label='Insecure'>
                 <a-switch
                         v-model="inbound.stream.hysteria.masquerade.insecure"></a-switch>

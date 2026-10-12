@@ -589,6 +589,9 @@ func (s *SubService) genWireguardLink(inbound *model.Inbound, email string) stri
 
 func (s *SubService) genHysteriaLink(inbound *model.Inbound, email string) string {
 	address := s.address
+	if inbound.Listen != "" && inbound.Listen != "0.0.0.0" {
+		address = inbound.Listen
+	}
 	if inbound.Protocol != model.Hysteria {
 		return ""
 	}
@@ -606,6 +609,13 @@ func (s *SubService) genHysteriaLink(inbound *model.Inbound, email string) strin
 		return ""
 	}
 	auth := clients[clientIndex].Auth
+	if auth == "" {
+		if hySettings, ok := stream["hysteriaSettings"].(map[string]interface{}); ok {
+			if a, ok := hySettings["auth"].(string); ok {
+				auth = a
+			}
+		}
+	}
 	port := inbound.Port
 	params := make(map[string]string)
 
@@ -642,9 +652,48 @@ func (s *SubService) genHysteriaLink(inbound *model.Inbound, email string) strin
 			}
 		}
 	}
+	if insecure, ok := searchKey(tlsSetting, "allowInsecure"); ok && params["insecure"] == "" {
+		if isInsecure, ok := insecure.(bool); ok && isInsecure {
+			params["insecure"] = "1"
+		}
+	}
 	if echValue, ok := searchKey(tlsSetting, "echConfigList"); ok && params["ech"] == "" {
 		if ech, ok := echValue.(string); ok && strings.TrimSpace(ech) != "" {
 			params["ech"] = strings.TrimSpace(ech)
+		}
+	}
+
+	// Obfuscation and udpHop from FinalMask UDP masks
+	if finalmask, ok := stream["finalmask"].(map[string]interface{}); ok {
+		if udpMasks, ok := finalmask["udp"].([]interface{}); ok {
+			for _, m := range udpMasks {
+				if maskMap, ok := m.(map[string]interface{}); ok {
+					maskType, _ := maskMap["type"].(string)
+					maskSettings, _ := maskMap["settings"].(map[string]interface{})
+					if maskType == "salamander" && maskSettings != nil {
+						if pass, ok := maskSettings["password"].(string); ok && pass != "" {
+							params["obfs"] = "salamander"
+							params["obfs-password"] = pass
+						}
+					}
+					if maskType == "udpHop" && maskSettings != nil {
+						if ports, ok := maskSettings["ports"].(string); ok && ports != "" {
+							params["mport"] = ports
+						}
+					}
+				}
+			}
+		}
+	}
+	if params["mport"] == "" {
+		if hySettings, ok := stream["hysteriaSettings"].(map[string]interface{}); ok {
+			if udphop, ok := hySettings["udphop"].(map[string]interface{}); ok {
+				if p, ok := udphop["port"].(string); ok && p != "" {
+					params["mport"] = p
+				}
+			} else if p, ok := hySettings["udphopPort"].(string); ok && p != "" {
+				params["mport"] = p
+			}
 		}
 	}
 
@@ -654,6 +703,38 @@ func (s *SubService) genHysteriaLink(inbound *model.Inbound, email string) strin
 	protocol := "hysteria2"
 	if int(version) == 1 {
 		protocol = "hysteria"
+	}
+
+	externalProxies, _ := stream["externalProxy"].([]interface{})
+	if len(externalProxies) > 0 {
+		var links string
+		for index, externalProxy := range externalProxies {
+			ep, ok := externalProxy.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			dest, _ := ep["dest"].(string)
+			epPort := port
+			if p, ok := ep["port"].(float64); ok {
+				epPort = int(p)
+			} else if p, ok := ep["port"].(int); ok {
+				epPort = p
+			}
+			link := fmt.Sprintf("%s://%s@%s:%d", protocol, auth, dest, epPort)
+			u, _ := url.Parse(link)
+			q := u.Query()
+			for k, v := range params {
+				q.Add(k, v)
+			}
+			u.RawQuery = formatRawQuery(q)
+			remark, _ := ep["remark"].(string)
+			u.Fragment = s.genRemark(inbound, email, remark)
+			if index > 0 {
+				links += "\n"
+			}
+			links += u.String()
+		}
+		return links
 	}
 
 	link := fmt.Sprintf("%s://%s@%s:%d", protocol, auth, address, port)
@@ -1590,11 +1671,14 @@ func (s *SubService) genShadowsocksLink(inbound *model.Inbound, email string) st
 }
 
 func (s *SubService) genRemark(inbound *model.Inbound, email string, extra string) string {
-	if s.remarkModel == "" {
+	remarkModel := "-ieo"
+	if s != nil && s.remarkModel != "" {
+		remarkModel = s.remarkModel
+	} else if s != nil {
 		s.remarkModel = "-ieo"
 	}
-	separationChar := string(s.remarkModel[0])
-	orderChars := s.remarkModel[1:]
+	separationChar := string(remarkModel[0])
+	orderChars := remarkModel[1:]
 	orders := map[byte]string{
 		'i': "",
 		'e': "",

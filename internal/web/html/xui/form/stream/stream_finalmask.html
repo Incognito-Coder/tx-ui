@@ -2,11 +2,11 @@
 <a-divider :style="{ margin: '5px 0 0' }"></a-divider>
 <a-form :colon="false" :label-col="{ md: {span:8} }"
         :wrapper-col="{ md: {span:14} }">
-    <a-form-item label='{{ i18n "pages.xray.finalmask.tcpMasks" }}' v-if="inbound.stream.network !== 'kcp'">
+    <a-form-item label='{{ i18n "pages.xray.finalmask.tcpMasks" }}' v-if="!['kcp', 'hysteria'].includes(inbound.stream.network)">
         <a-button @click="inbound.stream.addTcpMask('xmc')" icon="plus" size="small"
                   type="primary"></a-button>
     </a-form-item>
-    <template v-if="inbound.stream.network !== 'kcp' && inbound.stream.finalmask.tcp && inbound.stream.finalmask.tcp.length > 0">
+    <template v-if="!['kcp', 'hysteria'].includes(inbound.stream.network) && inbound.stream.finalmask.tcp && inbound.stream.finalmask.tcp.length > 0">
         <a-form :colon="false" :key="tcpIndex" :label-col="{ md: {span:8} }"
                 :wrapper-col="{ md: {span:14} }" v-for="(mask, tcpIndex) in inbound.stream.finalmask.tcp">
             <a-divider :style="{ margin: '0' }">{{ i18n "pages.xray.finalmask.tcpMask" }} [[ tcpIndex + 1 ]]

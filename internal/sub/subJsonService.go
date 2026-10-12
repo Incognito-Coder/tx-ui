@@ -28,6 +28,9 @@ type SubJsonService struct {
 }
 
 func NewSubJsonService(fragment string, noises string, mux string, rules string, subService *SubService) *SubJsonService {
+	if subService == nil {
+		subService = NewSubService(false, "-ieo")
+	}
 	var configJson map[string]interface{}
 	var defaultOutbounds []json_util.RawMessage
 	json.Unmarshal([]byte(defaultJson), &configJson)
@@ -252,12 +255,17 @@ func (s *SubJsonService) genHy(inbound *model.Inbound, newStream map[string]any,
 	}
 
 	json.Unmarshal([]byte(inbound.StreamSettings), &stream)
+	auth := client.Auth
 	outHyStream := map[string]any{
 		"version": int(version),
-		"auth":    client.Auth,
 	}
 	if stream != nil {
 		if hyStream, ok := stream["hysteriaSettings"].(map[string]any); ok {
+			if auth == "" {
+				if a, ok := hyStream["auth"].(string); ok {
+					auth = a
+				}
+			}
 			if udpIdleTimeout, ok := hyStream["udpIdleTimeout"].(float64); ok {
 				outHyStream["udpIdleTimeout"] = int(udpIdleTimeout)
 			}
@@ -265,7 +273,11 @@ func (s *SubJsonService) genHy(inbound *model.Inbound, newStream map[string]any,
 				newStream["finalmask"] = finalmask
 			}
 		}
+		if finalmask, ok := stream["finalmask"].(map[string]any); ok {
+			newStream["finalmask"] = finalmask
+		}
 	}
+	outHyStream["auth"] = auth
 	newStream["hysteriaSettings"] = outHyStream
 
 	newStream["network"] = "hysteria"

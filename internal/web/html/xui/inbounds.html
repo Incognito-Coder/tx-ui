@@ -1131,6 +1131,8 @@
                     case Protocols.SHADOWSOCKS:
                     case Protocols.MASQUE:
                         return clients.findIndex(item => item && (item.password === client.password || item.pass === client.pass) && item.email === client.email);
+                    case Protocols.HYSTERIA:
+                        return clients.findIndex(item => item && (item.auth === client.auth || !item.auth) && item.email === client.email);
                     default: return clients.findIndex(item => item && item.id === client.id && item.email === client.email);
                 }
             },

@@ -10,6 +10,7 @@ import (
 	"x-ui/internal/database"
 	"x-ui/internal/database/model"
 	"x-ui/internal/logger"
+	"x-ui/internal/util/random"
 	"x-ui/xray"
 
 	"gorm.io/gorm"
@@ -553,7 +554,15 @@ func addClientToInboundSettings(inbound *model.Inbound, nc *model.NodeClient, fl
 			newClientMap["method"] = m
 		}
 	case "hysteria":
-		newClientMap["auth"] = nc.Auth
+		auth := nc.Auth
+		if auth == "" {
+			if nc.Password != "" {
+				auth = nc.Password
+			} else {
+				auth = random.Seq(10)
+			}
+		}
+		newClientMap["auth"] = auth
 	case "wireguard":
 		newClientMap["publicKey"] = nc.UUID
 		newClientMap["privateKey"] = nc.Password
@@ -1544,10 +1553,15 @@ func (s *NodeClientService) synthesiseClient(nc *model.NodeClient, link *model.N
 		flow = nc.Flow
 	}
 
+	auth := nc.Auth
+	if auth == "" && nc.Password != "" {
+		auth = nc.Password
+	}
+
 	return model.Client{
 		ID:         nc.UUID,
 		Password:   nc.Password,
-		Auth:       nc.Auth,
+		Auth:       auth,
 		Security:   nc.Security,
 		Flow:       flow,
 		Email:      nc.Email,

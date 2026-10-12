@@ -203,6 +203,14 @@
                             </a-tooltip>
                         </td>
                     </tr>
+                    <tr v-if="infoModal.clientSettings.auth">
+                        <td>Auth</td>
+                        <td>
+                            <a-tooltip :title="infoModal.clientSettings.auth">
+                                <a-tag class="info-large-tag">[[ infoModal.clientSettings.auth ]]</a-tag>
+                            </a-tooltip>
+                        </td>
+                    </tr>
                 </template>
                 <template v-else>
                     <tr v-if="infoModal.clientSettings.publicKey || infoModal.clientSettings.id">
