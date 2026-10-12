@@ -5,6 +5,32 @@ All notable changes to **TX-UI** will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.9.0] - 2026-10-12
+
+### 🚀 Features & Enhancements
+- **Hysteria UDP FinalMask Support**:
+  - Added FinalMask transport stream configuration support for Hysteria inbounds (`stream_settings.html`).
+  - Dynamically configured the FinalMask interface to display supported UDP masks (`salamander`, `udpHop`, `sudoku`, `noise`, `header-custom`) while hiding TCP-specific masks for Hysteria streams (`stream_finalmask.html`).
+- **Hysteria Proxy Masquerade Enhancements**:
+  - Added `X-Forwarded` header switch to Hysteria masquerade settings in inbound configuration form (`stream_hysteria.html`).
+  - Added `xForwarded` property and serialization support to `HysteriaMasquerade` model (`inbound.js`).
+- **Comprehensive Hysteria 2 Subscription Links (`hysteria2://`)**:
+  - Implemented complete Hysteria 2 subscription link generation across Go backend (`subService.go`) and Web UI (`inbound.js`).
+  - **Salamander Obfuscation**: Automatically parses `salamander` UDP FinalMask into standard `obfs=salamander&obfs-password=<password>` query parameters.
+  - **Port Hopping (`mport`)**: Automatically extracts multi-port hopping ranges from `udpHop` UDP FinalMask or `hysteriaSettings.udphop` into the `mport` parameter.
+  - **Insecure TLS Support**: Appends `insecure=1` parameter when `allowInsecure` is enabled in TLS settings.
+  - **External Proxies**: Added multi-node link generation for Hysteria when `externalProxy` endpoints are defined.
+  - **JSON Subscription Outbounds**: Preserved `finalmask` stream settings on Hysteria outbounds in `subJsonService.go` and provided fallback `auth` extraction.
+
+### 🐛 Bug Fixes & Stability
+- **Hysteria Client Indexing & Actions**:
+  - Fixed client indexing in `findIndexOfClient` (`inbounds.html`) by identifying Hysteria clients via `auth` and `email` instead of non-existent UUID `id`.
+  - Added `Auth` credential row display in client information modal (`inbound_info_modal.html`).
+- **Node Client Service Hysteria Authentication**:
+  - Handled `nc.Auth` mapping with fallback to `nc.Password` or randomly generated credentials when attaching clients to Hysteria inbounds in `node_client.go`.
+- **Nil Safety in Subscription Services**:
+  - Ensured safe default initialization of `SubService` in `NewSubJsonService` and guarded `genRemark` against nil receiver dereferences.
+
 ---
 
 ## [v0.8.9] - 2026-10-10
