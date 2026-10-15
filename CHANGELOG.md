@@ -23,6 +23,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **JSON Subscription Outbounds**: Preserved `finalmask` stream settings on Hysteria outbounds in `subJsonService.go` and provided fallback `auth` extraction.
 
 ### 🐛 Bug Fixes & Stability
+- **Separation of Manually Disabled Clients from Ended (Depleted) Status**:
+  - Fixed client status categorization in `getClientCounts` (`inbounds.html`) so manually disabled clients (`!client.enable`) are strictly tracked under "Disabled" (`deactive`) and no longer appear in the "Ended" (`depleted`) popover and badge count.
+  - Filtered out `deactive` client emails from `depleted` and `expiring` sets in the inbounds page `total()` computed summary.
+  - Extended inbound protocol check in `setInbounds` (`inbounds.html`) to support client counters for `HYSTERIA`, `WIREGUARD`, and `MASQUE` inbounds.
+  - Fixed `DelDepletedClients` and `GetDepletedClients` (`inbound.go`) to prevent manually disabled clients with remaining quota and valid expiry dates from being matched as depleted (`reset = 0 AND ((expiry_time > 0 AND expiry_time <= now) OR (total > 0 AND (up + down) >= total))`), preventing accidental deletion when deleting depleted clients.
+  - Guarded client status badges and the `depleted` filter status in `clients.html` with `c.enable && isDepletedOrExpired(c)` to maintain consistent status display across all panel pages.
 - **Hysteria Client Indexing & Actions**:
   - Fixed client indexing in `findIndexOfClient` (`inbounds.html`) by identifying Hysteria clients via `auth` and `email` instead of non-existent UUID `id`.
   - Added `Auth` credential row display in client information modal (`inbound_info_modal.html`).

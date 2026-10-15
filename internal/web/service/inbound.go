@@ -2759,7 +2759,7 @@ func (s *InboundService) UpdateClientStat(tx *gorm.DB, email string, client *mod
 	result := tx.Model(xray.ClientTraffic{}).
 		Where("email = ?", email).
 		Updates(map[string]interface{}{
-			"enable":      true,
+			"enable":      client.Enable,
 			"email":       client.Email,
 			"total":       client.TotalGB,
 			"expiry_time": client.ExpiryTime,
@@ -2886,16 +2886,28 @@ func (s *InboundService) SetClientTelegramUserID(trafficId int, tgId int64) (boo
 	if err != nil {
 		return false, err
 	}
-	clients := settings["clients"].([]interface{})
+	clients, ok := settings["clients"].([]interface{})
+	if !ok {
+		clients, ok = settings["peers"].([]interface{})
+		if !ok {
+			return false, common.NewError("no clients in inbound settings")
+		}
+	}
 	var newClients []interface{}
 	for client_index := range clients {
-		c := clients[client_index].(map[string]interface{})
+		c, ok := clients[client_index].(map[string]interface{})
+		if !ok {
+			continue
+		}
 		if c["email"] == clientEmail {
 			c["tgId"] = tgId
 			newClients = append(newClients, interface{}(c))
+		} else {
+			newClients = append(newClients, clients[client_index])
 		}
 	}
 	settings["clients"] = newClients
+	delete(settings, "peers")
 	modifiedSettings, err := json.MarshalIndent(settings, "", "  ")
 	if err != nil {
 		return false, err
@@ -2979,16 +2991,28 @@ func (s *InboundService) ToggleClientEnableByEmail(clientEmail string) (bool, bo
 	if err != nil {
 		return false, false, err
 	}
-	clients := settings["clients"].([]interface{})
+	clients, ok := settings["clients"].([]interface{})
+	if !ok {
+		clients, ok = settings["peers"].([]interface{})
+		if !ok {
+			return false, false, common.NewError("no clients in inbound settings")
+		}
+	}
 	var newClients []interface{}
 	for client_index := range clients {
-		c := clients[client_index].(map[string]interface{})
+		c, ok := clients[client_index].(map[string]interface{})
+		if !ok {
+			continue
+		}
 		if c["email"] == clientEmail {
 			c["enable"] = !clientOldEnabled
 			newClients = append(newClients, interface{}(c))
+		} else {
+			newClients = append(newClients, clients[client_index])
 		}
 	}
 	settings["clients"] = newClients
+	delete(settings, "peers")
 	modifiedSettings, err := json.MarshalIndent(settings, "", "  ")
 	if err != nil {
 		return false, false, err
@@ -3065,6 +3089,8 @@ func (s *InboundService) ResetClientIpLimitByEmail(clientEmail string, count int
 		if c["email"] == clientEmail {
 			c["limitIp"] = count
 			newClients = append(newClients, interface{}(c))
+		} else {
+			newClients = append(newClients, clients[client_index])
 		}
 	}
 	settings["clients"] = newClients
@@ -3140,6 +3166,8 @@ func (s *InboundService) ResetClientExpiryTimeByEmail(clientEmail string, expiry
 		if c["email"] == clientEmail {
 			c["expiryTime"] = expiry_time
 			newClients = append(newClients, interface{}(c))
+		} else {
+			newClients = append(newClients, clients[client_index])
 		}
 	}
 	settings["clients"] = newClients
@@ -3218,6 +3246,8 @@ func (s *InboundService) ResetClientTrafficLimitByEmail(clientEmail string, tota
 		if c["email"] == clientEmail {
 			c["totalGB"] = int64(totalGB) * 1024 * 1024 * 1024
 			newClients = append(newClients, interface{}(c))
+		} else {
+			newClients = append(newClients, clients[client_index])
 		}
 	}
 	settings["clients"] = newClients
@@ -3411,7 +3441,7 @@ func (s *InboundService) DelDepletedClients(id int) (err error) {
 	now := time.Now().Unix() * 1000
 	var depletedTraffics []xray.ClientTraffic
 	err = db.Model(xray.ClientTraffic{}).
-		Where(whereText+" and (enable = ? OR (expiry_time > 0 and expiry_time <= ?) OR (total > 0 and (up + down) >= total))", id, false, now).
+		Where(whereText+" and ((expiry_time > 0 and expiry_time <= ?) OR (total > 0 and (up + down) >= total))", id, now).
 		Find(&depletedTraffics).Error
 	if err != nil {
 		return err
@@ -3470,7 +3500,7 @@ func (s *InboundService) DelDepletedClients(id int) (err error) {
 		}
 	}
 
-	_ = db.Where(whereText+" and (enable = ? OR (expiry_time > 0 and expiry_time <= ?) OR (total > 0 and (up + down) >= total))", id, false, now).
+	_ = db.Where(whereText+" and ((expiry_time > 0 and expiry_time <= ?) OR (total > 0 and (up + down) >= total))", id, now).
 		Delete(xray.ClientTraffic{}).Error
 
 	return nil
@@ -3487,8 +3517,13 @@ func (s *InboundService) GetDepletedClients() ([]string, error) {
 		}
 	}()
 
+	now := time.Now().Unix() * 1000
 	var depletedClients []xray.ClientTraffic
-	err := db.Model(xray.ClientTraffic{}).Where("reset = 0 and enable = ?", false).Select("inbound_id, GROUP_CONCAT(email) as email").Group("inbound_id").Find(&depletedClients).Error
+	err := db.Model(xray.ClientTraffic{}).
+		Where("reset = 0 and ((expiry_time > 0 and expiry_time <= ?) or (total > 0 and (up + down) >= total))", now).
+		Select("inbound_id, GROUP_CONCAT(email) as email").
+		Group("inbound_id").
+		Find(&depletedClients).Error
 	if err != nil {
 		return nil, err
 	}
@@ -3582,8 +3617,15 @@ func (s *InboundService) GetClientTrafficByEmail(email string) (traffic *xray.Cl
 func (s *InboundService) UpdateClientTrafficByEmail(email string, upload int64, download int64) error {
 	db := database.GetDB()
 
+	var ct xray.ClientTraffic
+	if err := db.Where("LOWER(email) = LOWER(?)", email).First(&ct).Error; err == nil && ct.NodeClientId != nil && *ct.NodeClientId > 0 {
+		return db.Model(&xray.ClientTraffic{}).
+			Where("node_client_id = ? OR LOWER(email) = LOWER(?)", *ct.NodeClientId, email).
+			Updates(map[string]any{"up": upload, "down": download}).Error
+	}
+
 	result := db.Model(xray.ClientTraffic{}).
-		Where("email = ?", email).
+		Where("LOWER(email) = LOWER(?)", email).
 		Updates(map[string]any{"up": upload, "down": download})
 
 	err := result.Error

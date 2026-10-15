@@ -55,8 +55,8 @@
 <template slot="client" slot-scope="text, client">
     <a-tooltip>
         <template slot="title">
-            <template v-if="!isClientEnabled(record, client.email)">{{ i18n "depleted" }}</template>
-            <template v-else-if="!client.enable">{{ i18n "disabled" }}</template>
+            <template v-if="!client.enable">{{ i18n "disabled" }}</template>
+            <template v-else-if="!isClientEnabled(record, client.email)">{{ i18n "depleted" }}</template>
             <template v-else-if="client.enable && isClientOnline(client.email)">{{ i18n "online" }}</template>
         </template>
         <a-badge :class="isClientOnline(client.email)? 'online-animation' : ''"

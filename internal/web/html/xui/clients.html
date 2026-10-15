@@ -1163,7 +1163,7 @@
                                             <span class="usage-bar-label-muted usage-bar-total-hide" style="flex-shrink: 0; text-align: left; min-width: 44px;">
                                                 [[ c.totalGB > 0 ? sizeFormat(c.totalGB) : '∞' ]]
                                             </span>
-                                            <a-tag class="status-badge client-status-badge" color="orange" v-if="!isMobile && isDepletedOrExpired(c)"
+                                            <a-tag class="status-badge client-status-badge" color="orange" v-if="!isMobile && c.enable && isDepletedOrExpired(c)"
                                                 style="font-size: 10px; height: 18px; line-height: 16px; padding: 0 4px; margin: 0; flex-shrink: 0;">
                                                 {{ i18n "depleted" }}
                                             </a-tag>
@@ -1695,7 +1695,7 @@
                             <a-tag color="green" v-if="isOnline(detailModal.client.email)" style="margin-left: 6px; font-size: 10px; height: 18px; line-height: 16px; padding: 0 4px;">{{ i18n "online" }}</a-tag>
                             <a-tag color="green" v-if="isClientActive(detailModal.client)" style="margin-left: 4px; font-size: 10px; height: 18px; line-height: 16px; padding: 0 4px;">{{ i18n "enabled" }}</a-tag>
                             <a-tag color="red" v-else-if="!detailModal.client.enable" style="margin-left: 4px; font-size: 10px; height: 18px; line-height: 16px; padding: 0 4px;">{{ i18n "disabled" }}</a-tag>
-                            <a-tag color="orange" v-if="isDepletedOrExpired(detailModal.client)" style="margin-left: 4px; font-size: 10px; height: 18px; line-height: 16px; padding: 0 4px;">{{ i18n "depleted" }}</a-tag>
+                            <a-tag color="orange" v-else-if="isDepletedOrExpired(detailModal.client)" style="margin-left: 4px; font-size: 10px; height: 18px; line-height: 16px; padding: 0 4px;">{{ i18n "depleted" }}</a-tag>
                         </td>
                     </tr>
                     <tr>
@@ -2199,7 +2199,7 @@
                     if (this.filterStatus) {
                         if (this.filterStatus === 'active') list = list.filter(c => this.isClientActive(c));
                         else if (this.filterStatus === 'disabled') list = list.filter(c => !c.enable);
-                        else if (this.filterStatus === 'depleted') list = list.filter(c => this.isDepletedOrExpired(c));
+                        else if (this.filterStatus === 'depleted') list = list.filter(c => c.enable && this.isDepletedOrExpired(c));
                         else if (this.filterStatus === 'online') list = list.filter(c => this.isOnline(c.email));
                     }
                     if (this.filterInboundId !== '') {

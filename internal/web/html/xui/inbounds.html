@@ -793,10 +793,10 @@
                 this.clientCount.splice(0);
                 for (const inbound of dbInbounds) {
                     const dbInbound = new DBInbound(inbound);
-                    to_inbound = dbInbound.toInbound()
+                    const to_inbound = dbInbound.toInbound();
                     this.inbounds.push(to_inbound);
                     this.dbInbounds.push(dbInbound);
-                    if ([Protocols.VMESS, Protocols.VLESS, Protocols.TROJAN, Protocols.SHADOWSOCKS].includes(inbound.protocol)) {
+                    if ([Protocols.VMESS, Protocols.VLESS, Protocols.TROJAN, Protocols.SHADOWSOCKS, Protocols.HYSTERIA, Protocols.WIREGUARD, Protocols.MASQUE].includes(inbound.protocol)) {
                         if (dbInbound.isSS && (!to_inbound.isSSMultiUser)) {
                             continue;
                         }
@@ -816,21 +816,40 @@
                 const now = new Date().getTime();
                 if (clients) {
                     clientCount = clients.length;
+                    const statsMap = new Map();
+                    clientStats.forEach(s => {
+                        if (s && s.email) {
+                            statsMap.set(s.email, s);
+                        }
+                    });
+
                     if (dbInbound.enable) {
                         clients.forEach(client => {
-                            if (client.enable) {
-                                active.push(client.email);
-                                if (this.isClientOnline(client.email)) online.push(client.email);
-                            } else {
-                                deactive.push(client.email);
-                            }
-                        });
-                        clientStats.forEach(client => {
                             if (!client.enable) {
+                                deactive.push(client.email);
+                                return;
+                            }
+
+                            const stats = statsMap.get(client.email);
+                            const expTime = (client.expiryTime && client.expiryTime !== 0) ? client.expiryTime : (stats && stats.expiryTime ? stats.expiryTime : 0);
+                            const totalTraffic = (stats && stats.total > 0) ? stats.total : (client.totalGB > 0 ? client.totalGB : 0);
+                            const usedTraffic = stats ? (stats.up + stats.down) : 0;
+
+                            const isExpired = expTime > 0 && expTime <= now;
+                            const isTrafficExhausted = totalTraffic > 0 && usedTraffic >= totalTraffic;
+                            const isStatsDisabled = stats ? !stats.enable : false;
+
+                            if (isExpired || isTrafficExhausted || isStatsDisabled) {
                                 depleted.push(client.email);
                             } else {
-                                if ((client.expiryTime > 0 && (client.expiryTime - now < this.expireDiff)) ||
-                                    (client.total > 0 && (client.total - (client.up + client.down) < this.trafficDiff))) expiring.push(client.email);
+                                active.push(client.email);
+                                if (this.isClientOnline(client.email)) online.push(client.email);
+
+                                const isExpiringTime = expTime > 0 && (expTime - now < this.expireDiff);
+                                const isExpiringTraffic = totalTraffic > 0 && (totalTraffic - usedTraffic < this.trafficDiff);
+                                if (isExpiringTime || isExpiringTraffic) {
+                                    expiring.push(client.email);
+                                }
                             }
                         });
                     } else {
@@ -1619,13 +1638,14 @@
                         });
                     }
                 });
+                const deactiveSet = new Set(deactive);
                 return {
                     down: down,
                     up: up,
                     clients: allClientEmails.size,
-                    deactive: [...new Set(deactive)],
-                    depleted: [...new Set(depleted)],
-                    expiring: [...new Set(expiring)],
+                    deactive: [...deactiveSet],
+                    depleted: [...new Set(depleted)].filter(e => !deactiveSet.has(e)),
+                    expiring: [...new Set(expiring)].filter(e => !deactiveSet.has(e)),
                 };
             }
         },
