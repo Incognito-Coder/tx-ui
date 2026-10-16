@@ -56,6 +56,9 @@
         <a-form-item label="Disable System Root">
             <a-switch v-model="inbound.stream.tls.disableSystemRoot"></a-switch>
         </a-form-item>
+        <a-form-item label='{{ i18n "pages.inbounds.useSystemCA" }}'>
+            <a-switch v-model="inbound.stream.tls.useSystemCA"></a-switch>
+        </a-form-item>
         <a-form-item label="Session Resumption">
             <a-switch v-model="inbound.stream.tls.enableSessionResumption"></a-switch>
         </a-form-item>

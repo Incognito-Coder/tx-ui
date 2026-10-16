@@ -249,6 +249,9 @@ reordered = "ورودی\u200cها با موفقیت مرتب شدند"
 autoRefresh = "به\u200cروزرسانی خودکار"
 autoRefreshInterval = "فاصله زمانی"
 
+useSystemCA = "استفاده از CA سیستم"
+useSystemCADesc = "استفاده از گواهی‌های ریشه سیستم‌عامل به‌جای گواهی‌های داخلی Xray-core"
+
 [pages.node_clients]
 showLinks = "نمایش لینک\u200cها"
 noLinks = "هیچ لینکی موجود نیست"
@@ -559,6 +562,8 @@ FreedomStrategy = "Freedom استراتژی پروتکل"
 FreedomStrategyDesc = "تعیین می\u200cکند Freedom استراتژی خروجی شبکه را برای پروتکل"
 RoutingStrategy = "استراتژی کلی مسیریابی"
 RoutingStrategyDesc = "استراتژی کلی مسیریابی برای حل تمام درخواست\u200cها را تعیین می\u200cکند"
+routingScript = "اسکریپت مسیریابی Lua"
+routingScriptDesc = "اسکریپت سفارشی Lua جهت مسیریابی پویا (در صورت تعیین، جایگزین قوانین ایستا می‌شود)"
 outboundTestUrl = "آدرس تست خروجی"
 outboundTestUrlDesc = "آدرسی که برای تست اتصال خروجی استفاده می\u200cشود."
 Torrent = "مسدودسازی پروتکل بیت\u200cتورنت"
@@ -910,6 +915,8 @@ asciiTable = "جدول ASCII"
 paddingMin = "حداقل پدینگ"
 paddingMax = "حداکثر پدینگ"
 randRange = "محدوده تصادفی"
+noiseScript = "اسکریپت نویز با Lua"
+noiseScriptDesc = "اسکریپت سفارشی Lua برای دستکاری و تولید نویز بسته‌ها"
 
 [pages.xray.dns]
 title = "DNS"
@@ -931,6 +938,8 @@ disableFallbackIfMatch = "غیرفعال\u200cسازی جایگزین در صو�
 disableFallbackIfMatchDesc = "در صورت تطابق دامنه با لیست سرور DNS، درخواست جایگزین DNS غیرفعال می\u200cشود"
 useSystemHosts = "استفاده از فایل hosts سیستم"
 useSystemHostsDesc = "استفاده از فایل hosts سیستم نصب\u200cشده"
+script = "اسکریپت DNS با Lua"
+scriptDesc = "اسکریپت سفارشی Lua جهت حل و مسیریابی پرس‌وجوهای DNS"
 clientIp = "آی\u200cپی کاربر"
 clientIpDesc = "موقعیت مکانی کاربر را در طول درخواست\u200cهای DNS مشخص می\u200cکند"
 

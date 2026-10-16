@@ -579,6 +579,16 @@
                             </a-input>
                         </a-input-group>
                     </a-form-item>
+                    <a-divider style="margin: 6px 0;">WARP (Optional)</a-divider>
+                    <a-form-item label="WARP Private Key">
+                        <a-input placeholder="Base64 or PEM private key" v-model.trim="outbound.stream.masque.warp.privateKey"></a-input>
+                    </a-form-item>
+                    <a-form-item label="WARP Public Key">
+                        <a-input placeholder="Base64 or PEM public key" v-model.trim="outbound.stream.masque.warp.publicKey"></a-input>
+                    </a-form-item>
+                    <a-form-item label="WARP Address">
+                        <a-select mode="tags" :token-separators="[',']" placeholder="172.16.0.2/32, 2606:4700:110:8f81::/128" v-model="outbound.stream.masque.warp.address"></a-select>
+                    </a-form-item>
                 </template>
 
                 <!-- xdrive -->
@@ -807,6 +817,11 @@
                                 <a-input placeholder="e.g. 100-200" v-model.trim="mask.settings.randRange"></a-input>
                             </a-form-item>
                         </template>
+                        <template v-if="mask.type === 'noise'">
+                            <a-form-item label='{{ i18n "pages.xray.finalmask.noiseScript" }}'>
+                                <a-textarea :rows="3" placeholder="Lua script for Noise (optional)" v-model="mask.settings.script"></a-textarea>
+                            </a-form-item>
+                        </template>
                         <!-- Settings for udpHop -->
                         <template v-if="mask.type === 'udpHop'">
                             <a-form-item label="Ports">
@@ -857,6 +872,9 @@
                         <a-input placeholder="Enter SHA256 fingerprints (base64)"
                                  v-model.trim="outbound.stream.tls.pinnedPeerCertSha256">
                         </a-input>
+                    </a-form-item>
+                    <a-form-item label='{{ i18n "pages.inbounds.useSystemCA" }}'>
+                        <a-switch v-model="outbound.stream.tls.useSystemCA"></a-switch>
                     </a-form-item>
                 </template>
 

@@ -3,6 +3,9 @@
          @ok="dnsModal.ok" cancel-text='{{ i18n "close" }}' id="dns-modal"
          v-model="dnsModal.visible" wrap-class-name="panel-modal panel-modal-lg">
     <a-form :colon="false" :label-col="{ md: {span:8} }" :wrapper-col="{ md: {span:14} }">
+        <a-form-item label='Server ID'>
+            <a-input placeholder="e.g. google-dns (used in Lua DNS script)" v-model.trim="dnsModal.dnsServer.id"></a-input>
+        </a-form-item>
         <a-form-item label='{{ i18n "pages.xray.outbound.address" }}'>
             <a-input v-model.trim="dnsModal.dnsServer.address"></a-input>
         </a-form-item>
@@ -44,6 +47,7 @@
         isEdit: false,
         confirm: null,
         dnsServer: {
+            id: "",
             address: "localhost",
             domains: [],
             expectIPs: [],
@@ -55,7 +59,7 @@
             expectIPs = dnsModal.dnsServer.expectIPs.filter(ip => ip.length > 0);
             dnsModal.dnsServer.domains = domains;
             dnsModal.dnsServer.expectIPs = expectIPs;
-            newDnsServer = (domains.length > 0 || expectIPs.length > 0) ? dnsModal.dnsServer : dnsModal.dnsServer.address;
+            newDnsServer = (domains.length > 0 || expectIPs.length > 0 || (dnsModal.dnsServer.id && dnsModal.dnsServer.id.length > 0)) ? dnsModal.dnsServer : dnsModal.dnsServer.address;
             ObjectUtil.execute(dnsModal.confirm, newDnsServer);
         },
 
@@ -73,9 +77,17 @@
             this.visible = true;
             if (isEdit) {
                 if (typeof dnsServer == 'object') {
-                    this.dnsServer = dnsServer;
+                    this.dnsServer = {
+                        id: dnsServer.id ?? "",
+                        address: dnsServer.address ?? "",
+                        domains: dnsServer.domains ?? [],
+                        expectIPs: dnsServer.expectIPs ?? [],
+                        queryStrategy: dnsServer.queryStrategy ?? 'UseIP',
+                        skipFallback: dnsServer.skipFallback ?? true,
+                    };
                 } else {
                     this.dnsServer = {
+                        id: "",
                         address: dnsServer ?? "",
                         domains: [],
                         expectIPs: [],
@@ -85,6 +97,7 @@
                 }
             } else {
                 this.dnsServer = {
+                    id: "",
                     address: "localhost",
                     domains: [],
                     expectIPs: [],

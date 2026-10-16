@@ -131,6 +131,81 @@ func normalizeLegacyVMessUser(user map[string]interface{}) {
 	}
 }
 
+// NormalizeStreamSettings normalizes finalmask and stream settings for compatibility with Xray-core v26.10.10+
+func NormalizeStreamSettings(stream map[string]interface{}) bool {
+	if stream == nil {
+		return false
+	}
+	changed := false
+	if finalmask, ok := stream["finalmask"].(map[string]interface{}); ok {
+		for _, maskListKey := range []string{"tcp", "udp"} {
+			if masks, ok := finalmask[maskListKey].([]interface{}); ok {
+				for _, maskObj := range masks {
+					mask, ok := maskObj.(map[string]interface{})
+					if !ok {
+						continue
+					}
+					mType, _ := mask["type"].(string)
+					if mType == "xdns" {
+						settings, ok := mask["settings"].(map[string]interface{})
+						if !ok || settings == nil {
+							continue
+						}
+						// Normalize domains: if []interface{} of strings, convert to []map[string]interface{}
+						if rawDomains, exists := settings["domains"]; exists {
+							if strArr, ok := rawDomains.([]interface{}); ok && len(strArr) > 0 {
+								var names []string
+								hasNonString := false
+								for _, item := range strArr {
+									if s, ok := item.(string); ok && s != "" {
+										names = append(names, s)
+									} else {
+										hasNonString = true
+									}
+								}
+								if !hasNonString && len(names) > 0 {
+									settings["domains"] = []map[string]interface{}{
+										{
+											"names":      names,
+											"lenLimit":   255,
+											"labelLimit": 63,
+										},
+									}
+									changed = true
+								}
+							}
+						}
+						// Normalize resolvers: if []interface{} of strings, convert to []map[string]interface{}
+						if rawResolvers, exists := settings["resolvers"]; exists {
+							if strArr, ok := rawResolvers.([]interface{}); ok && len(strArr) > 0 {
+								var addrs []string
+								hasNonString := false
+								for _, item := range strArr {
+									if s, ok := item.(string); ok && s != "" {
+										addrs = append(addrs, s)
+									} else {
+										hasNonString = true
+									}
+								}
+								if !hasNonString && len(addrs) > 0 {
+									settings["resolvers"] = []map[string]interface{}{
+										{
+											"addrs":  addrs,
+											"worker": 32,
+										},
+									}
+									changed = true
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	return changed
+}
+
 func normalizeLegacyOutbounds(raw json_util.RawMessage) (json_util.RawMessage, error) {
 	if len(raw) == 0 {
 		return raw, nil
@@ -164,6 +239,11 @@ func normalizeLegacyOutbounds(raw json_util.RawMessage) (json_util.RawMessage, e
 					delete(settings, "domainStrategy")
 					changed = true
 				}
+			}
+		}
+		if streamSettings, ok := outbound["streamSettings"].(map[string]interface{}); ok {
+			if NormalizeStreamSettings(streamSettings) {
+				changed = true
 			}
 		}
 	}

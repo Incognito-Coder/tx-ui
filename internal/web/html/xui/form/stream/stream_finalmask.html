@@ -194,6 +194,11 @@
                     <a-input placeholder="e.g. 100-200" v-model.trim="mask.settings.randRange"></a-input>
                 </a-form-item>
             </template>
+            <template v-if="mask.type === 'noise'">
+                <a-form-item label='{{ i18n "pages.xray.finalmask.noiseScript" }}'>
+                    <a-textarea :rows="3" placeholder="Lua script for Noise (optional)" v-model="mask.settings.script"></a-textarea>
+                </a-form-item>
+            </template>
             <!-- Settings for udpHop -->
             <template v-if="mask.type === 'udpHop'">
                 <a-form-item label="Ports">

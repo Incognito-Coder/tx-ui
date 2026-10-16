@@ -2671,6 +2671,7 @@ func (s *InboundService) BuildInboundConfig(inbound *model.Inbound, txs ...*gorm
 	if len(inbound.StreamSettings) > 0 {
 		var stream map[string]interface{}
 		json.Unmarshal([]byte(inbound.StreamSettings), &stream)
+		NormalizeStreamSettings(stream)
 		if tlsSettings, ok := stream["tlsSettings"].(map[string]interface{}); ok {
 			if echServerKeys, ok := tlsSettings["echServerKeys"].(string); ok {
 				trimmed := strings.TrimSpace(echServerKeys)

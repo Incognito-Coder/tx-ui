@@ -705,6 +705,14 @@
                             </a-collapse>
                         </a-tab-pane>
                         <a-tab-pane class="xray-table-pane" key="tpl-routing" tab='{{ i18n "pages.xray.Routings"}}'>
+                            <a-collapse :style="{ marginBottom: '16px' }">
+                                <a-collapse-panel header='{{ i18n "pages.xray.routingScript" }}'>
+                                    <p style="color: var(--ui-text-muted); font-size: 13px; margin-bottom: 8px;">
+                                        {{ i18n "pages.xray.routingScriptDesc" }}
+                                    </p>
+                                    <a-textarea :rows="5" placeholder="function routing(ctx) ... end" v-model="routingScript"></a-textarea>
+                                </a-collapse-panel>
+                            </a-collapse>
                             <div class="xray-table-actions">
                                 <a-button @click="addRule" icon="plus" type="primary">{{ i18n "pages.xray.rules.add" }}
                                 </a-button>
@@ -1103,6 +1111,14 @@
                                                    title='{{ i18n "pages.xray.dns.useSystemHosts" }}'
                                                    type="switch"
                                                    v-model="dnsUseSystemHosts"></setting-list-item>
+                                <a-collapse :style="{ margin: '10px 20px' }">
+                                    <a-collapse-panel header='{{ i18n "pages.xray.dns.script" }}'>
+                                        <p style="color: var(--ui-text-muted); font-size: 13px; margin-bottom: 8px;">
+                                            {{ i18n "pages.xray.dns.scriptDesc" }}
+                                        </p>
+                                        <a-textarea :rows="5" placeholder="function dns(ctx) ... end" v-model="dnsScript"></a-textarea>
+                                    </a-collapse-panel>
+                                </a-collapse>
                                 <a-divider>DNS</a-divider>
                                 <a-button @click="addDNSServer()" class="xray-section-action" icon="plus"
                                           type="primary">{{ i18n
@@ -3018,6 +3034,38 @@
                 set: function (newValue) {
                     newTemplateSettings = this.templateSettings;
                     newTemplateSettings.routing.domainStrategy = newValue;
+                    this.templateSettings = newTemplateSettings;
+                }
+            },
+            routingScript: {
+                get: function () {
+                    if (!this.templateSettings || !this.templateSettings.routing || !this.templateSettings.routing.script) return "";
+                    return this.templateSettings.routing.script;
+                },
+                set: function (newValue) {
+                    newTemplateSettings = this.templateSettings;
+                    if (!newTemplateSettings.routing) newTemplateSettings.routing = {};
+                    if (newValue) {
+                        newTemplateSettings.routing.script = newValue;
+                    } else {
+                        delete newTemplateSettings.routing.script;
+                    }
+                    this.templateSettings = newTemplateSettings;
+                }
+            },
+            dnsScript: {
+                get: function () {
+                    if (!this.templateSettings || !this.templateSettings.dns || !this.templateSettings.dns.script) return "";
+                    return this.templateSettings.dns.script;
+                },
+                set: function (newValue) {
+                    newTemplateSettings = this.templateSettings;
+                    if (!newTemplateSettings.dns) newTemplateSettings.dns = {};
+                    if (newValue) {
+                        newTemplateSettings.dns.script = newValue;
+                    } else {
+                        delete newTemplateSettings.dns.script;
+                    }
                     this.templateSettings = newTemplateSettings;
                 }
             },

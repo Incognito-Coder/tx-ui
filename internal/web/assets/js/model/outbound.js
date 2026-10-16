@@ -463,6 +463,7 @@ class TlsStreamSettings extends CommonClass {
         echConfigList = '',
         verifyPeerCertByName = '',
         pinnedPeerCertSha256 = '',
+        useSystemCA = false,
     ) {
         super();
         this.serverName = serverName;
@@ -471,6 +472,7 @@ class TlsStreamSettings extends CommonClass {
         this.echConfigList = echConfigList;
         this.verifyPeerCertByName = verifyPeerCertByName;
         this.pinnedPeerCertSha256 = pinnedPeerCertSha256;
+        this.useSystemCA = useSystemCA;
     }
 
     static fromJson(json = {}) {
@@ -481,6 +483,7 @@ class TlsStreamSettings extends CommonClass {
             json.echConfigList,
             json.verifyPeerCertByName,
             json.pinnedPeerCertSha256,
+            json.useSystemCA ?? false,
         );
     }
 
@@ -491,7 +494,8 @@ class TlsStreamSettings extends CommonClass {
             fingerprint: this.fingerprint,
             echConfigList: this.echConfigList,
             verifyPeerCertByName: this.verifyPeerCertByName,
-            pinnedPeerCertSha256: this.pinnedPeerCertSha256
+            pinnedPeerCertSha256: this.pinnedPeerCertSha256,
+            useSystemCA: this.useSystemCA ? true : undefined,
         };
     }
 }
@@ -633,6 +637,31 @@ class HysteriaStreamSettings extends CommonClass {
     }
 };
 
+class MasqueWarpSettings extends CommonClass {
+    constructor(privateKey = '', publicKey = '', address = []) {
+        super();
+        this.privateKey = privateKey;
+        this.publicKey = publicKey;
+        this.address = Array.isArray(address) ? address : (address ? [address] : []);
+    }
+
+    static fromJson(json = {}) {
+        return new MasqueWarpSettings(
+            json.privateKey ?? '',
+            json.publicKey ?? '',
+            json.address ?? [],
+        );
+    }
+
+    toJson() {
+        return {
+            privateKey: this.privateKey || undefined,
+            publicKey: this.publicKey || undefined,
+            address: this.address && this.address.length > 0 ? this.address : undefined,
+        };
+    }
+}
+
 class MasqueStreamSettings extends CommonClass {
     constructor(
         host = '',
@@ -640,6 +669,7 @@ class MasqueStreamSettings extends CommonClass {
         user = '',
         pass = '',
         headers = [],
+        warp = null,
     ) {
         super();
         this.host = host;
@@ -647,6 +677,7 @@ class MasqueStreamSettings extends CommonClass {
         this.user = user;
         this.pass = pass;
         this.headers = headers;
+        this.warp = warp ? MasqueWarpSettings.fromJson(warp) : new MasqueWarpSettings();
     }
 
     static fromJson(json = {}) {
@@ -656,6 +687,7 @@ class MasqueStreamSettings extends CommonClass {
             json.user ?? '',
             json.pass ?? '',
             CommonClass.toHeaders(json.headers),
+            json.warp,
         );
     }
 
@@ -668,12 +700,14 @@ class MasqueStreamSettings extends CommonClass {
     }
 
     toJson() {
+        const hasWarp = this.warp && (this.warp.privateKey || this.warp.publicKey || (this.warp.address && this.warp.address.length > 0));
         return {
             host: this.host ? this.host : undefined,
             path: this.path ? this.path : undefined,
             user: this.user ? this.user : undefined,
             pass: this.pass ? this.pass : undefined,
             headers: CommonClass.toV2Headers(this.headers, false),
+            warp: hasWarp ? this.warp.toJson() : undefined,
         };
     }
 }
@@ -794,7 +828,7 @@ class UdpMask extends CommonClass {
             case 'header-custom':
                 return { randRange: settings.randRange || '', client: Array.isArray(settings.client) ? settings.client : [], server: Array.isArray(settings.server) ? settings.server : [] };
             case 'noise':
-                return { randRange: settings.randRange || '', reset: settings.reset || 0, noise: Array.isArray(settings.noise) ? settings.noise : [] };
+                return { randRange: settings.randRange || '', reset: settings.reset || 0, noise: Array.isArray(settings.noise) ? settings.noise : [], script: settings.script || '' };
             case 'sudoku':
                 return { ascii: settings.ascii || '', customTable: settings.customTable || '', customTables: Array.isArray(settings.customTables) ? settings.customTables : [], paddingMin: settings.paddingMin || 0, paddingMax: settings.paddingMax || 0 };
             case 'udpHop':

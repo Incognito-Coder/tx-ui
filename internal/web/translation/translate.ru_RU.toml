@@ -249,6 +249,9 @@ clearClientIps = "Очистить журнал"
 clientIps = "Журнал IP"
 refreshClientIps = "Обновить IP"
 
+useSystemCA = "Использовать системный CA"
+useSystemCADesc = "Использовать корневые сертификаты ОС вместо встроенных RootCA Xray-core"
+
 [pages.node_clients]
 bulkDelete = "Массовое удаление"
 bulkManageLinks = "Массовая привязка inbound"
@@ -559,6 +562,8 @@ FreedomStrategy = "Настройка стратегии протокола Free
 FreedomStrategyDesc = "Установка стратегии вывода сети в протоколе Freedom"
 RoutingStrategy = "Настройка стратегии маршрутизации доменов"
 RoutingStrategyDesc = "Установка общей стратегии маршрутизации разрешения DNS"
+routingScript = "Lua скрипт маршрутизации"
+routingScriptDesc = "Пользовательский Lua скрипт для динамической маршрутизации (заменяет статические правила при наличии)"
 outboundTestUrl = "URL для теста исходящего"
 outboundTestUrlDesc = "URL для проверки подключения исходящего"
 Torrent = "Запрет использования BitTorrent"
@@ -893,6 +898,8 @@ asciiTable = "Таблица ASCII"
 paddingMin = "Мин. паддинг"
 paddingMax = "Макс. паддинг"
 randRange = "Случайный диапазон"
+noiseScript = "Lua скрипт для Noise"
+noiseScriptDesc = "Пользовательский Lua скрипт для генерации шумовых пакетов"
 
 [pages.xray.dns]
 title = "DNS"
@@ -914,6 +921,8 @@ disableFallbackIfMatch = "Отключить резервный DNS при со�
 disableFallbackIfMatchDesc = "Отключает резервные DNS-запросы при совпадении с доменом из списка DNS-сервера"
 useSystemHosts = "Использовать системный hosts"
 useSystemHostsDesc = "Использовать файл hosts установленной системы"
+script = "Lua скрипт DNS"
+scriptDesc = "Пользовательский Lua скрипт для обработки DNS запросов"
 clientIp = "IP клиента"
 clientIpDesc = "Определяет местоположение клиента во время DNS-запросов"
 

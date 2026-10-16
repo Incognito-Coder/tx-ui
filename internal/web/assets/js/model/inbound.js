@@ -853,7 +853,8 @@ class TlsStreamSettings extends XrayCommonClass {
         alpn = [ALPN_OPTION.H2, ALPN_OPTION.HTTP1],
         echServerKeys = '',
         echForceQuery = 'none',
-        settings = new TlsStreamSettings.Settings()
+        settings = new TlsStreamSettings.Settings(),
+        useSystemCA = false
     ) {
         super();
         this.sni = serverName;
@@ -868,6 +869,7 @@ class TlsStreamSettings extends XrayCommonClass {
         this.echServerKeys = echServerKeys;
         this.echForceQuery = echForceQuery;
         this.settings = settings;
+        this.useSystemCA = useSystemCA;
     }
 
     static fromJson(json = {}) {
@@ -893,6 +895,7 @@ class TlsStreamSettings extends XrayCommonClass {
             json.echServerKeys ? json.echServerKeys.trim() : '',
             json.echForceQuery,
             settings,
+            json.useSystemCA ?? false,
         );
     }
 
@@ -921,6 +924,7 @@ class TlsStreamSettings extends XrayCommonClass {
             echConfigList: echConfigList,
             echForceQuery: this.echForceQuery,
             settings: this.settings,
+            useSystemCA: this.useSystemCA ? true : undefined,
         };
     }
 }
@@ -1245,7 +1249,7 @@ class UdpMask extends XrayCommonClass {
             case 'header-custom':
                 return { randRange: settings.randRange || '', client: Array.isArray(settings.client) ? settings.client : [], server: Array.isArray(settings.server) ? settings.server : [] };
             case 'noise':
-                return { randRange: settings.randRange || '', reset: settings.reset || 0, noise: Array.isArray(settings.noise) ? settings.noise : [] };
+                return { randRange: settings.randRange || '', reset: settings.reset || 0, noise: Array.isArray(settings.noise) ? settings.noise : [], script: settings.script || '' };
             case 'sudoku':
                 return { ascii: settings.ascii || '', customTable: settings.customTable || '', customTables: Array.isArray(settings.customTables) ? settings.customTables : [], paddingMin: settings.paddingMin || 0, paddingMax: settings.paddingMax || 0 };
             case 'udpHop':
