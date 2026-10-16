@@ -75,6 +75,7 @@ func (a *ServerController) initRouter(g *gin.RouterGroup) {
 	g.GET("/getSubTemplates", a.getSubTemplates)
 	g.POST("/applySubTemplate", a.applySubTemplate)
 	g.POST("/resetSubTemplate", a.resetSubTemplate)
+	g.POST("/getMinecraftProfile", a.getMinecraftProfile)
 }
 
 func (a *ServerController) refreshStatus() {
@@ -465,3 +466,13 @@ func (a *ServerController) resetSubTemplate(c *gin.Context) {
 	}
 	jsonMsg(c, I18nWeb(c, "pages.settings.subTemplateModalResetSuccessMsg"), nil)
 }
+
+func (a *ServerController) getMinecraftProfile(c *gin.Context) {
+	profile, err := a.serverService.GetMinecraftProfile(c.PostForm("username"))
+	if err != nil {
+		jsonMsg(c, "get Minecraft profile", err)
+		return
+	}
+	jsonObj(c, profile, nil)
+}
+

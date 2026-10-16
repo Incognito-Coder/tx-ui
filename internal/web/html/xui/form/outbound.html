@@ -670,8 +670,17 @@
                                 <a-input placeholder='{{ i18n "pages.xray.finalmask.hostnamePlaceholder" }}'
                                          v-model.trim="mask.settings.hostname"></a-input>
                             </a-form-item>
-                            <a-form-item label='{{ i18n "password" }}' required>
-                                <a-input placeholder='{{ i18n "pages.xray.finalmask.passwordPlaceholder" }}' type="password"
+                            <a-form-item required>
+                                <template slot="label">
+                                    <a-tooltip>
+                                        <template slot="title">
+                                            <span>{{ i18n "reset" }}</span>
+                                        </template>
+                                        {{ i18n "password" }}
+                                        <a-icon @click="mask.settings.password = RandomUtil.randomSeq(16)" type="sync"></a-icon>
+                                    </a-tooltip>
+                                </template>
+                                <a-input placeholder='{{ i18n "pages.xray.finalmask.passwordPlaceholder" }}'
                                          v-model.trim="mask.settings.password"></a-input>
                             </a-form-item>
                             <a-form-item label='{{ i18n "pages.xray.finalmask.signedProfiles" }}'>
@@ -686,8 +695,10 @@
                                             type="delete"></a-icon>
                                 </a-divider>
                                 <a-form-item label='{{ i18n "username" }}' required>
-                                    <a-input placeholder='{{ i18n "pages.xray.finalmask.usernamePlaceholder" }}'
-                                             v-model.trim="profile.username"></a-input>
+                                    <a-input-search placeholder='{{ i18n "pages.xray.finalmask.usernamePlaceholder" }}'
+                                                     enter-button='{{ i18n "pages.inbounds.stream.finalmask.xmcFetch" }}'
+                                                     @search="TcpMask.fetchXmcProfile(profile)"
+                                                     v-model.trim="profile.username"></a-input-search>
                                 </a-form-item>
                                 <a-form-item label='{{ i18n "pages.xray.finalmask.uuid" }}' required>
                                     <a-input v-model.trim="profile.uuid"></a-input>
@@ -778,6 +789,9 @@
                                         v-if="['tcp', 'ws', 'httpupgrade', 'xhttp', 'kcp'].includes(outbound.stream.network)"
                                         value="xdns">xDNS (Experimental)
                                 </a-select-option>
+                                <a-select-option value="realm">Realm</a-select-option>
+                                <a-select-option value="xicmp">xICMP (Experimental)</a-select-option>
+                                <a-select-option v-if="outbound.stream.network === 'kcp'" value="mkcp-legacy">mKCP Legacy</a-select-option>
                             </a-select>
                         </a-form-item>
                         <!-- Settings for password-based masks -->
@@ -831,7 +845,96 @@
                                 <a-input placeholder="e.g. 10-30" v-model.trim="mask.settings.interval"></a-input>
                             </a-form-item>
                         </template>
+                        <template v-if="mask.type === 'xicmp'">
+                            {{template "form/xicmpFields" "mask"}}
+                        </template>
+                        <template v-if="mask.type === 'realm'">
+                            {{template "form/realmFields" "mask"}}
+                        </template>
+                        <template v-if="mask.type === 'mkcp-legacy'">
+                            {{template "form/mkcpLegacyFields" "mask"}}
+                        </template>
                     </a-form>
+                </template>
+
+                <!-- QUIC Params (XHTTP H3, Hysteria) -->
+                <template v-if="outbound.protocol === Protocols.Hysteria || ['xhttp', 'masque'].includes(outbound.stream.network)">
+                    <a-divider :style="{ margin: '5px 0 0' }"></a-divider>
+                    <a-form-item label='{{ i18n "pages.inbounds.stream.finalmask.quicParams" }}'>
+                        <a-switch v-model="outbound.stream.finalmask.quicParamsEnable"></a-switch>
+                    </a-form-item>
+                    <template v-if="outbound.stream.finalmask.quicParams">
+                        <a-form-item label='{{ i18n "pages.inbounds.stream.kcp.congestion" }}'>
+                            <a-select v-model="outbound.stream.finalmask.quicParams.congestion"
+                                :dropdown-class-name="themeSwitcher.currentTheme">
+                                <a-select-option value="">{{ i18n "none" }}</a-select-option>
+                                <a-select-option value="reno">reno</a-select-option>
+                                <a-select-option value="bbr">bbr</a-select-option>
+                                <a-select-option value="brutal">brutal</a-select-option>
+                                <a-select-option value="force-brutal">force-brutal</a-select-option>
+                            </a-select>
+                        </a-form-item>
+                        <a-form-item v-if="!['reno', 'force-brutal'].includes(outbound.stream.finalmask.quicParams.congestion)">
+                            <template slot="label">
+                                <a-tooltip>
+                                    <template slot="title">
+                                        <span>{{ i18n "pages.inbounds.stream.finalmask.bbrProfileDesc" }}</span>
+                                    </template>
+                                    {{ i18n "pages.inbounds.stream.finalmask.bbrProfile" }} <a-icon type="question-circle"></a-icon>
+                                </a-tooltip>
+                            </template>
+                            <a-select v-model="outbound.stream.finalmask.quicParams.bbrProfile" :dropdown-class-name="themeSwitcher.currentTheme">
+                                <a-select-option value="">standard</a-select-option>
+                                <a-select-option value="conservative">conservative</a-select-option>
+                                <a-select-option value="aggressive">aggressive</a-select-option>
+                            </a-select>
+                        </a-form-item>
+                        <a-form-item label='{{ i18n "pages.inbounds.stream.finalmask.debug" }}'>
+                            <a-switch v-model="outbound.stream.finalmask.quicParams.debug"></a-switch>
+                        </a-form-item>
+                        <a-form-item label='{{ i18n "pages.inbounds.stream.finalmask.brutalUp" }} Mbps'>
+                            <a-input-number v-model.number="outbound.stream.finalmask.quicParams.brutalUp" :min="0" />
+                        </a-form-item>
+                        <a-form-item label='{{ i18n "pages.inbounds.stream.finalmask.brutalDown" }} Mbps'>
+                            <a-input-number v-model.number="outbound.stream.finalmask.quicParams.brutalDown" :min="0" />
+                        </a-form-item>
+                        <a-form-item label='{{ i18n "pages.outbounds.initStreamReceive" }}'>
+                            <a-input-number v-model.number="outbound.stream.finalmask.quicParams.initStreamReceiveWindow" :min="0" />
+                        </a-form-item>
+                        <a-form-item label='{{ i18n "pages.outbounds.maxStreamReceive" }}'>
+                            <a-input-number v-model.number="outbound.stream.finalmask.quicParams.maxStreamReceiveWindow" :min="0" />
+                        </a-form-item>
+                        <a-form-item label='{{ i18n "pages.outbounds.initConnReceive" }}'>
+                            <a-input-number v-model.number="outbound.stream.finalmask.quicParams.initConnectionReceiveWindow" :min="0" />
+                        </a-form-item>
+                        <a-form-item label='{{ i18n "pages.outbounds.maxConnReceive" }}'>
+                            <a-input-number v-model.number="outbound.stream.finalmask.quicParams.maxConnectionReceiveWindow" :min="0" />
+                        </a-form-item>
+                        <a-form-item label='{{ i18n "pages.outbounds.maxIdleTimeout" }}'>
+                            <a-input-number v-model.number="outbound.stream.finalmask.quicParams.maxIdleTimeout" :min="0" :max="120" />
+                        </a-form-item>
+                        <a-form-item label='{{ i18n "pages.outbounds.keepAlivePeriod" }}'>
+                            <a-input-number v-model.number="outbound.stream.finalmask.quicParams.keepAlivePeriod" :min="0" :max="60" />
+                        </a-form-item>
+                        <a-form-item label='{{ i18n "pages.outbounds.disablePathMTU" }}'>
+                            <a-switch v-model="outbound.stream.finalmask.quicParams.disablePathMTUDiscovery"></a-switch>
+                        </a-form-item>
+                        <a-form-item label='{{ i18n "pages.inbounds.stream.finalmask.maxIncomingStreams" }}'>
+                            <a-input-number v-model.number="outbound.stream.finalmask.quicParams.maxIncomingStreams" :min="0" />
+                        </a-form-item>
+                        <a-form-item label='{{ i18n "pages.inbounds.stream.finalmask.brutalDisableLossCompensation" }}'>
+                            <a-switch v-model="outbound.stream.finalmask.quicParams.brutalDisableLossCompensation"></a-switch>
+                        </a-form-item>
+                        <a-form-item label='{{ i18n "pages.inbounds.stream.finalmask.disableChromeParrot" }}'>
+                            <a-switch v-model="outbound.stream.finalmask.quicParams.disableChromeParrot"></a-switch>
+                        </a-form-item>
+                        <a-form-item label='{{ i18n "pages.inbounds.stream.finalmask.disableGSO" }}'>
+                            <a-switch v-model="outbound.stream.finalmask.quicParams.disableGSO"></a-switch>
+                        </a-form-item>
+                        <a-form-item label='{{ i18n "pages.inbounds.stream.finalmask.disableStatelessReset" }}'>
+                            <a-switch v-model="outbound.stream.finalmask.quicParams.disableStatelessReset"></a-switch>
+                        </a-form-item>
+                    </template>
                 </template>
             </template>
 

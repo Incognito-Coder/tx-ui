@@ -1,0 +1,235 @@
+{{define "form/xdnsDomains"}}
+<a-form-item label='{{ i18n "pages.inbounds.stream.finalmask.domains" }}'>
+    <a-icon type="plus" type="primary" size="small"
+        @click="{{.}}.settings.domains.push({names: [], types: [], edns0: 1232})" />
+</a-form-item>
+<template v-for="(d, dIdx) in {{.}}.settings.domains" :key="'xdns-domain-' + dIdx">
+    <a-divider :style="{ margin: '0' }"> {{ i18n "pages.inbounds.stream.finalmask.domains" }} [[ dIdx + 1 ]]
+        <a-icon type="delete"
+            @click="() => {{.}}.settings.domains.splice(dIdx, 1)"
+            :style="{ color: 'rgb(255, 77, 79)', cursor: 'pointer' }"></a-icon>
+    </a-divider>
+    <a-form-item label='{{ i18n "pages.inbounds.stream.finalmask.domains" }}'>
+        <a-select mode="tags" v-model="d.names" :token-separators="[',', ' ']"
+            :dropdown-class-name="themeSwitcher.currentTheme" placeholder="t.example.com"></a-select>
+    </a-form-item>
+    <a-form-item>
+        <template slot="label">
+            <a-tooltip>
+                <template slot="title">
+                    <span>{{ i18n "pages.inbounds.stream.finalmask.recordTypesDesc" }}</span>
+                </template>
+                {{ i18n "pages.inbounds.stream.finalmask.recordTypes" }} <a-icon type="question-circle"></a-icon>
+            </a-tooltip>
+        </template>
+        <a-select mode="multiple" v-model="d.types" :dropdown-class-name="themeSwitcher.currentTheme">
+            <a-select-option v-for="(code, name) in UdpMask.XdnsTypes" :value="code">[[ name ]]</a-select-option>
+        </a-select>
+    </a-form-item>
+    <a-form-item label='{{ i18n "pages.inbounds.stream.finalmask.edns0" }}'>
+        <a-input-number v-model.number="d.edns0" :min="0" :max="4096" placeholder="1232"></a-input-number>
+    </a-form-item>
+</template>
+{{end}}
+
+{{define "form/xicmpFields"}}
+<a-form-item label='{{ i18n "pages.inbounds.stream.finalmask.dgram" }}'>
+    <a-switch v-model="{{.}}.settings.dgram"></a-switch>
+</a-form-item>
+<a-form-item label='{{ i18n "pages.inbounds.stream.finalmask.ips" }}'>
+    <a-select mode="tags" v-model="{{.}}.settings.ips" :token-separators="[',', ' ']"
+        :dropdown-class-name="themeSwitcher.currentTheme"></a-select>
+</a-form-item>
+{{end}}
+
+{{define "form/noiseItem"}}
+<a-form-item label='{{ i18n "pages.xray.outbound.type" }}'>
+    <a-select v-model="{{.}}.type" :dropdown-class-name="themeSwitcher.currentTheme">
+        <a-select-option value="array">Array</a-select-option>
+        <a-select-option value="str">String</a-select-option>
+        <a-select-option value="hex">Hex</a-select-option>
+        <a-select-option value="base64">Base64</a-select-option>
+        <a-select-option value="exp">Exp</a-select-option>
+    </a-select>
+</a-form-item>
+<template v-if="{{.}}.type === 'exp'">
+    <a-form-item>
+        <template slot="label">
+            <a-tooltip>
+                <template slot="title">
+                    <span>{{ i18n "pages.inbounds.stream.finalmask.noiseExpDesc" }}</span>
+                </template>
+                {{ i18n "pages.inbounds.stream.finalmask.packet" }} <a-icon type="question-circle"></a-icon>
+            </a-tooltip>
+        </template>
+        <a-input v-model.trim="{{.}}.packet" placeholder="<b 0d0a0d0a><t><rc 20-40>"></a-input>
+    </a-form-item>
+</template>
+<template v-else>
+    <a-form-item>
+        <template slot="label">
+            <a-tooltip>
+                <template slot="title">
+                    <span>{{ i18n "pages.inbounds.stream.finalmask.noisePacketDesc" }}</span>
+                </template>
+                {{ i18n "pages.inbounds.stream.finalmask.packet" }} <a-icon type="question-circle"></a-icon>
+            </a-tooltip>
+        </template>
+        <a-input v-model.trim="{{.}}.packet" placeholder='{{ i18n "pages.inbounds.stream.finalmask.binaryData" }}'></a-input>
+    </a-form-item>
+    <template v-if="!({{.}}.packet && {{.}}.packet.length)">
+        <a-form-item label='{{ i18n "pages.inbounds.stream.finalmask.rand" }}'>
+            <a-input v-model.trim="{{.}}.rand" placeholder="1-8192"></a-input>
+        </a-form-item>
+        <a-form-item label='{{ i18n "pages.inbounds.stream.finalmask.randRange" }}'>
+            <a-input v-model.trim="{{.}}.randRange" placeholder="0-255"></a-input>
+        </a-form-item>
+    </template>
+</template>
+<a-form-item label='{{ i18n "pages.inbounds.stream.finalmask.delay" }}'>
+    <a-input v-model.trim="{{.}}.delay" placeholder="10-20"></a-input>
+</a-form-item>
+{{end}}
+
+{{define "form/realmFields"}}
+<a-form-item>
+    <template slot="label">
+        <a-tooltip>
+            <template slot="title">
+                <span>{{ i18n "pages.inbounds.stream.finalmask.realmUrlDesc" }}</span>
+            </template>
+            URL <a-icon type="question-circle"></a-icon>
+        </a-tooltip>
+    </template>
+    <a-input v-model.trim="{{.}}.settings.url" placeholder="realm://token@realm.example.com/room-id"></a-input>
+</a-form-item>
+<a-form-item label='{{ i18n "pages.inbounds.stream.finalmask.stunServers" }}'>
+    <a-select mode="tags" v-model="{{.}}.settings.stunServers" :token-separators="[',', ' ']"
+        :dropdown-class-name="themeSwitcher.currentTheme" placeholder="stun.example.com:3478"></a-select>
+</a-form-item>
+<a-form-item label='{{ i18n "pages.inbounds.stream.finalmask.ipMode" }}'>
+    <a-select v-model="{{.}}.settings.ipMode" :dropdown-class-name="themeSwitcher.currentTheme">
+        <a-select-option value="">dual</a-select-option>
+        <a-select-option value="v4">v4</a-select-option>
+        <a-select-option value="v6">v6</a-select-option>
+    </a-select>
+</a-form-item>
+<a-form-item>
+    <template slot="label">
+        <a-tooltip>
+            <template slot="title">
+                <span>{{ i18n "pages.inbounds.stream.finalmask.portMappingDesc" }}</span>
+            </template>
+            {{ i18n "pages.inbounds.stream.finalmask.portMapping" }} <a-icon type="question-circle"></a-icon>
+        </a-tooltip>
+    </template>
+    <a-switch v-model="{{.}}.settings.portMapping.enabled"></a-switch>
+</a-form-item>
+<template v-if="{{.}}.settings.portMapping.enabled">
+    <a-form-item label='{{ i18n "pages.inbounds.stream.finalmask.portMappingTimeout" }}'>
+        <a-input-number v-model.number="{{.}}.settings.portMapping.timeout" :min="0" placeholder="10"></a-input-number>
+    </a-form-item>
+    <a-form-item label='{{ i18n "pages.inbounds.stream.finalmask.portMappingLifetime" }}'>
+        <a-input-number v-model.number="{{.}}.settings.portMapping.lifetime" :min="0" placeholder="600"></a-input-number>
+    </a-form-item>
+</template>
+<a-form-item>
+    <template slot="label">
+        <a-tooltip>
+            <template slot="title">
+                <span>{{ i18n "pages.inbounds.stream.finalmask.realmTlsDesc" }}</span>
+            </template>
+            TLS <a-icon type="question-circle"></a-icon>
+        </a-tooltip>
+    </template>
+    <a-textarea v-model="{{.}}.settings.tlsConfig" :auto-size="{ minRows: 2, maxRows: 8 }"
+        style="font-family: monospace; direction: ltr; text-align: left;"
+        placeholder='{"serverName": "realm.example.com"}'></a-textarea>
+</a-form-item>
+{{end}}
+
+{{define "form/mkcpLegacyFields"}}
+<a-form-item label='{{ i18n "pages.inbounds.stream.finalmask.mkcpHeader" }}'>
+    <a-select v-model="{{.}}.settings.header" :dropdown-class-name="themeSwitcher.currentTheme">
+        <a-select-option value="">{{ i18n "none" }}</a-select-option>
+        <a-select-option value="dns">DNS</a-select-option>
+        <a-select-option value="dtls">DTLS 1.2</a-select-option>
+        <a-select-option value="srtp">SRTP</a-select-option>
+        <a-select-option value="utp">uTP</a-select-option>
+        <a-select-option value="wechat">WeChat Video</a-select-option>
+        <a-select-option value="wireguard">WireGuard</a-select-option>
+    </a-select>
+</a-form-item>
+<a-form-item v-if="!{{.}}.settings.header">
+    <template slot="label">
+        <a-tooltip>
+            <template slot="title">
+                <span>{{ i18n "pages.inbounds.stream.finalmask.mkcpPasswordDesc" }}</span>
+            </template>
+            {{ i18n "password" }} <a-icon type="question-circle"></a-icon>
+        </a-tooltip>
+    </template>
+    <a-input v-model.trim="{{.}}.settings.value"></a-input>
+</a-form-item>
+<a-form-item v-if="{{.}}.settings.header === 'dns'" label='{{ i18n "pages.xray.outbound.domain" }}'>
+    <a-input v-model.trim="{{.}}.settings.value" placeholder="www.baidu.com"></a-input>
+</a-form-item>
+{{end}}
+
+{{define "form/xmcFields"}}
+<a-form-item>
+    <template slot="label">
+        <a-tooltip>
+            <template slot="title">
+                <span>{{ i18n "reset" }}</span>
+            </template>
+            {{ i18n "password" }}
+            <a-icon @click="{{.}}.settings.password = RandomUtil.randomSeq(16)" type="sync"></a-icon>
+        </a-tooltip>
+    </template>
+    <a-input v-model.trim="{{.}}.settings.password"></a-input>
+</a-form-item>
+<a-form-item>
+    <template slot="label">
+        <a-tooltip>
+            <template slot="title">
+                <span>{{ i18n "pages.inbounds.stream.finalmask.xmcHostnameDesc" }}</span>
+            </template>
+            {{ i18n "host" }} <a-icon type="question-circle"></a-icon>
+        </a-tooltip>
+    </template>
+    <a-input v-model.trim="{{.}}.settings.hostname" placeholder="mc.hypixel.net"></a-input>
+</a-form-item>
+<a-form-item>
+    <template slot="label">
+        <a-tooltip>
+            <template slot="title">
+                <span>{{ i18n "pages.inbounds.stream.finalmask.xmcProfilesDesc" }}</span>
+            </template>
+            {{ i18n "pages.inbounds.stream.finalmask.xmcProfiles" }} <a-icon type="question-circle"></a-icon>
+        </a-tooltip>
+    </template>
+    <a-icon type="plus" type="primary" size="small"
+        @click="{{.}}.settings.profiles.push({username: '', uuid: '', texturesValue: '', texturesSignature: ''})" />
+</a-form-item>
+<template v-for="(p, pIdx) in {{.}}.settings.profiles" :key="'xmc-' + pIdx">
+    <a-divider :style="{ margin: '0' }"> {{ i18n "pages.inbounds.stream.finalmask.xmcProfiles" }} [[ pIdx + 1 ]]
+        <a-icon type="delete" @click="() => {{.}}.settings.profiles.splice(pIdx, 1)"
+            :style="{ color: 'rgb(255, 77, 79)', cursor: 'pointer' }"></a-icon>
+    </a-divider>
+    <a-form-item label='{{ i18n "username" }}'>
+        <a-input-search v-model.trim="p.username" placeholder="Notch"
+            enter-button='{{ i18n "pages.inbounds.stream.finalmask.xmcFetch" }}'
+            @search="TcpMask.fetchXmcProfile(p)"></a-input-search>
+    </a-form-item>
+    <a-form-item label="UUID">
+        <a-input v-model.trim="p.uuid"></a-input>
+    </a-form-item>
+    <a-form-item label="Textures">
+        <a-input v-model.trim="p.texturesValue"></a-input>
+    </a-form-item>
+    <a-form-item label="Signature">
+        <a-input v-model.trim="p.texturesSignature"></a-input>
+    </a-form-item>
+</template>
+{{end}}

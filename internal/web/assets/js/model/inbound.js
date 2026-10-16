@@ -1254,6 +1254,19 @@ class UdpMask extends XrayCommonClass {
                 return { ascii: settings.ascii || '', customTable: settings.customTable || '', customTables: Array.isArray(settings.customTables) ? settings.customTables : [], paddingMin: settings.paddingMin || 0, paddingMax: settings.paddingMax || 0 };
             case 'udpHop':
                 return { ports: settings.ports || '', interval: settings.interval || '' };
+            case 'realm':
+                return {
+                    url: settings.url || '',
+                    stunServers: Array.isArray(settings.stunServers) ? settings.stunServers : [],
+                    ipMode: settings.ipMode || '',
+                    portMapping: settings.portMapping || { enabled: false, timeout: 10, lifetime: 600 },
+                    tlsConfig: settings.tlsConfig || '',
+                };
+            case 'mkcp-legacy':
+                return {
+                    header: settings.header || '',
+                    value: settings.value || '',
+                };
             default:
                 return settings;
         }
@@ -1266,6 +1279,7 @@ class UdpMask extends XrayCommonClass {
         };
     }
 }
+UdpMask.XdnsTypes = { A: 1, CNAME: 5, TXT: 16, AAAA: 28 };
 
 class TcpMask extends XrayCommonClass {
     constructor(type = 'xmc', settings = {}) {
@@ -1276,6 +1290,14 @@ class TcpMask extends XrayCommonClass {
 
     static fromJson(json = {}) {
         return new TcpMask(json.type || 'xmc', json.settings || {});
+    }
+
+    static async fetchXmcProfile(profile) {
+        if (!profile || !profile.username) return;
+        const msg = await HttpUtil.post('/panel/server/getMinecraftProfile', { username: profile.username });
+        if (msg.success && msg.obj) {
+            Object.assign(profile, msg.obj);
+        }
     }
 
     _getDefaultSettings(type, settings = {}) {
@@ -1331,23 +1353,160 @@ class TcpMask extends XrayCommonClass {
     }
 }
 
-class FinalMaskStreamSettings extends XrayCommonClass {
-    constructor(tcp = [], udp = []) {
+class QuicParams extends XrayCommonClass {
+    constructor({
+        congestion = '',
+        bbrProfile = '',
+        debug = false,
+        brutalUp = 0,
+        brutalDown = 0,
+        udpHopPorts = '',
+        udpHopInterval = '',
+        initStreamReceiveWindow = 8388608,
+        maxStreamReceiveWindow = 8388608,
+        initConnectionReceiveWindow = 20971520,
+        maxConnectionReceiveWindow = 20971520,
+        maxIdleTimeout = 30,
+        keepAlivePeriod = 0,
+        disablePathMTUDiscovery = false,
+        brutalDisableLossCompensation = false,
+        disableChromeParrot = false,
+        disableGSO = false,
+        disableStatelessReset = false,
+        maxIncomingStreams = 1024,
+    } = {}) {
         super();
-        this.tcp = Array.isArray(tcp) ? tcp.map(mask => TcpMask.fromJson(mask)) : [];
-        this.udp = Array.isArray(udp) ? udp.map(u => new UdpMask(u.type, u.settings)) : [];
+        this.congestion = congestion;
+        this.bbrProfile = bbrProfile;
+        this.debug = debug;
+        this.brutalUp = brutalUp;
+        this.brutalDown = brutalDown;
+        this.udpHopPorts = udpHopPorts;
+        this.udpHopInterval = udpHopInterval;
+        this.initStreamReceiveWindow = initStreamReceiveWindow;
+        this.maxStreamReceiveWindow = maxStreamReceiveWindow;
+        this.initConnectionReceiveWindow = initConnectionReceiveWindow;
+        this.maxConnectionReceiveWindow = maxConnectionReceiveWindow;
+        this.maxIdleTimeout = maxIdleTimeout;
+        this.keepAlivePeriod = keepAlivePeriod;
+        this.disablePathMTUDiscovery = disablePathMTUDiscovery;
+        this.brutalDisableLossCompensation = brutalDisableLossCompensation;
+        this.disableChromeParrot = disableChromeParrot;
+        this.disableGSO = disableGSO;
+        this.disableStatelessReset = disableStatelessReset;
+        this.maxIncomingStreams = maxIncomingStreams;
+    }
+
+    static hasAnyMeaningfulValue(json) {
+        if (!json || typeof json !== 'object') return false;
+        const keys = ['congestion', 'bbrProfile', 'debug', 'brutalUp', 'brutalDown', 'udpHop',
+            'initStreamReceiveWindow', 'maxStreamReceiveWindow',
+            'initConnectionReceiveWindow', 'maxConnectionReceiveWindow',
+            'maxIdleTimeout', 'keepAlivePeriod', 'disablePathMTUDiscovery',
+            'maxIncomingStreams', 'brutalDisableLossCompensation', 'disableChromeParrot', 'disableGSO', 'disableStatelessReset'];
+        return keys.some(k => json[k] !== undefined && json[k] !== '' && json[k] !== 0 && json[k] !== false);
+    }
+
+    static getMbpsStr(v) {
+        if (typeof v === 'string') return v;
+        if (typeof v === 'number' && v >= 0) return v.toFixed(0) + ' mbps';
+        return '';
+    }
+
+    static getMbpsInt(v) {
+        if (typeof v === 'string') return parseInt(v.replace(' mbps', ''), 10);
+        if (typeof v === 'number') return v;
+        return 0;
     }
 
     static fromJson(json = {}) {
-        return new FinalMaskStreamSettings(json.tcp || [], json.udp || []);
+        const udpHop = json.udpHop || {};
+        return new QuicParams({
+            congestion: json.congestion || '',
+            bbrProfile: json.bbrProfile || '',
+            debug: !!json.debug,
+            brutalUp: this.getMbpsInt(json.brutalUp),
+            brutalDown: this.getMbpsInt(json.brutalDown),
+            udpHopPorts: udpHop.ports || '',
+            udpHopInterval: udpHop.interval !== undefined ? String(udpHop.interval) : '',
+            initStreamReceiveWindow: json.initStreamReceiveWindow || 0,
+            maxStreamReceiveWindow: json.maxStreamReceiveWindow || 0,
+            initConnectionReceiveWindow: json.initConnectionReceiveWindow || 0,
+            maxConnectionReceiveWindow: json.maxConnectionReceiveWindow || 0,
+            maxIdleTimeout: json.maxIdleTimeout || 0,
+            keepAlivePeriod: json.keepAlivePeriod || 0,
+            disablePathMTUDiscovery: !!json.disablePathMTUDiscovery,
+            brutalDisableLossCompensation: !!json.brutalDisableLossCompensation,
+            disableChromeParrot: !!json.disableChromeParrot,
+            disableGSO: !!json.disableGSO,
+            disableStatelessReset: !!json.disableStatelessReset,
+            maxIncomingStreams: json.maxIncomingStreams || 0,
+        });
+    }
+
+    toJson() {
+        const result = {};
+        if (this.congestion) result.congestion = this.congestion;
+        if (this.bbrProfile) result.bbrProfile = this.bbrProfile;
+        if (this.debug) result.debug = this.debug;
+        if (this.brutalUp) result.brutalUp = QuicParams.getMbpsStr(this.brutalUp);
+        if (this.brutalDown) result.brutalDown = QuicParams.getMbpsStr(this.brutalDown);
+        if (this.udpHopPorts) {
+            result.udpHop = { ports: this.udpHopPorts };
+            if (this.udpHopInterval !== '') result.udpHop.interval = this.udpHopInterval;
+        }
+        if (this.initStreamReceiveWindow) result.initStreamReceiveWindow = this.initStreamReceiveWindow;
+        if (this.maxStreamReceiveWindow) result.maxStreamReceiveWindow = this.maxStreamReceiveWindow;
+        if (this.initConnectionReceiveWindow) result.initConnectionReceiveWindow = this.initConnectionReceiveWindow;
+        if (this.maxConnectionReceiveWindow) result.maxConnectionReceiveWindow = this.maxConnectionReceiveWindow;
+        if (this.maxIdleTimeout) result.maxIdleTimeout = this.maxIdleTimeout;
+        if (this.keepAlivePeriod) result.keepAlivePeriod = this.keepAlivePeriod;
+        if (this.disablePathMTUDiscovery) result.disablePathMTUDiscovery = this.disablePathMTUDiscovery;
+        if (this.brutalDisableLossCompensation) result.brutalDisableLossCompensation = true;
+        if (this.disableChromeParrot) result.disableChromeParrot = true;
+        if (this.disableGSO) result.disableGSO = true;
+        if (this.disableStatelessReset) result.disableStatelessReset = true;
+        if (this.maxIncomingStreams) result.maxIncomingStreams = this.maxIncomingStreams;
+        return Object.keys(result).length > 0 ? result : undefined;
+    }
+}
+
+class FinalMaskStreamSettings extends XrayCommonClass {
+    constructor(tcp = [], udp = [], quicParams = undefined) {
+        super();
+        this.tcp = Array.isArray(tcp) ? tcp.map(mask => TcpMask.fromJson(mask)) : [];
+        this.udp = Array.isArray(udp) ? udp.map(u => new UdpMask(u.type, u.settings)) : [];
+        this.quicParams = quicParams;
+    }
+
+    static fromJson(json = {}) {
+        const quicParams = QuicParams.hasAnyMeaningfulValue(json.quicParams)
+            ? QuicParams.fromJson(json.quicParams) : undefined;
+        return new FinalMaskStreamSettings(
+            json.tcp || [],
+            json.udp || [],
+            quicParams,
+        );
     }
 
     toJson(includeTcp = true) {
-        return {
+        const result = {
             tcp: includeTcp ? this.tcp.map(mask => mask.toJson()) : undefined,
             udp: this.udp.map(udp => udp.toJson())
         };
+        if (this.quicParams) {
+            const qp = this.quicParams.toJson();
+            if (qp) result.quicParams = qp;
+        }
+        return result;
+    }
 
+    get quicParamsEnable() {
+        return this.quicParams != undefined;
+    }
+
+    set quicParamsEnable(value) {
+        this.quicParams = value ? new QuicParams() : undefined;
     }
 }
 
@@ -1831,6 +1990,25 @@ class Inbound extends XrayCommonClass {
         return 'vmess://' + base64(JSON.stringify(obj, null, 2));
     }
 
+    // The "fm" parameter of Xray's share link standard: the whole finalmask as
+    // the client needs it. Port hopping, kept here as quicParams.udpHop for
+    // share links, reaches the client as the udphop mask the core expects.
+    getFinalMaskForShare() {
+        const fm = this.stream.finalmask?.toJson();
+        if (!fm) return undefined;
+        const udpHop = fm.quicParams?.udpHop;
+        if (udpHop) {
+            delete fm.quicParams.udpHop;
+            if (Object.keys(fm.quicParams).length === 0) delete fm.quicParams;
+            if (udpHop.ports) {
+                const settings = { mode: 'intervalLocal,intervalRemote', remotePorts: String(udpHop.ports) };
+                if (udpHop.interval) settings.interval = String(udpHop.interval);
+                fm.udp = [{ type: 'udphop', settings }, ...(fm.udp || [])];
+            }
+        }
+        return Object.keys(fm).length > 0 ? fm : undefined;
+    }
+
     genVLESSLink(address = '', port = this.port, forceTls, remark = '', clientId, flow) {
         const settings = this.settings;
         const uuid = clientId;
@@ -1881,6 +2059,9 @@ class Inbound extends XrayCommonClass {
                 params.set("mode", xhttp.mode);
                 break;
         }
+
+        const fm = this.getFinalMaskForShare();
+        if (fm) params.set("fm", JSON.stringify(fm));
 
         if (security === 'tls') {
             params.set("security", "tls");
@@ -1995,6 +2176,9 @@ class Inbound extends XrayCommonClass {
                 break;
         }
 
+        const fm = this.getFinalMaskForShare();
+        if (fm) params.set("fm", JSON.stringify(fm));
+
         if (security === 'tls') {
             params.set("security", "tls");
             if (this.stream.isTls) {
@@ -2072,6 +2256,9 @@ class Inbound extends XrayCommonClass {
                 break;
         }
 
+        const fm = this.getFinalMaskForShare();
+        if (fm) params.set("fm", JSON.stringify(fm));
+
         if (security === 'tls') {
             params.set("security", "tls");
             if (this.stream.isTls) {
@@ -2143,6 +2330,9 @@ class Inbound extends XrayCommonClass {
         if (!params.has("mport") && this.stream.hysteria?.udphopPort) {
             params.set("mport", this.stream.hysteria.udphopPort);
         }
+
+        const fm = this.getFinalMaskForShare();
+        if (fm) params.set("fm", JSON.stringify(fm));
 
         const url = new URL(link);
         for (const [key, value] of params) {

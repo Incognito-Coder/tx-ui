@@ -26,6 +26,13 @@
             </tr>
         </table>
         <a-button :loading="warpModal.confirmLoading" @click="delConfig" type="danger">{{ i18n "delete" }}</a-button>
+        <a-divider style="margin: 10px 0 0;">{{ i18n "pages.xray.outbound.tunnel" }}</a-divider>
+        <a-alert type="warning" message='{{ i18n "pages.xray.outbound.tunnelSwitchWarning" }}' show-icon style="margin: 10px 0;"></a-alert>
+        <a-radio-group :value="warpModal.warpData.tunnel || 'wireguard'" @change="e => setTunnel(e.target.value)"
+            :disabled="warpModal.confirmLoading" button-style="solid" style="margin-bottom: 10px;">
+            <a-radio-button value="wireguard">WireGuard</a-radio-button>
+            <a-radio-button value="masque">MASQUE</a-radio-button>
+        </a-radio-group>
         <a-divider style="margin: 0;">{{ i18n "pages.xray.outbound.settings" }}</a-divider>
         <a-collapse style="margin: 10px 0;">
             <a-collapse-panel header='WARP/WARP+ License Key'>
@@ -138,12 +145,34 @@
         },
         methods: {
             collectConfig() {
-                config = warpModal.warpConfig.config;
-                peer = config.peers[0];
-                if (config) {
+                const config = warpModal.warpConfig ? warpModal.warpConfig.config : null;
+                const peer = config && config.peers && config.peers.length > 0 ? config.peers[0] : null;
+                const data = warpModal.warpData;
+                if (config && data && data.tunnel === 'masque') {
                     warpModal.warpOutbound = Outbound.fromJson({
                         tag: 'warp',
-                        protocol: Protocols.Wireguard,
+                        protocol: Protocols.MASQUE || 'masque',
+                        settings: {
+                            address: data.masque_endpoint || '162.159.198.1',
+                            port: 443,
+                        },
+                        streamSettings: {
+                            network: 'masque',
+                            security: 'tls',
+                            tlsSettings: { serverName: 'consumer-masque.cloudflareclient.com' },
+                            masqueSettings: {
+                                warp: {
+                                    privateKey: data.masque_private_key,
+                                    publicKey: data.masque_endpoint_key,
+                                    address: this.getAddresses(config.interface.addresses),
+                                },
+                            },
+                        },
+                    });
+                } else if (config) {
+                    warpModal.warpOutbound = Outbound.fromJson({
+                        tag: 'warp',
+                        protocol: Protocols.WIREGUARD || 'wireguard',
                         settings: {
                             mtu: 1420,
                             secretKey: warpModal.warpData.private_key,
@@ -151,8 +180,8 @@
                             reserved: this.getResolved(config.client_id),
                             domainStrategy: 'ForceIP',
                             peers: [{
-                                publicKey: peer.public_key,
-                                endpoint: peer.endpoint.host,
+                                publicKey: peer ? peer.public_key : '',
+                                endpoint: peer && peer.endpoint ? peer.endpoint.host : '',
                             }],
                             noKernelTun: false,
                         }
@@ -200,6 +229,17 @@
                     warpModal.warpData = JSON.parse(msg.obj);
                     warpModal.warpConfig = null;
                     this.warpPlus = '';
+                }
+                warpModal.loading(false);
+            },
+            async setTunnel(tunnel) {
+                warpModal.loading(true);
+                const msg = await HttpUtil.post('/panel/xray/warp/tunnel', {tunnel: tunnel});
+                if (msg.success) {
+                    const resp = JSON.parse(msg.obj);
+                    warpModal.warpData = resp.data;
+                    warpModal.warpConfig = resp.config;
+                    this.collectConfig();
                 }
                 warpModal.loading(false);
             },

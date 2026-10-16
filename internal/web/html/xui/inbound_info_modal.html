@@ -338,7 +338,8 @@
             </table>
             <template v-if="app.subSettings.enable && infoModal.clientSettings.subId">
                 <a-divider>Subscription URL</a-divider>
-                <tr-info-row class="tr-info-row">
+                <!-- MASQUE has no share link format, so only the JSON subscription carries it -->
+                <tr-info-row class="tr-info-row" v-if="!dbInbound.isMasque">
                     <tr-info-title class="tr-info-title">
                         <a-tag color="purple">Subscription Link</a-tag>
                         <a-tooltip title='{{ i18n "copy" }}'>
