@@ -21,7 +21,7 @@ require (
 	github.com/tcnksm/go-latest v0.0.0-20170313132115-e3007ae9052e
 	github.com/valyala/fasthttp v1.74.0
 	github.com/xtls/xray-core v1.260327.1-0.20261016095047-0f3d884786f9
-	go.uber.org/atomic v1.11.0
+	go.uber.org/atomic v1.12.0
 	golang.org/x/crypto v0.58.0
 	golang.org/x/text v0.43.0
 	google.golang.org/grpc v1.84.0
