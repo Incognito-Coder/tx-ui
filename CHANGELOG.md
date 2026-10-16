@@ -5,6 +5,32 @@ All notable changes to **TX-UI** will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.9.1] - 2026-10-16
+
+### 🚀 Features & Enhancements
+- **Xray-core Alignment (v26.9.9 to v26.10.10 and Latest Main Commit)**:
+  - Upgraded core dependency to latest `xray-core` (`0f3d884786f9` / v26.10.10 release) alongside updated `reality` (`83f621788ca8`), `gopher-lua`, and `x509roots/fallback` modules in `go.mod` and `vendor/`.
+  - Updated default Xray-core download URLs in `DockerInit.sh` and release workflow (`release.yml`) from `v26.9.30` to `v26.10.10`.
+- **TLS Built-in RootCAs & `useSystemCA` Control**:
+  - Aligned with Xray-core's default behavior of using built-in Mozilla RootCAs to protect against maliciously injected root certificates in the OS.
+  - Added `useSystemCA` toggle switch across Inbound TLS settings (`tls_settings.html`) and Outbound TLS settings (`outbound.html`).
+  - Added serialization and state management in both inbound and outbound TLS stream models (`inbound.js`, `outbound.js`).
+- **Lua Script Support for Dynamic Routing & DNS**:
+  - Integrated Lua script execution panels for both Routing and DNS in Xray template settings (`xray.html`).
+  - Added `routingScript` and `dnsScript` computed bindings for full bidirectional template serialization.
+  - Added `Server ID` (`id`) input to the DNS server modal (`dns_modal.html`), allowing DNS servers to be easily referenced from Lua resolution scripts.
+- **Noise FinalMask Lua Script Support**:
+  - Added Lua `script` field to Noise FinalMask stream settings across inbounds (`stream_finalmask.html`), outbounds (`outbound.html`), and frontend models (`inbound.js`, `outbound.js`).
+- **XDNS FinalMask Schema Compatibility & Normalization**:
+  - Built automatic backend normalization (`NormalizeStreamSettings` in `xray.go` and `inbound.go`) converting legacy string array domain and resolver configurations to Xray v26.10.10's structured `domains` and `resolvers` schema (`names`, `addrs`, `worker`, etc.), ensuring existing database entries load seamlessly without JSON unmarshaling errors.
+- **MASQUE Protocol & Transport Enhancements**:
+  - Added WARP configuration options (Private Key, Public Key, Address) to MASQUE transport stream settings in `outbound.js` and `outbound.html`.
+  - Added `hotAddUserToInbound` API support taking advantage of `xray api adu` compatibility for Hysteria and MASQUE.
+- **Multilingual Localization**:
+  - Added translation strings for `useSystemCA`, `routingScript`, `dnsScript`, and `noiseScript` across all 13 supported languages (`ar_EG`, `en_US`, `es_ES`, `fa_IR`, `id_ID`, `ja_JP`, `pt_BR`, `ru_RU`, `tr_TR`, `uk_UA`, `vi_VN`, `zh_CN`, `zh_TW`).
+
+---
+
 ## [v0.9.0] - 2026-10-12
 
 ### 🚀 Features & Enhancements
