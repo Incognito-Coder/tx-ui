@@ -253,6 +253,107 @@
         white-space: nowrap;
     }
 
+    /* ─── Device Info Section in Client Detail Modal ──────── */
+    .device-info-section {
+        margin-top: 10px;
+        padding-top: 10px;
+        border-top: 1px solid var(--ui-border);
+    }
+
+    .device-info-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+    }
+
+    .device-info-title {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--ui-text);
+    }
+
+    .device-bento-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+        margin-bottom: 8px;
+    }
+
+    @media (max-width: 520px) {
+        .device-bento-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .device-bento-card {
+        padding: 8px 10px;
+        background: var(--ui-surface-muted, rgba(128, 128, 128, 0.05));
+        border: 1px solid var(--ui-border);
+        border-radius: 8px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        min-height: 52px;
+    }
+
+    .device-bento-label {
+        font-size: 10px;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--ui-text-muted);
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .device-bento-val {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--ui-text);
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        flex-wrap: wrap;
+        word-break: break-all;
+    }
+
+    .device-history-box {
+        margin-top: 8px;
+        border: 1px solid var(--ui-border);
+        border-radius: 8px;
+        background: var(--ui-surface-muted, rgba(128, 128, 128, 0.03));
+        overflow: hidden;
+    }
+
+    .device-history-item {
+        padding: 6px 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+        border-bottom: 1px solid var(--ui-border);
+        font-size: 11px;
+    }
+
+    .device-history-item:last-child {
+        border-bottom: none;
+    }
+
+    .device-tip-box {
+        margin-top: 8px;
+        padding: 8px 10px;
+        border-radius: 8px;
+        background: var(--ui-surface-muted, rgba(128, 128, 128, 0.05));
+        border: 1px dashed var(--ui-border);
+        font-size: 11px;
+        color: var(--ui-text-muted);
+    }
+
     .client-detail-link {
         font-size: 11px;
         flex: 1;
@@ -1111,23 +1212,6 @@
                                                 <a-icon type="info-circle" style="margin-left: 4px; color: #888; font-size: 12px;"></a-icon>
                                             </a-tooltip>
                                         </div>
-                                        <div v-if="c.deviceModel || c.deviceHwid || (c.devices && c.devices.length > 0)"
-                                             style="display: flex; align-items: center; flex-wrap: wrap; gap: 4px; margin-top: 2px;">
-                                            <a-tooltip :title="clientDeviceTooltip(c)">
-                                                <a-tag color="purple" style="font-size: 10px; line-height: 16px; height: 18px; padding: 0 5px; margin: 0; cursor: pointer;" @click.stop="showClientDetail(c)">
-                                                    <a-icon :type="deviceIcon(c)" style="margin-right: 3px; font-size: 11px;"></a-icon>
-                                                    <span>[[ c.deviceModel || (c.devices && c.devices[0] && c.devices[0].model) || 'Device' ]]</span>
-                                                </a-tag>
-                                            </a-tooltip>
-                                            <a-tag v-if="c.devices && c.devices.length > 1" color="blue" style="font-size: 10px; line-height: 16px; height: 18px; padding: 0 4px; margin: 0;" :title="c.devices.length + ' connected devices'">
-                                                +[[ c.devices.length - 1 ]]
-                                            </a-tag>
-                                            <a-tag v-if="(c.deviceHwid || (c.devices && c.devices[0] && c.devices[0].hwid)) && !isMobile"
-                                                   style="font-size: 9px; line-height: 16px; height: 18px; padding: 0 4px; margin: 0; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: monospace;"
-                                                   :title="'HWID: ' + (c.deviceHwid || (c.devices && c.devices[0] && c.devices[0].hwid))">
-                                                HWID: [[ c.deviceHwid || (c.devices && c.devices[0] && c.devices[0].hwid) ]]
-                                            </a-tag>
-                                        </div>
                                     </div>
                                 </template>
 
@@ -1826,102 +1910,164 @@
                     </tr>
                 </table>
 
-                <!-- Device & Subscription Info Section -->
-                <div style="margin-top: 8px; padding-top: 6px; border-top: 1px solid var(--ui-border);">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                        <span style="font-size: 11px; font-weight: 600; color: var(--ui-text);">
-                            <a-icon type="mobile" style="margin-right: 4px;"></a-icon>
-                            {{ i18n "pages.node_clients.deviceInfo" }}
-                        </span>
-                        <a-button v-if="detailModal.client.devices && detailModal.client.devices.length > 0"
-                                  @click="clearClientDevices(detailModal.client)"
-                                  icon="delete" size="small" type="danger" ghost style="font-size: 10px; height: 20px; padding: 0 6px;">
-                            {{ i18n "pages.node_clients.clearDevices" }}
-                        </a-button>
+                <!-- Device & Subscription Activity Section -->
+                <div class="device-info-section">
+                    <div class="device-info-header">
+                        <div class="device-info-title">
+                            <svg style="width: 15px; height: 15px; color: var(--ui-primary, #4f8cff); flex-shrink: 0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+                                <line x1="12" y1="18" x2="12.01" y2="18"></line>
+                            </svg>
+                            <span>{{ i18n "pages.node_clients.deviceInfo" }}</span>
+                            <a-tag v-if="detailModal.client.deviceModel" color="purple" style="font-size: 10px; height: 18px; line-height: 16px; padding: 0 5px; margin: 0;">
+                                [[ detailModal.client.deviceModel ]]
+                            </a-tag>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <a-tag v-if="detailModal.client.devices && detailModal.client.devices.length > 0" color="blue" style="font-size: 10px; height: 18px; line-height: 16px; padding: 0 4px; margin: 0;">
+                                [[ detailModal.client.devices.length ]] {{ i18n "pages.node_clients.devices" }}
+                            </a-tag>
+                            <a-button v-if="detailModal.client.devices && detailModal.client.devices.length > 0"
+                                      @click="clearClientDevices(detailModal.client)"
+                                      icon="delete" size="small" type="danger" ghost style="font-size: 10px; height: 20px; padding: 0 6px;">
+                                {{ i18n "pages.node_clients.clearDevices" }}
+                            </a-button>
+                        </div>
                     </div>
 
-                    <table class="detail-table" style="margin-bottom: 8px;">
-                        <tr v-if="detailModal.client.deviceModel">
-                            <td>{{ i18n "pages.node_clients.deviceModel" }}</td>
-                            <td>
-                                <a-tag color="purple" style="font-size: 10px; height: 18px; line-height: 16px; padding: 0 4px; margin: 0;">
-                                    <a-icon :type="deviceIcon(detailModal.client)" style="margin-right: 3px;"></a-icon>
-                                    [[ detailModal.client.deviceModel ]]
-                                </a-tag>
-                            </td>
-                        </tr>
-                        <tr v-if="detailModal.client.deviceHwid">
-                            <td>{{ i18n "pages.node_clients.deviceHwid" }}</td>
-                            <td>
-                                <code class="compact-code">[[ detailModal.client.deviceHwid ]]</code>
-                                <a-icon @click="copyText(detailModal.client.deviceHwid)" style="cursor: pointer; margin-left: 5px; color: var(--ui-primary); font-size: 12px;" type="copy"></a-icon>
-                            </td>
-                        </tr>
-                        <tr v-if="detailModal.client.lastClientApp || detailModal.client.lastOS">
-                            <td>{{ i18n "pages.node_clients.clientApp" }} / OS</td>
-                            <td>
-                                <a-tag v-if="detailModal.client.lastClientApp" color="blue" style="font-size: 10px; height: 18px; line-height: 16px; padding: 0 4px; margin: 0 4px 0 0;">
+                    <!-- Bento Grid for Device Details -->
+                    <div class="device-bento-grid">
+                        <!-- Card 1: Device Model -->
+                        <div class="device-bento-card">
+                            <div class="device-bento-label">
+                                <svg style="width: 12px; height: 12px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+                                    <line x1="12" y1="18" x2="12.01" y2="18"></line>
+                                </svg>
+                                {{ i18n "pages.node_clients.deviceModel" }}
+                            </div>
+                            <div class="device-bento-val">
+                                <template v-if="detailModal.client.deviceModel">
+                                    <a-tag color="purple" style="font-size: 11px; height: 20px; line-height: 18px; padding: 0 6px; margin: 0;">
+                                        [[ detailModal.client.deviceModel ]]
+                                    </a-tag>
+                                </template>
+                                <span v-else style="font-size: 11px; color: var(--ui-text-muted); font-weight: normal;">
+                                    {{ i18n "none" }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Card 2: Device HWID -->
+                        <div class="device-bento-card">
+                            <div class="device-bento-label">
+                                <svg style="width: 12px; height: 12px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                                </svg>
+                                {{ i18n "pages.node_clients.deviceHwid" }}
+                            </div>
+                            <div class="device-bento-val">
+                                <template v-if="detailModal.client.deviceHwid">
+                                    <code class="compact-code" style="font-size: 10px; max-width: 160px;">[[ detailModal.client.deviceHwid ]]</code>
+                                    <a-icon @click="copyText(detailModal.client.deviceHwid)" style="cursor: pointer; color: var(--ui-primary); font-size: 12px;" type="copy"></a-icon>
+                                </template>
+                                <span v-else style="font-size: 11px; color: var(--ui-text-muted); font-weight: normal;">
+                                    {{ i18n "none" }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Card 3: Client App & OS -->
+                        <div class="device-bento-card">
+                            <div class="device-bento-label">
+                                <svg style="width: 12px; height: 12px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                                    <polyline points="2 17 12 22 22 17"></polyline>
+                                    <polyline points="2 12 12 17 22 12"></polyline>
+                                </svg>
+                                {{ i18n "pages.node_clients.clientApp" }} & OS
+                            </div>
+                            <div class="device-bento-val">
+                                <a-tag v-if="detailModal.client.lastClientApp" color="blue" style="font-size: 10px; height: 18px; line-height: 16px; padding: 0 4px; margin: 0;">
                                     [[ detailModal.client.lastClientApp ]]
                                 </a-tag>
                                 <a-tag v-if="detailModal.client.lastOS" style="font-size: 10px; height: 18px; line-height: 16px; padding: 0 4px; margin: 0;">
                                     [[ detailModal.client.lastOS ]]
                                 </a-tag>
-                            </td>
-                        </tr>
-                        <tr v-if="detailModal.client.lastSubTime > 0">
-                            <td>{{ i18n "pages.node_clients.lastSubTime" }}</td>
-                            <td>
-                                <span style="font-size: 11px;">
-                                    [[ DateUtil.formatMillis(detailModal.client.lastSubTime) ]]
-                                    <template v-if="detailModal.client.lastSubIP">
-                                        ([[ detailModal.client.lastSubIP ]])
-                                    </template>
+                                <span v-if="!detailModal.client.lastClientApp && !detailModal.client.lastOS" style="font-size: 11px; color: var(--ui-text-muted); font-weight: normal;">
+                                    {{ i18n "none" }}
                                 </span>
-                            </td>
-                        </tr>
-                    </table>
-
-                    <!-- Connected Devices History List -->
-                    <div v-if="detailModal.client.devices && detailModal.client.devices.length > 0">
-                        <div style="font-size: 10px; font-weight: 600; color: var(--ui-text-muted); margin-bottom: 4px;">
-                            {{ i18n "pages.node_clients.connectedDevices" }} ([[ detailModal.client.devices.length ]])
+                            </div>
                         </div>
-                        <div style="max-height: 150px; overflow-y: auto; border: 1px solid var(--ui-border); border-radius: 4px;">
-                            <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
-                                <thead>
-                                    <tr style="background: var(--ui-surface-muted, rgba(128,128,128,0.05)); border-bottom: 1px solid var(--ui-border);">
-                                        <th style="padding: 4px 8px; text-align: left; font-size: 10px; color: var(--ui-text-muted);">{{ i18n "pages.node_clients.deviceModel" }}</th>
-                                        <th style="padding: 4px 8px; text-align: left; font-size: 10px; color: var(--ui-text-muted);">HWID</th>
-                                        <th style="padding: 4px 8px; text-align: left; font-size: 10px; color: var(--ui-text-muted);">IP</th>
-                                        <th style="padding: 4px 8px; text-align: right; font-size: 10px; color: var(--ui-text-muted);">{{ i18n "pages.node_clients.lastSubTime" }}</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr v-for="d in detailModal.client.devices" :key="d.id" style="border-bottom: 1px solid var(--ui-border);">
-                                        <td style="padding: 4px 8px;">
-                                            <div style="font-weight: 600;">[[ d.model || 'Unknown Device' ]]</div>
-                                            <div style="font-size: 10px; color: var(--ui-text-muted);">[[ [d.clientApp, d.os].filter(Boolean).join(' • ') ]]</div>
-                                        </td>
-                                        <td style="padding: 4px 8px;">
-                                            <template v-if="d.hwid">
-                                                <code class="compact-code" style="font-size: 10px;">[[ d.hwid ]]</code>
-                                                <a-icon @click="copyText(d.hwid)" style="cursor: pointer; margin-left: 3px; font-size: 11px; color: var(--ui-primary);" type="copy"></a-icon>
-                                            </template>
-                                            <span v-else style="color: var(--ui-text-muted);">-</span>
-                                        </td>
-                                        <td style="padding: 4px 8px; font-family: monospace; font-size: 10px;">[[ d.ip || '-' ]]</td>
-                                        <td style="padding: 4px 8px; text-align: right; font-size: 10px; color: var(--ui-text-muted); white-space: nowrap;">
-                                            [[ DateUtil.formatMillis(d.lastSeen) ]]
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
+
+                        <!-- Card 4: Last Subscription Sync -->
+                        <div class="device-bento-card">
+                            <div class="device-bento-label">
+                                <svg style="width: 12px; height: 12px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <polyline points="12 6 12 12 16 14"></polyline>
+                                </svg>
+                                {{ i18n "pages.node_clients.lastSubTime" }}
+                            </div>
+                            <div class="device-bento-val">
+                                <template v-if="detailModal.client.lastSubTime > 0">
+                                    <span style="font-size: 11px;">[[ DateUtil.formatMillis(detailModal.client.lastSubTime) ]]</span>
+                                    <a-tag v-if="detailModal.client.lastSubIP" style="font-size: 10px; height: 18px; line-height: 16px; padding: 0 4px; margin: 0; font-family: monospace;">
+                                        [[ detailModal.client.lastSubIP ]]
+                                    </a-tag>
+                                </template>
+                                <span v-else style="font-size: 11px; color: var(--ui-text-muted); font-weight: normal;">
+                                    {{ i18n "none" }}
+                                </span>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Sub URL Parameter Hint -->
-                    <div style="margin-top: 6px; padding: 6px 8px; background: var(--ui-surface-muted, rgba(128,128,128,0.05)); border-radius: 4px; font-size: 10px; color: var(--ui-text-muted);">
-                        💡 {{ i18n "pages.node_clients.deviceParamHint" }}
+                    <!-- Connected Devices History List (if recorded) -->
+                    <div v-if="detailModal.client.devices && detailModal.client.devices.length > 0" class="device-history-box">
+                        <div style="padding: 6px 10px; background: var(--ui-surface-muted, rgba(128,128,128,0.06)); font-size: 11px; font-weight: 600; color: var(--ui-text); border-bottom: 1px solid var(--ui-border); display: flex; justify-content: space-between; align-items: center;">
+                            <span>{{ i18n "pages.node_clients.connectedDevices" }} ([[ detailModal.client.devices.length ]])</span>
+                        </div>
+                        <div style="max-height: 140px; overflow-y: auto;">
+                            <div v-for="d in detailModal.client.devices" :key="d.id" class="device-history-item">
+                                <div style="flex: 1; min-width: 0;">
+                                    <div style="font-weight: 600; display: flex; align-items: center; gap: 4px;">
+                                        <span>[[ d.model || 'Device' ]]</span>
+                                        <a-tag v-if="d.os" style="font-size: 9px; height: 16px; line-height: 14px; padding: 0 3px; margin: 0;">[[ d.os ]]</a-tag>
+                                    </div>
+                                    <div style="font-size: 10px; color: var(--ui-text-muted); margin-top: 2px;">
+                                        <span v-if="d.clientApp">[[ d.clientApp ]] • </span>
+                                        <span style="font-family: monospace;">[[ d.ip || '-' ]]</span>
+                                    </div>
+                                </div>
+                                <div style="text-align: right; flex-shrink: 0;">
+                                    <div v-if="d.hwid" style="display: flex; align-items: center; gap: 3px; justify-content: flex-end; margin-bottom: 2px;">
+                                        <code class="compact-code" style="font-size: 9px; max-width: 110px;">[[ d.hwid ]]</code>
+                                        <a-icon @click="copyText(d.hwid)" style="cursor: pointer; font-size: 11px; color: var(--ui-primary);" type="copy"></a-icon>
+                                    </div>
+                                    <div style="font-size: 10px; color: var(--ui-text-muted);">
+                                        [[ DateUtil.formatMillis(d.lastSeen) ]]
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Interactive Sub URL Helper with Copy Button -->
+                    <div class="device-tip-box" v-if="subSettings.enable && detailModal.client.subId">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                            <span style="font-weight: 600; color: var(--ui-text); font-size: 11px;">
+                                💡 {{ i18n "pages.node_clients.deviceParamHint" }}
+                            </span>
+                            <a-button size="small" type="link" style="padding: 0; height: auto; font-size: 11px;"
+                                      @click="copyText(subSettings.subURI + detailModal.client.subId + '?hwid=HWID_HERE&model=PHONE_MODEL')">
+                                <a-icon type="copy"></a-icon> {{ i18n "copy" }}
+                            </a-button>
+                        </div>
+                        <div style="font-family: monospace; font-size: 10px; word-break: break-all; color: var(--ui-primary);">
+                            [[ subSettings.subURI + detailModal.client.subId ]]?hwid=HWID_HERE&model=PHONE_MODEL
+                        </div>
                     </div>
                 </div>
 
