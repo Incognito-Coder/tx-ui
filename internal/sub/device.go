@@ -116,8 +116,14 @@ var (
 	reClients = []*regexp.Regexp{
 		regexp.MustCompile(`(?i)(v2rayNG)/([\w\.\-]+)`),
 		regexp.MustCompile(`(?i)(v2rayN)/([\w\.\-]+)`),
+		regexp.MustCompile(`(?i)(V2Box)/([\w\.\-]+)`),
+		regexp.MustCompile(`(?i)(Streisand)/([\w\.\-]+)`),
+		regexp.MustCompile(`(?i)(Throne)/([\w\.\-]+)`),
+		regexp.MustCompile(`(?i)(HappProxy|Happ)/([\w\.\-]+)`),
+		regexp.MustCompile(`(?i)(Exclave)/([\w\.\-]+)`),
+		regexp.MustCompile(`(?i)(HiddifyNext|Hiddify)/([\w\.\-]+)`),
 		regexp.MustCompile(`(?i)(Shadowrocket)/([\w\.\-]+)`),
-		regexp.MustCompile(`(?i)(Sing-box)/([\w\.\-]+)`),
+		regexp.MustCompile(`(?i)(Sing-box|sing-box|SFA|SFM|SFW)/([\w\.\-]+)`),
 		regexp.MustCompile(`(?i)(ClashMetaForAndroid)/([\w\.\-]+)`),
 		regexp.MustCompile(`(?i)(ClashMeta)/([\w\.\-]+)`),
 		regexp.MustCompile(`(?i)(Clash\.Meta)/([\w\.\-]+)`),
@@ -127,9 +133,7 @@ var (
 		regexp.MustCompile(`(?i)(Clash)/([\w\.\-]+)`),
 		regexp.MustCompile(`(?i)(NekoBoxForAndroid)/([\w\.\-]+)`),
 		regexp.MustCompile(`(?i)(NekoBox)/([\w\.\-]+)`),
-		regexp.MustCompile(`(?i)(HiddifyNext)/([\w\.\-]+)`),
-		regexp.MustCompile(`(?i)(Hiddify)/([\w\.\-]+)`),
-		regexp.MustCompile(`(?i)(Streisand)/([\w\.\-]+)`),
+		regexp.MustCompile(`(?i)(NekoRay)/([\w\.\-]+)`),
 		regexp.MustCompile(`(?i)(Quantumult%20X|Quantumult)/([\w\.\-]+)`),
 		regexp.MustCompile(`(?i)(Surge)/([\w\.\-]+)`),
 		regexp.MustCompile(`(?i)(Loon)/([\w\.\-]+)`),
@@ -137,6 +141,7 @@ var (
 		regexp.MustCompile(`(?i)(Flclash)/([\w\.\-]+)`),
 		regexp.MustCompile(`(?i)(Karing)/([\w\.\-]+)`),
 		regexp.MustCompile(`(?i)(FoXray)/([\w\.\-]+)`),
+		regexp.MustCompile(`(?i)(Matsuri)/([\w\.\-]+)`),
 		regexp.MustCompile(`(?i)(PassWall)`),
 		regexp.MustCompile(`(?i)(OpenClash)`),
 		regexp.MustCompile(`(?i)(curl)/([\w\.\-]+)`),
@@ -228,6 +233,17 @@ func parseUserAgent(info *DeviceInfo) {
 		}
 	}
 
+	// Generic app fallback if not in known list (e.g. CustomApp/1.0.0)
+	if info.ClientApp == "" {
+		reGeneric := regexp.MustCompile(`^([a-zA-Z0-9_\-\.]+)/([0-9\.\-]+)`)
+		if m := reGeneric.FindStringSubmatch(ua); len(m) >= 3 {
+			lower := strings.ToLower(m[1])
+			if lower != "mozilla" && lower != "cfnetwork" && lower != "darwin" && lower != "applewebkit" && lower != "gecko" && lower != "chrome" && lower != "safari" {
+				info.ClientApp = m[1] + " " + m[2]
+			}
+		}
+	}
+
 	// Check Apple Device Identifiers (e.g. iPhone15,2, iPad13,8)
 	if appleMatches := reAppleID.FindStringSubmatch(ua); len(appleMatches) > 1 {
 		rawAppleID := appleMatches[1]
@@ -309,7 +325,7 @@ func parseUserAgent(info *DeviceInfo) {
 		if info.Model == "" {
 			info.Model = "Windows PC"
 		}
-	} else if strings.Contains(ua, "Macintosh") || strings.Contains(ua, "Darwin") {
+	} else if strings.Contains(ua, "Macintosh") {
 		if info.OS == "" {
 			info.OS = "macOS"
 		}
@@ -318,6 +334,36 @@ func parseUserAgent(info *DeviceInfo) {
 				info.Model = "Mac (Apple Silicon)"
 			} else {
 				info.Model = "Mac"
+			}
+		}
+	} else if strings.Contains(ua, "Darwin") || strings.Contains(ua, "CFNetwork") {
+		// iOS or Apple Darwin client
+		reDarwin := regexp.MustCompile(`Darwin/(\d+)\.`)
+		darwinMajor := ""
+		if dm := reDarwin.FindStringSubmatch(ua); len(dm) > 1 {
+			darwinMajor = dm[1]
+		}
+		if info.OS == "" {
+			switch darwinMajor {
+			case "24":
+				info.OS = "iOS 18"
+			case "23":
+				info.OS = "iOS 17"
+			case "22":
+				info.OS = "iOS 16"
+			case "21":
+				info.OS = "iOS 15"
+			case "20":
+				info.OS = "iOS 14"
+			default:
+				info.OS = "iOS"
+			}
+		}
+		if info.Model == "" {
+			if strings.Contains(ua, "iPad") {
+				info.Model = "iPad"
+			} else {
+				info.Model = "iPhone"
 			}
 		}
 	} else if strings.Contains(ua, "Linux") && !strings.Contains(ua, "Android") {

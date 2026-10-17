@@ -111,6 +111,48 @@ func TestParseDeviceInfo_UserAgents(t *testing.T) {
 			expectedOS:    "Windows 10/11",
 			expectedApp:   "v2rayN 6.39",
 		},
+		{
+			name:          "V2Box iOS Darwin",
+			ua:            "V2Box/1.0.24 CFNetwork/1496.0.7 Darwin/23.5.0",
+			expectedModel: "iPhone",
+			expectedOS:    "iOS 17",
+			expectedApp:   "V2Box 1.0.24",
+		},
+		{
+			name:          "Streisand iPhone",
+			ua:            "Streisand/1.5.5 (iPhone14,2; iOS 16.5)",
+			expectedModel: "iPhone 13 Pro",
+			expectedOS:    "iOS 16.5",
+			expectedApp:   "Streisand 1.5.5",
+		},
+		{
+			name:          "Throne iOS",
+			ua:            "Throne/1.0.5 CFNetwork/1496.0.7 Darwin/23.5.0",
+			expectedModel: "iPhone",
+			expectedOS:    "iOS 17",
+			expectedApp:   "Throne 1.0.5",
+		},
+		{
+			name:          "HappProxy iPhone",
+			ua:            "HappProxy/1.0.0 (iPhone15,2; iOS 17.5)",
+			expectedModel: "iPhone 14 Pro",
+			expectedOS:    "iOS 17.5",
+			expectedApp:   "HappProxy 1.0.0",
+		},
+		{
+			name:          "Exclave iPhone",
+			ua:            "Exclave/1.0.0 (iPhone15,2; iOS 17.4.1)",
+			expectedModel: "iPhone 14 Pro",
+			expectedOS:    "iOS 17.4.1",
+			expectedApp:   "Exclave 1.0.0",
+		},
+		{
+			name:          "Hiddify Android",
+			ua:            "Hiddify/2.0.5 (Android 14; Pixel 8 Pro)",
+			expectedModel: "Google Pixel 8 Pro",
+			expectedOS:    "Android 14",
+			expectedApp:   "Hiddify 2.0.5",
+		},
 	}
 
 	for _, tt := range tests {
