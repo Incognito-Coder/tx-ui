@@ -5,7 +5,7 @@ All notable changes to **TX-UI** will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [v0.9.2] - 2026-10-17
+## [v0.9.1] - 2026-10-17
 
 ### 🚀 Features & Enhancements
 - **Client HWID & Device Model Tracking via Subscription**:
@@ -42,21 +42,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Synchronized FinalMask transport stream configuration fields across inbounds (`stream_finalmask.html`, `stream_finalmask_fields.html`), outbounds, and database inbound models.
   - Added Cloudflare WARP MASQUE transport stream settings and modal generation.
   - Added Mojang Minecraft server profile generator service for authentic masquerade configurations.
-
-### 🐛 Bug Fixes & Stability
-- **Fixed Missing Font Glyphs**: Replaced font icon calls with inline SVGs for device indicators in the modal.
-- **Client Modal Shadowsocks Guard**: Fixed client modal crash when adding the first Shadowsocks client to an inbound with 0 clients.
-- **Local GCC Compilation on Windows**: Resolved missing `ld.exe` linker issue under scoop GCC toolchain.
-
-### 🌐 Localization
-- Added translations for device info, client separation notice, and 0-client warnings in English (`en_US`), Chinese (`zh_CN`), and Persian (`fa_IR`).
-- Synchronized FinalMask stream settings and WARP MASQUE translations across all 13 supported languages.
-
----
-
-## [v0.9.1] - 2026-10-16
-
-### 🚀 Features & Enhancements
 - **Xray-core Alignment (v26.9.9 to v26.10.10 and Latest Main Commit)**:
   - Upgraded core dependency to latest `xray-core` (`0f3d884786f9` / v26.10.10 release) alongside updated `reality` (`83f621788ca8`), `gopher-lua`, and `x509roots/fallback` modules in `go.mod` and `vendor/`.
   - Updated default Xray-core download URLs in `DockerInit.sh` and release workflow (`release.yml`) from `v26.9.30` to `v26.10.10`.
@@ -75,8 +60,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **MASQUE Protocol & Transport Enhancements**:
   - Added WARP configuration options (Private Key, Public Key, Address) to MASQUE transport stream settings in `outbound.js` and `outbound.html`.
   - Added `hotAddUserToInbound` API support taking advantage of `xray api adu` compatibility for Hysteria and MASQUE.
-- **Multilingual Localization**:
-  - Added translation strings for `useSystemCA`, `routingScript`, `dnsScript`, and `noiseScript` across all 13 supported languages (`ar_EG`, `en_US`, `es_ES`, `fa_IR`, `id_ID`, `ja_JP`, `pt_BR`, `ru_RU`, `tr_TR`, `uk_UA`, `vi_VN`, `zh_CN`, `zh_TW`).
+
+### 🐛 Bug Fixes & Stability
+- **Fixed Missing Font Glyphs**: Replaced font icon calls with inline SVGs for device indicators in the modal.
+- **Client Modal Shadowsocks Guard**: Fixed client modal crash when adding the first Shadowsocks client to an inbound with 0 clients.
+- **Local GCC Compilation on Windows**: Resolved missing `ld.exe` linker issue under scoop GCC toolchain.
+
+### 🌐 Localization
+- Added translation strings for `useSystemCA`, `routingScript`, `dnsScript`, and `noiseScript` across all 13 supported languages (`ar_EG`, `en_US`, `es_ES`, `fa_IR`, `id_ID`, `ja_JP`, `pt_BR`, `ru_RU`, `tr_TR`, `uk_UA`, `vi_VN`, `zh_CN`, `zh_TW`).
+- Added translations for device info, client separation notice, and 0-client warnings in English (`en_US`), Chinese (`zh_CN`), and Persian (`fa_IR`).
+- Synchronized FinalMask stream settings and WARP MASQUE translations across all 13 supported languages.
 
 ---
 
