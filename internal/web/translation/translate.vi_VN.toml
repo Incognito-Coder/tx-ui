@@ -988,7 +988,11 @@ statusDescription = "Tình trạng Mô tả"
 requestHeader = "Header yêu cầu"
 responseHeader = "Header phản hồi"
 
+[pages.inbounds.stream.kcp]
+congestion = "Kiểm soát tắc nghẽn"
+
 [pages.inbounds.stream.finalmask]
+congestion = "Kiểm soát tắc nghẽn"
 "udpMasks" = "UDP Masks"
 "udpMask" = "UDP Mask"
 "tcpMasks" = "TCP Masks"

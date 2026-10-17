@@ -988,7 +988,11 @@ statusDescription = "Descripción de la Situación"
 requestHeader = "Encabezado de solicitud"
 responseHeader = "Encabezado de respuesta"
 
+[pages.inbounds.stream.kcp]
+congestion = "Control de congestión"
+
 [pages.inbounds.stream.finalmask]
+congestion = "Control de congestión"
 "udpMasks" = "UDP Masks"
 "udpMask" = "UDP Mask"
 "tcpMasks" = "TCP Masks"

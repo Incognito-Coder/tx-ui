@@ -988,7 +988,11 @@ statusDescription = "Опис стану"
 requestHeader = "Заголовок запиту"
 responseHeader = "Заголовок відповіді"
 
+[pages.inbounds.stream.kcp]
+congestion = "Контроль перевантаження"
+
 [pages.inbounds.stream.finalmask]
+congestion = "Контроль перевантаження"
 "udpMasks" = "UDP-маски"
 "udpMask" = "UDP-маска"
 "tcpMasks" = "TCP-маски"

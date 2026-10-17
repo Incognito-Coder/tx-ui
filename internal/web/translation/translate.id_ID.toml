@@ -988,7 +988,11 @@ statusDescription = "Deskripsi Status"
 requestHeader = "Header Permintaan"
 responseHeader = "Header Respons"
 
+[pages.inbounds.stream.kcp]
+congestion = "Kontrol Kemacetan"
+
 [pages.inbounds.stream.finalmask]
+congestion = "Kontrol Kemacetan"
 "udpMasks" = "UDP Masks"
 "udpMask" = "UDP Mask"
 "tcpMasks" = "TCP Masks"

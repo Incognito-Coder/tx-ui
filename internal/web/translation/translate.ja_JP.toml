@@ -988,7 +988,11 @@ statusDescription = "ステータス説明"
 requestHeader = "リクエストヘッダー"
 responseHeader = "レスポンスヘッダー"
 
+[pages.inbounds.stream.kcp]
+congestion = "輻輳制御"
+
 [pages.inbounds.stream.finalmask]
+congestion = "輻輳制御"
 "udpMasks" = "UDP Masks"
 "udpMask" = "UDP Mask"
 "tcpMasks" = "TCP Masks"

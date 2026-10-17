@@ -1021,7 +1021,11 @@ statusDescription = "Описание статуса"
 requestHeader = "Заголовок запроса"
 responseHeader = "Заголовок ответа"
 
+[pages.inbounds.stream.kcp]
+congestion = "Контроль перегрузки"
+
 [pages.inbounds.stream.finalmask]
+congestion = "Контроль перегрузки"
 "udpMasks" = "UDP-маски"
 "udpMask" = "UDP-маска"
 "tcpMasks" = "TCP-маски"

@@ -988,7 +988,11 @@ statusDescription = "Durum Açıklaması"
 requestHeader = "İstek Başlığı"
 responseHeader = "Yanıt Başlığı"
 
+[pages.inbounds.stream.kcp]
+congestion = "Tıkanıklık Kontrolü"
+
 [pages.inbounds.stream.finalmask]
+congestion = "Tıkanıklık Kontrolü"
 "udpMasks" = "UDP Masks"
 "udpMask" = "UDP Mask"
 "tcpMasks" = "TCP Masks"

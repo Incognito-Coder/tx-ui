@@ -400,7 +400,7 @@
                     <a-form-item label='Downlink (MB/s)'>
                         <a-input-number min="0" v-model.number="outbound.stream.kcp.downCap"></a-input-number>
                     </a-form-item>
-                    <a-form-item label='Congestion'>
+                    <a-form-item label='{{ i18n "pages.inbounds.stream.kcp.congestion" }}'>
                         <a-switch v-model="outbound.stream.kcp.congestion"></a-switch>
                     </a-form-item>
                     <a-form-item label='Read Buffer (MB)'>

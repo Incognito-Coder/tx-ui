@@ -405,6 +405,137 @@ func cleanString(s string, maxLen int) string {
 	return s
 }
 
+// GetBaseApp extracts the base application name without version (e.g., "v2rayNG 1.8.19" -> "v2rayNG").
+func GetBaseApp(clientApp string) string {
+	clientApp = strings.TrimSpace(clientApp)
+	if idx := strings.Index(clientApp, " "); idx != -1 {
+		return clientApp[:idx]
+	}
+	return clientApp
+}
+
+// IsGenericModel returns true if the model name is generic or a platform placeholder.
+func IsGenericModel(model string) bool {
+	m := strings.ToLower(strings.TrimSpace(model))
+	return m == "" || m == "device" || m == "iphone" || m == "ipad" || m == "windows pc" || m == "mac" || m == "linux pc"
+}
+
+// MatchesDeviceInfo checks whether a recorded ClientDevice corresponds to incoming DeviceInfo.
+func MatchesDeviceInfo(dev model.ClientDevice, info *DeviceInfo) bool {
+	if info == nil {
+		return false
+	}
+
+	// 1. If HWID is present on both, HWID is authoritative
+	if info.HWID != "" && dev.HWID != "" {
+		return strings.EqualFold(dev.HWID, info.HWID)
+	}
+
+	// 2. Specific hardware model matching (e.g. "Samsung Galaxy S24 Ultra (SM-S928B)", "iPhone 14 Pro", "Pixel 8 Pro")
+	if info.Model != "" && dev.Model != "" && !IsGenericModel(info.Model) && !IsGenericModel(dev.Model) {
+		if strings.EqualFold(dev.Model, info.Model) {
+			return true
+		}
+	}
+
+	// 3. Client application match (e.g. v2rayNG, Streisand, Shadowrocket, V2Box, etc.)
+	baseAppInfo := strings.ToLower(GetBaseApp(info.ClientApp))
+	baseAppDev := strings.ToLower(GetBaseApp(dev.ClientApp))
+	if baseAppInfo != "" && baseAppDev != "" && baseAppInfo == baseAppDev {
+		if info.Model == "" || dev.Model == "" || IsGenericModel(info.Model) || IsGenericModel(dev.Model) || strings.EqualFold(dev.Model, info.Model) {
+			return true
+		}
+	}
+
+	// 4. Exact Model + OS match
+	if info.Model != "" && dev.Model != "" && strings.EqualFold(dev.Model, info.Model) {
+		if info.OS != "" && dev.OS != "" && strings.EqualFold(dev.OS, info.OS) {
+			return true
+		}
+	}
+
+	// 5. User-Agent exact match
+	if info.UserAgent != "" && dev.UserAgent != "" && info.UserAgent == dev.UserAgent {
+		return true
+	}
+
+	// 6. IP match as last fallback when no app/model info is available
+	if (info.Model == "" || IsGenericModel(info.Model)) && info.ClientApp == "" && dev.ClientApp == "" {
+		if info.IP != "" && dev.IP != "" && info.IP == dev.IP {
+			return true
+		}
+	}
+
+	return false
+}
+
+// IsSameDevice checks whether two ClientDevice records represent the same device.
+func IsSameDevice(a, b model.ClientDevice) bool {
+	if a.Id > 0 && b.Id > 0 && a.Id == b.Id {
+		return true
+	}
+	if a.HWID != "" && b.HWID != "" {
+		return strings.EqualFold(a.HWID, b.HWID)
+	}
+
+	if a.Model != "" && b.Model != "" && !IsGenericModel(a.Model) && !IsGenericModel(b.Model) {
+		if strings.EqualFold(a.Model, b.Model) {
+			return true
+		}
+	}
+
+	baseAppA := strings.ToLower(GetBaseApp(a.ClientApp))
+	baseAppB := strings.ToLower(GetBaseApp(b.ClientApp))
+	if baseAppA != "" && baseAppB != "" && baseAppA == baseAppB {
+		if a.Model == "" || b.Model == "" || IsGenericModel(a.Model) || IsGenericModel(b.Model) || strings.EqualFold(a.Model, b.Model) {
+			return true
+		}
+	}
+
+	if a.Model != "" && b.Model != "" && strings.EqualFold(a.Model, b.Model) {
+		if a.OS != "" && b.OS != "" && strings.EqualFold(a.OS, b.OS) {
+			return true
+		}
+	}
+
+	if a.UserAgent != "" && b.UserAgent != "" && a.UserAgent == b.UserAgent {
+		return true
+	}
+
+	if (a.Model == "" || IsGenericModel(a.Model)) && (b.Model == "" || IsGenericModel(b.Model)) && a.ClientApp == "" && b.ClientApp == "" {
+		if a.IP != "" && b.IP != "" && a.IP == b.IP {
+			return true
+		}
+	}
+
+	return false
+}
+
+// DeduplicateDevices removes duplicate device records, retaining the most recently seen entry.
+func DeduplicateDevices(devices []model.ClientDevice) []model.ClientDevice {
+	if len(devices) <= 1 {
+		if devices == nil {
+			return []model.ClientDevice{}
+		}
+		return devices
+	}
+
+	result := make([]model.ClientDevice, 0, len(devices))
+	for _, d := range devices {
+		duplicate := false
+		for _, existing := range result {
+			if IsSameDevice(d, existing) {
+				duplicate = true
+				break
+			}
+		}
+		if !duplicate {
+			result = append(result, d)
+		}
+	}
+	return result
+}
+
 // RecordClientDevice parses device info from the subscription request and stores it.
 func RecordClientDevice(c *gin.Context, subId string) {
 	if subId == "" {
@@ -426,7 +557,11 @@ func RecordClientDevice(c *gin.Context, subId string) {
 	// 1. Find NodeClient by SubID
 	var nc model.NodeClient
 	err := db.Where("sub_id = ?", subId).First(&nc).Error
+	nodeClientId := 0
+	clientEmail := ""
 	if err == nil && nc.Id > 0 {
+		nodeClientId = nc.Id
+		clientEmail = nc.Email
 		updates := map[string]any{
 			"last_sub_time": now,
 			"last_sub_ip":   info.IP,
@@ -447,88 +582,87 @@ func RecordClientDevice(c *gin.Context, subId string) {
 			updates["last_user_agent"] = info.UserAgent
 		}
 		_ = db.Model(&nc).Updates(updates).Error
+	}
 
-		// 2. Upsert into ClientDevice
-		var dev model.ClientDevice
-		var devErr error
-		if info.HWID != "" {
-			devErr = db.Where("node_client_id = ? AND hwid = ?", nc.Id, info.HWID).First(&dev).Error
-		} else if info.Model != "" {
-			devErr = db.Where("node_client_id = ? AND model = ? AND (os = ? OR ip = ?)", nc.Id, info.Model, info.OS, info.IP).First(&dev).Error
-		} else {
-			devErr = db.Where("node_client_id = ? AND ip = ? AND user_agent = ?", nc.Id, info.IP, info.UserAgent).First(&dev).Error
-		}
-
-		if devErr == nil && dev.Id > 0 {
-			devUpdates := map[string]any{
-				"last_seen": now,
-				"ip":        info.IP,
-			}
-			if info.HWID != "" {
-				devUpdates["hwid"] = info.HWID
-			}
-			if info.Model != "" {
-				devUpdates["model"] = info.Model
-			}
-			if info.OS != "" {
-				devUpdates["os"] = info.OS
-			}
-			if info.ClientApp != "" {
-				devUpdates["client_app"] = info.ClientApp
-			}
-			if info.UserAgent != "" {
-				devUpdates["user_agent"] = info.UserAgent
-			}
-			_ = db.Model(&dev).Updates(devUpdates).Error
-		} else {
-			newDev := model.ClientDevice{
-				NodeClientId: nc.Id,
-				SubID:        subId,
-				ClientEmail:  nc.Email,
-				HWID:         info.HWID,
-				Model:        info.Model,
-				OS:           info.OS,
-				ClientApp:    info.ClientApp,
-				UserAgent:    info.UserAgent,
-				IP:           info.IP,
-				LastSeen:     now,
-				CreatedAt:    now,
-			}
-			_ = db.Create(&newDev).Error
-		}
+	// 2. Fetch all existing devices associated with this client / subId
+	var existingDevices []model.ClientDevice
+	if nodeClientId > 0 {
+		_ = db.Where("node_client_id = ? OR (sub_id != '' AND sub_id = ?)", nodeClientId, subId).
+			Order("last_seen desc").
+			Find(&existingDevices).Error
 	} else {
-		// Fallback for legacy clients without a NodeClient record
-		var dev model.ClientDevice
-		var devErr error
-		if info.HWID != "" {
-			devErr = db.Where("sub_id = ? AND hwid = ?", subId, info.HWID).First(&dev).Error
-		} else {
-			devErr = db.Where("sub_id = ? AND ip = ?", subId, info.IP).First(&dev).Error
-		}
+		_ = db.Where("sub_id = ?", subId).
+			Order("last_seen desc").
+			Find(&existingDevices).Error
+	}
 
-		if devErr == nil && dev.Id > 0 {
-			_ = db.Model(&dev).Updates(map[string]any{
-				"last_seen":  now,
-				"ip":         info.IP,
-				"model":      info.Model,
-				"hwid":       info.HWID,
-				"os":         info.OS,
-				"client_app": info.ClientApp,
-				"user_agent": info.UserAgent,
-			}).Error
-		} else {
-			newDev := model.ClientDevice{
-				SubID:     subId,
-				HWID:      info.HWID,
-				Model:     info.Model,
-				OS:        info.OS,
-				ClientApp: info.ClientApp,
-				UserAgent: info.UserAgent,
-				IP:        info.IP,
-				LastSeen:  now,
-				CreatedAt: now,
+	// 3. Find matching device and any duplicate records to prune
+	var matchedDev *model.ClientDevice
+	var duplicateIds []int
+
+	for i := range existingDevices {
+		dev := &existingDevices[i]
+		if MatchesDeviceInfo(*dev, info) {
+			if matchedDev == nil {
+				matchedDev = dev
+			} else {
+				// Old duplicate in DB, mark for deletion
+				duplicateIds = append(duplicateIds, dev.Id)
 			}
-			_ = db.Create(&newDev).Error
 		}
+	}
+
+	// Clean up duplicate rows from DB if any exist
+	if len(duplicateIds) > 0 {
+		_ = db.Where("id IN ?", duplicateIds).Delete(&model.ClientDevice{}).Error
+	}
+
+	if matchedDev != nil {
+		// Update existing device record
+		devUpdates := map[string]any{
+			"last_seen": now,
+			"ip":        info.IP,
+		}
+		if nodeClientId > 0 && matchedDev.NodeClientId == 0 {
+			devUpdates["node_client_id"] = nodeClientId
+		}
+		if clientEmail != "" && matchedDev.ClientEmail == "" {
+			devUpdates["client_email"] = clientEmail
+		}
+		if subId != "" && matchedDev.SubID == "" {
+			devUpdates["sub_id"] = subId
+		}
+		if info.HWID != "" {
+			devUpdates["hwid"] = info.HWID
+		}
+		if info.Model != "" {
+			devUpdates["model"] = info.Model
+		}
+		if info.OS != "" {
+			devUpdates["os"] = info.OS
+		}
+		if info.ClientApp != "" {
+			devUpdates["client_app"] = info.ClientApp
+		}
+		if info.UserAgent != "" {
+			devUpdates["user_agent"] = info.UserAgent
+		}
+		_ = db.Model(matchedDev).Updates(devUpdates).Error
+	} else {
+		// Insert brand new device record
+		newDev := model.ClientDevice{
+			NodeClientId: nodeClientId,
+			SubID:        subId,
+			ClientEmail:  clientEmail,
+			HWID:         info.HWID,
+			Model:        info.Model,
+			OS:           info.OS,
+			ClientApp:    info.ClientApp,
+			UserAgent:    info.UserAgent,
+			IP:           info.IP,
+			LastSeen:     now,
+			CreatedAt:    now,
+		}
+		_ = db.Create(&newDev).Error
 	}
 }

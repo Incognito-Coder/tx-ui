@@ -343,17 +343,6 @@
     .device-history-item:last-child {
         border-bottom: none;
     }
-
-    .device-tip-box {
-        margin-top: 8px;
-        padding: 8px 10px;
-        border-radius: 8px;
-        background: var(--ui-surface-muted, rgba(128, 128, 128, 0.05));
-        border: 1px dashed var(--ui-border);
-        font-size: 11px;
-        color: var(--ui-text-muted);
-    }
-
     .client-detail-link {
         font-size: 11px;
         flex: 1;
@@ -2053,22 +2042,6 @@
                             </div>
                         </div>
                     </div>
-
-                    <!-- Interactive Sub URL Helper with Copy Button -->
-                    <div class="device-tip-box" v-if="subSettings.enable && detailModal.client.subId">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                            <span style="font-weight: 600; color: var(--ui-text); font-size: 11px;">
-                                💡 {{ i18n "pages.node_clients.deviceParamHint" }}
-                            </span>
-                            <a-button size="small" type="link" style="padding: 0; height: auto; font-size: 11px;"
-                                      @click="copyText(subSettings.subURI + detailModal.client.subId + '?hwid=HWID_HERE&model=PHONE_MODEL')">
-                                <a-icon type="copy"></a-icon> {{ i18n "copy" }}
-                            </a-button>
-                        </div>
-                        <div style="font-family: monospace; font-size: 10px; word-break: break-all; color: var(--ui-primary);">
-                            [[ subSettings.subURI + detailModal.client.subId ]]?hwid=HWID_HERE&model=PHONE_MODEL
-                        </div>
-                    </div>
                 </div>
 
 
@@ -2629,13 +2602,32 @@
                     if (c && c.id) {
                         HttpUtil.get(`/panel/api/clients/${c.id}/devices`).then(res => {
                             if (res.success && res.obj) {
-                                this.$set(c, 'devices', res.obj);
+                                const devs = this.deduplicateDevices(res.obj);
+                                this.$set(c, 'devices', devs);
                                 if (this.detailModal.client && this.detailModal.client.id === c.id) {
-                                    this.$set(this.detailModal.client, 'devices', res.obj);
+                                    this.$set(this.detailModal.client, 'devices', devs);
                                 }
                             }
                         });
                     }
+                },
+                deduplicateDevices(list) {
+                    if (!list || list.length <= 1) return list || [];
+                    const seen = new Set();
+                    return list.filter(d => {
+                        let key = '';
+                        if (d.hwid) {
+                            key = 'hwid:' + d.hwid.toLowerCase().trim();
+                        } else if (d.model && !['device', 'iphone', 'ipad', 'windows pc', 'mac', 'linux pc'].includes(d.model.toLowerCase().trim())) {
+                            key = 'model:' + d.model.toLowerCase().trim();
+                        } else {
+                            const baseApp = ((d.clientApp || '').trim().split(' ')[0] || '').toLowerCase();
+                            key = 'app:' + (d.model || '').toLowerCase().trim() + ':' + baseApp + ':' + (d.os || '').toLowerCase().trim();
+                        }
+                        if (seen.has(key)) return false;
+                        seen.add(key);
+                        return true;
+                    });
                 },
                 deviceIcon(c) {
                     const m = (((c && c.deviceModel) || '') + ' ' + ((c && c.lastOS) || '')).toLowerCase();

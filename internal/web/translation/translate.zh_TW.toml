@@ -988,7 +988,11 @@ statusDescription = "狀態說明"
 requestHeader = "請求頭"
 responseHeader = "響應頭"
 
+[pages.inbounds.stream.kcp]
+congestion = "壅塞控制"
+
 [pages.inbounds.stream.finalmask]
+congestion = "壅塞控制"
 "udpMasks" = "UDP 掩码"
 "udpMask" = "UDP 掩码"
 "tcpMasks" = "TCP 掩码"

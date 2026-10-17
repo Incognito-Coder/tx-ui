@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	"x-ui/internal/database/model"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -172,5 +174,75 @@ func TestParseDeviceInfo_UserAgents(t *testing.T) {
 				t.Errorf("[%s] expected App %s, got %s", tt.name, tt.expectedApp, info.ClientApp)
 			}
 		})
+	}
+}
+
+func TestDeduplicateDevices(t *testing.T) {
+	devices := []model.ClientDevice{
+		{
+			Id:        1,
+			Model:     "iPhone 14 Pro",
+			OS:        "iOS 17.4",
+			ClientApp: "Shadowrocket 2.2.33",
+			IP:        "1.1.1.1",
+			LastSeen:  5000,
+		},
+		{
+			Id:        2,
+			Model:     "iPhone 14 Pro",
+			OS:        "iOS 17.4",
+			ClientApp: "Shadowrocket 2.2.33",
+			IP:        "2.2.2.2", // Same phone, different IP
+			LastSeen:  4000,
+		},
+		{
+			Id:        3,
+			Model:     "Windows PC",
+			OS:        "Windows 10/11",
+			ClientApp: "v2rayN 6.39",
+			IP:        "1.1.1.1",
+			LastSeen:  3000,
+		},
+		{
+			Id:        4,
+			Model:     "Windows PC",
+			OS:        "Windows 10/11",
+			ClientApp: "v2rayN 6.40", // App update
+			IP:        "3.3.3.3",
+			LastSeen:  2000,
+		},
+		{
+			Id:        5,
+			HWID:      "HWID-UNIQUE-1",
+			Model:     "Pixel 8",
+			LastSeen:  1000,
+		},
+		{
+			Id:        6,
+			HWID:      "HWID-UNIQUE-1",
+			Model:     "Google Pixel 8", // Same HWID
+			LastSeen:  500,
+		},
+	}
+
+	deduped := DeduplicateDevices(devices)
+
+	if len(deduped) != 3 {
+		t.Fatalf("expected 3 unique devices, got %d", len(deduped))
+	}
+
+	// Should keep newest iPhone (Id: 1)
+	if deduped[0].Id != 1 {
+		t.Errorf("expected first device Id 1, got %d", deduped[0].Id)
+	}
+
+	// Should keep newest Windows PC (Id: 3)
+	if deduped[1].Id != 3 {
+		t.Errorf("expected second device Id 3, got %d", deduped[1].Id)
+	}
+
+	// Should keep newest HWID device (Id: 5)
+	if deduped[2].Id != 5 {
+		t.Errorf("expected third device Id 5, got %d", deduped[2].Id)
 	}
 }

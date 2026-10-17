@@ -27,9 +27,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - **Last Subscription Sync Card**: Shows formatted sync timestamp alongside an IP pill badge.
   - Theme-aware vector SVG icons eliminating missing font square glyphs across all operating systems and browsers.
   - Connected devices history table displaying each device's model, app/OS, IP, HWID (with copy button), and last seen timestamp.
-  - Interactive Subscription URL helper prefilling the client's actual subscription link with sample parameters (`?hwid=HWID_HERE&model=PHONE_MODEL`) with a direct Copy button.
   - Clear Devices action with instant UI state reset and confirmation toast.
   - Client search filter upgraded to search by `deviceModel` and `deviceHwid`.
+
+### 🐛 Bug Fixes & Refinements
+- **Connected Devices Deduplication & Consolidation**:
+  - Fixed duplicate device entries in the connected devices list caused by IP changes, cellular/Wi-Fi transitions, and app updates.
+  - Implemented multi-tier device deduplication (`DeduplicateDevices` and `MatchesDeviceInfo`) prioritizing HWID, specific hardware model, client app family, and OS.
+  - Added automatic database duplicate pruning during subscription check-ins to cleanly consolidate historical records.
+- **Client Detail Modal UI Cleanup**:
+  - Removed subscription URL device parameter hint banner (`deviceParamHint`) to streamline the client detail interface.
+- **mKCP & QUIC Congestion Localization**:
+  - Fixed `Failed to localize message: message "pages.inbounds.stream.kcp.congestion" not found in language` by defining `pages.inbounds.stream.kcp.congestion` and `pages.inbounds.stream.finalmask.congestion` across all 13 supported languages (`en_US`, `zh_CN`, `zh_TW`, `fa_IR`, `ru_RU`, `uk_UA`, `tr_TR`, `pt_BR`, `es_ES`, `ja_JP`, `vi_VN`, `id_ID`, `ar_EG`).
+  - Localized Congestion switches in mKCP inbound form (`stream_kcp.html`) and outbound stream settings (`outbound.html`).
 - **Inbound & Client Creation Separation**:
   - Adding an inbound now defaults to 0 clients without creating dummy or random users, enforcing clean separation between inbound management and client management.
   - Protocol templates (`VLESS`, `VMess`, `Trojan`, `Shadowsocks`, `WireGuard`, `Hysteria`, `MASQUE`) updated to initialize with empty client arrays.

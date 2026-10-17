@@ -265,7 +265,6 @@ lastSubTime = "Last Subscription Sync"
 lastSubIP = "Last Sub IP"
 devices = "Devices"
 connectedDevices = "Connected Devices"
-deviceParamHint = "Clients can report device info via sub URL: ?hwid=...&model=..."
 clearDevices = "Clear Devices"
 showLinks = "Show Links"
 noLinks = "No links available"
@@ -1035,7 +1034,11 @@ statusDescription = "Status Desc"
 requestHeader = "Request Header"
 responseHeader = "Response Header"
 
+[pages.inbounds.stream.kcp]
+congestion = "Congestion"
+
 [pages.inbounds.stream.finalmask]
+congestion = "Congestion"
 "udpMasks" = "UDP Masks"
 "udpMask" = "UDP Mask"
 "tcpMasks" = "TCP Masks"

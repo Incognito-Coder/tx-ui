@@ -265,7 +265,6 @@ lastSubTime = "最近订阅同步"
 lastSubIP = "最近订阅 IP"
 devices = "设备"
 connectedDevices = "已连接设备"
-deviceParamHint = "客户端可在订阅链接携带参数上报设备信息：?hwid=...&model=..."
 clearDevices = "清空设备"
 bulkDelete = "批量删除"
 bulkManageLinks = "批量关联入站"
@@ -1035,7 +1034,11 @@ statusDescription = "状态说明"
 requestHeader = "请求头"
 responseHeader = "响应头"
 
+[pages.inbounds.stream.kcp]
+congestion = "拥塞控制"
+
 [pages.inbounds.stream.finalmask]
+congestion = "拥塞控制"
 "udpMasks" = "UDP 掩码"
 "udpMask" = "UDP 掩码"
 "tcpMasks" = "TCP 掩码"

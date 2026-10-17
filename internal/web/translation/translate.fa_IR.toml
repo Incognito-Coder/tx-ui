@@ -265,7 +265,6 @@ lastSubTime = "آخرین همگام‌سازی اشتراک"
 lastSubIP = "آخرین IP اشتراک"
 devices = "دستگاه‌ها"
 connectedDevices = "دستگاه‌های متصل"
-deviceParamHint = "کلاینت‌ها می‌توانند با افزودن ?hwid=...&model=... به لینک اشتراک اطلاعات دستگاه را ارسال کنند"
 clearDevices = "پاک کردن دستگاه‌ها"
 showLinks = "نمایش لینک\u200cها"
 noLinks = "هیچ لینکی موجود نیست"
@@ -1035,7 +1034,11 @@ statusDescription = "توضیحات وضعیت"
 requestHeader = "سربرگ درخواست"
 responseHeader = "سربرگ پاسخ"
 
+[pages.inbounds.stream.kcp]
+congestion = "کنترل ازدحام"
+
 [pages.inbounds.stream.finalmask]
+congestion = "کنترل ازدحام"
 "udpMasks" = "ماسک‌های UDP"
 "udpMask" = "ماسک UDP"
 "tcpMasks" = "ماسک‌های TCP"

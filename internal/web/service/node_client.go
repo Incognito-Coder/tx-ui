@@ -126,13 +126,16 @@ func (s *NodeClientService) GetAllWithDetails() ([]*ClientDetail, error) {
 			traffic.Email = nc.Email
 		}
 
-		devices := devicesByClientId[nc.Id]
-		if len(devices) == 0 && nc.SubID != "" {
-			devices = devicesBySubId[nc.SubID]
+		var clientDevs []model.ClientDevice
+		if devs, ok := devicesByClientId[nc.Id]; ok {
+			clientDevs = append(clientDevs, devs...)
 		}
-		if devices == nil {
-			devices = []model.ClientDevice{}
+		if nc.SubID != "" {
+			if devs, ok := devicesBySubId[nc.SubID]; ok {
+				clientDevs = append(clientDevs, devs...)
+			}
 		}
+		devices := DeduplicateDevices(clientDevs)
 
 		results = append(results, &ClientDetail{
 			NodeClient: *nc,
@@ -169,7 +172,86 @@ func (s *NodeClientService) GetDevices(id int) ([]model.ClientDevice, error) {
 	if err != nil {
 		return nil, err
 	}
-	return devices, nil
+	return DeduplicateDevices(devices), nil
+}
+
+func getBaseApp(clientApp string) string {
+	clientApp = strings.TrimSpace(clientApp)
+	if idx := strings.Index(clientApp, " "); idx != -1 {
+		return clientApp[:idx]
+	}
+	return clientApp
+}
+
+func isGenericModel(model string) bool {
+	m := strings.ToLower(strings.TrimSpace(model))
+	return m == "" || m == "device" || m == "iphone" || m == "ipad" || m == "windows pc" || m == "mac" || m == "linux pc"
+}
+
+func isSameDevice(a, b model.ClientDevice) bool {
+	if a.Id > 0 && b.Id > 0 && a.Id == b.Id {
+		return true
+	}
+	if a.HWID != "" && b.HWID != "" {
+		return strings.EqualFold(a.HWID, b.HWID)
+	}
+
+	if a.Model != "" && b.Model != "" && !isGenericModel(a.Model) && !isGenericModel(b.Model) {
+		if strings.EqualFold(a.Model, b.Model) {
+			return true
+		}
+	}
+
+	baseAppA := strings.ToLower(getBaseApp(a.ClientApp))
+	baseAppB := strings.ToLower(getBaseApp(b.ClientApp))
+	if baseAppA != "" && baseAppB != "" && baseAppA == baseAppB {
+		if a.Model == "" || b.Model == "" || isGenericModel(a.Model) || isGenericModel(b.Model) || strings.EqualFold(a.Model, b.Model) {
+			return true
+		}
+	}
+
+	if a.Model != "" && b.Model != "" && strings.EqualFold(a.Model, b.Model) {
+		if a.OS != "" && b.OS != "" && strings.EqualFold(a.OS, b.OS) {
+			return true
+		}
+	}
+
+	if a.UserAgent != "" && b.UserAgent != "" && a.UserAgent == b.UserAgent {
+		return true
+	}
+
+	if (a.Model == "" || isGenericModel(a.Model)) && (b.Model == "" || isGenericModel(b.Model)) && a.ClientApp == "" && b.ClientApp == "" {
+		if a.IP != "" && b.IP != "" && a.IP == b.IP {
+			return true
+		}
+	}
+
+	return false
+}
+
+// DeduplicateDevices removes duplicate device records, retaining the most recently seen entry.
+func DeduplicateDevices(devices []model.ClientDevice) []model.ClientDevice {
+	if len(devices) <= 1 {
+		if devices == nil {
+			return []model.ClientDevice{}
+		}
+		return devices
+	}
+
+	result := make([]model.ClientDevice, 0, len(devices))
+	for _, d := range devices {
+		duplicate := false
+		for _, existing := range result {
+			if isSameDevice(d, existing) {
+				duplicate = true
+				break
+			}
+		}
+		if !duplicate {
+			result = append(result, d)
+		}
+	}
+	return result
 }
 
 // ClearDevices removes all device records for a NodeClient and resets its device fields.
