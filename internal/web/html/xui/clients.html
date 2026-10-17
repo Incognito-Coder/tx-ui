@@ -1111,6 +1111,23 @@
                                                 <a-icon type="info-circle" style="margin-left: 4px; color: #888; font-size: 12px;"></a-icon>
                                             </a-tooltip>
                                         </div>
+                                        <div v-if="c.deviceModel || c.deviceHwid || (c.devices && c.devices.length > 0)"
+                                             style="display: flex; align-items: center; flex-wrap: wrap; gap: 4px; margin-top: 2px;">
+                                            <a-tooltip :title="clientDeviceTooltip(c)">
+                                                <a-tag color="purple" style="font-size: 10px; line-height: 16px; height: 18px; padding: 0 5px; margin: 0; cursor: pointer;" @click.stop="showClientDetail(c)">
+                                                    <a-icon :type="deviceIcon(c)" style="margin-right: 3px; font-size: 11px;"></a-icon>
+                                                    <span>[[ c.deviceModel || (c.devices && c.devices[0] && c.devices[0].model) || 'Device' ]]</span>
+                                                </a-tag>
+                                            </a-tooltip>
+                                            <a-tag v-if="c.devices && c.devices.length > 1" color="blue" style="font-size: 10px; line-height: 16px; height: 18px; padding: 0 4px; margin: 0;" :title="c.devices.length + ' connected devices'">
+                                                +[[ c.devices.length - 1 ]]
+                                            </a-tag>
+                                            <a-tag v-if="(c.deviceHwid || (c.devices && c.devices[0] && c.devices[0].hwid)) && !isMobile"
+                                                   style="font-size: 9px; line-height: 16px; height: 18px; padding: 0 4px; margin: 0; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: monospace;"
+                                                   :title="'HWID: ' + (c.deviceHwid || (c.devices && c.devices[0] && c.devices[0].hwid))">
+                                                HWID: [[ c.deviceHwid || (c.devices && c.devices[0] && c.devices[0].hwid) ]]
+                                            </a-tag>
+                                        </div>
                                     </div>
                                 </template>
 
@@ -1809,6 +1826,106 @@
                     </tr>
                 </table>
 
+                <!-- Device & Subscription Info Section -->
+                <div style="margin-top: 8px; padding-top: 6px; border-top: 1px solid var(--ui-border);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        <span style="font-size: 11px; font-weight: 600; color: var(--ui-text);">
+                            <a-icon type="mobile" style="margin-right: 4px;"></a-icon>
+                            {{ i18n "pages.node_clients.deviceInfo" }}
+                        </span>
+                        <a-button v-if="detailModal.client.devices && detailModal.client.devices.length > 0"
+                                  @click="clearClientDevices(detailModal.client)"
+                                  icon="delete" size="small" type="danger" ghost style="font-size: 10px; height: 20px; padding: 0 6px;">
+                            {{ i18n "pages.node_clients.clearDevices" }}
+                        </a-button>
+                    </div>
+
+                    <table class="detail-table" style="margin-bottom: 8px;">
+                        <tr v-if="detailModal.client.deviceModel">
+                            <td>{{ i18n "pages.node_clients.deviceModel" }}</td>
+                            <td>
+                                <a-tag color="purple" style="font-size: 10px; height: 18px; line-height: 16px; padding: 0 4px; margin: 0;">
+                                    <a-icon :type="deviceIcon(detailModal.client)" style="margin-right: 3px;"></a-icon>
+                                    [[ detailModal.client.deviceModel ]]
+                                </a-tag>
+                            </td>
+                        </tr>
+                        <tr v-if="detailModal.client.deviceHwid">
+                            <td>{{ i18n "pages.node_clients.deviceHwid" }}</td>
+                            <td>
+                                <code class="compact-code">[[ detailModal.client.deviceHwid ]]</code>
+                                <a-icon @click="copyText(detailModal.client.deviceHwid)" style="cursor: pointer; margin-left: 5px; color: var(--ui-primary); font-size: 12px;" type="copy"></a-icon>
+                            </td>
+                        </tr>
+                        <tr v-if="detailModal.client.lastClientApp || detailModal.client.lastOS">
+                            <td>{{ i18n "pages.node_clients.clientApp" }} / OS</td>
+                            <td>
+                                <a-tag v-if="detailModal.client.lastClientApp" color="blue" style="font-size: 10px; height: 18px; line-height: 16px; padding: 0 4px; margin: 0 4px 0 0;">
+                                    [[ detailModal.client.lastClientApp ]]
+                                </a-tag>
+                                <a-tag v-if="detailModal.client.lastOS" style="font-size: 10px; height: 18px; line-height: 16px; padding: 0 4px; margin: 0;">
+                                    [[ detailModal.client.lastOS ]]
+                                </a-tag>
+                            </td>
+                        </tr>
+                        <tr v-if="detailModal.client.lastSubTime > 0">
+                            <td>{{ i18n "pages.node_clients.lastSubTime" }}</td>
+                            <td>
+                                <span style="font-size: 11px;">
+                                    [[ DateUtil.formatMillis(detailModal.client.lastSubTime) ]]
+                                    <template v-if="detailModal.client.lastSubIP">
+                                        ([[ detailModal.client.lastSubIP ]])
+                                    </template>
+                                </span>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <!-- Connected Devices History List -->
+                    <div v-if="detailModal.client.devices && detailModal.client.devices.length > 0">
+                        <div style="font-size: 10px; font-weight: 600; color: var(--ui-text-muted); margin-bottom: 4px;">
+                            {{ i18n "pages.node_clients.connectedDevices" }} ([[ detailModal.client.devices.length ]])
+                        </div>
+                        <div style="max-height: 150px; overflow-y: auto; border: 1px solid var(--ui-border); border-radius: 4px;">
+                            <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                                <thead>
+                                    <tr style="background: var(--ui-surface-muted, rgba(128,128,128,0.05)); border-bottom: 1px solid var(--ui-border);">
+                                        <th style="padding: 4px 8px; text-align: left; font-size: 10px; color: var(--ui-text-muted);">{{ i18n "pages.node_clients.deviceModel" }}</th>
+                                        <th style="padding: 4px 8px; text-align: left; font-size: 10px; color: var(--ui-text-muted);">HWID</th>
+                                        <th style="padding: 4px 8px; text-align: left; font-size: 10px; color: var(--ui-text-muted);">IP</th>
+                                        <th style="padding: 4px 8px; text-align: right; font-size: 10px; color: var(--ui-text-muted);">{{ i18n "pages.node_clients.lastSubTime" }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="d in detailModal.client.devices" :key="d.id" style="border-bottom: 1px solid var(--ui-border);">
+                                        <td style="padding: 4px 8px;">
+                                            <div style="font-weight: 600;">[[ d.model || 'Unknown Device' ]]</div>
+                                            <div style="font-size: 10px; color: var(--ui-text-muted);">[[ [d.clientApp, d.os].filter(Boolean).join(' • ') ]]</div>
+                                        </td>
+                                        <td style="padding: 4px 8px;">
+                                            <template v-if="d.hwid">
+                                                <code class="compact-code" style="font-size: 10px;">[[ d.hwid ]]</code>
+                                                <a-icon @click="copyText(d.hwid)" style="cursor: pointer; margin-left: 3px; font-size: 11px; color: var(--ui-primary);" type="copy"></a-icon>
+                                            </template>
+                                            <span v-else style="color: var(--ui-text-muted);">-</span>
+                                        </td>
+                                        <td style="padding: 4px 8px; font-family: monospace; font-size: 10px;">[[ d.ip || '-' ]]</td>
+                                        <td style="padding: 4px 8px; text-align: right; font-size: 10px; color: var(--ui-text-muted); white-space: nowrap;">
+                                            [[ DateUtil.formatMillis(d.lastSeen) ]]
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Sub URL Parameter Hint -->
+                    <div style="margin-top: 6px; padding: 6px 8px; background: var(--ui-surface-muted, rgba(128,128,128,0.05)); border-radius: 4px; font-size: 10px; color: var(--ui-text-muted);">
+                        💡 {{ i18n "pages.node_clients.deviceParamHint" }}
+                    </div>
+                </div>
+
+
                 <!-- Linked Inbounds Section (Compact) -->
                 <div style="margin-top: 8px; padding-top: 6px; border-top: 1px solid var(--ui-border);">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
@@ -2193,7 +2310,9 @@
                         list = list.filter(c =>
                             (c.email && c.email.toLowerCase().includes(k)) ||
                             (c.subId && c.subId.toLowerCase().includes(k)) ||
-                            (c.comment && c.comment.toLowerCase().includes(k))
+                            (c.comment && c.comment.toLowerCase().includes(k)) ||
+                            (c.deviceModel && c.deviceModel.toLowerCase().includes(k)) ||
+                            (c.deviceHwid && c.deviceHwid.toLowerCase().includes(k))
                         );
                     }
                     if (this.filterStatus) {
@@ -2360,6 +2479,57 @@
                     this.detailModal.visible = true;
                     if (this.ipLimitEnable && c.limitIp > 0) {
                         await this.refreshDetailIps(c.email);
+                    }
+                    if (c && c.id) {
+                        HttpUtil.get(`/panel/api/clients/${c.id}/devices`).then(res => {
+                            if (res.success && res.obj) {
+                                this.$set(c, 'devices', res.obj);
+                                if (this.detailModal.client && this.detailModal.client.id === c.id) {
+                                    this.$set(this.detailModal.client, 'devices', res.obj);
+                                }
+                            }
+                        });
+                    }
+                },
+                deviceIcon(c) {
+                    const m = (((c && c.deviceModel) || '') + ' ' + ((c && c.lastOS) || '')).toLowerCase();
+                    if (m.includes('iphone') || m.includes('ipad') || m.includes('android') || m.includes('phone') || m.includes('mobile') || m.includes('samsung') || m.includes('pixel') || m.includes('xiaomi') || m.includes('redmi')) {
+                        return 'mobile';
+                    }
+                    if (m.includes('mac') || m.includes('windows') || m.includes('pc') || m.includes('linux')) {
+                        return 'laptop';
+                    }
+                    return 'tablet';
+                },
+                clientDeviceTooltip(c) {
+                    if (!c) return '';
+                    const parts = [];
+                    if (c.deviceModel) parts.push(c.deviceModel);
+                    if (c.deviceHwid) parts.push('HWID: ' + c.deviceHwid);
+                    if (c.lastClientApp || c.lastOS) parts.push([c.lastClientApp, c.lastOS].filter(Boolean).join(' • '));
+                    if (c.lastSubIP) parts.push('IP: ' + c.lastSubIP);
+                    if (c.lastSubTime) parts.push(DateUtil.formatMillis(c.lastSubTime));
+                    return parts.join('\n') || 'Device Information';
+                },
+                async clearClientDevices(c) {
+                    if (!c || !c.id) return;
+                    const msg = await HttpUtil.post(`/panel/api/clients/${c.id}/clearDevices`);
+                    if (msg.success) {
+                        this.$message.success('{{ i18n "success" }}');
+                        this.$set(c, 'devices', []);
+                        this.$set(c, 'deviceModel', '');
+                        this.$set(c, 'deviceHwid', '');
+                        this.$set(c, 'lastUserAgent', '');
+                        this.$set(c, 'lastClientApp', '');
+                        this.$set(c, 'lastOS', '');
+                        if (this.detailModal.client && this.detailModal.client.id === c.id) {
+                            this.$set(this.detailModal.client, 'devices', []);
+                            this.$set(this.detailModal.client, 'deviceModel', '');
+                            this.$set(this.detailModal.client, 'deviceHwid', '');
+                            this.$set(this.detailModal.client, 'lastUserAgent', '');
+                            this.$set(this.detailModal.client, 'lastClientApp', '');
+                            this.$set(this.detailModal.client, 'lastOS', '');
+                        }
                     }
                 },
                 generateClientLinks(c) {

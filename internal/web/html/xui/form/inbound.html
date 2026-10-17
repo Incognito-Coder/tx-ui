@@ -66,6 +66,8 @@
     </a-form-item>
 </a-form>
 
+<a-alert v-if="!isEdit" message='{{ i18n "pages.inbounds.clientsSeparatedNotice" }}' type="info" show-icon style="margin: 10px 0 16px 0;"></a-alert>
+
 <!-- vmess settings -->
 <template v-if="inbound.protocol === Protocols.VMESS">
     {{template "form/vmess"}}

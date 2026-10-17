@@ -1,12 +1,5 @@
 {{define "form/masque"}}
-<a-collapse activeKey="0"
-            v-for="(client, index) in inbound.settings.clients.slice(0,1)"
-            v-if="!isEdit">
-    <a-collapse-panel header='{{ i18n "pages.inbounds.client" }}'>
-        {{template "form/client"}}
-    </a-collapse-panel>
-</a-collapse>
-<a-collapse v-else>
+<a-collapse v-if="isEdit && inbound.settings.clients && inbound.settings.clients.length > 0">
     <a-collapse-panel :header="'{{ i18n "pages.client.clientCount"}} : ' + inbound.settings.clients.length">
     <table width="100%">
         <tr class="client-table-header">

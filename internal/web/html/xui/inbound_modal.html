@@ -135,7 +135,7 @@
                 return inModal.isEdit;
             },
             get client() {
-                return inModal.inbound.clients[0];
+                return inModal.inbound.clients && inModal.inbound.clients.length > 0 ? inModal.inbound.clients[0] : null;
             },
             get datepicker() {
                 return app.datepicker;
@@ -144,7 +144,9 @@
                 return this.client && this.client.expiryTime < 0 ? this.client.expiryTime / -86400000 : 0;
             },
             set delayedExpireDays(days) {
-                this.client.expiryTime = -86400000 * days;
+                if (this.client) {
+                    this.client.expiryTime = -86400000 * days;
+                }
             },
             get externalProxy() {
                 return this.inbound.stream.externalProxy.length > 0;
@@ -178,9 +180,6 @@
             },
             SSMethodChange() {
                 if (this.inModal.inbound.isSSMultiUser) {
-                    if (this.inModal.inbound.settings.shadowsockses.length == 0) {
-                        this.inModal.inbound.settings.shadowsockses = [new Inbound.ShadowsocksSettings.Shadowsocks()];
-                    }
                     if (!this.inModal.inbound.isSS2022) {
                         this.inModal.inbound.settings.shadowsockses.forEach(client => {
                             client.method = this.inModal.inbound.settings.method;

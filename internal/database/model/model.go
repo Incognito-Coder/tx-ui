@@ -306,6 +306,15 @@ type NodeClient struct {
 	Enable     bool   `json:"enable"     form:"enable"     gorm:"default:true"`
 	Reset      int    `json:"reset"      form:"reset"` // auto-reset interval in days (0 = off)
 	Comment    string `json:"comment"    form:"comment"`
+
+	// Device & Subscription metadata captured from subscription requests
+	DeviceModel   string `json:"deviceModel"   form:"deviceModel"`
+	DeviceHWID    string `json:"deviceHwid"    form:"deviceHwid"`
+	LastSubTime   int64  `json:"lastSubTime"   form:"lastSubTime"`
+	LastSubIP     string `json:"lastSubIP"     form:"lastSubIP"`
+	LastUserAgent string `json:"lastUserAgent" form:"lastUserAgent"`
+	LastClientApp string `json:"lastClientApp" form:"lastClientApp"`
+	LastOS        string `json:"lastOS"        form:"lastOS"`
 }
 
 // NodeClientLink joins a NodeClient to an Inbound, with optional per-link overrides.
@@ -315,3 +324,20 @@ type NodeClientLink struct {
 	InboundId    int    `json:"inboundId"    gorm:"uniqueIndex:idx_nc_inbound"`
 	Flow         string `json:"flow"` // per-link flow override (empty = use NodeClient.Flow)
 }
+
+// ClientDevice tracks devices that have accessed a client's subscription.
+type ClientDevice struct {
+	Id           int    `json:"id"           gorm:"primaryKey;autoIncrement"`
+	NodeClientId int    `json:"nodeClientId" gorm:"index"`
+	SubID        string `json:"subId"        gorm:"index"`
+	ClientEmail  string `json:"clientEmail"  gorm:"index"`
+	HWID         string `json:"hwid"         gorm:"index"`
+	Model        string `json:"model"`
+	OS           string `json:"os"`
+	ClientApp    string `json:"clientApp"`
+	UserAgent    string `json:"userAgent"`
+	IP           string `json:"ip"`
+	LastSeen     int64  `json:"lastSeen"`
+	CreatedAt    int64  `json:"createdAt"`
+}
+

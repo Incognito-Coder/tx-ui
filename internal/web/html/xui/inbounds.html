@@ -329,6 +329,18 @@
                                             <a-icon type="edit"></a-icon>
                                             {{ i18n "edit" }}
                                         </a-menu-item>
+                                        <a-menu-item key="addClient">
+                                            <a-icon type="user-add"></a-icon>
+                                            {{ i18n "pages.client.add" }}
+                                        </a-menu-item>
+                                        <a-menu-item key="addBulkClient">
+                                            <a-icon type="usergroup-add"></a-icon>
+                                            {{ i18n "pages.client.bulk" }}
+                                        </a-menu-item>
+                                        <a-menu-item key="viewClients">
+                                            <a-icon type="team"></a-icon>
+                                            {{ i18n "clients"}}
+                                        </a-menu-item>
                                         <a-menu-item key="qrcode"
                                                      v-if="(dbInbound.isSS && !dbInbound.toInbound().isSSMultiUser)">
                                             <a-icon type="qrcode"></a-icon>
@@ -337,10 +349,6 @@
                                         <a-menu-item key="showInfo">
                                             <a-icon type="info-circle"></a-icon>
                                             {{ i18n "info"}}
-                                        </a-menu-item>
-                                        <a-menu-item key="viewClients">
-                                            <a-icon type="team"></a-icon>
-                                            {{ i18n "clients"}}
                                         </a-menu-item>
                                         <a-menu-item key="clipboard">
                                             <a-icon type="copy"></a-icon>
@@ -384,8 +392,8 @@
                             </template>
                             <template slot="clients" slot-scope="text, dbInbound">
                                 <span @click.stop="goToClients(dbInbound.id)" style="cursor: pointer; display: inline-block;">
-                                    <a-tag color="blue" style="margin:0; cursor:pointer;" @click.native.stop="goToClients(dbInbound.id)" @click.stop="goToClients(dbInbound.id)">
-                                        <a-icon type="team"></a-icon> [[ getInboundClientCount(dbInbound.id) ]] {{ i18n "clients" }}
+                                    <a-tag :color="getInboundClientCount(dbInbound.id) > 0 ? 'blue' : 'orange'" style="margin:0; cursor:pointer;" @click.native.stop="goToClients(dbInbound.id)" @click.stop="goToClients(dbInbound.id)">
+                                        <a-icon :type="getInboundClientCount(dbInbound.id) > 0 ? 'team' : 'user-add'"></a-icon> [[ getInboundClientCount(dbInbound.id) ]] {{ i18n "clients" }}
                                     </a-tag>
                                 </span>
                             </template>
@@ -1438,12 +1446,18 @@
                 return this.onlineClients.includes(email);
             },
             isRemovable(dbInboundId) {
-                return this.getInboundClients(this.dbInbounds.find(row => row.id === dbInboundId)).length > 1;
+                const inbound = this.dbInbounds.find(row => row.id === dbInboundId);
+                return inbound ? this.getInboundClients(inbound).length > 0 : false;
             },
             inboundLinks(dbInboundId) {
-                dbInbound = this.dbInbounds.find(row => row.id === dbInboundId);
-                newDbInbound = this.checkFallback(dbInbound);
-                txtModal.show('{{ i18n "pages.inbounds.export"}}', newDbInbound.genInboundLinks(this.remarkModel), newDbInbound.remark);
+                const dbInbound = this.dbInbounds.find(row => row.id === dbInboundId);
+                const newDbInbound = this.checkFallback(dbInbound);
+                const links = newDbInbound.genInboundLinks(this.remarkModel);
+                if (!links || links.trim() === '') {
+                    this.$message.warning('{{ i18n "pages.inbounds.noClientsToast" }}');
+                    return;
+                }
+                txtModal.show('{{ i18n "pages.inbounds.export"}}', links, newDbInbound.remark);
             },
             // MASQUE has no share link format, so its clients only work through
             // the JSON subscription; the plain one answers them with an error.
@@ -1461,6 +1475,10 @@
                             subLinks.push(this.subLinkFor(dbInbound, c.subId))
                         }
                     })
+                }
+                if (subLinks.length === 0) {
+                    this.$message.warning('{{ i18n "pages.inbounds.noClientsToast" }}');
+                    return;
                 }
                 txtModal.show(
                     '{{ i18n "pages.inbounds.export"}} - {{ i18n "pages.settings.subSettings" }}',

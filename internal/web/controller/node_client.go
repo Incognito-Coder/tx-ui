@@ -46,6 +46,8 @@ func (a *NodeClientController) initRouter(g *gin.RouterGroup) {
 	g.POST("/delDepleted", a.delDepleted)
 	g.GET("/inboundLinkCounts", a.inboundLinkCounts)
 	g.POST("/:id/toggle", a.toggle)
+	g.GET("/:id/devices", a.getDevices)
+	g.POST("/:id/clearDevices", a.clearDevices)
 }
 
 func (a *NodeClientController) list(c *gin.Context) {
@@ -700,5 +702,32 @@ func toInt(val interface{}) int {
 		}
 	}
 	return 0
+}
+
+func (a *NodeClientController) getDevices(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		jsonMsg(c, "Invalid client ID", err)
+		return
+	}
+	devices, err := a.nodeClientService.GetDevices(id)
+	if err != nil {
+		jsonMsg(c, "Failed to get client devices", err)
+		return
+	}
+	jsonObj(c, devices, nil)
+}
+
+func (a *NodeClientController) clearDevices(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		jsonMsg(c, "Invalid client ID", err)
+		return
+	}
+	if err := a.nodeClientService.ClearDevices(id); err != nil {
+		jsonMsg(c, "Failed to clear client devices", err)
+		return
+	}
+	jsonMsg(c, "Client devices cleared", nil)
 }
 

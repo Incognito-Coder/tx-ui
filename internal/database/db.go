@@ -43,6 +43,7 @@ func initModels() error {
 		&model.HistoryOfSeeders{},
 		&model.NodeClient{},
 		&model.NodeClientLink{},
+		&model.ClientDevice{},
 	}
 	for _, model := range models {
 		if err := db.AutoMigrate(model); err != nil {

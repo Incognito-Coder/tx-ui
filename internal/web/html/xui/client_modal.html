@@ -89,10 +89,12 @@
                     newClient = new Inbound.TrojanSettings.Trojan();
                     clients.push(newClient);
                     return newClient;
-                case Protocols.SHADOWSOCKS:
-                    newClient = new Inbound.ShadowsocksSettings.Shadowsocks(clients[0].method);
+                case Protocols.SHADOWSOCKS: {
+                    const method = (clients && clients.length > 0 && clients[0]) ? clients[0].method : (this.inbound?.settings?.method || "");
+                    newClient = new Inbound.ShadowsocksSettings.Shadowsocks(method);
                     clients.push(newClient);
                     return newClient;
+                }
                 case Protocols.HYSTERIA:
                     newClient = new Inbound.HysteriaSettings.Hysteria();
                     clients.push(newClient);

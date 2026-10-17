@@ -25,11 +25,12 @@ type NodeClientService struct{}
 // Read helpers
 // ---------------------------------------------------------------------------
 
-// ClientDetail bundles a NodeClient with its active links and aggregated traffic.
+// ClientDetail bundles a NodeClient with its active links, aggregated traffic, and connected devices.
 type ClientDetail struct {
 	model.NodeClient
 	Links   []model.NodeClientLink `json:"links"`
 	Traffic *xray.ClientTraffic   `json:"traffic"`
+	Devices []model.ClientDevice   `json:"devices"`
 }
 
 // GetAll returns all NodeClient records.
@@ -43,7 +44,7 @@ func (s *NodeClientService) GetAll() ([]*model.NodeClient, error) {
 	return clients, nil
 }
 
-// GetAllWithDetails returns all NodeClient records with their links and traffic populated.
+// GetAllWithDetails returns all NodeClient records with their links, traffic, and devices populated.
 func (s *NodeClientService) GetAllWithDetails() ([]*ClientDetail, error) {
 	db := database.GetDB()
 	var clients []*model.NodeClient
@@ -75,6 +76,20 @@ func (s *NodeClientService) GetAllWithDetails() ([]*ClientDetail, error) {
 		if t.Email != "" {
 			le := strings.ToLower(t.Email)
 			trafficsByEmail[le] = append(trafficsByEmail[le], t)
+		}
+	}
+
+	var allDevices []model.ClientDevice
+	_ = db.Order("last_seen desc").Find(&allDevices).Error
+
+	devicesByClientId := make(map[int][]model.ClientDevice)
+	devicesBySubId := make(map[string][]model.ClientDevice)
+	for _, d := range allDevices {
+		if d.NodeClientId > 0 {
+			devicesByClientId[d.NodeClientId] = append(devicesByClientId[d.NodeClientId], d)
+		}
+		if d.SubID != "" {
+			devicesBySubId[d.SubID] = append(devicesBySubId[d.SubID], d)
 		}
 	}
 
@@ -111,10 +126,19 @@ func (s *NodeClientService) GetAllWithDetails() ([]*ClientDetail, error) {
 			traffic.Email = nc.Email
 		}
 
+		devices := devicesByClientId[nc.Id]
+		if len(devices) == 0 && nc.SubID != "" {
+			devices = devicesBySubId[nc.SubID]
+		}
+		if devices == nil {
+			devices = []model.ClientDevice{}
+		}
+
 		results = append(results, &ClientDetail{
 			NodeClient: *nc,
 			Links:      links,
 			Traffic:    traffic,
+			Devices:    devices,
 		})
 	}
 	return results, nil
@@ -129,6 +153,43 @@ func (s *NodeClientService) GetByID(id int) (*model.NodeClient, error) {
 		return nil, err
 	}
 	return nc, nil
+}
+
+// GetDevices returns all recorded devices for a NodeClient.
+func (s *NodeClientService) GetDevices(id int) ([]model.ClientDevice, error) {
+	db := database.GetDB()
+	var nc model.NodeClient
+	if err := db.First(&nc, id).Error; err != nil {
+		return nil, err
+	}
+	var devices []model.ClientDevice
+	err := db.Where("node_client_id = ? OR (sub_id != '' AND sub_id = ?)", nc.Id, nc.SubID).
+		Order("last_seen desc").
+		Find(&devices).Error
+	if err != nil {
+		return nil, err
+	}
+	return devices, nil
+}
+
+// ClearDevices removes all device records for a NodeClient and resets its device fields.
+func (s *NodeClientService) ClearDevices(id int) error {
+	db := database.GetDB()
+	var nc model.NodeClient
+	if err := db.First(&nc, id).Error; err != nil {
+		return err
+	}
+	if err := db.Where("node_client_id = ? OR (sub_id != '' AND sub_id = ?)", nc.Id, nc.SubID).
+		Delete(&model.ClientDevice{}).Error; err != nil {
+		return err
+	}
+	return db.Model(&nc).Updates(map[string]any{
+		"device_model":    "",
+		"device_hwid":     "",
+		"last_user_agent": "",
+		"last_client_app": "",
+		"last_os":         "",
+	}).Error
 }
 
 // GetByEmail returns a single NodeClient looked up by email.

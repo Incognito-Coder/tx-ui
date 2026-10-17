@@ -72,6 +72,7 @@ func (a *SUBController) initRouter(g *gin.RouterGroup) {
 
 func (a *SUBController) subs(c *gin.Context) {
 	subId := c.Param("subid")
+	RecordClientDevice(c, subId)
 	var host string
 	if h, err := getHostFromXFH(c.GetHeader("X-Forwarded-Host")); err == nil {
 		host = h
@@ -161,6 +162,7 @@ func (a *SUBController) subs(c *gin.Context) {
 
 func (a *SUBController) subJsons(c *gin.Context) {
 	subId := c.Param("subid")
+	RecordClientDevice(c, subId)
 	var host string
 	if h, err := getHostFromXFH(c.GetHeader("X-Forwarded-Host")); err == nil {
 		host = h
@@ -206,6 +208,7 @@ func (a *SUBController) subJsons(c *gin.Context) {
 // New handler for JSON response
 func (a *SUBController) subsJson(c *gin.Context) {
 	subId := c.Param("subid")
+	RecordClientDevice(c, subId)
 	var host string
 	if h, err := getHostFromXFH(c.GetHeader("X-Forwarded-Host")); err == nil {
 		host = h
