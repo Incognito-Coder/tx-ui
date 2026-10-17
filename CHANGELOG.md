@@ -5,6 +5,55 @@ All notable changes to **TX-UI** will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.9.2] - 2026-10-17
+
+### 🚀 Features & Enhancements
+- **Client HWID & Device Model Tracking via Subscription**:
+  - Implemented automatic extraction and recording of client device Hardware ID (`HWID`), device/phone model, operating system, and proxy client application from subscription requests.
+  - **URL Query Parameters**: Supported explicit parameters: `?hwid=...` (aliases: `?device_id=...`, `?deviceId=...`, `?client_id=...`, `?uid=...`) and `?model=...` (aliases: `?device=...`, `?device_model=...`, `?phone=...`, `?deviceName=...`).
+  - **Custom HTTP Headers**: Added support for `X-HWID`, `X-Device-Id`, `X-Device-ID`, `X-Client-HWID`, `HWID`, `X-Device-Model`, `X-Model`, `X-Device-Name`, and `Device-Model`.
+  - **Zero-Config Intelligent User-Agent Resolver**:
+    - **Apple iOS / iPadOS**: Maps internal hardware identifiers (e.g., `iPhone15,2` → `iPhone 14 Pro`, `iPhone16,1` → `iPhone 15 Pro`, iPads, etc.) and resolves Darwin/CFNetwork kernel versions to exact iOS versions (`Darwin/24` → `iOS 18`, `Darwin/23` → `iOS 17`, etc.).
+    - **Android Devices**: Accurately parses Samsung Galaxy model numbers (e.g., `SM-S928B` → `Samsung Galaxy S24 Ultra`), Google Pixel series, Xiaomi, Redmi, POCO, OnePlus, and Android OS versions.
+    - **Desktop Platforms**: Distinguishes Windows PC (`Windows 10/11`, etc.), macOS (Intel & Apple Silicon), and Linux.
+    - **Client Applications**: Built-in support for V2Box, Streisand, Throne, Happ/HappProxy, v2rayNG, Exclave, Hiddify/HiddifyNext, Shadowrocket, Sing-box (SFA/SFM/SFW), Clash/ClashMeta/Clash Verge/FlClash/Stash, NekoBox/NekoRay, Surge, Loon, Quantumult X, Karing, FoXray, and a generic `<AppName>/<Version>` fallback.
+  - **Database Persistence**: Extended `model.NodeClient` with device metadata and created `model.ClientDevice` table for retaining multi-device session history with automatic GORM SQLite migration.
+  - **REST API Endpoints**: Added `GET /panel/api/clients/:id/devices` and `POST /panel/api/clients/:id/clearDevices`.
+- **Modern Device & Subscription UI in Client Detail Modal**:
+  - Built a modern 2×2 Bento Grid layout for the Client Detail Modal:
+    - **Device Model Card**: Prominently shows detected or reported device model (or clean `None` status).
+    - **Device HWID Card**: Features a compact code pill for the hardware ID with a one-click copy button.
+    - **Client App & OS Card**: Displays styled pill badges for client application and operating system.
+    - **Last Subscription Sync Card**: Shows formatted sync timestamp alongside an IP pill badge.
+  - Theme-aware vector SVG icons eliminating missing font square glyphs across all operating systems and browsers.
+  - Connected devices history table displaying each device's model, app/OS, IP, HWID (with copy button), and last seen timestamp.
+  - Interactive Subscription URL helper prefilling the client's actual subscription link with sample parameters (`?hwid=HWID_HERE&model=PHONE_MODEL`) with a direct Copy button.
+  - Clear Devices action with instant UI state reset and confirmation toast.
+  - Client search filter upgraded to search by `deviceModel` and `deviceHwid`.
+- **Inbound & Client Creation Separation**:
+  - Adding an inbound now defaults to 0 clients without creating dummy or random users, enforcing clean separation between inbound management and client management.
+  - Protocol templates (`VLESS`, `VMess`, `Trojan`, `Shadowsocks`, `WireGuard`, `Hysteria`, `MASQUE`) updated to initialize with empty client arrays.
+  - Inbounds table now displays an orange "Add Client" badge when an inbound has 0 clients.
+  - Added "Add Client" and "Add Bulk" row menu actions directly in the inbounds table.
+  - Updated client deletion logic to permit deleting the last client of an inbound.
+  - Guarded link and subscription QR exports with warning toasts when an inbound has no clients.
+- **Shadowsocks-2022 Validation & FinalMask Upstream Sync**:
+  - Implemented validation for Shadowsocks-2022 multi-user passwords and single-user keys (`2022-blake3-aes-128-gcm`, `2022-blake3-aes-256-gcm`, `2022-blake3-chacha20-poly1305`) adhering to base64 length constraints.
+  - Synchronized FinalMask transport stream configuration fields across inbounds (`stream_finalmask.html`, `stream_finalmask_fields.html`), outbounds, and database inbound models.
+  - Added Cloudflare WARP MASQUE transport stream settings and modal generation.
+  - Added Mojang Minecraft server profile generator service for authentic masquerade configurations.
+
+### 🐛 Bug Fixes & Stability
+- **Fixed Missing Font Glyphs**: Replaced font icon calls with inline SVGs for device indicators in the modal.
+- **Client Modal Shadowsocks Guard**: Fixed client modal crash when adding the first Shadowsocks client to an inbound with 0 clients.
+- **Local GCC Compilation on Windows**: Resolved missing `ld.exe` linker issue under scoop GCC toolchain.
+
+### 🌐 Localization
+- Added translations for device info, client separation notice, and 0-client warnings in English (`en_US`), Chinese (`zh_CN`), and Persian (`fa_IR`).
+- Synchronized FinalMask stream settings and WARP MASQUE translations across all 13 supported languages.
+
+---
+
 ## [v0.9.1] - 2026-10-16
 
 ### 🚀 Features & Enhancements
