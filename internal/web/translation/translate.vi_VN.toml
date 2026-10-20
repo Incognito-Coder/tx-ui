@@ -251,6 +251,8 @@ refreshClientIps = "Làm mới IP"
 
 useSystemCA = "Sử dụng CA hệ thống"
 useSystemCADesc = "Sử dụng chứng chỉ gốc của hệ điều hành thay vì RootCA tích hợp của Xray-core"
+clientTlsSettings = "Cài đặt TLS phía máy khách"
+allowInsecure = "Cho phép không an toàn"
 
 [pages.node_clients]
 bulkDelete = "Xóa hàng loạt"

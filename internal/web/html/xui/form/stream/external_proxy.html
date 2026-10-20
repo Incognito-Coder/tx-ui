@@ -3,29 +3,85 @@
     <a-divider style="margin:5px 0 0;"></a-divider>
     <a-form-item label="External Proxy">
         <a-switch v-model="externalProxy"></a-switch>
-        <a-button @click="inbound.stream.externalProxy.push({forceTls: 'same', dest: '', port: 443, remark: ''})" icon="plus" size="small" style="margin-left: 10px" type="primary"
+        <a-button @click="inbound.stream.externalProxy.push(new ExternalProxy('same', '', 443, ''))" icon="plus" size="small" style="margin-left: 10px" type="primary"
                   v-if="externalProxy"></a-button>
     </a-form-item>
-    <a-input-group compact style="margin: 8px 0;" v-for="(row, index) in inbound.stream.externalProxy">
-        <template>
-            <a-tooltip title="Force TLS">
-                <a-select :dropdown-class-name="themeSwitcher.currentTheme" style="width:20%; margin: 0px"
-                          v-model="row.forceTls">
-                    <a-select-option value="same">{{ i18n "pages.inbounds.same" }}</a-select-option>
-                    <a-select-option value="none">{{ i18n "none" }}</a-select-option>
-                    <a-select-option value="tls">TLS</a-select-option>
-                </a-select>
-            </a-tooltip>
-        </template>
-        <a-input placeholder='{{ i18n "host" }}' style="width: 35%" v-model.trim="row.dest"></a-input>
-        <a-tooltip title='{{ i18n "pages.inbounds.port" }}'>
-            <a-input-number max="65531" min="1" style="width: 15%;" v-model.number="row.port"></a-input-number>
-        </a-tooltip>
-        <a-input placeholder='{{ i18n "remark" }}' style="width: 30%; top: 0;" v-model.trim="row.remark">
-            <template slot="addonAfter">
-                <a-button @click="inbound.stream.externalProxy.splice(index, 1)" icon="minus" size="small"></a-button>
+    <div v-for="(row, index) in inbound.stream.externalProxy" :key="index">
+        <a-input-group compact style="margin: 8px 0;">
+            <template>
+                <a-tooltip title="Force TLS">
+                    <a-select :dropdown-class-name="themeSwitcher.currentTheme" style="width:20%; margin: 0px"
+                              v-model="row.forceTls" @change="ensureRowTls(row)">
+                        <a-select-option value="same">{{ i18n "pages.inbounds.same" }}</a-select-option>
+                        <a-select-option value="none">{{ i18n "none" }}</a-select-option>
+                        <a-select-option value="tls">TLS</a-select-option>
+                    </a-select>
+                </a-tooltip>
             </template>
-        </a-input>
-    </a-input-group>
+            <a-input placeholder='{{ i18n "host" }}' style="width: 35%" v-model.trim="row.dest"></a-input>
+            <a-tooltip title='{{ i18n "pages.inbounds.port" }}'>
+                <a-input-number max="65531" min="1" style="width: 15%;" v-model.number="row.port"></a-input-number>
+            </a-tooltip>
+            <a-input placeholder='{{ i18n "remark" }}' style="width: 30%; top: 0;" v-model.trim="row.remark">
+                <template slot="addonAfter">
+                    <a-button @click="inbound.stream.externalProxy.splice(index, 1)" icon="minus" size="small"></a-button>
+                </template>
+            </a-input>
+        </a-input-group>
+
+        <!-- client side TLS configuration same as server TLS configuration -->
+        <template v-if="row.forceTls === 'tls'">
+            <div style="padding: 10px 14px 4px 14px; margin: 4px 0 12px 0; border: 1px dashed rgba(128, 128, 128, 0.35); border-radius: 6px;">
+                <div style="font-weight: 500; margin-bottom: 8px; color: inherit; display: flex; align-items: center;">
+                    <a-icon type="lock" style="margin-right: 6px;"></a-icon>
+                    <span>{{ i18n "pages.inbounds.clientTlsSettings" }}</span>
+                    <span v-if="row.dest" style="margin-left: 6px; opacity: 0.75;">([[ row.dest ]])</span>
+                </div>
+                <a-form-item label="SNI" placeholder="Server Name Indication">
+                    <a-input v-model.trim="row.tlsSettings.serverName"></a-input>
+                </a-form-item>
+                <a-form-item label="Cipher Suites">
+                    <a-select :dropdown-class-name="themeSwitcher.currentTheme" v-model="row.tlsSettings.cipherSuites">
+                        <a-select-option value="">Auto</a-select-option>
+                        <a-select-option :value="key" v-for="key,value in TLS_CIPHER_OPTION">[[ value ]]</a-select-option>
+                    </a-select>
+                </a-form-item>
+                <a-form-item label="Min/Max Version">
+                    <a-input-group compact>
+                        <a-select :dropdown-class-name="themeSwitcher.currentTheme" style="width: 50%"
+                                  v-model="row.tlsSettings.minVersion">
+                            <a-select-option :value="key" v-for="key in TLS_VERSION_OPTION">[[ key ]]</a-select-option>
+                        </a-select>
+                        <a-select :dropdown-class-name="themeSwitcher.currentTheme" style="width: 50%"
+                                  v-model="row.tlsSettings.maxVersion">
+                            <a-select-option :value="key" v-for="key in TLS_VERSION_OPTION">[[ key ]]</a-select-option>
+                        </a-select>
+                    </a-input-group>
+                </a-form-item>
+                <a-form-item label="uTLS">
+                    <a-select :dropdown-class-name="themeSwitcher.currentTheme" style="width: 100%"
+                              v-model="row.tlsSettings.fingerprint">
+                        <a-select-option value=''>None</a-select-option>
+                        <a-select-option :value="key" v-for="key in UTLS_FINGERPRINT">[[ key ]]</a-select-option>
+                    </a-select>
+                </a-form-item>
+                <a-form-item label="ALPN">
+                    <a-select :dropdown-class-name="themeSwitcher.currentTheme" mode="multiple"
+                              v-model="row.tlsSettings.alpn">
+                        <a-select-option :value="alpn" v-for="alpn in ALPN_OPTION">[[ alpn ]]</a-select-option>
+                    </a-select>
+                </a-form-item>
+                <a-form-item label='{{ i18n "pages.inbounds.allowInsecure" }}'>
+                    <a-switch v-model="row.tlsSettings.allowInsecure"></a-switch>
+                </a-form-item>
+                <a-form-item label='{{ i18n "pages.inbounds.useSystemCA" }}'>
+                    <a-switch v-model="row.tlsSettings.useSystemCA"></a-switch>
+                </a-form-item>
+                <a-form-item label='ECH config'>
+                    <a-input v-model.trim="row.tlsSettings.echConfigList"></a-input>
+                </a-form-item>
+            </div>
+        </template>
+    </div>
 </a-form>
 {{end}}

@@ -902,11 +902,15 @@ class TcpMask extends CommonClass {
             };
         } else if (type === 'fragment') {
             return {
+                packets: settings.packets || 'tlshello',
                 length: settings.length || '',
+                delay: settings.delay || '',
+                maxSplit: settings.maxSplit || '',
                 interval: settings.interval || ''
             };
         } else if (type === 'sudoku') {
             return {
+                password: settings.password || '',
                 ascii: settings.ascii || '',
                 customTable: settings.customTable || '',
                 customTables: Array.isArray(settings.customTables) ? settings.customTables : [],
@@ -916,14 +920,21 @@ class TcpMask extends CommonClass {
         } else if (type === 'header-custom') {
             return {
                 randRange: settings.randRange || '',
-                client: Array.isArray(settings.client) ? settings.client : [],
-                server: Array.isArray(settings.server) ? settings.server : []
+                clients: Array.isArray(settings.clients) ? settings.clients : (Array.isArray(settings.client) ? [settings.client] : []),
+                servers: Array.isArray(settings.servers) ? settings.servers : (Array.isArray(settings.server) ? [settings.server] : []),
+                errors: Array.isArray(settings.errors) ? settings.errors : []
             };
         }
         return settings;
     }
 
     addProfile() {
+        if (!this.settings) {
+            this.settings = {};
+        }
+        if (!Array.isArray(this.settings.profiles)) {
+            this.settings.profiles = [];
+        }
         this.settings.profiles.push({
             username: '',
             uuid: RandomUtil.randomUUID(),
@@ -933,7 +944,9 @@ class TcpMask extends CommonClass {
     }
 
     delProfile(index) {
-        this.settings.profiles.splice(index, 1);
+        if (Array.isArray(this.settings?.profiles)) {
+            this.settings.profiles.splice(index, 1);
+        }
     }
 
     toJson() {
@@ -1304,7 +1317,15 @@ class StreamSettings extends CommonClass {
 
     addTcpMask(type = 'xmc') {
         const mask = new TcpMask(type);
-        mask.addProfile();
+        if (type === 'xmc') {
+            mask.addProfile();
+        }
+        if (!this.finalmask) {
+            this.finalmask = new FinalMaskStreamSettings();
+        }
+        if (!Array.isArray(this.finalmask.tcp)) {
+            this.finalmask.tcp = [];
+        }
         this.finalmask.tcp.push(mask);
     }
 

@@ -251,6 +251,8 @@ refreshClientIps = "刷新IP"
 
 useSystemCA = "使用系统 CA"
 useSystemCADesc = "使用操作系统根证书而非 Xray-core 内置根证书"
+clientTlsSettings = "客户端 TLS 设置"
+allowInsecure = "允许不安全连接"
 clientsSeparatedNotice = "客户端已独立管理。请先创建此入站，随后可在客户端页面或入站菜单中添加客户端。"
 noClientsToast = "该入站未配置任何客户端，请先添加客户端。"
 noClients = "未配置客户端"

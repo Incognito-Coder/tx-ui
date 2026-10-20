@@ -251,6 +251,8 @@ refreshClientIps = "IPを更新"
 
 useSystemCA = "システムCAを使用"
 useSystemCADesc = "Xray-core内蔵のRootCAの代わりにOSのルート証明書を使用します"
+clientTlsSettings = "クライアントTLS設定"
+allowInsecure = "安全でない接続を許可"
 
 [pages.node_clients]
 bulkDelete = "一括削除"

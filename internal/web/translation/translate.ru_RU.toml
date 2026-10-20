@@ -251,6 +251,8 @@ refreshClientIps = "Обновить IP"
 
 useSystemCA = "Использовать системный CA"
 useSystemCADesc = "Использовать корневые сертификаты ОС вместо встроенных RootCA Xray-core"
+clientTlsSettings = "Настройки TLS клиента"
+allowInsecure = "Разрешить небезопасные"
 
 [pages.node_clients]
 bulkDelete = "Массовое удаление"

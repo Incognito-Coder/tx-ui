@@ -180,8 +180,10 @@ func (s *SubJsonService) getConfig(inbound *model.Inbound, client model.Client, 
 		forceTls, _ := extPrxy["forceTls"].(string)
 		switch forceTls {
 		case "tls":
-			if newStream["security"] != "tls" {
-				newStream["security"] = "tls"
+			newStream["security"] = "tls"
+			if epTls, ok := extPrxy["tlsSettings"].(map[string]interface{}); ok && epTls != nil {
+				newStream["tlsSettings"] = s.tlsData(epTls)
+			} else if _, ok := newStream["tlsSettings"]; !ok {
 				newStream["tlsSettings"] = map[string]interface{}{}
 			}
 		case "none":
@@ -338,8 +340,27 @@ func (s *SubJsonService) tlsData(tData map[string]interface{}) map[string]interf
 
 	tlsData["serverName"] = tData["serverName"]
 	tlsData["alpn"] = tData["alpn"]
-	if fingerprint, ok := tlsClientSettings["fingerprint"].(string); ok {
+	if fingerprint, ok := tlsClientSettings["fingerprint"].(string); ok && fingerprint != "" {
 		tlsData["fingerprint"] = fingerprint
+	} else if fingerprint, ok := tData["fingerprint"].(string); ok && fingerprint != "" {
+		tlsData["fingerprint"] = fingerprint
+	}
+	if allowInsecure, ok := tlsClientSettings["allowInsecure"].(bool); ok {
+		tlsData["allowInsecure"] = allowInsecure
+	} else if allowInsecure, ok := tData["allowInsecure"].(bool); ok {
+		tlsData["allowInsecure"] = allowInsecure
+	}
+	if minVersion, ok := tData["minVersion"].(string); ok && minVersion != "" {
+		tlsData["minVersion"] = minVersion
+	}
+	if maxVersion, ok := tData["maxVersion"].(string); ok && maxVersion != "" {
+		tlsData["maxVersion"] = maxVersion
+	}
+	if cipherSuites, ok := tData["cipherSuites"].(string); ok && cipherSuites != "" {
+		tlsData["cipherSuites"] = cipherSuites
+	}
+	if useSystemCA, ok := tData["useSystemCA"].(bool); ok {
+		tlsData["useSystemCA"] = useSystemCA
 	}
 	if echConfigList, ok := tlsClientSettings["echConfigList"].(string); ok && strings.TrimSpace(echConfigList) != "" {
 		tlsData["echConfigList"] = strings.TrimSpace(echConfigList)

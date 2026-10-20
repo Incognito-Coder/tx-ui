@@ -251,6 +251,8 @@ refreshClientIps = "IP'leri Yenile"
 
 useSystemCA = "Sistem CA'sını Kullan"
 useSystemCADesc = "Xray-core'un yerleşik RootCA'ları yerine işletim sisteminin kök sertifikalarını kullanın"
+clientTlsSettings = "İstemci TLS Ayarları"
+allowInsecure = "Güvensiz Bağlantıya İzin Ver"
 
 [pages.node_clients]
 bulkDelete = "Toplu Sil"

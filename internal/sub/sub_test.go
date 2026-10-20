@@ -331,4 +331,191 @@ func TestHysteriaSubJsonService_Finalmask(t *testing.T) {
 	}
 }
 
+func TestExternalProxy_CustomClientTLS(t *testing.T) {
+	subService := NewSubService(false, "-ieo")
+	subService.address = "server.example.com"
+
+	epTlsJson := `{
+		"serverName": "cdn-edge.example.com",
+		"minVersion": "1.2",
+		"maxVersion": "1.3",
+		"fingerprint": "firefox",
+		"alpn": ["h2", "http/1.1"],
+		"allowInsecure": true,
+		"echConfigList": "custom-ech-data"
+	}`
+
+	streamSettings := `{
+		"network": "ws",
+		"security": "none",
+		"wsSettings": {
+			"path": "/ws"
+		},
+		"externalProxy": [
+			{
+				"forceTls": "tls",
+				"dest": "edge.cdn.com",
+				"port": 443,
+				"remark": "tls-node",
+				"tlsSettings": ` + epTlsJson + `
+			},
+			{
+				"forceTls": "none",
+				"dest": "direct.cdn.com",
+				"port": 80,
+				"remark": "plain-node"
+			}
+		]
+	}`
+
+	// 1. VLESS Test
+	vlessInbound := &model.Inbound{
+		Id:             100,
+		Port:           8080,
+		Protocol:       model.VLESS,
+		Settings:       `{"clients":[{"id":"48e6216f-0bf1-417c-bd57-3ac0678e94a1","email":"vless@example.com"}]}`,
+		StreamSettings: streamSettings,
+	}
+
+	vlessLinks := subService.genVlessLink(vlessInbound, "vless@example.com")
+	vlessLines := strings.Split(vlessLinks, "\n")
+	if len(vlessLines) != 2 {
+		t.Fatalf("expected 2 vless links, got %d: %s", len(vlessLines), vlessLinks)
+	}
+
+	// TLS Node
+	uTls, err := url.Parse(vlessLines[0])
+	if err != nil {
+		t.Fatalf("failed to parse vless tls link: %v", err)
+	}
+	qTls := uTls.Query()
+	if qTls.Get("security") != "tls" {
+		t.Errorf("expected security=tls, got %s", qTls.Get("security"))
+	}
+	if qTls.Get("sni") != "cdn-edge.example.com" {
+		t.Errorf("expected sni=cdn-edge.example.com, got %s", qTls.Get("sni"))
+	}
+	if qTls.Get("fp") != "firefox" {
+		t.Errorf("expected fp=firefox, got %s", qTls.Get("fp"))
+	}
+	if qTls.Get("alpn") != "h2,http/1.1" {
+		t.Errorf("expected alpn=h2,http/1.1, got %s", qTls.Get("alpn"))
+	}
+	if qTls.Get("insecure") != "1" {
+		t.Errorf("expected insecure=1, got %s", qTls.Get("insecure"))
+	}
+	if qTls.Get("ech") != "custom-ech-data" {
+		t.Errorf("expected ech=custom-ech-data, got %s", qTls.Get("ech"))
+	}
+
+	// Plain Node
+	uPlain, err := url.Parse(vlessLines[1])
+	if err != nil {
+		t.Fatalf("failed to parse vless plain link: %v", err)
+	}
+	qPlain := uPlain.Query()
+	if qPlain.Get("security") != "none" {
+		t.Errorf("expected security=none, got %s", qPlain.Get("security"))
+	}
+	if qPlain.Get("sni") != "" || qPlain.Get("fp") != "" || qPlain.Get("alpn") != "" || qPlain.Get("ech") != "" {
+		t.Errorf("expected no tls params in plain node, got query: %v", qPlain)
+	}
+
+	// 2. VMess Test
+	vmessInbound := &model.Inbound{
+		Id:             101,
+		Port:           8080,
+		Protocol:       model.VMESS,
+		Settings:       `{"clients":[{"id":"48e6216f-0bf1-417c-bd57-3ac0678e94a1","email":"vmess@example.com"}]}`,
+		StreamSettings: streamSettings,
+	}
+	vmessLinks := subService.genVmessLink(vmessInbound, "vmess@example.com")
+	vmessLines := strings.Split(vmessLinks, "\n")
+	if len(vmessLines) != 2 {
+		t.Fatalf("expected 2 vmess links, got %d: %s", len(vmessLines), vmessLinks)
+	}
+
+	// Parse base64 VMess JSON for TLS node
+	rawB64 := strings.TrimPrefix(vmessLines[0], "vmess://")
+	decoded, err := base64.StdEncoding.DecodeString(rawB64)
+	if err != nil {
+		t.Fatalf("failed to decode vmess base64: %v", err)
+	}
+	var vmessObj map[string]interface{}
+	if err := json.Unmarshal(decoded, &vmessObj); err != nil {
+		t.Fatalf("failed to unmarshal vmess json: %v", err)
+	}
+	if vmessObj["tls"] != "tls" {
+		t.Errorf("expected vmess tls=tls, got %v", vmessObj["tls"])
+	}
+	if vmessObj["sni"] != "cdn-edge.example.com" {
+		t.Errorf("expected vmess sni=cdn-edge.example.com, got %v", vmessObj["sni"])
+	}
+	if vmessObj["fp"] != "firefox" {
+		t.Errorf("expected vmess fp=firefox, got %v", vmessObj["fp"])
+	}
+	if vmessObj["alpn"] != "h2,http/1.1" {
+		t.Errorf("expected vmess alpn=h2,http/1.1, got %v", vmessObj["alpn"])
+	}
+	if vmessObj["ech"] != "custom-ech-data" {
+		t.Errorf("expected vmess ech=custom-ech-data, got %v", vmessObj["ech"])
+	}
+
+	// 3. Trojan Test
+	trojanInbound := &model.Inbound{
+		Id:             102,
+		Port:           8080,
+		Protocol:       model.Trojan,
+		Settings:       `{"clients":[{"password":"trojanpassword123","email":"trojan@example.com"}]}`,
+		StreamSettings: streamSettings,
+	}
+	trojanLinks := subService.genTrojanLink(trojanInbound, "trojan@example.com")
+	trojanLines := strings.Split(trojanLinks, "\n")
+	uTrojan, err := url.Parse(trojanLines[0])
+	if err != nil {
+		t.Fatalf("failed to parse trojan link: %v", err)
+	}
+	qTrojan := uTrojan.Query()
+	if qTrojan.Get("security") != "tls" || qTrojan.Get("sni") != "cdn-edge.example.com" || qTrojan.Get("fp") != "firefox" || qTrojan.Get("insecure") != "1" {
+		t.Errorf("trojan tls params mismatch: %v", qTrojan)
+	}
+
+	// 4. SubJsonService Test
+	subJsonService := NewSubJsonService("", "", "", "", subService)
+	cfgs := subJsonService.getConfig(vlessInbound, model.Client{Email: "vless@example.com"}, "server.example.com")
+	if len(cfgs) != 2 {
+		t.Fatalf("expected 2 json configs for 2 external proxies, got %d", len(cfgs))
+	}
+	var jsonCfg map[string]interface{}
+	if err := json.Unmarshal([]byte(cfgs[0]), &jsonCfg); err != nil {
+		t.Fatalf("failed to parse json config: %v", err)
+	}
+	outbounds := jsonCfg["outbounds"].([]interface{})
+	proxyOut := outbounds[0].(map[string]interface{})
+	streamSt := proxyOut["streamSettings"].(map[string]interface{})
+	if streamSt["security"] != "tls" {
+		t.Errorf("expected streamSettings.security=tls, got %v", streamSt["security"])
+	}
+	tlsSt, ok := streamSt["tlsSettings"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("expected tlsSettings in streamSettings, got %v", streamSt)
+	}
+	if tlsSt["serverName"] != "cdn-edge.example.com" {
+		t.Errorf("expected tlsSettings.serverName=cdn-edge.example.com, got %v", tlsSt["serverName"])
+	}
+	if tlsSt["fingerprint"] != "firefox" {
+		t.Errorf("expected tlsSettings.fingerprint=firefox, got %v", tlsSt["fingerprint"])
+	}
+	if tlsSt["allowInsecure"] != true {
+		t.Errorf("expected tlsSettings.allowInsecure=true, got %v", tlsSt["allowInsecure"])
+	}
+	if tlsSt["minVersion"] != "1.2" || tlsSt["maxVersion"] != "1.3" {
+		t.Errorf("expected min/max version 1.2/1.3, got %v / %v", tlsSt["minVersion"], tlsSt["maxVersion"])
+	}
+	if tlsSt["echConfigList"] != "custom-ech-data" {
+		t.Errorf("expected tlsSettings.echConfigList=custom-ech-data, got %v", tlsSt["echConfigList"])
+	}
+}
+
+
 

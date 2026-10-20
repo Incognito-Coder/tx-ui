@@ -153,18 +153,25 @@
             },
             set externalProxy(value) {
                 if (value) {
-                    inModal.inbound.stream.externalProxy = [{
-                        forceTls: "same",
-                        dest: window.location.hostname,
-                        port: inModal.inbound.port,
-                        remark: ""
-                    }];
+                    inModal.inbound.stream.externalProxy = [new ExternalProxy(
+                        "same",
+                        window.location.hostname,
+                        inModal.inbound.port,
+                        ""
+                    )];
                 } else {
                     inModal.inbound.stream.externalProxy = [];
                 }
             }
         },
         methods: {
+            ensureRowTls(row) {
+                if (row.forceTls === 'tls') {
+                    if (!row.tlsSettings) {
+                        this.$set(row, 'tlsSettings', new ExternalProxy.TlsSettings());
+                    }
+                }
+            },
             streamNetworkChange() {
                 if (!inModal.inbound.canEnableTls()) {
                     this.inModal.inbound.stream.security = 'none';

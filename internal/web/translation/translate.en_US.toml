@@ -251,6 +251,8 @@ autoRefreshInterval = "Interval"
 
 useSystemCA = "Use System CA"
 useSystemCADesc = "Use operating system root certificates instead of Xray-core's built-in RootCAs"
+clientTlsSettings = "Client TLS Settings"
+allowInsecure = "Allow Insecure"
 clientsSeparatedNotice = "Clients are managed separately. You can add clients to this inbound after creating it."
 noClientsToast = "No clients configured for this inbound. Please add a client first."
 noClients = "No clients configured"

@@ -251,6 +251,8 @@ refreshClientIps = "Atualizar IPs"
 
 useSystemCA = "Usar CA do sistema"
 useSystemCADesc = "Usar certificados raiz do sistema operacional em vez dos RootCAs embutidos do Xray-core"
+clientTlsSettings = "Configurações de TLS do cliente"
+allowInsecure = "Permitir inseguro"
 
 [pages.node_clients]
 bulkDelete = "Exclusão em massa"

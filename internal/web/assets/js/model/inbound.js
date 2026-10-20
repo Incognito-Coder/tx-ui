@@ -1019,6 +1019,104 @@ TlsStreamSettings.Settings = class extends XrayCommonClass {
     }
 };
 
+class ExternalProxy extends XrayCommonClass {
+    constructor(
+        forceTls = 'same',
+        dest = '',
+        port = 443,
+        remark = '',
+        tlsSettings = new ExternalProxy.TlsSettings()
+    ) {
+        super();
+        this.forceTls = forceTls;
+        this.dest = dest;
+        this.port = port;
+        this.remark = remark;
+        this.tlsSettings = tlsSettings;
+    }
+
+    static fromJson(json = {}) {
+        return new ExternalProxy(
+            json.forceTls || 'same',
+            json.dest || '',
+            json.port !== undefined ? json.port : 443,
+            json.remark || '',
+            ExternalProxy.TlsSettings.fromJson(json.tlsSettings)
+        );
+    }
+
+    toJson() {
+        return {
+            forceTls: this.forceTls,
+            dest: this.dest,
+            port: this.port,
+            remark: this.remark,
+            tlsSettings: this.forceTls === 'tls' && this.tlsSettings ? this.tlsSettings.toJson() : undefined,
+        };
+    }
+}
+
+ExternalProxy.TlsSettings = class extends XrayCommonClass {
+    constructor(
+        serverName = '',
+        minVersion = TLS_VERSION_OPTION.TLS12,
+        maxVersion = TLS_VERSION_OPTION.TLS13,
+        cipherSuites = '',
+        fingerprint = UTLS_FINGERPRINT.UTLS_CHROME,
+        alpn = [ALPN_OPTION.H2, ALPN_OPTION.HTTP1],
+        allowInsecure = false,
+        echConfigList = '',
+        useSystemCA = false
+    ) {
+        super();
+        this.serverName = serverName;
+        this.minVersion = minVersion;
+        this.maxVersion = maxVersion;
+        this.cipherSuites = cipherSuites;
+        this.fingerprint = fingerprint;
+        this.alpn = alpn;
+        this.allowInsecure = allowInsecure;
+        this.echConfigList = echConfigList;
+        this.useSystemCA = useSystemCA;
+    }
+
+    get sni() {
+        return this.serverName;
+    }
+
+    set sni(val) {
+        this.serverName = val;
+    }
+
+    static fromJson(json = {}) {
+        return new ExternalProxy.TlsSettings(
+            json.serverName || json.sni || '',
+            json.minVersion || TLS_VERSION_OPTION.TLS12,
+            json.maxVersion || TLS_VERSION_OPTION.TLS13,
+            json.cipherSuites || '',
+            json.fingerprint || json.settings?.fingerprint || UTLS_FINGERPRINT.UTLS_CHROME,
+            json.alpn || [ALPN_OPTION.H2, ALPN_OPTION.HTTP1],
+            json.allowInsecure ?? json.settings?.allowInsecure ?? false,
+            json.echConfigList || json.settings?.echConfigList || json.ech || '',
+            json.useSystemCA ?? false
+        );
+    }
+
+    toJson() {
+        return {
+            serverName: this.serverName ? this.serverName.trim() : '',
+            minVersion: this.minVersion,
+            maxVersion: this.maxVersion,
+            cipherSuites: this.cipherSuites,
+            fingerprint: this.fingerprint,
+            alpn: this.alpn,
+            allowInsecure: this.allowInsecure ? true : undefined,
+            echConfigList: this.echConfigList ? this.echConfigList.trim() : '',
+            useSystemCA: this.useSystemCA ? true : undefined,
+        };
+    }
+};
+
 
 class RealityStreamSettings extends XrayCommonClass {
     constructor(
@@ -1314,11 +1412,15 @@ class TcpMask extends XrayCommonClass {
             };
         } else if (type === 'fragment') {
             return {
+                packets: settings.packets || 'tlshello',
                 length: settings.length || '',
+                delay: settings.delay || '',
+                maxSplit: settings.maxSplit || '',
                 interval: settings.interval || ''
             };
         } else if (type === 'sudoku') {
             return {
+                password: settings.password || '',
                 ascii: settings.ascii || '',
                 customTable: settings.customTable || '',
                 customTables: Array.isArray(settings.customTables) ? settings.customTables : [],
@@ -1328,14 +1430,21 @@ class TcpMask extends XrayCommonClass {
         } else if (type === 'header-custom') {
             return {
                 randRange: settings.randRange || '',
-                client: Array.isArray(settings.client) ? settings.client : [],
-                server: Array.isArray(settings.server) ? settings.server : []
+                clients: Array.isArray(settings.clients) ? settings.clients : (Array.isArray(settings.client) ? [settings.client] : []),
+                servers: Array.isArray(settings.servers) ? settings.servers : (Array.isArray(settings.server) ? [settings.server] : []),
+                errors: Array.isArray(settings.errors) ? settings.errors : []
             };
         }
         return settings;
     }
 
     addProfile() {
+        if (!this.settings) {
+            this.settings = {};
+        }
+        if (!Array.isArray(this.settings.profiles)) {
+            this.settings.profiles = [];
+        }
         this.settings.profiles.push({
             username: '',
             uuid: RandomUtil.randomUUID(),
@@ -1345,7 +1454,9 @@ class TcpMask extends XrayCommonClass {
     }
 
     delProfile(index) {
-        this.settings.profiles.splice(index, 1);
+        if (Array.isArray(this.settings?.profiles)) {
+            this.settings.profiles.splice(index, 1);
+        }
     }
 
     toJson() {
@@ -1586,10 +1697,14 @@ class StreamSettings extends XrayCommonClass {
     }
 
     static fromJson(json = {}) {
+        let externalProxy = [];
+        if (Array.isArray(json.externalProxy)) {
+            externalProxy = json.externalProxy.map(ep => ExternalProxy.fromJson(ep));
+        }
         return new StreamSettings(
             json.network,
             json.security,
-            json.externalProxy,
+            externalProxy,
             TlsStreamSettings.fromJson(json.tlsSettings),
             RealityStreamSettings.fromJson(json.realitySettings),
             TcpStreamSettings.fromJson(json.tcpSettings),
@@ -1618,7 +1733,15 @@ class StreamSettings extends XrayCommonClass {
 
     addTcpMask(type = 'xmc') {
         const mask = new TcpMask(type);
-        mask.addProfile();
+        if (type === 'xmc') {
+            mask.addProfile();
+        }
+        if (!this.finalmask) {
+            this.finalmask = new FinalMaskStreamSettings();
+        }
+        if (!Array.isArray(this.finalmask.tcp)) {
+            this.finalmask.tcp = [];
+        }
         this.finalmask.tcp.push(mask);
     }
 
@@ -1635,7 +1758,7 @@ class StreamSettings extends XrayCommonClass {
         return {
             network: network,
             security: this.security,
-            externalProxy: this.externalProxy,
+            externalProxy: this.externalProxy && this.externalProxy.map(ep => ep instanceof ExternalProxy ? ep.toJson() : ep),
             tlsSettings: this.isTls ? this.tls.toJson() : undefined,
             realitySettings: this.isReality ? this.reality.toJson() : undefined,
             tcpSettings: network === 'tcp' ? this.tcp.toJson() : undefined,
@@ -1923,7 +2046,7 @@ class Inbound extends XrayCommonClass {
         this.sniffing = new Sniffing();
     }
 
-    genVmessLink(address = '', port = this.port, forceTls, remark = '', clientId, security) {
+    genVmessLink(address = '', port = this.port, forceTls, remark = '', clientId, security, ep = null) {
         if (this.protocol !== Protocols.VMESS) {
             return '';
         }
@@ -1972,16 +2095,22 @@ class Inbound extends XrayCommonClass {
         }
 
         if (tls === 'tls') {
-            if (!ObjectUtil.isEmpty(this.stream.tls.sni)) {
-                obj.sni = this.stream.tls.sni;
+            const epTls = (ep && (forceTls === 'tls' || ep.tlsSettings)) ? ep.tlsSettings : null;
+            const sni = (epTls && !ObjectUtil.isEmpty(epTls.serverName)) ? epTls.serverName : this.stream.tls.sni;
+            if (!ObjectUtil.isEmpty(sni)) {
+                obj.sni = sni;
             }
-            if (!ObjectUtil.isEmpty(this.stream.tls.settings.fingerprint)) {
-                obj.fp = this.stream.tls.settings.fingerprint;
+            const fp = (epTls && !ObjectUtil.isEmpty(epTls.fingerprint)) ? epTls.fingerprint : this.stream.tls.settings?.fingerprint;
+            if (!ObjectUtil.isEmpty(fp)) {
+                obj.fp = fp;
             }
-            if (this.stream.tls.alpn.length > 0) {
-                obj.alpn = this.stream.tls.alpn.join(',');
+            const alpn = (epTls && epTls.alpn && epTls.alpn.length > 0) ? epTls.alpn : this.stream.tls.alpn;
+            if (Array.isArray(alpn) && alpn.length > 0) {
+                obj.alpn = alpn.join(',');
+            } else if (typeof alpn === 'string' && alpn.length > 0) {
+                obj.alpn = alpn;
             }
-            const echConfig = this.stream.tls.settings?.echConfigList || this.stream.tls.echConfigList;
+            const echConfig = (epTls && !ObjectUtil.isEmpty(epTls.echConfigList)) ? epTls.echConfigList : (this.stream.tls.settings?.echConfigList || this.stream.tls.echConfigList);
             if (echConfig?.length > 0) {
                 obj.ech = echConfig.trim();
             }
@@ -2009,7 +2138,7 @@ class Inbound extends XrayCommonClass {
         return Object.keys(fm).length > 0 ? fm : undefined;
     }
 
-    genVLESSLink(address = '', port = this.port, forceTls, remark = '', clientId, flow) {
+    genVLESSLink(address = '', port = this.port, forceTls, remark = '', clientId, flow, ep = null) {
         const settings = this.settings;
         const uuid = clientId;
         const type = this.stream.network;
@@ -2065,19 +2194,31 @@ class Inbound extends XrayCommonClass {
 
         if (security === 'tls') {
             params.set("security", "tls");
-            if (this.stream.isTls) {
-                params.set("fp", this.stream.tls.settings.fingerprint);
-                params.set("alpn", this.stream.tls.alpn);
-                if (!ObjectUtil.isEmpty(this.stream.tls.sni)) {
-                    params.set("sni", this.stream.tls.sni);
-                }
-                const echConfig = this.stream.tls.settings?.echConfigList || this.stream.tls.echConfigList;
-                if (echConfig?.length > 0) {
-                    params.set("ech", echConfig.trim());
-                }
-                if (type == "tcp" && !ObjectUtil.isEmpty(flow)) {
-                    params.set("flow", flow);
-                }
+            const epTls = (ep && (forceTls === 'tls' || ep.tlsSettings)) ? ep.tlsSettings : null;
+            const fp = (epTls && !ObjectUtil.isEmpty(epTls.fingerprint)) ? epTls.fingerprint : (this.stream.isTls ? this.stream.tls.settings?.fingerprint : '');
+            if (!ObjectUtil.isEmpty(fp)) {
+                params.set("fp", fp);
+            }
+            const alpn = (epTls && epTls.alpn && epTls.alpn.length > 0) ? epTls.alpn : (this.stream.isTls ? this.stream.tls.alpn : []);
+            if (Array.isArray(alpn) && alpn.length > 0) {
+                params.set("alpn", alpn.join(','));
+            } else if (typeof alpn === 'string' && alpn.length > 0) {
+                params.set("alpn", alpn);
+            }
+            const sni = (epTls && !ObjectUtil.isEmpty(epTls.serverName)) ? epTls.serverName : (this.stream.isTls ? this.stream.tls.sni : '');
+            if (!ObjectUtil.isEmpty(sni)) {
+                params.set("sni", sni);
+            }
+            const echConfig = (epTls && !ObjectUtil.isEmpty(epTls.echConfigList)) ? epTls.echConfigList : (this.stream.isTls ? (this.stream.tls.settings?.echConfigList || this.stream.tls.echConfigList) : '');
+            if (echConfig?.length > 0) {
+                params.set("ech", echConfig.trim());
+            }
+            const allowInsecure = epTls ? epTls.allowInsecure : (this.stream.isTls ? (this.stream.tls.settings?.allowInsecure || this.stream.tls.allowInsecure) : false);
+            if (allowInsecure) {
+                params.set("insecure", "1");
+            }
+            if (type == "tcp" && !ObjectUtil.isEmpty(flow)) {
+                params.set("flow", flow);
             }
         } else if (security === 'reality') {
             params.set("security", "reality");
@@ -2127,7 +2268,7 @@ class Inbound extends XrayCommonClass {
             .replace(/%2B/gi, '+');
     }
 
-    genSSLink(address = '', port = this.port, forceTls, remark = '', clientPassword) {
+    genSSLink(address = '', port = this.port, forceTls, remark = '', clientPassword, ep = null) {
         let settings = this.settings;
         const type = this.stream.network;
         const security = forceTls == 'same' ? this.stream.security : forceTls;
@@ -2181,16 +2322,28 @@ class Inbound extends XrayCommonClass {
 
         if (security === 'tls') {
             params.set("security", "tls");
-            if (this.stream.isTls) {
-                params.set("fp", this.stream.tls.settings.fingerprint);
-                params.set("alpn", this.stream.tls.alpn);
-                const echConfig = this.stream.tls.settings?.echConfigList || this.stream.tls.echConfigList;
-                if (echConfig?.length > 0) {
-                    params.set("ech", echConfig.trim());
-                }
-                if (!ObjectUtil.isEmpty(this.stream.tls.sni)) {
-                    params.set("sni", this.stream.tls.sni);
-                }
+            const epTls = (ep && (forceTls === 'tls' || ep.tlsSettings)) ? ep.tlsSettings : null;
+            const fp = (epTls && !ObjectUtil.isEmpty(epTls.fingerprint)) ? epTls.fingerprint : (this.stream.isTls ? this.stream.tls.settings?.fingerprint : '');
+            if (!ObjectUtil.isEmpty(fp)) {
+                params.set("fp", fp);
+            }
+            const alpn = (epTls && epTls.alpn && epTls.alpn.length > 0) ? epTls.alpn : (this.stream.isTls ? this.stream.tls.alpn : []);
+            if (Array.isArray(alpn) && alpn.length > 0) {
+                params.set("alpn", alpn.join(','));
+            } else if (typeof alpn === 'string' && alpn.length > 0) {
+                params.set("alpn", alpn);
+            }
+            const echConfig = (epTls && !ObjectUtil.isEmpty(epTls.echConfigList)) ? epTls.echConfigList : (this.stream.isTls ? (this.stream.tls.settings?.echConfigList || this.stream.tls.echConfigList) : '');
+            if (echConfig?.length > 0) {
+                params.set("ech", echConfig.trim());
+            }
+            const sni = (epTls && !ObjectUtil.isEmpty(epTls.serverName)) ? epTls.serverName : (this.stream.isTls ? this.stream.tls.sni : '');
+            if (!ObjectUtil.isEmpty(sni)) {
+                params.set("sni", sni);
+            }
+            const allowInsecure = epTls ? epTls.allowInsecure : (this.stream.isTls ? (this.stream.tls.settings?.allowInsecure || this.stream.tls.allowInsecure) : false);
+            if (allowInsecure) {
+                params.set("insecure", "1");
             }
         }
 
@@ -2208,7 +2361,7 @@ class Inbound extends XrayCommonClass {
         return this.cleanUrl(url);
     }
 
-    genTrojanLink(address = '', port = this.port, forceTls, remark = '', clientPassword) {
+    genTrojanLink(address = '', port = this.port, forceTls, remark = '', clientPassword, ep = null) {
         const security = forceTls == 'same' ? this.stream.security : forceTls;
         const type = this.stream.network;
         const params = new Map();
@@ -2261,16 +2414,28 @@ class Inbound extends XrayCommonClass {
 
         if (security === 'tls') {
             params.set("security", "tls");
-            if (this.stream.isTls) {
-                params.set("fp", this.stream.tls.settings.fingerprint);
-                params.set("alpn", this.stream.tls.alpn);
-                const echConfig = this.stream.tls.settings?.echConfigList || this.stream.tls.echConfigList;
-                if (echConfig?.length > 0) {
-                    params.set("ech", echConfig.trim());
-                }
-                if (!ObjectUtil.isEmpty(this.stream.tls.sni)) {
-                    params.set("sni", this.stream.tls.sni);
-                }
+            const epTls = (ep && (forceTls === 'tls' || ep.tlsSettings)) ? ep.tlsSettings : null;
+            const fp = (epTls && !ObjectUtil.isEmpty(epTls.fingerprint)) ? epTls.fingerprint : (this.stream.isTls ? this.stream.tls.settings?.fingerprint : '');
+            if (!ObjectUtil.isEmpty(fp)) {
+                params.set("fp", fp);
+            }
+            const alpn = (epTls && epTls.alpn && epTls.alpn.length > 0) ? epTls.alpn : (this.stream.isTls ? this.stream.tls.alpn : []);
+            if (Array.isArray(alpn) && alpn.length > 0) {
+                params.set("alpn", alpn.join(','));
+            } else if (typeof alpn === 'string' && alpn.length > 0) {
+                params.set("alpn", alpn);
+            }
+            const echConfig = (epTls && !ObjectUtil.isEmpty(epTls.echConfigList)) ? epTls.echConfigList : (this.stream.isTls ? (this.stream.tls.settings?.echConfigList || this.stream.tls.echConfigList) : '');
+            if (echConfig?.length > 0) {
+                params.set("ech", echConfig.trim());
+            }
+            const sni = (epTls && !ObjectUtil.isEmpty(epTls.serverName)) ? epTls.serverName : (this.stream.isTls ? this.stream.tls.sni : '');
+            if (!ObjectUtil.isEmpty(sni)) {
+                params.set("sni", sni);
+            }
+            const allowInsecure = epTls ? epTls.allowInsecure : (this.stream.isTls ? (this.stream.tls.settings?.allowInsecure || this.stream.tls.allowInsecure) : false);
+            if (allowInsecure) {
+                params.set("insecure", "1");
             }
         } else if (security === 'reality') {
             params.set("security", "reality");
@@ -2301,19 +2466,25 @@ class Inbound extends XrayCommonClass {
         return this.cleanUrl(url);
     }
 
-    genHysteriaLink(address = '', port = this.port, remark = '', clientAuth) {
+    genHysteriaLink(address = '', port = this.port, remark = '', clientAuth, ep = null) {
         const protocol = this.settings.version === 2 ? "hysteria2" : "hysteria";
         const auth = (clientAuth && clientAuth.length > 0) ? clientAuth : (this.stream.hysteria?.auth || '');
         const link = `${protocol}://${auth}@${address}:${port}`;
 
         const params = new Map();
         params.set("security", "tls");
-        if (this.stream.tls.settings?.fingerprint?.length > 0) params.set("fp", this.stream.tls.settings.fingerprint);
-        if (this.stream.tls.alpn?.length > 0) params.set("alpn", this.stream.tls.alpn);
-        if (this.stream.tls.settings?.allowInsecure || this.stream.tls.allowInsecure) params.set("insecure", "1");
-        const echConfig = this.stream.tls.settings?.echConfigList || this.stream.tls.echConfigList;
+        const epTls = (ep && (ep.forceTls === 'tls' || ep.tlsSettings)) ? ep.tlsSettings : null;
+        const fp = (epTls && !ObjectUtil.isEmpty(epTls.fingerprint)) ? epTls.fingerprint : this.stream.tls.settings?.fingerprint;
+        if (!ObjectUtil.isEmpty(fp)) params.set("fp", fp);
+        const alpn = (epTls && epTls.alpn && epTls.alpn.length > 0) ? epTls.alpn : this.stream.tls.alpn;
+        if (Array.isArray(alpn) && alpn.length > 0) params.set("alpn", alpn.join(','));
+        else if (typeof alpn === 'string' && alpn.length > 0) params.set("alpn", alpn);
+        const allowInsecure = epTls ? epTls.allowInsecure : (this.stream.tls.settings?.allowInsecure || this.stream.tls.allowInsecure);
+        if (allowInsecure) params.set("insecure", "1");
+        const echConfig = (epTls && !ObjectUtil.isEmpty(epTls.echConfigList)) ? epTls.echConfigList : (this.stream.tls.settings?.echConfigList || this.stream.tls.echConfigList);
         if (echConfig?.length > 0) params.set("ech", echConfig.trim());
-        if (this.stream.tls.sni?.length > 0) params.set("sni", this.stream.tls.sni);
+        const sni = (epTls && !ObjectUtil.isEmpty(epTls.serverName)) ? epTls.serverName : this.stream.tls.sni;
+        if (!ObjectUtil.isEmpty(sni)) params.set("sni", sni);
 
         // Obfuscation and udpHop from FinalMask UDP masks
         if (this.stream.finalmask && Array.isArray(this.stream.finalmask.udp)) {
@@ -2458,31 +2629,31 @@ class Inbound extends XrayCommonClass {
         return link;
     }
 
-    genLink(address = '', port = this.port, forceTls = 'same', remark = '', client) {
+    genLink(address = '', port = this.port, forceTls = 'same', remark = '', client, ep = null) {
         if (!client) {
             return '';
         }
         switch (this.protocol) {
             case Protocols.VMESS:
-                return this.genVmessLink(address, port, forceTls, remark, client.id, client.security);
+                return this.genVmessLink(address, port, forceTls, remark, client.id, client.security, ep);
             case Protocols.VLESS:
-                return this.genVLESSLink(address, port, forceTls, remark, client.id, client.flow);
+                return this.genVLESSLink(address, port, forceTls, remark, client.id, client.flow, ep);
             case Protocols.SHADOWSOCKS:
-                return this.genSSLink(address, port, forceTls, remark, this.isSSMultiUser ? client.password : '');
+                return this.genSSLink(address, port, forceTls, remark, this.isSSMultiUser ? client.password : '', ep);
             case Protocols.TROJAN:
-                return this.genTrojanLink(address, port, forceTls, remark, client.password);
+                return this.genTrojanLink(address, port, forceTls, remark, client.password, ep);
             case Protocols.HYSTERIA:
-                return this.genHysteriaLink(address, port, remark, client.auth && client.auth.length > 0 ? client.auth : this.stream.hysteria.auth);
+                return this.genHysteriaLink(address, port, remark, client.auth && client.auth.length > 0 ? client.auth : this.stream.hysteria.auth, ep);
             case Protocols.WIREGUARD:
                 return this.genWireguardClientLink(address, port, remark, client);
             case Protocols.MASQUE:
-                return this.genMasqueLink(address, port, remark, client.password || client.pass || client.id);
+                return this.genMasqueLink(address, port, remark, client.password || client.pass || client.id, ep);
             default:
                 return '';
         }
     }
 
-    genMasqueLink(address = '', port = this.port, remark = '', clientPass) {
+    genMasqueLink(address = '', port = this.port, remark = '', clientPass, ep = null) {
         const params = new Map();
         params.set("type", "masque");
         if (this.stream.masque?.host) {
@@ -2491,13 +2662,18 @@ class Inbound extends XrayCommonClass {
         if (this.stream.masque?.path) {
             params.set("path", this.stream.masque.path);
         }
-        if (this.stream.isTls) {
+        const forceTls = ep ? ep.forceTls : 'same';
+        const isTls = forceTls === 'tls' || (forceTls === 'same' && this.stream.isTls);
+        if (isTls) {
             params.set("security", "tls");
-            if (this.stream.tls?.sni) {
-                params.set("sni", this.stream.tls.sni);
+            const epTls = (ep && (forceTls === 'tls' || ep.tlsSettings)) ? ep.tlsSettings : null;
+            const sni = (epTls && !ObjectUtil.isEmpty(epTls.serverName)) ? epTls.serverName : this.stream.tls?.sni;
+            if (sni) {
+                params.set("sni", sni);
             }
-            if (this.stream.tls?.alpn) {
-                params.set("alpn", this.stream.tls.alpn);
+            const alpn = (epTls && epTls.alpn && epTls.alpn.length > 0) ? epTls.alpn : this.stream.tls?.alpn;
+            if (alpn) {
+                params.set("alpn", Array.isArray(alpn) ? alpn.join(',') : alpn);
             }
         }
         const link = `masque://${encodeURIComponent(clientPass)}@${address}:${port}`;
@@ -2537,8 +2713,8 @@ class Inbound extends XrayCommonClass {
                 let r = orderChars.split('').map(char => orders[char]).filter(x => x.length > 0).join(separationChar);
                 result.push({
                     remark: r,
-                    link: this.genLink(ep.dest, ep.port, ep.forceTls, r, client),
-                    url: this.protocol === Protocols.WIREGUARD ? this.genWireguardUrl(ep.dest, ep.port, r, client) : this.genLink(ep.dest, ep.port, ep.forceTls, r, client)
+                    link: this.genLink(ep.dest, ep.port, ep.forceTls, r, client, ep),
+                    url: this.protocol === Protocols.WIREGUARD ? this.genWireguardUrl(ep.dest, ep.port, r, client) : this.genLink(ep.dest, ep.port, ep.forceTls, r, client, ep)
                 });
             });
         }

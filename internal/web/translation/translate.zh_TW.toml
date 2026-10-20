@@ -251,6 +251,8 @@ refreshClientIps = "重新整理 IP"
 
 useSystemCA = "使用系統 CA"
 useSystemCADesc = "使用作業系統根憑證而非 Xray-core 內建根憑證"
+clientTlsSettings = "用戶端 TLS 設定"
+allowInsecure = "允許不安全連線"
 
 [pages.node_clients]
 bulkDelete = "批次刪除"

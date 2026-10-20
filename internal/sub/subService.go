@@ -725,7 +725,12 @@ func (s *SubService) genHysteriaLink(inbound *model.Inbound, email string) strin
 			link := fmt.Sprintf("%s://%s@%s:%d", protocol, auth, dest, epPort)
 			u, _ := url.Parse(link)
 			q := u.Query()
+			epParams := make(map[string]string)
 			for k, v := range params {
+				epParams[k] = v
+			}
+			applyExternalProxyTlsParams(epParams, ep, "tls")
+			for k, v := range epParams {
 				q.Add(k, v)
 			}
 			u.RawQuery = formatRawQuery(q)
@@ -918,6 +923,53 @@ func (s *SubService) genVmessLink(inbound *model.Inbound, email string) string {
 
 			if newSecurity != "same" {
 				newObj["tls"] = newSecurity
+			}
+			if newSecurity == "none" {
+				delete(newObj, "tls")
+				delete(newObj, "alpn")
+				delete(newObj, "sni")
+				delete(newObj, "fp")
+				delete(newObj, "ech")
+			} else if newSecurity == "tls" || (newSecurity == "same" && obj["tls"] == "tls") {
+				newObj["tls"] = "tls"
+				if epTls, ok := ep["tlsSettings"].(map[string]interface{}); ok && epTls != nil {
+					if sni, ok := searchKey(epTls, "serverName"); ok {
+						if s, ok := sni.(string); ok && strings.TrimSpace(s) != "" {
+							newObj["sni"] = strings.TrimSpace(s)
+						}
+					} else if sni, ok := searchKey(epTls, "sni"); ok {
+						if s, ok := sni.(string); ok && strings.TrimSpace(s) != "" {
+							newObj["sni"] = strings.TrimSpace(s)
+						}
+					}
+					if alpns, ok := epTls["alpn"].([]interface{}); ok && len(alpns) > 0 {
+						var alpnList []string
+						for _, a := range alpns {
+							if str, ok := a.(string); ok && strings.TrimSpace(str) != "" {
+								alpnList = append(alpnList, strings.TrimSpace(str))
+							}
+						}
+						if len(alpnList) > 0 {
+							newObj["alpn"] = strings.Join(alpnList, ",")
+						}
+					} else if alpnStr, ok := epTls["alpn"].(string); ok && strings.TrimSpace(alpnStr) != "" {
+						newObj["alpn"] = strings.TrimSpace(alpnStr)
+					}
+					if fp, ok := searchKey(epTls, "fingerprint"); ok {
+						if s, ok := fp.(string); ok && strings.TrimSpace(s) != "" {
+							newObj["fp"] = strings.TrimSpace(s)
+						}
+					}
+					if ech, ok := searchKey(epTls, "echConfigList"); ok {
+						if s, ok := ech.(string); ok && strings.TrimSpace(s) != "" {
+							newObj["ech"] = strings.TrimSpace(s)
+						}
+					} else if ech, ok := searchKey(epTls, "ech"); ok {
+						if s, ok := ech.(string); ok && strings.TrimSpace(s) != "" {
+							newObj["ech"] = strings.TrimSpace(s)
+						}
+					}
+				}
 			}
 			if index > 0 {
 				links += "\n"
@@ -1160,7 +1212,6 @@ func (s *SubService) genVlessLink(inbound *model.Inbound, email string) string {
 			if !ok {
 				continue
 			}
-			newSecurity, _ := ep["forceTls"].(string)
 			dest, _ := ep["dest"].(string)
 			port := 0
 			if p, ok := ep["port"].(float64); ok {
@@ -1170,18 +1221,17 @@ func (s *SubService) genVlessLink(inbound *model.Inbound, email string) string {
 			}
 			link := fmt.Sprintf("vless://%s@%s:%d", uuid, dest, port)
 
-			if newSecurity != "same" {
-				params["security"] = newSecurity
-			} else {
-				params["security"] = security
+			epParams := make(map[string]string)
+			for k, v := range params {
+				epParams[k] = v
 			}
+			applyExternalProxyTlsParams(epParams, ep, security)
+
 			url, _ := url.Parse(link)
 			q := url.Query()
 
-			for k, v := range params {
-				if !(newSecurity == "none" && (k == "alpn" || k == "sni" || k == "fp" || k == "ech")) {
-					q.Add(k, v)
-				}
+			for k, v := range epParams {
+				q.Add(k, v)
 			}
 
 			// Set the new query values on the URL
@@ -1411,7 +1461,6 @@ func (s *SubService) genTrojanLink(inbound *model.Inbound, email string) string 
 			if !ok {
 				continue
 			}
-			newSecurity, _ := ep["forceTls"].(string)
 			dest, _ := ep["dest"].(string)
 			port := 0
 			if p, ok := ep["port"].(float64); ok {
@@ -1421,18 +1470,17 @@ func (s *SubService) genTrojanLink(inbound *model.Inbound, email string) string 
 			}
 			link := fmt.Sprintf("trojan://%s@%s:%d", password, dest, port)
 
-			if newSecurity != "same" {
-				params["security"] = newSecurity
-			} else {
-				params["security"] = security
+			epParams := make(map[string]string)
+			for k, v := range params {
+				epParams[k] = v
 			}
+			applyExternalProxyTlsParams(epParams, ep, security)
+
 			url, _ := url.Parse(link)
 			q := url.Query()
 
-			for k, v := range params {
-				if !(newSecurity == "none" && (k == "alpn" || k == "sni" || k == "fp" || k == "ech")) {
-					q.Add(k, v)
-				}
+			for k, v := range epParams {
+				q.Add(k, v)
 			}
 
 			// Set the new query values on the URL
@@ -1623,7 +1671,6 @@ func (s *SubService) genShadowsocksLink(inbound *model.Inbound, email string) st
 			if !ok {
 				continue
 			}
-			newSecurity, _ := ep["forceTls"].(string)
 			dest, _ := ep["dest"].(string)
 			port := 0
 			if p, ok := ep["port"].(float64); ok {
@@ -1633,18 +1680,17 @@ func (s *SubService) genShadowsocksLink(inbound *model.Inbound, email string) st
 			}
 			link := fmt.Sprintf("ss://%s@%s:%d", base64.StdEncoding.EncodeToString([]byte(encPart)), dest, port)
 
-			if newSecurity != "same" {
-				params["security"] = newSecurity
-			} else {
-				params["security"] = security
+			epParams := make(map[string]string)
+			for k, v := range params {
+				epParams[k] = v
 			}
+			applyExternalProxyTlsParams(epParams, ep, security)
+
 			url, _ := url.Parse(link)
 			q := url.Query()
 
-			for k, v := range params {
-				if !(newSecurity == "none" && (k == "alpn" || k == "sni" || k == "fp" || k == "ech")) {
-					q.Add(k, v)
-				}
+			for k, v := range epParams {
+				q.Add(k, v)
 			}
 
 			// Set the new query values on the URL
@@ -1842,4 +1888,82 @@ func addFinalMaskParam(params map[string]string, stream map[string]interface{}) 
 		params["fm"] = string(fmJSON)
 	}
 }
+
+func applyExternalProxyTlsParams(params map[string]string, ep map[string]interface{}, defaultSecurity string) {
+	forceTls, _ := ep["forceTls"].(string)
+	if forceTls == "none" {
+		params["security"] = "none"
+		delete(params, "sni")
+		delete(params, "alpn")
+		delete(params, "fp")
+		delete(params, "ech")
+		delete(params, "insecure")
+		return
+	}
+
+	isTls := forceTls == "tls" || (forceTls == "same" && defaultSecurity == "tls")
+	if !isTls {
+		if forceTls != "" && forceTls != "same" {
+			params["security"] = forceTls
+		}
+		return
+	}
+
+	params["security"] = "tls"
+	epTls, _ := ep["tlsSettings"].(map[string]interface{})
+	if epTls == nil {
+		return
+	}
+
+	if sni, ok := searchKey(epTls, "serverName"); ok {
+		if s, ok := sni.(string); ok && strings.TrimSpace(s) != "" {
+			params["sni"] = strings.TrimSpace(s)
+		}
+	} else if sni, ok := searchKey(epTls, "sni"); ok {
+		if s, ok := sni.(string); ok && strings.TrimSpace(s) != "" {
+			params["sni"] = strings.TrimSpace(s)
+		}
+	}
+
+	if alpns, ok := epTls["alpn"].([]interface{}); ok && len(alpns) > 0 {
+		var alpnList []string
+		for _, a := range alpns {
+			if str, ok := a.(string); ok && strings.TrimSpace(str) != "" {
+				alpnList = append(alpnList, strings.TrimSpace(str))
+			}
+		}
+		if len(alpnList) > 0 {
+			params["alpn"] = strings.Join(alpnList, ",")
+		}
+	} else if alpnStr, ok := epTls["alpn"].(string); ok && strings.TrimSpace(alpnStr) != "" {
+		params["alpn"] = strings.TrimSpace(alpnStr)
+	}
+
+	if fp, ok := searchKey(epTls, "fingerprint"); ok {
+		if s, ok := fp.(string); ok && strings.TrimSpace(s) != "" {
+			params["fp"] = strings.TrimSpace(s)
+		}
+	}
+
+	if ech, ok := searchKey(epTls, "echConfigList"); ok {
+		if s, ok := ech.(string); ok && strings.TrimSpace(s) != "" {
+			params["ech"] = strings.TrimSpace(s)
+		}
+	} else if ech, ok := searchKey(epTls, "ech"); ok {
+		if s, ok := ech.(string); ok && strings.TrimSpace(s) != "" {
+			params["ech"] = strings.TrimSpace(s)
+		}
+	}
+
+	if insecure, ok := searchKey(epTls, "allowInsecure"); ok {
+		if isInsecure, ok := insecure.(bool); ok {
+			if isInsecure {
+				params["insecure"] = "1"
+			} else {
+				delete(params, "insecure")
+			}
+		}
+	}
+}
+
 

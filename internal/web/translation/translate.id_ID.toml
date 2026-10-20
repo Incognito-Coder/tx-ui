@@ -251,6 +251,8 @@ refreshClientIps = "Segarkan IP"
 
 useSystemCA = "Gunakan CA Sistem"
 useSystemCADesc = "Gunakan sertifikat root OS alih-alih RootCA bawaan Xray-core"
+clientTlsSettings = "Pengaturan TLS Klien"
+allowInsecure = "Izinkan Tidak Aman"
 
 [pages.node_clients]
 bulkDelete = "Hapus Massal"

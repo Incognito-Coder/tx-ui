@@ -251,6 +251,8 @@ refreshClientIps = "تحديث عناوين IP"
 
 useSystemCA = "استخدام شهادات نظام التشغيل (System CA)"
 useSystemCADesc = "استخدام شهادات الجذر الخاصة بنظام التشغيل بدلاً من شهادات Xray-core المدمجة"
+clientTlsSettings = "إعدادات TLS للعميل"
+allowInsecure = "السماح بالاتصال غير الآمن"
 
 [pages.node_clients]
 bulkDelete = "حذف جماعي"
