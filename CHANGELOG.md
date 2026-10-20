@@ -5,6 +5,35 @@ All notable changes to **TX-UI** will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.9.2] - 2026-10-20
+
+### 🚀 Features & Enhancements
+- **Client-Side TLS Configuration for External Proxy**:
+  - Added dedicated client-side TLS configuration section when External Proxy is enabled with TLS mode (`forceTls === 'tls'`) in the inbound configuration modal (`external_proxy.html`, `inbound_modal.html`).
+  - Implemented configurable client TLS options matching server TLS configuration:
+    - **SNI**: Custom Server Name Indication (`serverName`).
+    - **Cipher Suites**: Granular cipher suite selection (`cipherSuites`).
+    - **Min / Max Version**: TLS protocol version boundaries (`TLS 1.2` / `TLS 1.3`).
+    - **uTLS Fingerprint**: Browser fingerprint simulation (`chrome`, `firefox`, `safari`, `ios`, `edge`, etc.).
+    - **ALPN**: Multi-select Application-Layer Protocol Negotiation (`h2`, `http/1.1`, etc.).
+    - **Allow Insecure**: Certificate verification skip toggle for self-signed certificates.
+    - **System CA**: Option to trust system certificates or built-in Mozilla RootCAs.
+    - **ECH Config**: Support for Encrypted Client Hello configuration payload.
+  - Built `ExternalProxy.TlsSettings` model class in `inbound.js` and `outbound.js` with full JSON serialization, clone, and form binding support.
+  - **Subscription Share Links**:
+    - Upgraded link generation across `subService.go` (`genVlessLink`, `genVmessLink`, `genTrojanLink`, `genShadowsocksLink`, `genHysteriaLink`) and Web UI (`inbound.js`).
+    - Injects external proxy TLS parameters (`sni`, `alpn`, `fp`, `insecure`, `ech`) into share links when `forceTls` is set to `tls`.
+  - **JSON Subscription Outbounds**:
+    - Enhanced `SubJsonService.getConfig` and `SubJsonService.tlsData` (`subJsonService.go`) to propagate external proxy client-side TLS configurations into Xray client outbound definitions.
+  - **Unit Testing**:
+    - Added automated test coverage in `sub_test.go` (`TestExternalProxy_CustomClientTLS`) validating link generation and JSON outbound configurations for external proxies with custom client TLS.
+  - **Comprehensive Localization**:
+    - Added `clientTlsSettings` and `allowInsecure` translations across all 13 supported languages (`ar_EG`, `en_US`, `es_ES`, `fa_IR`, `id_ID`, `ja_JP`, `pt_BR`, `ru_RU`, `tr_TR`, `uk_UA`, `vi_VN`, `zh_CN`, `zh_TW`).
+
+### 🐛 Bug Fixes & Refinements
+- **FinalMask TCP Profile Runtime Error**:
+  - Fixed `TypeError: Cannot read properties of undefined (reading 'push')` in `StreamSettings.addTcpMask` and `TcpMask.addProfile` triggered when adding non-`xmc` masks (such as `header-custom`) whose structure does not contain a `profiles` array.
+
 ## [v0.9.1] - 2026-10-17
 
 ### 🚀 Features & Enhancements
