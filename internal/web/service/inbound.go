@@ -1070,8 +1070,45 @@ func (s *InboundService) syncNodeClientOnUpdate(tx *gorm.DB, oldEmail string, cl
 	if client.ID != "" {
 		ncUpdates["uuid"] = client.ID
 	}
-	if client.Password != "" {
-		ncUpdates["password"] = client.Password
+	var inboundProtocol model.Protocol
+	if currentInboundId > 0 {
+		var ib model.Inbound
+		if tx.Select("protocol").First(&ib, currentInboundId).Error == nil {
+			inboundProtocol = ib.Protocol
+		}
+	}
+	if inboundProtocol == model.Shadowsocks {
+		if client.Password != "" {
+			ncUpdates["ss_password"] = client.Password
+		}
+		if client.SSPassword != "" {
+			ncUpdates["ss_password"] = client.SSPassword
+		}
+	} else if inboundProtocol == model.Masque {
+		mPass := client.MasquePass
+		if mPass == "" {
+			mPass = client.Pass
+		}
+		if mPass == "" {
+			mPass = client.Password
+		}
+		if mPass != "" {
+			ncUpdates["masque_pass"] = mPass
+		}
+	} else if inboundProtocol == model.Trojan {
+		if client.Password != "" {
+			ncUpdates["password"] = client.Password
+		}
+	} else {
+		if client.Password != "" {
+			ncUpdates["password"] = client.Password
+		}
+		if client.SSPassword != "" {
+			ncUpdates["ss_password"] = client.SSPassword
+		}
+		if client.MasquePass != "" {
+			ncUpdates["masque_pass"] = client.MasquePass
+		}
 	}
 	if client.Auth != "" {
 		ncUpdates["auth"] = client.Auth
@@ -2462,6 +2499,19 @@ func (s *InboundService) BuildInboundConfig(inbound *model.Inbound, txs ...*gorm
 		}
 		clients = make([]interface{}, 0, len(mergedClients))
 		for _, nc := range mergedClients {
+			pwd := nc.Password
+			if inbound.Protocol == model.Shadowsocks && nc.SSPassword != "" {
+				pwd = nc.SSPassword
+			}
+			pass := nc.Pass
+			if inbound.Protocol == model.Masque {
+				if nc.MasquePass != "" {
+					pass = nc.MasquePass
+					pwd = nc.MasquePass
+				} else if pass != "" {
+					pwd = pass
+				}
+			}
 			entry := map[string]interface{}{
 				"email":      nc.Email,
 				"id":         nc.ID,
@@ -2470,7 +2520,8 @@ func (s *InboundService) BuildInboundConfig(inbound *model.Inbound, txs ...*gorm
 				"allowedIPs": nc.AllowedIPs,
 				"psk":        nc.Psk,
 				"security":   nc.Security,
-				"password":   nc.Password,
+				"password":   pwd,
+				"pass":       pass,
 				"auth":       nc.Auth,
 				"flow":       nc.Flow,
 				"enable":     nc.Enable,
@@ -2689,6 +2740,30 @@ func (s *InboundService) BuildInboundConfig(inbound *model.Inbound, txs ...*gorm
 				final_clients = append(final_clients, interface{}(c))
 			}
 			settings["clients"] = final_clients
+		}
+
+		if inbound.Protocol == model.Shadowsocks {
+			if m, ok := settings["method"].(string); ok {
+				if length := xray.Shadowsocks2022KeyLength(m); length > 0 {
+					if srvPwd, ok := settings["password"].(string); ok {
+						if !xray.ValidShadowsocks2022Key(srvPwd, length) {
+							settings["password"] = xray.NewShadowsocks2022Key(length)
+							logger.Warningf("BuildInboundConfig: repaired invalid Shadowsocks 2022 server key for inbound %d", inbound.Id)
+						}
+					}
+					if clientsList, ok := settings["clients"].([]interface{}); ok {
+						for _, item := range clientsList {
+							if cMap, ok := item.(map[string]interface{}); ok {
+								cPwd, _ := cMap["password"].(string)
+								if !xray.ValidShadowsocks2022Key(cPwd, length) {
+									cMap["password"] = xray.NewShadowsocks2022Key(length)
+									logger.Warningf("BuildInboundConfig: repaired invalid Shadowsocks 2022 client key for inbound %d (%v)", inbound.Id, cMap["email"])
+								}
+							}
+						}
+					}
+				}
+			}
 		}
 
 		modifiedSettings, err := json.MarshalIndent(settings, "", "  ")

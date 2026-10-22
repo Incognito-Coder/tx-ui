@@ -13,7 +13,7 @@
     const basePath = '{{ .base_path }}';
     axios.defaults.baseURL = basePath;
     if (typeof HttpUtil !== 'undefined' && typeof HttpUtil.postJson !== 'function') {
-        HttpUtil.postJson = function(url, data, options = {}) {
+        HttpUtil.postJson = function (url, data, options = {}) {
             const payload = (typeof data === 'object' && !(data instanceof FormData)) ? JSON.stringify(data) : data;
             const opts = Object.assign({}, options, {
                 headers: Object.assign({}, (options && options.headers) || {}, {
@@ -22,6 +22,31 @@
             });
             return HttpUtil.post(url, payload, opts);
         };
+    }
+    if (typeof RandomUtil !== 'undefined') {
+        if (typeof RandomUtil.randomTrojanPassword !== 'function') {
+            RandomUtil.randomTrojanPassword = function(len = 10) {
+                return typeof RandomUtil.randomSeq === 'function' ? RandomUtil.randomSeq(len) : Math.random().toString(36).substring(2, 2 + len);
+            };
+        }
+        if (typeof RandomUtil.randomShadowsocksPassword !== 'function') {
+            RandomUtil.randomShadowsocksPassword = function(method = '') {
+                const is128 = method && (method.indexOf('128') !== -1);
+                const len = is128 ? 16 : 32;
+                let array = new Uint8Array(len);
+                window.crypto.getRandomValues(array);
+                let binary = '';
+                for (let i = 0; i < array.byteLength; i++) {
+                    binary += String.fromCharCode(array[i]);
+                }
+                return btoa(binary);
+            };
+        }
+        if (typeof RandomUtil.randomMasquePassword !== 'function') {
+            RandomUtil.randomMasquePassword = function(len = 16) {
+                return typeof RandomUtil.randomSeq === 'function' ? RandomUtil.randomSeq(len) : Math.random().toString(36).substring(2, 2 + len);
+            };
+        }
     }
 </script>
 {{end}}

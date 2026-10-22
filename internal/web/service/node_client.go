@@ -446,7 +446,7 @@ func (s *NodeClientService) Update(nc *model.NodeClient) (bool, error) {
 	}
 
 	// Keep settings JSON in sync for linked inbounds if credentials, enable, or metadata (expiry, quota, etc.) changed
-	credsChanged := hasOld && (oldNC.Email != nc.Email || oldNC.UUID != nc.UUID || oldNC.Password != nc.Password || oldNC.Auth != nc.Auth || oldNC.Flow != nc.Flow)
+	credsChanged := hasOld && (oldNC.Email != nc.Email || oldNC.UUID != nc.UUID || oldNC.Password != nc.Password || oldNC.SSPassword != nc.SSPassword || oldNC.MasquePass != nc.MasquePass || oldNC.Auth != nc.Auth || oldNC.Flow != nc.Flow)
 	enableChanged := hasOld && (oldNC.Enable != nc.Enable)
 	metaChanged := hasOld && (oldNC.ExpiryTime != nc.ExpiryTime || oldNC.TotalGB != nc.TotalGB || oldNC.Reset != nc.Reset || oldNC.SubID != nc.SubID || oldNC.LimitIP != nc.LimitIP || oldNC.TgID != nc.TgID || oldNC.Comment != nc.Comment)
 
@@ -599,6 +599,7 @@ func removeClientFromInboundSettings(inbound *model.Inbound, email, uuid, passwo
 			cEmail, _ := c["email"].(string)
 			cId, _ := c["id"].(string)
 			cPass, _ := c["password"].(string)
+			cMasquePass, _ := c["pass"].(string)
 			cAuth, _ := c["auth"].(string)
 			cKey, _ := c["publicKey"].(string)
 
@@ -608,6 +609,8 @@ func removeClientFromInboundSettings(inbound *model.Inbound, email, uuid, passwo
 			} else if uuid != "" && cId != "" && strings.EqualFold(strings.TrimSpace(cId), strings.TrimSpace(uuid)) {
 				isMatch = true
 			} else if password != "" && cPass != "" && cPass == password {
+				isMatch = true
+			} else if password != "" && cMasquePass != "" && cMasquePass == password {
 				isMatch = true
 			} else if auth != "" && cAuth != "" && cAuth == auth {
 				isMatch = true
@@ -1741,6 +1744,8 @@ func (s *NodeClientService) synthesiseClient(nc *model.NodeClient, link *model.N
 	return model.Client{
 		ID:         nc.UUID,
 		Password:   nc.Password,
+		SSPassword: nc.SSPassword,
+		MasquePass: pass,
 		Pass:       pass,
 		Auth:       auth,
 		Security:   nc.Security,
@@ -1781,6 +1786,8 @@ func (s *NodeClientService) MergeIntoInboundConfig(inboundId int, existingClient
 		SubID      string
 		UUID       string
 		Password   string
+		SSPassword string `gorm:"column:ss_password"`
+		MasquePass string `gorm:"column:masque_pass"`
 		Auth       string
 		Security   string
 		ClientFlow string `gorm:"column:client_flow"`
@@ -1804,6 +1811,8 @@ func (s *NodeClientService) MergeIntoInboundConfig(inboundId int, existingClient
 			node_clients.sub_id,
 			node_clients.uuid,
 			node_clients.password,
+			node_clients.ss_password,
+			node_clients.masque_pass,
 			node_clients.auth,
 			node_clients.security,
 			node_clients.flow AS client_flow,
@@ -1856,6 +1865,8 @@ func (s *NodeClientService) MergeIntoInboundConfig(inboundId int, existingClient
 			SubID:      row.SubID,
 			UUID:       row.UUID,
 			Password:   row.Password,
+			SSPassword: row.SSPassword,
+			MasquePass: row.MasquePass,
 			Auth:       row.Auth,
 			Security:   row.Security,
 			Flow:       row.ClientFlow,

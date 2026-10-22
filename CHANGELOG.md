@@ -33,12 +33,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added comprehensive localization for Finalmask filter and XDRIVE settings in `translate.en_US.toml` and `translate.zh_CN.toml`.
 
 ### 🐛 Bug Fixes & Shadowsocks Protocol Alignment
-- **Full Protocol-Separated Password Generation Fields (Trojan, Shadowsocks & MASQUE)**:
+- **Full Protocol-Separated Password Generation & Persistence (Trojan, Shadowsocks & MASQUE)**:
   - Added dedicated `RandomUtil.randomMasquePassword()` in `utils.js` alongside `randomTrojanPassword()` and `randomShadowsocksPassword(method)`.
-  - Fully decoupled credentials in Node Clients modal (`clients.html`): provided distinct, full form items with dedicated generator controls for **Password (Trojan)**, **Key (Shadowsocks)**, and **Password (MASQUE)**, eliminating shared password fields.
-  - Added `ssPassword` and `masquePass` fields to `NodeClient` struct in `model.go` with automatic GORM database migration, ensuring each protocol preserves its dedicated credential.
-  - Enhanced `addClientToInboundSettings`, `hotAddUserToInbound`, and `synthesiseClient` in `node_client.go` to route `SSPassword` to Shadowsocks inbounds and `MasquePass` to MASQUE inbounds with graceful fallbacks.
-  - Updated bulk creation in `clients.html` (`handleBulkModalOk`) and `client_bulk_modal.html` to generate unique protocol-appropriate credentials for each user.
+  - Fully decoupled credentials in Node Clients modal (`clients.html`): provided distinct form items with dedicated generator controls for **Password (Trojan)**, **Key (Shadowsocks)**, and **Password (MASQUE)**, eliminating shared password fields.
+  - Added `ssPassword` and `masquePass` fields to `NodeClient` and `Client` structs in `model.go` with automatic GORM database migration, ensuring each protocol preserves its dedicated credential.
+  - Resolved password reversion bug across all protocols: updated `NodeClientController.update` to properly bind and persist `ssPassword` and `masquePass`, ensuring edited passwords are not reverted or overwritten.
+  - Synchronized `node_client.go` (`credsChanged`, `synthesiseClient`, `MergeIntoInboundConfig`) and `inbound.go` (`syncNodeClientOnUpdate`, `BuildInboundConfig`) to route distinct credentials per protocol and protect against cross-protocol overwrite.
+  - Added proactive Shadowsocks 2022 key auto-repair in `BuildInboundConfig` to prevent core startup failures (`proxy/shadowsocks_2022: bad key`) and unwanted config rollbacks.
+  - Added safe fallback polyfills in `common/js.html`, `clients.html`, and `form/client.html` preventing cached asset runtime exceptions.
 - **Complete Internationalization (i18n) Synchronization Across All 13 Languages**:
   - Audited all TOML localization files against `translate.en_US.toml`, achieving 100% key coverage (0 missing keys across all languages).
   - Added natural, native translations for missing core rollback keys, Finalmask IP ACL filters, XDRIVE configuration, Node Client device management, bulk linking, and protocol credential tooltips across:

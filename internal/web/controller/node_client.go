@@ -373,6 +373,16 @@ func (a *NodeClientController) update(c *gin.Context) {
 		if val, ok := rawMap["password"]; ok && val != nil {
 			mergedNC.Password = fmt.Sprintf("%v", val)
 		}
+		if val, ok := rawMap["ssPassword"]; ok && val != nil {
+			mergedNC.SSPassword = fmt.Sprintf("%v", val)
+		} else if val, ok := rawMap["ss_password"]; ok && val != nil {
+			mergedNC.SSPassword = fmt.Sprintf("%v", val)
+		}
+		if val, ok := rawMap["masquePass"]; ok && val != nil {
+			mergedNC.MasquePass = fmt.Sprintf("%v", val)
+		} else if val, ok := rawMap["masque_pass"]; ok && val != nil {
+			mergedNC.MasquePass = fmt.Sprintf("%v", val)
+		}
 		if val, ok := rawMap["auth"]; ok && val != nil {
 			mergedNC.Auth = fmt.Sprintf("%v", val)
 		}
@@ -423,6 +433,20 @@ func (a *NodeClientController) update(c *gin.Context) {
 		}
 		if req.NodeClient.Password != "" {
 			mergedNC.Password = req.NodeClient.Password
+		}
+		if req.NodeClient.SSPassword != "" {
+			mergedNC.SSPassword = req.NodeClient.SSPassword
+		} else if c.PostForm("ssPassword") != "" {
+			mergedNC.SSPassword = c.PostForm("ssPassword")
+		} else if c.PostForm("ss_password") != "" {
+			mergedNC.SSPassword = c.PostForm("ss_password")
+		}
+		if req.NodeClient.MasquePass != "" {
+			mergedNC.MasquePass = req.NodeClient.MasquePass
+		} else if c.PostForm("masquePass") != "" {
+			mergedNC.MasquePass = c.PostForm("masquePass")
+		} else if c.PostForm("masque_pass") != "" {
+			mergedNC.MasquePass = c.PostForm("masque_pass")
 		}
 	}
 	mergedNC.Id = id

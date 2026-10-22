@@ -262,6 +262,8 @@ type Client struct {
 	ID         string         `json:"id,omitempty"`
 	Security   string         `json:"security"`
 	Password   string         `json:"password,omitempty"` // Client password
+	SSPassword string         `json:"ssPassword,omitempty"` // Shadowsocks password / key
+	MasquePass string         `json:"masquePass,omitempty"` // MASQUE password
 	Pass       string         `json:"pass,omitempty"`     // MASQUE password
 	Flow       string         `json:"flow,omitempty"`     // Flow control (XTLS)
 	Auth       string         `json:"auth,omitempty"`     // Auth password (Hysteria)

@@ -23,7 +23,7 @@
                     <span>{{ i18n "reset" }}</span>
                 </template>
                 {{ i18n "password" }}
-                <a-icon @click="client.password = RandomUtil.randomTrojanPassword()" type="sync"></a-icon>
+                <a-icon @click="client.password = (typeof RandomUtil !== 'undefined' && typeof RandomUtil.randomTrojanPassword === 'function' ? RandomUtil.randomTrojanPassword() : (typeof RandomUtil !== 'undefined' && typeof RandomUtil.randomSeq === 'function' ? RandomUtil.randomSeq(10) : Math.random().toString(36).substring(2, 12)))" type="sync"></a-icon>
             </a-tooltip>
         </template>
         <a-input v-model.trim="client.password"></a-input>
@@ -37,7 +37,7 @@
                     <span>{{ i18n "reset" }}</span>
                 </template>
                 {{ i18n "password" }}
-                <a-icon @click="client.password = RandomUtil.randomShadowsocksPassword(inbound.settings ? inbound.settings.method : (client.method || ''))"
+                <a-icon @click="client.password = (typeof RandomUtil !== 'undefined' && typeof RandomUtil.randomShadowsocksPassword === 'function' ? RandomUtil.randomShadowsocksPassword(inbound.settings ? inbound.settings.method : (client.method || '')) : (typeof RandomUtil !== 'undefined' && typeof RandomUtil.randomSeq === 'function' ? RandomUtil.randomSeq(16) : Math.random().toString(36).substring(2, 18)))"
                         type="sync"></a-icon>
             </a-tooltip>
         </template>
@@ -52,7 +52,7 @@
                     <span>{{ i18n "reset" }}</span>
                 </template>
                 {{ i18n "password" }}
-                <a-icon @click="client.password = RandomUtil.randomMasquePassword()" type="sync"></a-icon>
+                <a-icon @click="client.password = (typeof RandomUtil !== 'undefined' && typeof RandomUtil.randomMasquePassword === 'function' ? RandomUtil.randomMasquePassword() : (typeof RandomUtil !== 'undefined' && typeof RandomUtil.randomSeq === 'function' ? RandomUtil.randomSeq(16) : Math.random().toString(36).substring(2, 18)))" type="sync"></a-icon>
             </a-tooltip>
         </template>
         <a-input v-model.trim="client.password"></a-input>

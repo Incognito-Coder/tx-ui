@@ -1403,7 +1403,7 @@
                                 <template slot="label">
                                     <a-tooltip title='{{ i18n "pages.node_clients.forTrojanProtocol" }}'>
                                         {{ i18n "password" }} (Trojan)
-                                        <a-icon @click="clientModal.client.password = RandomUtil.randomTrojanPassword()"
+                                        <a-icon @click="genClientModalTrojanPassword()"
                                             type="sync"></a-icon>
                                     </a-tooltip>
                                 </template>
@@ -1417,7 +1417,7 @@
                                     <a-tooltip title='{{ i18n "pages.node_clients.forShadowsocksProtocol" }}'>
                                         {{ i18n "password" }} (Shadowsocks)
                                         <a-icon @click="genClientModalSSPassword()"
-                                            type="key"></a-icon>
+                                            type="sync"></a-icon>
                                     </a-tooltip>
                                 </template>
                                 <a-input v-model.trim="clientModal.client.ssPassword"
@@ -1429,7 +1429,7 @@
                                 <template slot="label">
                                     <a-tooltip title='{{ i18n "pages.node_clients.forMasqueProtocol" }}'>
                                         {{ i18n "password" }} (MASQUE)
-                                        <a-icon @click="clientModal.client.masquePass = RandomUtil.randomMasquePassword()"
+                                        <a-icon @click="genClientModalMasquePassword()"
                                             type="sync"></a-icon>
                                     </a-tooltip>
                                 </template>
@@ -2203,6 +2203,31 @@
                 return HttpUtil.post(url, payload, opts);
             };
         }
+        if (typeof RandomUtil !== 'undefined') {
+            if (typeof RandomUtil.randomTrojanPassword !== 'function') {
+                RandomUtil.randomTrojanPassword = function(len = 10) {
+                    return typeof RandomUtil.randomSeq === 'function' ? RandomUtil.randomSeq(len) : Math.random().toString(36).substring(2, 2 + len);
+                };
+            }
+            if (typeof RandomUtil.randomShadowsocksPassword !== 'function') {
+                RandomUtil.randomShadowsocksPassword = function(method = '') {
+                    const is128 = method && (method.indexOf('128') !== -1);
+                    const len = is128 ? 16 : 32;
+                    let array = new Uint8Array(len);
+                    window.crypto.getRandomValues(array);
+                    let binary = '';
+                    for (let i = 0; i < array.byteLength; i++) {
+                        binary += String.fromCharCode(array[i]);
+                    }
+                    return btoa(binary);
+                };
+            }
+            if (typeof RandomUtil.randomMasquePassword !== 'function') {
+                RandomUtil.randomMasquePassword = function(len = 16) {
+                    return typeof RandomUtil.randomSeq === 'function' ? RandomUtil.randomSeq(len) : Math.random().toString(36).substring(2, 2 + len);
+                };
+            }
+        }
 
         const columns = [
             { title: '{{ i18n "pages.inbounds.operate" }}', align: 'center', width: 45, scopedSlots: { customRender: 'action' } },
@@ -2305,9 +2330,9 @@
                             email: RandomUtil.randomLowerAndNum(9),
                             subId: RandomUtil.randomLowerAndNum(16),
                             uuid: RandomUtil.randomUUID(),
-                            password: RandomUtil.randomTrojanPassword(),
-                            ssPassword: RandomUtil.randomShadowsocksPassword(ssMethod),
-                            masquePass: RandomUtil.randomMasquePassword(),
+                            password: (typeof RandomUtil.randomTrojanPassword === 'function' ? RandomUtil.randomTrojanPassword() : RandomUtil.randomSeq(10)),
+                            ssPassword: (typeof RandomUtil.randomShadowsocksPassword === 'function' ? RandomUtil.randomShadowsocksPassword(ssMethod) : RandomUtil.randomSeq(16)),
+                            masquePass: (typeof RandomUtil.randomMasquePassword === 'function' ? RandomUtil.randomMasquePassword() : RandomUtil.randomSeq(16)),
                             auth: RandomUtil.randomSeq(10),
                             flow: '',
                             totalGB: 0,
@@ -2332,9 +2357,9 @@
                         const clientTotalGB = Number(c.totalGB) || 0;
                         this.client = Object.assign({}, c, {
                             _totalGB: clientTotalGB > 0 ? Number(toFixed(clientTotalGB / ONE_GB, 2)) : 0,
-                            password: c.password || RandomUtil.randomTrojanPassword(),
-                            ssPassword: c.ssPassword || (c.password ? c.password : RandomUtil.randomShadowsocksPassword()),
-                            masquePass: c.masquePass || (c.password ? c.password : RandomUtil.randomMasquePassword()),
+                            password: c.password || (typeof RandomUtil.randomTrojanPassword === 'function' ? RandomUtil.randomTrojanPassword() : RandomUtil.randomSeq(10)),
+                            ssPassword: c.ssPassword || (typeof RandomUtil.randomShadowsocksPassword === 'function' ? RandomUtil.randomShadowsocksPassword() : ''),
+                            masquePass: c.masquePass || (typeof RandomUtil.randomMasquePassword === 'function' ? RandomUtil.randomMasquePassword() : RandomUtil.randomSeq(16)),
                         });
                         this.delayedStart = c.expiryTime < 0;
                         this.delayedExpireDays = this.delayedStart ? c.expiryTime / -86400000 : 0;
@@ -2836,6 +2861,24 @@
                         this.bulkModal.selectedInboundIds = this.bulkModal.selectedInboundIds.filter(i => Number(i) !== numId);
                     }
                 },
+                genClientModalTrojanPassword() {
+                    if (typeof RandomUtil !== 'undefined' && typeof RandomUtil.randomTrojanPassword === 'function') {
+                        this.clientModal.client.password = RandomUtil.randomTrojanPassword();
+                    } else if (typeof RandomUtil !== 'undefined' && typeof RandomUtil.randomSeq === 'function') {
+                        this.clientModal.client.password = RandomUtil.randomSeq(10);
+                    } else {
+                        this.clientModal.client.password = Math.random().toString(36).substring(2, 12);
+                    }
+                },
+                genClientModalMasquePassword() {
+                    if (typeof RandomUtil !== 'undefined' && typeof RandomUtil.randomMasquePassword === 'function') {
+                        this.clientModal.client.masquePass = RandomUtil.randomMasquePassword();
+                    } else if (typeof RandomUtil !== 'undefined' && typeof RandomUtil.randomSeq === 'function') {
+                        this.clientModal.client.masquePass = RandomUtil.randomSeq(16);
+                    } else {
+                        this.clientModal.client.masquePass = Math.random().toString(36).substring(2, 18);
+                    }
+                },
                 genClientModalSSPassword() {
                     let method = '';
                     const selectedIds = (this.clientModal && this.clientModal.selectedInboundIds) ? this.clientModal.selectedInboundIds.map(Number) : [];
@@ -2846,7 +2889,19 @@
                             method = s.method || '';
                         } catch (e) {}
                     }
-                    this.clientModal.client.ssPassword = RandomUtil.randomShadowsocksPassword(method);
+                    if (typeof RandomUtil !== 'undefined' && typeof RandomUtil.randomShadowsocksPassword === 'function') {
+                        this.clientModal.client.ssPassword = RandomUtil.randomShadowsocksPassword(method);
+                    } else {
+                        const is128 = method && (method.indexOf('128') !== -1);
+                        const len = is128 ? 16 : 32;
+                        let array = new Uint8Array(len);
+                        window.crypto.getRandomValues(array);
+                        let binary = '';
+                        for (let i = 0; i < array.byteLength; i++) {
+                            binary += String.fromCharCode(array[i]);
+                        }
+                        this.clientModal.client.ssPassword = btoa(binary);
+                    }
                 },
                 getClientModalPasswordPlaceholder() {
                     const selectedIds = (this.clientModal && this.clientModal.selectedInboundIds) ? this.clientModal.selectedInboundIds.map(Number) : [];
@@ -2938,9 +2993,9 @@
                             email: email,
                             subId: RandomUtil.randomLowerAndNum(16),
                             uuid: RandomUtil.randomUUID(),
-                            password: RandomUtil.randomTrojanPassword(),
-                            ssPassword: RandomUtil.randomShadowsocksPassword(ssMethod),
-                            masquePass: RandomUtil.randomMasquePassword(),
+                            password: (typeof RandomUtil.randomTrojanPassword === 'function' ? RandomUtil.randomTrojanPassword() : RandomUtil.randomSeq(10)),
+                            ssPassword: (typeof RandomUtil.randomShadowsocksPassword === 'function' ? RandomUtil.randomShadowsocksPassword(ssMethod) : RandomUtil.randomSeq(16)),
+                            masquePass: (typeof RandomUtil.randomMasquePassword === 'function' ? RandomUtil.randomMasquePassword() : RandomUtil.randomSeq(16)),
                             auth: RandomUtil.randomSeq(10),
                             totalGB: (!isNaN(bulkGb) && bulkGb > 0) ? Math.round(bulkGb * ONE_GB) : 0,
                             expiryTime: expTime,
