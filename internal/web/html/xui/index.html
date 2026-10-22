@@ -8,16 +8,146 @@
         }
     }
 
+    /* Glassmorphic Overview Usage Card */
     .overview-usage-row > .ant-card {
         width: 100%;
         margin-inline: 0;
     }
 
+    .overview-usage-card {
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.85) 0%, rgba(248, 250, 252, 0.95) 100%) !important;
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid var(--ui-border) !important;
+        border-radius: var(--ui-radius-lg) !important;
+        box-shadow: 0 4px 24px -2px rgba(0, 0, 0, 0.05), inset 0 1px 0 0 rgba(255, 255, 255, 0.7) !important;
+        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    }
+
+    .dark .overview-usage-card {
+        background: linear-gradient(135deg, rgba(21, 28, 40, 0.85) 0%, rgba(13, 19, 31, 0.9) 100%) !important;
+        border-color: rgba(255, 255, 255, 0.08) !important;
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.35), inset 0 1px 0 0 rgba(255, 255, 255, 0.08) !important;
+    }
+
+    html[data-theme="ultra-dark"] .overview-usage-card {
+        background: #09090b !important;
+        border-color: #222222 !important;
+        box-shadow: none !important;
+    }
+
+    /* Usage Metric Tiles */
+    .usage-metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 16px;
+    }
+
+    @media (max-width: 991px) {
+        .usage-metrics-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .usage-metrics-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .usage-tile {
+        background: var(--ui-surface);
+        border: 1px solid var(--ui-border);
+        border-radius: var(--ui-radius);
+        padding: 16px 12px 14px 12px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        backdrop-filter: blur(8px);
+    }
+
+    .usage-tile:hover {
+        transform: translateY(-2px);
+        border-color: var(--ui-primary);
+        box-shadow: 0 8px 20px -4px rgba(37, 99, 235, 0.12);
+    }
+
+    .dark .usage-tile {
+        background: rgba(255, 255, 255, 0.02);
+        border-color: rgba(255, 255, 255, 0.06);
+    }
+
+    .dark .usage-tile:hover {
+        background: rgba(255, 255, 255, 0.04);
+        box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.5), 0 0 0 1px var(--ui-primary);
+    }
+
+    html[data-theme="ultra-dark"] .usage-tile {
+        background: #000000 !important;
+        border-color: #1e1e1e !important;
+    }
+
+    .usage-tile-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        margin-bottom: 12px;
+        padding: 0 4px;
+    }
+
+    .usage-tile-title {
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.3px;
+        color: var(--ui-text);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .usage-tile-badge {
+        font-size: 11px;
+        font-weight: 600;
+        font-family: SFMono-Regular, Consolas, monospace;
+        padding: 2px 8px;
+        border-radius: 9999px;
+        background: var(--ui-surface-muted);
+        border: 1px solid var(--ui-border);
+        color: var(--ui-text-muted);
+    }
+
+    .usage-tile-chart {
+        margin: 4px 0 12px 0;
+        position: relative;
+    }
+
+    .usage-tile-footer {
+        font-size: 11.5px;
+        color: var(--ui-text-muted);
+        font-weight: 500;
+        line-height: 1.4;
+        width: 100%;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .usage-tile-footer b {
+        color: var(--ui-text);
+    }
+
+    /* Details Grid Cards with Glassmorphism & Hover Glow */
     .overview-details-grid {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 12px;
-        margin-top: 12px;
+        margin-top: 14px;
     }
 
     .overview-details-grid::before,
@@ -37,6 +167,35 @@
         width: 100%;
         height: 100%;
         margin: 0;
+        border-radius: var(--ui-radius) !important;
+        border: 1px solid var(--ui-border) !important;
+        background: var(--ui-surface) !important;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03) !important;
+        transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+        backdrop-filter: blur(10px);
+    }
+
+    .overview-details-grid .ant-card:hover {
+        transform: translateY(-2px);
+        border-color: var(--ui-primary) !important;
+        box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.08), 0 0 0 1px var(--ui-primary) !important;
+    }
+
+    .dark .overview-details-grid .ant-card {
+        background: rgba(21, 28, 40, 0.75) !important;
+        border-color: rgba(255, 255, 255, 0.07) !important;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25) !important;
+    }
+
+    .dark .overview-details-grid .ant-card:hover {
+        border-color: var(--ui-primary) !important;
+        box-shadow: 0 8px 28px -4px rgba(0, 0, 0, 0.45), 0 0 0 1px var(--ui-primary) !important;
+    }
+
+    html[data-theme="ultra-dark"] .overview-details-grid .ant-card {
+        background: #09090b !important;
+        border-color: #222222 !important;
+        box-shadow: none !important;
     }
 
     @media (max-width: 991px) {
@@ -47,6 +206,73 @@
 
     .ant-card-dark h2 {
         color: var(--dark-color-text-primary);
+    }
+
+    /* Detail Cards Layout & Typography */
+    .detail-card-content {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 8px;
+        min-height: 38px;
+    }
+
+    .detail-card-split {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+        width: 100%;
+        min-height: 38px;
+    }
+
+    .detail-card-half {
+        display: inline-flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .detail-card-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-weight: 700;
+        font-size: 13px;
+        color: var(--ui-text);
+        letter-spacing: 0.2px;
+        white-space: nowrap;
+    }
+
+    .detail-card-label .anticon {
+        font-size: 14px;
+    }
+
+    .overview-details-grid .ant-card-body {
+        padding: 14px 18px !important;
+    }
+
+    .overview-details-grid .ant-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        margin: 0 !important;
+        padding: 4px 10px;
+        font-size: 12px;
+        font-weight: 550;
+        border-radius: 6px;
+        line-height: 1.45;
+        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .overview-details-grid .ant-tag:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .overview-details-grid .ant-tag .anticon {
+        font-size: 12px;
     }
 </style>
 
@@ -67,168 +293,250 @@
                 <transition appear name="list">
                     <a-row class="overview-usage-row">
                         <a-card class="overview-usage-card" hoverable>
-                            <a-row>
-                                <a-col :md="12" :sm="24">
-                                    <a-row>
-                                        <a-col :span="12" style="text-align: center">
-                                            <a-progress :percent="status.cpu.percent" :stroke-color="status.cpu.color"
-                                                        status="normal"
-                                                        type="dashboard"></a-progress>
-                                            <div><b>CPU:</b> [[ cpuCoreFormat(status.cpuCores) ]]
-                                                <a-tooltip>
-                                                    <a-icon type="area-chart"></a-icon>
-                                                    <template slot="title">
-                                                        <div><b>Logical Processors:</b> [[ (status.logicalPro) ]]</div>
-                                                        <div><b>Speed:</b> [[ cpuSpeedFormat(status.cpuSpeedMhz) ]]
-                                                        </div>
-                                                    </template>
-                                                </a-tooltip>
-                                            </div>
-                                        </a-col>
-                                        <a-col :span="12" style="text-align: center">
-                                            <a-progress :percent="status.mem.percent" :stroke-color="status.mem.color"
-                                                        status="normal"
-                                                        type="dashboard"></a-progress>
-                                            <div>
-                                                <b>{{ i18n "pages.index.memory"}}:</b> [[ sizeFormat(status.mem.current)
-                                                ]] / [[ sizeFormat(status.mem.total) ]]
-                                            </div>
-                                        </a-col>
-                                    </a-row>
-                                </a-col>
-                                <a-col :md="12" :sm="24">
-                                    <a-row>
-                                        <a-col :span="12" style="text-align: center">
-                                            <a-progress :percent="status.swap.percent" :stroke-color="status.swap.color"
-                                                        status="normal"
-                                                        type="dashboard"></a-progress>
-                                            <div>
-                                                <b>Swap:</b> [[ sizeFormat(status.swap.current) ]] / [[
-                                                sizeFormat(status.swap.total) ]]
-                                            </div>
-                                        </a-col>
-                                        <a-col :span="12" style="text-align: center">
-                                            <a-progress :percent="status.disk.percent" :stroke-color="status.disk.color"
-                                                        status="normal"
-                                                        type="dashboard"></a-progress>
-                                            <div>
-                                                <b>{{ i18n "pages.index.hard"}}:</b> [[ sizeFormat(status.disk.current)
-                                                ]] / [[ sizeFormat(status.disk.total) ]]
-                                            </div>
-                                        </a-col>
-                                    </a-row>
-                                </a-col>
-                            </a-row>
+                            <div class="usage-metrics-grid">
+                                <!-- CPU Tile -->
+                                <div class="usage-tile">
+                                    <div class="usage-tile-header">
+                                        <div class="usage-tile-title">
+                                            <a-icon type="dashboard" style="color: #3b82f6;"></a-icon>
+                                            <span>CPU</span>
+                                        </div>
+                                        <span class="usage-tile-badge">[[ Math.round(status.cpu.percent || 0) ]]%</span>
+                                    </div>
+                                    <div class="usage-tile-chart">
+                                        <a-progress :percent="status.cpu.percent" :stroke-color="status.cpu.color"
+                                                    :width="106"
+                                                    status="normal"
+                                                    type="dashboard"></a-progress>
+                                    </div>
+                                    <div class="usage-tile-footer">
+                                        <b>[[ cpuCoreFormat(status.cpuCores) ]]</b>
+                                        <a-tooltip>
+                                            <a-icon type="info-circle" style="margin-left: 4px; cursor: pointer; color: var(--ui-primary);"></a-icon>
+                                            <template slot="title">
+                                                <div><b>Logical Processors:</b> [[ status.logicalPro ]]</div>
+                                                <div><b>Speed:</b> [[ cpuSpeedFormat(status.cpuSpeedMhz) ]]</div>
+                                            </template>
+                                        </a-tooltip>
+                                    </div>
+                                </div>
+
+                                <!-- Memory Tile -->
+                                <div class="usage-tile">
+                                    <div class="usage-tile-header">
+                                        <div class="usage-tile-title">
+                                            <a-icon type="database" style="color: #10b981;"></a-icon>
+                                            <span>{{ i18n "pages.index.memory" }}</span>
+                                        </div>
+                                        <span class="usage-tile-badge">[[ Math.round(status.mem.percent || 0) ]]%</span>
+                                    </div>
+                                    <div class="usage-tile-chart">
+                                        <a-progress :percent="status.mem.percent" :stroke-color="status.mem.color"
+                                                    :width="106"
+                                                    status="normal"
+                                                    type="dashboard"></a-progress>
+                                    </div>
+                                    <div class="usage-tile-footer">
+                                        <b>[[ sizeFormat(status.mem.current) ]]</b> / [[ sizeFormat(status.mem.total) ]]
+                                    </div>
+                                </div>
+
+                                <!-- Swap Tile -->
+                                <div class="usage-tile">
+                                    <div class="usage-tile-header">
+                                        <div class="usage-tile-title">
+                                            <a-icon type="swap" style="color: #f59e0b;"></a-icon>
+                                            <span>Swap</span>
+                                        </div>
+                                        <span class="usage-tile-badge">[[ Math.round(status.swap.percent || 0) ]]%</span>
+                                    </div>
+                                    <div class="usage-tile-chart">
+                                        <a-progress :percent="status.swap.percent" :stroke-color="status.swap.color"
+                                                    :width="106"
+                                                    status="normal"
+                                                    type="dashboard"></a-progress>
+                                    </div>
+                                    <div class="usage-tile-footer">
+                                        <b>[[ sizeFormat(status.swap.current) ]]</b> / [[ sizeFormat(status.swap.total) ]]
+                                    </div>
+                                </div>
+
+                                <!-- Disk Tile -->
+                                <div class="usage-tile">
+                                    <div class="usage-tile-header">
+                                        <div class="usage-tile-title">
+                                            <a-icon type="hdd" style="color: #8b5cf6;"></a-icon>
+                                            <span>{{ i18n "pages.index.hard" }}</span>
+                                        </div>
+                                        <span class="usage-tile-badge">[[ Math.round(status.disk.percent || 0) ]]%</span>
+                                    </div>
+                                    <div class="usage-tile-chart">
+                                        <a-progress :percent="status.disk.percent" :stroke-color="status.disk.color"
+                                                    :width="106"
+                                                    status="normal"
+                                                    type="dashboard"></a-progress>
+                                    </div>
+                                    <div class="usage-tile-footer">
+                                        <b>[[ sizeFormat(status.disk.current) ]]</b> / [[ sizeFormat(status.disk.total) ]]
+                                    </div>
+                                </div>
+                            </div>
                         </a-card>
                     </a-row>
                 </transition>
                 <transition appear name="list">
                     <a-row class="overview-details-grid">
+                        <!-- TX-UI Version & Links -->
                         <a-col :lg="12" :sm="24">
-                            <a-card hoverable>
-                                <b>TX-UI:</b>
-                                <a-tag @click="openSelectPanelVersion" color="green" style="cursor: pointer;">v{{ .cur_ver }}</a-tag>
-                                <a href="https://t.me/TxUiPanel" rel="noopener" target="_blank">
-                                    <a-tag color="green">@TxUiPanel</a-tag>
-                                </a>
-                                <a-popover
-                                        overlay-class-name="themeSwitcher.currentTheme"
-                                        v-if="status.appStats.tx_update !== '' && status.appStats.tx_update !== status.appStats.panel_version">
-                                    <span slot="title"
-                                          style="font-size: 12pt">{{ i18n "pages.index.upgradeAvail" }}</span>
-                                    <template slot="content">
-                                        <a-tag @click="openSelectPanelVersion" color="purple"
-                                               style="cursor: pointer; float: right;">[[ status.appStats.tx_update ]]
-                                        </a-tag>
-                                    </template>
-                                    <a-tag @click="openSelectPanelVersion" color="purple" style="cursor: pointer;">{{ i18n "pages.index.upgrade" }}
-                                    </a-tag>
-                                </a-popover>
-                                <a-tag @click="restartPanel" color="purple" style="cursor: pointer;" :style="isMobile ? 'margin-top: 10px;' : ''">{{ i18n
-                                    "pages.settings.restartPanel" }}
-                                </a-tag>
-                            </a-card>
-                        </a-col>
-                        <a-col :lg="12" :sm="24">
-                            <a-card hoverable>
-                                <b>{{ i18n "pages.index.operationHours" }}:</b>
-                                <a-tag :color="status.xray.color">Xray: [[ formatSecond(status.appStats.uptime) ]]
-                                </a-tag>
-                                <a-tag color="green">OS: [[ formatSecond(status.uptime) ]]</a-tag>
-                            </a-card>
-                        </a-col>
-                        <a-col :lg="12" :sm="24">
-                            <a-card hoverable>
-                                <b>{{ i18n "pages.index.xrayStatus" }}:</b>
-                                <a-tag :color="status.xray.color" style="text-transform: capitalize;">[[
-                                    status.xray.state == 'running' ? '{{ i18n "running" }}' : status.xray.state ]]
-                                </a-tag>
-                                <a-popover :overlay-class-name="themeSwitcher.currentTheme"
-                                           v-if="status.xray.state === State.Error">
-                    <span slot="title" style="font-size: 12pt">An error occurred while running Xray
-                      <a-tag @click="openLogs()" color="purple" style="cursor: pointer; float: right;">{{ i18n "pages.index.logs" }}</a-tag>
-                    </span>
-                                    <template slot="content">
-                                        <p style="max-width: 400px" v-for="line in status.xray.errorMsg.split('\n')">[[
-                                            line ]]</p>
-                                    </template>
-                                    <a-icon type="question-circle"></a-icon>
-                                </a-popover>
-                                <a-tag @click="stopXrayService" color="purple" style="cursor: pointer;">{{ i18n
-                                    "pages.index.stopXray" }}
-                                </a-tag>
-                                <a-tag @click="restartXrayService" color="purple" style="cursor: pointer;" :style="isMobile ? 'margin-bottom: 10px;' : ''">{{ i18n
-                                    "pages.index.restartXray" }}
-                                </a-tag>
-                                <a-tag v-if="status.xray && status.xray.hasWorkingConfig"
-                                       @click="rollbackXrayConfig" :color="status.xray.isRolledBack || status.xray.state === State.Error ? 'orange' : 'purple'"
-                                       style="cursor: pointer;" :style="isMobile ? 'margin-bottom: 10px;' : ''">
-                                    <a-icon type="rollback"></a-icon> {{ i18n "pages.index.rollbackXray" }}
-                                </a-tag>
-                                <a-tooltip v-if="status.xray && status.xray.isRolledBack" :title="status.xray.rollbackReason">
-                                    <a-tag color="orange" style="cursor: default;">
-                                        <a-icon type="warning"></a-icon> {{ i18n "pages.index.rolledBack" }}
-                                    </a-tag>
-                                </a-tooltip>
-                                <a-tag @click="openSelectV2rayVersion" color="purple" style="cursor: pointer;">v[[
-                                    status.xray.version ]]
-                                </a-tag>
-                            </a-card>
-                        </a-col>
-                        <a-col :lg="12" :sm="24">
-                            <a-card hoverable>
-                                <b>{{ i18n "menu.link" }}:</b>
-                                <a-tag @click="openLogs()" color="purple" style="cursor: pointer;">{{ i18n
-                                    "pages.index.logs" }}
-                                </a-tag>
-                                <a-tag @click="openXrayLogs()" color="purple" style="cursor: pointer;">{{ i18n "pages.index.xrayLogs" }}</a-tag>
-                                <a-tag @click="openConfig" color="purple" style="cursor: pointer;" :style="isMobile ? 'margin-bottom: 10px;' : ''">{{ i18n
-                                    "pages.index.config" }}
-                                </a-tag>
-                                <a-tag @click="openBackup" color="purple" style="cursor: pointer;">{{ i18n
-                                    "pages.index.backup" }}
-                                </a-tag>
-                            </a-card>
-                        </a-col>
-                        <a-col :lg="12" :sm="24">
-                            <a-card hoverable>
-                                <b>{{ i18n "pages.index.geoData" }}:</b>
-                                <a-tag @click="openSelectGeoVersion" color="purple" style="cursor: pointer;" :style="isMobile ? 'margin-bottom: 10px;' : ''">{{ i18n "pages.index.geoUpdate" }}</a-tag>
-                                <a-tag color="green">
-                                    <a-tooltip>
-                                        geoip.dat & geosite.dat [[ geoVersion(status.geoFiles.geoip) ]]
-                                        <template slot="title">
-                                            [[ geoFileMeta(status.geoFiles.geoip) ]]
+                            <a-card hoverable class="detail-card">
+                                <div class="detail-card-content">
+                                    <span class="detail-card-label">
+                                        <a-icon type="appstore" style="color: #3b82f6;"></a-icon>
+                                        TX-UI:
+                                    </span>
+                                    <a-tag @click="openSelectPanelVersion" color="green" style="cursor: pointer;">v{{ .cur_ver }}</a-tag>
+                                    <a href="https://t.me/TxUiPanel" rel="noopener" target="_blank">
+                                        <a-tag color="green"><a-icon type="send"></a-icon> @TxUiPanel</a-tag>
+                                    </a>
+                                    <a-popover
+                                            overlay-class-name="themeSwitcher.currentTheme"
+                                            v-if="status.appStats.tx_update !== '' && status.appStats.tx_update !== status.appStats.panel_version">
+                                        <span slot="title"
+                                              style="font-size: 12pt">{{ i18n "pages.index.upgradeAvail" }}</span>
+                                        <template slot="content">
+                                            <a-tag @click="openSelectPanelVersion" color="purple"
+                                                   style="cursor: pointer; float: right;">[[ status.appStats.tx_update ]]
+                                            </a-tag>
                                         </template>
-                                    </a-tooltip>
-                                </a-tag>
+                                        <a-tag @click="openSelectPanelVersion" color="purple" style="cursor: pointer;">
+                                            <a-icon type="cloud-download"></a-icon> {{ i18n "pages.index.upgrade" }}
+                                        </a-tag>
+                                    </a-popover>
+                                    <a-tag @click="restartPanel" color="purple" style="cursor: pointer;">
+                                        <a-icon type="reload"></a-icon> {{ i18n "pages.settings.restartPanel" }}
+                                    </a-tag>
+                                </div>
                             </a-card>
                         </a-col>
+
+                        <!-- Operation Hours -->
                         <a-col :lg="12" :sm="24">
-                            <a-card hoverable>
-                                <a-row>
-                                    <a-col :span="isMobile ? 24 : 12" :style="isMobile ? 'margin-bottom: 10px;' : ''">
-                                        <b>{{ i18n "pages.index.systemLoad" }}:</b>
+                            <a-card hoverable class="detail-card">
+                                <div class="detail-card-content">
+                                    <span class="detail-card-label">
+                                        <a-icon type="clock-circle" style="color: #10b981;"></a-icon>
+                                        {{ i18n "pages.index.operationHours" }}:
+                                    </span>
+                                    <a-tag :color="status.xray.color">
+                                        <a-icon type="sync"></a-icon> Xray: [[ formatSecond(status.appStats.uptime) ]]
+                                    </a-tag>
+                                    <a-tag color="green">
+                                        <a-icon type="desktop"></a-icon> OS: [[ formatSecond(status.uptime) ]]
+                                    </a-tag>
+                                </div>
+                            </a-card>
+                        </a-col>
+
+                        <!-- Xray Status -->
+                        <a-col :lg="12" :sm="24">
+                            <a-card hoverable class="detail-card">
+                                <div class="detail-card-content">
+                                    <span class="detail-card-label">
+                                        <a-icon type="safety-certificate" style="color: #8b5cf6;"></a-icon>
+                                        {{ i18n "pages.index.xrayStatus" }}:
+                                    </span>
+                                    <a-tag :color="status.xray.color" style="text-transform: capitalize;">
+                                        [[ status.xray.state == 'running' ? '{{ i18n "running" }}' : status.xray.state ]]
+                                    </a-tag>
+                                    <a-popover :overlay-class-name="themeSwitcher.currentTheme"
+                                               v-if="status.xray.state === State.Error">
+                                        <span slot="title" style="font-size: 12pt">An error occurred while running Xray
+                                          <a-tag @click="openLogs()" color="purple" style="cursor: pointer; float: right;">{{ i18n "pages.index.logs" }}</a-tag>
+                                        </span>
+                                        <template slot="content">
+                                            <p style="max-width: 400px" v-for="line in status.xray.errorMsg.split('\n')">[[ line ]]</p>
+                                        </template>
+                                        <a-icon type="question-circle" style="color: var(--ui-danger); cursor: pointer;"></a-icon>
+                                    </a-popover>
+                                    <a-tag @click="stopXrayService" color="purple" style="cursor: pointer;">
+                                        <a-icon type="poweroff"></a-icon> {{ i18n "pages.index.stopXray" }}
+                                    </a-tag>
+                                    <a-tag @click="restartXrayService" color="purple" style="cursor: pointer;">
+                                        <a-icon type="reload"></a-icon> {{ i18n "pages.index.restartXray" }}
+                                    </a-tag>
+                                    <a-tag v-if="status.xray && status.xray.hasWorkingConfig"
+                                           @click="rollbackXrayConfig" :color="status.xray.isRolledBack || status.xray.state === State.Error ? 'orange' : 'purple'"
+                                           style="cursor: pointer;">
+                                        <a-icon type="rollback"></a-icon> {{ i18n "pages.index.rollbackXray" }}
+                                    </a-tag>
+                                    <a-tooltip v-if="status.xray && status.xray.isRolledBack" :title="status.xray.rollbackReason">
+                                        <a-tag color="orange" style="cursor: default;">
+                                            <a-icon type="warning"></a-icon> {{ i18n "pages.index.rolledBack" }}
+                                        </a-tag>
+                                    </a-tooltip>
+                                    <a-tag @click="openSelectV2rayVersion" color="purple" style="cursor: pointer;">
+                                        v[[ status.xray.version ]]
+                                    </a-tag>
+                                </div>
+                            </a-card>
+                        </a-col>
+
+                        <!-- Quick Links -->
+                        <a-col :lg="12" :sm="24">
+                            <a-card hoverable class="detail-card">
+                                <div class="detail-card-content">
+                                    <span class="detail-card-label">
+                                        <a-icon type="link" style="color: #06b6d4;"></a-icon>
+                                        {{ i18n "menu.link" }}:
+                                    </span>
+                                    <a-tag @click="openLogs()" color="purple" style="cursor: pointer;">
+                                        <a-icon type="file-text"></a-icon> {{ i18n "pages.index.logs" }}
+                                    </a-tag>
+                                    <a-tag @click="openXrayLogs()" color="purple" style="cursor: pointer;">
+                                        <a-icon type="file-search"></a-icon> {{ i18n "pages.index.xrayLogs" }}
+                                    </a-tag>
+                                    <a-tag @click="openConfig" color="purple" style="cursor: pointer;">
+                                        <a-icon type="setting"></a-icon> {{ i18n "pages.index.config" }}
+                                    </a-tag>
+                                    <a-tag @click="openBackup" color="purple" style="cursor: pointer;">
+                                        <a-icon type="save"></a-icon> {{ i18n "pages.index.backup" }}
+                                    </a-tag>
+                                </div>
+                            </a-card>
+                        </a-col>
+
+                        <!-- GeoData -->
+                        <a-col :lg="12" :sm="24">
+                            <a-card hoverable class="detail-card">
+                                <div class="detail-card-content">
+                                    <span class="detail-card-label">
+                                        <a-icon type="compass" style="color: #ec4899;"></a-icon>
+                                        {{ i18n "pages.index.geoData" }}:
+                                    </span>
+                                    <a-tag @click="openSelectGeoVersion" color="purple" style="cursor: pointer;">
+                                        <a-icon type="cloud-download"></a-icon> {{ i18n "pages.index.geoUpdate" }}
+                                    </a-tag>
+                                    <a-tag color="green">
+                                        <a-tooltip>
+                                            <a-icon type="database"></a-icon> geoip.dat & geosite.dat [[ geoVersion(status.geoFiles.geoip) ]]
+                                            <template slot="title">
+                                                [[ geoFileMeta(status.geoFiles.geoip) ]]
+                                            </template>
+                                        </a-tooltip>
+                                    </a-tag>
+                                </div>
+                            </a-card>
+                        </a-col>
+
+                        <!-- System Load & Host -->
+                        <a-col :lg="12" :sm="24">
+                            <a-card hoverable class="detail-card">
+                                <div class="detail-card-split">
+                                    <div class="detail-card-half">
+                                        <span class="detail-card-label">
+                                            <a-icon type="line-chart" style="color: #f59e0b;"></a-icon>
+                                            {{ i18n "pages.index.systemLoad" }}:
+                                        </span>
                                         <a-tag color="green">
                                             <a-tooltip>
                                                 [[ status.loads[0] ]] | [[ status.loads[1] ]] | [[ status.loads[2] ]]
@@ -237,58 +545,84 @@
                                                 </template>
                                             </a-tooltip>
                                         </a-tag>
-                                    </a-col>
-                                    <a-col :span="isMobile ? 24 : 12">
-                                        <b>{{ i18n "pages.index.systemHost" }}:</b>
+                                    </div>
+                                    <div class="detail-card-half">
+                                        <span class="detail-card-label">
+                                            <a-icon type="desktop" style="color: #3b82f6;"></a-icon>
+                                            {{ i18n "pages.index.systemHost" }}:
+                                        </span>
                                         <a-tag color="green">[[ status.hostName ]]</a-tag>
-                                    </a-col>
-                                </a-row>
+                                    </div>
+                                </div>
                             </a-card>
                         </a-col>
+
+                        <!-- Process RAM & Threads -->
                         <a-col :lg="12" :sm="24">
-                            <a-card hoverable>
-                                <b>{{ i18n "usage"}}:</b>
-                                <a-tag color="green"> RAM: [[ sizeFormat(status.appStats.mem) ]]</a-tag>
-                                <a-tag color="green"> Threads: [[ status.appStats.threads ]]</a-tag>
+                            <a-card hoverable class="detail-card">
+                                <div class="detail-card-content">
+                                    <span class="detail-card-label">
+                                        <a-icon type="thunderbolt" style="color: #eab308;"></a-icon>
+                                        {{ i18n "usage"}}:
+                                    </span>
+                                    <a-tag color="green">
+                                        <a-icon type="cluster"></a-icon> RAM: [[ sizeFormat(status.appStats.mem) ]]
+                                    </a-tag>
+                                    <a-tag color="green">
+                                        <a-icon type="branches"></a-icon> Threads: [[ status.appStats.threads ]]
+                                    </a-tag>
+                                </div>
                             </a-card>
                         </a-col>
+
+                        <!-- Public IP -->
                         <a-col :lg="12" :sm="24">
-                            <a-card hoverable>
-                                <a-row>
-                                    <a-col :span="isMobile ? 24 : 12" :style="isMobile ? 'margin-bottom: 10px;' : ''">
-                                        <b>IPv4:</b>
+                            <a-card hoverable class="detail-card">
+                                <div class="detail-card-split">
+                                    <div class="detail-card-half">
+                                        <span class="detail-card-label">
+                                            <a-icon type="global" style="color: #06b6d4;"></a-icon>
+                                            IPv4:
+                                        </span>
                                         <a-tag>
                                             <a-tooltip>
-                                                <a-icon type="global"></a-icon>
                                                 [[ status.publicIP.ipv4 ]]
                                                 <template slot="title">
                                                     [[ status.publicIP.ipv4 ]]
                                                 </template>
                                             </a-tooltip>
                                         </a-tag>
-                                    </a-col>
-                                    <a-col :span="isMobile ? 24 : 12">
-                                        <b>IPv6:</b>
+                                    </div>
+                                    <div class="detail-card-half">
+                                        <span class="detail-card-label">
+                                            <a-icon type="global" style="color: #8b5cf6;"></a-icon>
+                                            IPv6:
+                                        </span>
                                         <a-tag>
                                             <a-tooltip>
-                                                <a-icon type="global"></a-icon>
                                                 [[ status.publicIP.ipv6 ]]
                                                 <template slot="title">
                                                     [[ status.publicIP.ipv6 ]]
                                                 </template>
                                             </a-tooltip>
                                         </a-tag>
-                                    </a-col>
-                                </a-row>
+                                    </div>
+                                </div>
                             </a-card>
                         </a-col>
+
+                        <!-- Network IO -->
                         <a-col :lg="12" :sm="24">
-                            <a-card hoverable>
-                                <a-row>
-                                    <a-col :span="isMobile ? 24 : 12" :style="isMobile ? 'margin-bottom: 10px;' : ''">
+                            <a-card hoverable class="detail-card">
+                                <div class="detail-card-split">
+                                    <div class="detail-card-half">
+                                        <span class="detail-card-label">
+                                            <a-icon type="swap" style="color: #10b981;"></a-icon>
+                                            Speed:
+                                        </span>
                                         <a-tag>
                                             <a-tooltip>
-                                                <a-icon type="arrow-up"></a-icon>
+                                                <a-icon type="arrow-up" style="color: var(--ui-primary);"></a-icon>
                                                 Up: [[ sizeFormat(status.netIO.up) ]]/s
                                                 <template slot="title">
                                                     {{ i18n "pages.index.upSpeed" }}
@@ -297,18 +631,21 @@
                                         </a-tag>
                                         <a-tag>
                                             <a-tooltip>
-                                                <a-icon type="arrow-down"></a-icon>
+                                                <a-icon type="arrow-down" style="color: var(--ui-success);"></a-icon>
                                                 Down: [[ sizeFormat(status.netIO.down) ]]/s
                                                 <template slot="title">
                                                     {{ i18n "pages.index.downSpeed" }}
                                                 </template>
                                             </a-tooltip>
                                         </a-tag>
-                                    </a-col>
-                                    <a-col :span="isMobile ? 24 : 12">
+                                    </div>
+                                    <div class="detail-card-half">
+                                        <span class="detail-card-label">
+                                            <a-icon type="api" style="color: #6366f1;"></a-icon>
+                                            Conns:
+                                        </span>
                                         <a-tag>
                                             <a-tooltip>
-                                                <a-icon type="swap"></a-icon>
                                                 TCP: [[ status.tcpCount ]]
                                                 <template slot="title">
                                                     {{ i18n "pages.index.connectionTcpCountDesc" }}
@@ -317,43 +654,46 @@
                                         </a-tag>
                                         <a-tag>
                                             <a-tooltip>
-                                                <a-icon type="swap"></a-icon>
                                                 UDP: [[ status.udpCount ]]
                                                 <template slot="title">
                                                     {{ i18n "pages.index.connectionUdpCountDesc" }}
                                                 </template>
                                             </a-tooltip>
                                         </a-tag>
-                                    </a-col>
-                                </a-row>
+                                    </div>
+                                </div>
                             </a-card>
                         </a-col>
+
+                        <!-- Traffic Sent / Received -->
                         <a-col :lg="12" :sm="24">
-                            <a-card hoverable>
-                                <a-row>
-                                    <a-col :span="12">
+                            <a-card hoverable class="detail-card">
+                                <div class="detail-card-split">
+                                    <div class="detail-card-half">
+                                        <span class="detail-card-label">
+                                            <a-icon type="cloud" style="color: #3b82f6;"></a-icon>
+                                            Traffic:
+                                        </span>
                                         <a-tag>
                                             <a-tooltip>
-                                                <a-icon type="cloud-upload"></a-icon>
+                                                <a-icon type="cloud-upload" style="color: var(--ui-primary);"></a-icon>
+                                                Out: [[ sizeFormat(status.netTraffic.sent) ]]
                                                 <template slot="title">
                                                     {{ i18n "pages.index.totalSent" }}
                                                 </template>
-                                                Out: [[ sizeFormat(status.netTraffic.sent) ]]
                                             </a-tooltip>
                                         </a-tag>
-                                    </a-col>
-                                    <a-col :span="12">
                                         <a-tag>
                                             <a-tooltip>
-                                                <a-icon type="cloud-download"></a-icon>
+                                                <a-icon type="cloud-download" style="color: var(--ui-success);"></a-icon>
+                                                In: [[ sizeFormat(status.netTraffic.recv) ]]
                                                 <template slot="title">
                                                     {{ i18n "pages.index.totalReceive" }}
                                                 </template>
-                                                In: [[ sizeFormat(status.netTraffic.recv) ]]
                                             </a-tooltip>
                                         </a-tag>
-                                    </a-col>
-                                </a-row>
+                                    </div>
+                                </div>
                             </a-card>
                         </a-col>
                     </a-row>

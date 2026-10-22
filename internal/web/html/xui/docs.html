@@ -2,10 +2,16 @@
 <html lang="en">
 {{template "head" .}}
 <style>
+    @media (min-width: 769px) {
+        .ant-layout-content {
+            margin: 24px 16px;
+        }
+    }
+
     .docs-container {
         max-width: 1400px;
         margin: 0 auto;
-        padding-bottom: 60px;
+        padding-bottom: 72px;
     }
 
     /* Hero Banner */
@@ -40,7 +46,7 @@
         font-weight: 600;
         padding: 2px 10px;
         border-radius: 9999px;
-        background: #2563eb;
+        background: var(--ui-primary);
         color: #ffffff;
         letter-spacing: 0.5px;
     }
@@ -51,6 +57,20 @@
         max-width: 800px;
         line-height: 1.6;
         margin-bottom: 18px;
+    }
+
+    .docs-hero-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+    }
+
+    .docs-hero-actions .ant-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        touch-action: manipulation;
     }
 
     /* Stats Strip */
@@ -91,6 +111,7 @@
         font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, Courier, monospace;
         color: var(--ui-text);
         word-break: break-all;
+        overflow-wrap: anywhere;
     }
 
     /* Filter & Search Bar */
@@ -126,6 +147,10 @@
         flex: 1 1 320px;
     }
 
+    .docs-method-filter {
+        flex-shrink: 0;
+    }
+
     .docs-category-pills {
         display: flex;
         flex-wrap: wrap;
@@ -143,6 +168,11 @@
         color: var(--ui-text);
         transition: all 0.2s ease;
         user-select: none;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
     }
 
     .docs-pill:hover {
@@ -164,11 +194,20 @@
 
     .docs-group-header {
         display: flex;
-        align-items: center;
-        gap: 12px;
+        flex-wrap: wrap;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 8px 12px;
         margin-bottom: 14px;
         padding-bottom: 8px;
         border-bottom: 2px solid var(--ui-border);
+    }
+
+    .docs-group-header-main {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
     }
 
     .docs-group-title {
@@ -191,6 +230,11 @@
         color: var(--ui-text-muted);
     }
 
+    .docs-group-desc {
+        color: var(--ui-text-muted);
+        font-size: 12px;
+    }
+
     /* Endpoint Card */
     .endpoint-card {
         background: var(--ui-surface);
@@ -211,7 +255,7 @@
     }
 
     .endpoint-card.expanded {
-        border-color: rgba(37, 99, 235, 0.4);
+        border-color: var(--ui-primary);
     }
 
     .endpoint-header {
@@ -222,6 +266,8 @@
         cursor: pointer;
         gap: 12px;
         user-select: none;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
     }
 
     .endpoint-header-left {
@@ -241,6 +287,7 @@
         min-width: 58px;
         text-align: center;
         text-transform: uppercase;
+        flex-shrink: 0;
     }
 
     .method-get {
@@ -267,6 +314,7 @@
         font-weight: 600;
         color: var(--ui-text);
         word-break: break-all;
+        overflow-wrap: anywhere;
     }
 
     .endpoint-summary {
@@ -288,6 +336,11 @@
         display: flex;
         align-items: center;
         gap: 8px;
+        flex-shrink: 0;
+    }
+
+    .endpoint-header-right .ant-btn {
+        touch-action: manipulation;
     }
 
     /* Endpoint Body Details */
@@ -317,7 +370,7 @@
         justify-content: space-between;
     }
 
-    /* Code Blocks */
+    /* Code Blocks & Syntax Highlighting */
     .code-container {
         position: relative;
         background: #0f172a;
@@ -325,47 +378,139 @@
         border: 1px solid #1e293b;
         margin-bottom: 12px;
         overflow: hidden;
+        transition: background-color 0.2s ease, border-color 0.2s ease;
+    }
+
+    .dark .code-container {
+        background: #090e17;
+        border-color: rgba(255, 255, 255, 0.1);
+    }
+
+    html[data-theme="ultra-dark"] .code-container {
+        background: #000000;
+        border-color: #222222;
     }
 
     .code-content {
         margin: 0;
         padding: 14px 16px;
+        padding-right: 80px;
         color: #e2e8f0;
         font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, Courier, monospace;
         font-size: 12px;
-        line-height: 1.55;
+        line-height: 1.6;
+        tab-size: 2;
         overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .code-content code {
+        background: transparent;
+        border: none;
+        padding: 0;
+        font-size: 12px;
+        color: inherit;
+        font-family: inherit;
+    }
+
+    /* Syntax Tokens */
+    .tok-key {
+        color: #38bdf8;
+        font-weight: 600;
+    }
+    .tok-str {
+        color: #4ade80;
+    }
+    .tok-num {
+        color: #fbbf24;
+    }
+    .tok-bool {
+        color: #f472b6;
+        font-weight: 600;
+    }
+    .tok-null {
+        color: #94a3b8;
+        font-style: italic;
+    }
+    .tok-kw {
+        color: #c084fc;
+        font-weight: 600;
+    }
+    .tok-fn {
+        color: #60a5fa;
+    }
+    .tok-cmd {
+        color: #38bdf8;
+        font-weight: 600;
+    }
+    .tok-flag {
+        color: #f472b6;
+    }
+    .tok-var {
+        color: #fbbf24;
+    }
+    .tok-val {
+        color: #f472b6;
+    }
+    .tok-comment {
+        color: #64748b;
+        font-style: italic;
+    }
+
+    /* Inline code */
+    code {
+        font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, Courier, monospace;
+        font-size: 11.5px;
+        background: var(--ui-surface-muted);
+        border: 1px solid var(--ui-border);
+        color: var(--ui-text);
+        padding: 2px 6px;
+        border-radius: 4px;
     }
 
     .copy-button {
         position: absolute;
         top: 8px;
         right: 8px;
-        padding: 3px 8px;
+        padding: 4px 10px;
         font-size: 11px;
         border-radius: 4px;
-        background: rgba(255, 255, 255, 0.1);
-        color: #94a3b8;
+        background: rgba(30, 41, 59, 0.85);
+        backdrop-filter: blur(4px);
+        color: #cbd5e1;
         border: 1px solid rgba(255, 255, 255, 0.15);
         cursor: pointer;
         transition: all 0.2s ease;
+        touch-action: manipulation;
+        z-index: 2;
     }
 
-    .copy-button:hover {
-        background: rgba(255, 255, 255, 0.2);
+    .copy-button:hover,
+    .copy-button:active {
+        background: rgba(51, 65, 85, 0.95);
         color: #ffffff;
     }
 
-    /* Table styling */
-    .param-table {
+    /* Table styling & responsive wrapper */
+    .param-table-wrapper {
         width: 100%;
-        border-collapse: collapse;
-        font-size: 12px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
         margin-bottom: 14px;
-        background: var(--ui-surface);
         border-radius: var(--ui-radius-sm);
         border: 1px solid var(--ui-border);
-        overflow: hidden;
+        background: var(--ui-surface);
+        scrollbar-width: thin;
+    }
+
+    .param-table {
+        width: 100%;
+        min-width: 460px;
+        border-collapse: collapse;
+        font-size: 12px;
+        background: var(--ui-surface);
+        border: none;
+        margin-bottom: 0;
     }
 
     .param-table th {
@@ -375,6 +520,7 @@
         font-weight: 600;
         color: var(--ui-text-muted);
         border-bottom: 1px solid var(--ui-border);
+        white-space: nowrap;
     }
 
     .param-table td {
@@ -392,12 +538,14 @@
         font-family: SFMono-Regular, Consolas, monospace;
         font-weight: 600;
         color: var(--ui-primary);
+        word-break: break-all;
     }
 
     .param-type {
         font-family: SFMono-Regular, Consolas, monospace;
         font-size: 11px;
-        color: #d97706;
+        color: var(--ui-warning);
+        white-space: nowrap;
     }
 
     .param-tag {
@@ -409,6 +557,7 @@
         font-weight: 600;
         display: inline-block;
         margin-left: 4px;
+        white-space: nowrap;
     }
 
     /* Examples Section */
@@ -419,6 +568,315 @@
         padding: 24px;
         margin-top: 32px;
     }
+
+    .examples-title {
+        margin-bottom: 16px;
+        font-weight: 700;
+        color: var(--ui-text);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .examples-desc {
+        color: var(--ui-text-muted);
+        font-size: 13px;
+        margin-bottom: 20px;
+    }
+
+    .examples-card .ant-tabs {
+        color: var(--ui-text);
+    }
+
+    .examples-card .ant-tabs-bar {
+        border-bottom: 1px solid var(--ui-border);
+        margin-bottom: 16px;
+    }
+
+    .examples-card .ant-tabs-nav .ant-tabs-tab {
+        color: var(--ui-text-muted);
+        font-weight: 500;
+        transition: color 0.2s ease;
+    }
+
+    .examples-card .ant-tabs-nav .ant-tabs-tab:hover {
+        color: var(--ui-primary);
+    }
+
+    .examples-card .ant-tabs-nav .ant-tabs-tab-active {
+        color: var(--ui-primary) !important;
+        font-weight: 600;
+    }
+
+    /* Ultra-Dark Mode Support */
+    html[data-theme="ultra-dark"] #app,
+    html[data-theme="ultra-dark"] #content-layout,
+    html[data-theme="ultra-dark"] .docs-hero,
+    html[data-theme="ultra-dark"] .endpoint-card,
+    html[data-theme="ultra-dark"] .docs-toolbar,
+    html[data-theme="ultra-dark"] .docs-stat-card,
+    html[data-theme="ultra-dark"] .examples-card,
+    html[data-theme="ultra-dark"] .param-table-wrapper,
+    html[data-theme="ultra-dark"] .param-table {
+        background: #000000 !important;
+        border-color: #222222 !important;
+    }
+
+    html[data-theme="ultra-dark"] .endpoint-body,
+    html[data-theme="ultra-dark"] .param-table th,
+    html[data-theme="ultra-dark"] .docs-pill {
+        background: #0a0a0a !important;
+        border-color: #222222 !important;
+    }
+
+    html[data-theme="ultra-dark"] .docs-pill.active {
+        background: var(--ui-primary) !important;
+        border-color: var(--ui-primary) !important;
+    }
+
+    html[data-theme="ultra-dark"] .code-container {
+        background: #000000 !important;
+        border-color: #1e1e1e !important;
+    }
+
+    /* Responsive Media Queries */
+    @media (max-width: 768px) {
+        .docs-container {
+            padding-bottom: 80px;
+        }
+
+        .docs-hero {
+            padding: 18px 16px;
+            margin-bottom: 16px;
+            border-radius: var(--ui-radius);
+        }
+
+        .docs-hero-title {
+            font-size: 20px;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .docs-hero-desc {
+            font-size: 13px;
+            line-height: 1.5;
+            margin-bottom: 14px;
+        }
+
+        .docs-stats {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+            margin-top: 14px;
+        }
+
+        .docs-stat-card {
+            padding: 10px 12px;
+        }
+
+        .docs-stat-label {
+            font-size: 10px;
+        }
+
+        .docs-stat-value {
+            font-size: 11.5px;
+        }
+
+        .docs-toolbar {
+            position: sticky;
+            top: 0;
+            padding: 12px 14px;
+            margin-bottom: 16px;
+            gap: 10px;
+            border-radius: var(--ui-radius);
+        }
+
+        .docs-toolbar-top {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 10px;
+        }
+
+        .docs-search-input {
+            width: 100%;
+            flex: 1 1 100%;
+        }
+
+        .docs-method-filter {
+            width: 100%;
+        }
+
+        .docs-method-filter .ant-radio-group {
+            display: flex;
+            width: 100%;
+        }
+
+        .docs-method-filter .ant-radio-button-wrapper {
+            flex: 1;
+            text-align: center;
+            padding: 0 4px;
+            font-size: 11px;
+            height: 32px;
+            line-height: 30px;
+        }
+
+        .docs-category-pills {
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scroll-behavior: smooth;
+            padding: 2px 2px 6px 2px;
+            margin-inline: -4px;
+            scrollbar-width: none;
+        }
+
+        .docs-category-pills::-webkit-scrollbar {
+            display: none;
+        }
+
+        .docs-pill {
+            flex-shrink: 0;
+            white-space: nowrap;
+            padding: 5px 12px;
+            font-size: 11.5px;
+            gap: 5px;
+        }
+
+        .docs-group {
+            margin-bottom: 24px;
+        }
+
+        .docs-group-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 4px;
+            margin-bottom: 10px;
+            padding-bottom: 6px;
+        }
+
+        .docs-group-title {
+            font-size: 16px;
+        }
+
+        .docs-group-badge {
+            font-size: 10px;
+            padding: 1px 6px;
+        }
+
+        .docs-group-desc {
+            font-size: 11.5px;
+        }
+
+        .endpoint-card {
+            margin-bottom: 10px;
+        }
+
+        .endpoint-header {
+            padding: 10px 12px;
+            gap: 8px;
+        }
+
+        .endpoint-header-left {
+            gap: 8px;
+        }
+
+        .endpoint-method {
+            font-size: 10px;
+            padding: 2px 6px;
+            min-width: 48px;
+        }
+
+        .endpoint-path {
+            font-size: 12px;
+        }
+
+        .endpoint-header-right {
+            gap: 6px;
+        }
+
+        .endpoint-body {
+            padding: 12px 12px 16px 12px;
+        }
+
+        .endpoint-desc {
+            font-size: 12.5px;
+            margin-bottom: 12px;
+        }
+
+        .endpoint-subheading {
+            font-size: 11px;
+            margin-top: 14px;
+            margin-bottom: 6px;
+        }
+
+        .param-table th,
+        .param-table td {
+            padding: 7px 10px;
+            font-size: 11.5px;
+        }
+
+        .param-name {
+            font-size: 11px;
+        }
+
+        .param-type {
+            font-size: 10.5px;
+        }
+
+        .code-content {
+            padding: 10px 12px;
+            padding-right: 66px;
+            font-size: 11px;
+            line-height: 1.5;
+        }
+
+        .copy-button {
+            top: 6px;
+            right: 6px;
+            padding: 3px 8px;
+            font-size: 10px;
+        }
+
+        .examples-card {
+            padding: 16px 14px;
+            margin-top: 20px;
+        }
+
+        .examples-title {
+            font-size: 15px !important;
+            margin-bottom: 10px !important;
+        }
+
+        .examples-desc {
+            font-size: 12px !important;
+            margin-bottom: 14px !important;
+            line-height: 1.5;
+        }
+
+        .examples-card .ant-tabs-nav .ant-tabs-tab {
+            padding: 8px 10px;
+            margin-right: 4px;
+            font-size: 12px;
+        }
+    }
+
+    @media (max-width: 520px) {
+        .docs-hero-actions .ant-btn {
+            flex: 1 1 calc(50% - 8px);
+            min-width: 125px;
+            font-size: 12px;
+            padding: 0 8px;
+        }
+    }
+
+    @media (max-width: 440px) {
+        .docs-stats {
+            grid-template-columns: 1fr;
+        }
+
+        .docs-hero-actions .ant-btn {
+            flex: 1 1 100%;
+        }
+    }
 </style>
 
 <body>
@@ -427,27 +885,32 @@
     <a-layout id="content-layout">
         <a-layout-content>
             <div class="docs-container">
+                <a-back-top :target="() => document.getElementById('content-layout')" :visibility-height="200"></a-back-top>
+
                 <!-- Hero Header -->
                 <div class="docs-hero">
                     <div class="docs-hero-title">
-                        <span><a-icon type="api" style="color: #2563eb;"></a-icon> TX-UI REST API</span>
+                        <span><a-icon type="api" style="color: var(--ui-primary);"></a-icon> TX-UI REST API</span>
                         <span class="docs-hero-badge">v{{ .cur_ver }}</span>
                     </div>
                     <div class="docs-hero-desc">
                         Comprehensive interactive HTTP REST API reference for <strong>TX-UI</strong>. Automate client management,
                         monitor real-time system metrics, configure Xray-core inbounds/outbounds, trigger rollbacks, and manage database operations.
                     </div>
-                    <div>
+                    <div class="docs-hero-actions">
                         <a-button type="primary" icon="copy" @click="copyBaseUrl">
                             Copy API Base URL
                         </a-button>
-                        <a-button icon="folder-open" style="margin-left: 8px;" @click="toggleAll(true)">
+                        <a-button icon="folder-open" @click="toggleAll(true)">
                             Expand All
                         </a-button>
-                        <a-button icon="folder" style="margin-left: 8px;" @click="toggleAll(false)">
+                        <a-button icon="folder" @click="toggleAll(false)">
                             Collapse All
                         </a-button>
-                        <a-button icon="file-text" style="margin-left: 8px;" @click="openMarkdownDocs">
+                        <a-button icon="bulb" @click="themeSwitcher.toggleTheme()">
+                            [[ themeSwitcher.isDarkTheme ? 'Dark Mode' : 'Light Mode' ]]
+                        </a-button>
+                        <a-button icon="file-text" @click="openMarkdownDocs">
                             View API.md
                         </a-button>
                     </div>
@@ -484,7 +947,7 @@
                                 size="large">
                             </a-input-search>
                         </div>
-                        <div>
+                        <div class="docs-method-filter">
                             <a-radio-group v-model="selectedMethod" size="small" button-style="solid">
                                 <a-radio-button value="ALL">ALL METHODS</a-radio-button>
                                 <a-radio-button value="GET">GET</a-radio-button>
@@ -499,7 +962,8 @@
                             class="docs-pill"
                             :class="{ active: selectedCategory === 'ALL' }"
                             @click="selectedCategory = 'ALL'">
-                            All Categories ([[ totalEndpointsCount ]])
+                            <a-icon type="appstore"></a-icon>
+                            <span>All Categories ([[ totalEndpointsCount ]])</span>
                         </div>
                         <div
                             v-for="cat in categories"
@@ -507,13 +971,14 @@
                             class="docs-pill"
                             :class="{ active: selectedCategory === cat.id }"
                             @click="selectedCategory = cat.id">
-                            [[ cat.icon ]] [[ cat.name ]] ([[ getCategoryCount(cat.id) ]])
+                            <a-icon :type="cat.icon"></a-icon>
+                            <span>[[ cat.name ]] ([[ getCategoryCount(cat.id) ]])</span>
                         </div>
                     </div>
                 </div>
 
                 <!-- Empty State -->
-                <div v-if="filteredGroups.length === 0" style="text-align: center; padding: 48px 0;">
+                <div v-if="filteredGroups.length === 0" style="text-align: center; padding: 48px 16px;">
                     <a-empty description="No endpoints match your search criteria"></a-empty>
                     <a-button style="margin-top: 12px;" @click="resetFilters">Reset Filters</a-button>
                 </div>
@@ -521,12 +986,14 @@
                 <!-- Endpoint Groups -->
                 <div v-for="group in filteredGroups" :key="group.id" class="docs-group">
                     <div class="docs-group-header">
-                        <h3 class="docs-group-title">
-                            <span>[[ group.icon ]]</span>
-                            <span>[[ group.name ]]</span>
-                        </h3>
-                        <span class="docs-group-badge">[[ group.endpoints.length ]] endpoints</span>
-                        <small style="color: var(--ui-text-muted); margin-left: 8px;">[[ group.description ]]</small>
+                        <div class="docs-group-header-main">
+                            <h3 class="docs-group-title">
+                                <a-icon :type="group.icon" style="color: #2563eb; font-size: 17px;"></a-icon>
+                                <span>[[ group.name ]]</span>
+                            </h3>
+                            <span class="docs-group-badge">[[ group.endpoints.length ]] endpoints</span>
+                        </div>
+                        <div class="docs-group-desc">[[ group.description ]]</div>
                     </div>
 
                     <!-- Endpoints in Group -->
@@ -563,29 +1030,31 @@
                             <!-- Parameters Table (if any) -->
                             <div v-if="ep.params && ep.params.length > 0">
                                 <div class="endpoint-subheading">Parameters</div>
-                                <table class="param-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Name</th>
-                                            <th>Type</th>
-                                            <th>In</th>
-                                            <th>Required</th>
-                                            <th>Description</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr v-for="p in ep.params" :key="p.name">
-                                            <td><span class="param-name">[[ p.name ]]</span></td>
-                                            <td><span class="param-type">[[ p.type ]]</span></td>
-                                            <td><code>[[ p.in ]]</code></td>
-                                            <td>
-                                                <span v-if="p.required" class="param-tag">required</span>
-                                                <span v-else style="color: var(--ui-text-muted);">optional</span>
-                                            </td>
-                                            <td>[[ p.description ]]</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
+                                <div class="param-table-wrapper">
+                                    <table class="param-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Name</th>
+                                                <th>Type</th>
+                                                <th>In</th>
+                                                <th>Required</th>
+                                                <th>Description</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr v-for="p in ep.params" :key="p.name">
+                                                <td><span class="param-name">[[ p.name ]]</span></td>
+                                                <td><span class="param-type">[[ p.type ]]</span></td>
+                                                <td><code>[[ p.in ]]</code></td>
+                                                <td>
+                                                    <span v-if="p.required" class="param-tag">required</span>
+                                                    <span v-else style="color: var(--ui-text-muted);">optional</span>
+                                                </td>
+                                                <td>[[ p.description ]]</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
 
                             <!-- Request Body Example -->
@@ -597,7 +1066,7 @@
                                     <button class="copy-button" @click="copyText(formatJson(ep.requestBody), 'Request payload copied')">
                                         Copy JSON
                                     </button>
-                                    <pre class="code-content"><code>[[ formatJson(ep.requestBody) ]]</code></pre>
+                                    <pre class="code-content"><code v-html="highlightJson(ep.requestBody)"></code></pre>
                                 </div>
                             </div>
 
@@ -610,7 +1079,7 @@
                                     <button class="copy-button" @click="copyText(formatJson(ep.response), 'Response JSON copied')">
                                         Copy JSON
                                     </button>
-                                    <pre class="code-content"><code>[[ formatJson(ep.response) ]]</code></pre>
+                                    <pre class="code-content"><code v-html="highlightJson(ep.response)"></code></pre>
                                 </div>
                             </div>
 
@@ -623,7 +1092,7 @@
                                     <button class="copy-button" @click="copyText(generateCurl(ep), 'cURL command copied')">
                                         Copy cURL
                                     </button>
-                                    <pre class="code-content"><code>[[ generateCurl(ep) ]]</code></pre>
+                                    <pre class="code-content"><code v-html="highlightBash(generateCurl(ep))"></code></pre>
                                 </div>
                             </div>
                         </div>
@@ -632,11 +1101,11 @@
 
                 <!-- Code Integration Examples Section -->
                 <div class="examples-card">
-                    <h3 style="margin-bottom: 16px; font-weight: 700; color: var(--ui-text); display: flex; align-items: center; gap: 8px;">
-                        <a-icon type="code" style="color: #2563eb;"></a-icon>
+                    <h3 class="examples-title">
+                        <a-icon type="code" style="color: var(--ui-primary);"></a-icon>
                         Client Integration Examples
                     </h3>
-                    <p style="color: var(--ui-text-muted); font-size: 13px; margin-bottom: 20px;">
+                    <p class="examples-desc">
                         Because TX-UI endpoints require an authenticated session, your client script must first call <code>POST /login</code>,
                         store the returned <code>tx-ui</code> cookie, and pass it with subsequent API calls.
                     </p>
@@ -647,7 +1116,7 @@
                                 <button class="copy-button" @click="copyText(pythonExampleCode, 'Python snippet copied')">
                                     Copy Code
                                 </button>
-                                <pre class="code-content"><code>[[ pythonExampleCode ]]</code></pre>
+                                <pre class="code-content"><code v-html="highlightPython(pythonExampleCode)"></code></pre>
                             </div>
                         </a-tab-pane>
 
@@ -656,7 +1125,7 @@
                                 <button class="copy-button" @click="copyText(bashExampleCode, 'Bash snippet copied')">
                                     Copy Code
                                 </button>
-                                <pre class="code-content"><code>[[ bashExampleCode ]]</code></pre>
+                                <pre class="code-content"><code v-html="highlightBash(bashExampleCode)"></code></pre>
                             </div>
                         </a-tab-pane>
 
@@ -665,7 +1134,7 @@
                                 <button class="copy-button" @click="copyText(nodeExampleCode, 'Node.js snippet copied')">
                                     Copy Code
                                 </button>
-                                <pre class="code-content"><code>[[ nodeExampleCode ]]</code></pre>
+                                <pre class="code-content"><code v-html="highlightJs(nodeExampleCode)"></code></pre>
                             </div>
                         </a-tab-pane>
                     </a-tabs>
@@ -1317,12 +1786,12 @@
             selectedMethod: 'ALL',
             expandedIds: {},
             categories: [
-                { id: 'auth', name: 'Auth & Sessions', icon: '🔐' },
-                { id: 'clients', name: 'Node Clients', icon: '👥' },
-                { id: 'inbounds', name: 'Inbounds', icon: '🌐' },
-                { id: 'server', name: 'Server & System', icon: '⚡' },
-                { id: 'settings', name: 'Settings & DB', icon: '⚙️' },
-                { id: 'xray', name: 'Xray Core', icon: '🔀' },
+                { id: 'auth', name: 'Auth & Sessions', icon: 'lock' },
+                { id: 'clients', name: 'Node Clients', icon: 'team' },
+                { id: 'inbounds', name: 'Inbounds', icon: 'cloud' },
+                { id: 'server', name: 'Server & System', icon: 'dashboard' },
+                { id: 'settings', name: 'Settings & DB', icon: 'setting' },
+                { id: 'xray', name: 'Xray Core', icon: 'tool' },
             ],
             endpoints: API_ENDPOINTS_DATA,
         },
@@ -1384,7 +1853,7 @@ login_res = session.post(f"{BASE_URL}/login", json={
 if not login_res.json().get("success"):
     raise Exception(f"Login failed: {login_res.text}")
 
-print("✓ Logged into TX-UI successfully!")
+print("[SUCCESS] Logged into TX-UI successfully!")
 
 # 2. Query System Status
 status = session.get(f"{BASE_URL}/panel/api/server/status").json()
@@ -1481,6 +1950,80 @@ main().catch(console.error);
                 } catch (e) {
                     return String(obj);
                 }
+            },
+            escapeHtml(str) {
+                if (str === null || str === undefined) return '';
+                return String(str)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;');
+            },
+            highlightJson(input) {
+                if (input === undefined || input === null) return '';
+                const jsonStr = typeof input === 'string' ? input : JSON.stringify(input, null, 2);
+                const escaped = this.escapeHtml(jsonStr);
+                return escaped.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function(match) {
+                    if (match[0] === '"') {
+                        if (match.trim().endsWith(':')) {
+                            const colonIdx = match.lastIndexOf(':');
+                            return '<span class="tok-key">' + match.slice(0, colonIdx) + '</span>' + match.slice(colonIdx);
+                        }
+                        return '<span class="tok-str">' + match + '</span>';
+                    } else if (match === 'true' || match === 'false') {
+                        return '<span class="tok-bool">' + match + '</span>';
+                    } else if (match === 'null') {
+                        return '<span class="tok-null">' + match + '</span>';
+                    } else {
+                        return '<span class="tok-num">' + match + '</span>';
+                    }
+                });
+            },
+            highlightBash(code) {
+                if (!code) return '';
+                const escaped = this.escapeHtml(code);
+                const tokenRegex = /(#[^\n]*)|("(?:\\.|[^"\\])*")|('(?:\\.|[^'\\])*')|(\$[A-Za-z0-9_]+|\$\{[A-Za-z0-9_]+\})|(-{1,2}[a-zA-Z0-9_-]+)|(\b(?:curl|POST|GET|DELETE|PUT|PATCH|export|source|alias|cat|echo|grep|sed|awk)\b)/g;
+                return escaped.replace(tokenRegex, function(match, comment, dstr, sstr, variable, flag, cmd) {
+                    if (comment) return '<span class="tok-comment">' + comment + '</span>';
+                    if (dstr || sstr) return '<span class="tok-str">' + match + '</span>';
+                    if (variable) return '<span class="tok-var">' + match + '</span>';
+                    if (flag) return '<span class="tok-flag">' + match + '</span>';
+                    if (cmd) return '<span class="tok-cmd">' + match + '</span>';
+                    return match;
+                });
+            },
+            highlightPython(code) {
+                if (!code) return '';
+                const escaped = this.escapeHtml(code);
+                const tokenRegex = /(#[^\n]*)|(f?"""[\s\S]*?"""|f?'''[\s\S]*?'''|f?"(?:\\.|[^"\\])*"|f?'(?:\\.|[^'\\])*')|(\b(?:import|from|as|def|return|if|elif|else|for|while|in|not|and|or|is|try|except|finally|raise|with|class|None|True|False)\b)|(\b(?:print|len|range|int|str|dict|list|set|open|requests|Session|Exception)\b)|(\b\d+(?:\.\d+)?\b)/g;
+                return escaped.replace(tokenRegex, function(match, comment, str, kw, fn, num) {
+                    if (comment) return '<span class="tok-comment">' + comment + '</span>';
+                    if (str) return '<span class="tok-str">' + match + '</span>';
+                    if (kw) return '<span class="tok-kw">' + match + '</span>';
+                    if (fn) return '<span class="tok-fn">' + match + '</span>';
+                    if (num) return '<span class="tok-num">' + match + '</span>';
+                    return match;
+                });
+            },
+            highlightJs(code) {
+                if (!code) return '';
+                const escaped = this.escapeHtml(code);
+                const tokenRegex = /(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|(`(?:\\.|[^`\\])*`|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')|(\b(?:const|let|var|function|async|await|return|if|else|for|while|try|catch|finally|throw|new|import|export|from|require|default|class|extends)\b)|(\b(?:true|false|null|undefined|console|Promise|Array|Object|String|Number)\b)|(\b\d+(?:\.\d+)?\b)/g;
+                return escaped.replace(tokenRegex, function(match, comment, str, kw, val, num) {
+                    if (comment) return '<span class="tok-comment">' + comment + '</span>';
+                    if (str) return '<span class="tok-str">' + match + '</span>';
+                    if (kw) return '<span class="tok-kw">' + match + '</span>';
+                    if (val) return '<span class="tok-val">' + match + '</span>';
+                    if (num) return '<span class="tok-num">' + match + '</span>';
+                    return match;
+                });
+            },
+            highlightCode(code, lang) {
+                if (!code) return '';
+                if (lang === 'json') return this.highlightJson(code);
+                if (lang === 'bash' || lang === 'curl' || lang === 'sh') return this.highlightBash(code);
+                if (lang === 'python' || lang === 'py') return this.highlightPython(code);
+                if (lang === 'js' || lang === 'javascript' || lang === 'node') return this.highlightJs(code);
+                return this.escapeHtml(code);
             },
             generateCurl(ep) {
                 const origin = window.location.origin;

@@ -1585,6 +1585,12 @@ li.ant-calendar-time-picker-select-option-selected {
     width: min(760px, calc(100vw - 40px)) !important;
 }
 
+.panel-modal-detail .ant-modal,
+#client-detail-modal.ant-modal,
+#inbound-info-modal.ant-modal {
+    width: min(880px, calc(100vw - 40px)) !important;
+}
+
 .panel-modal-xl .ant-modal {
     width: min(900px, calc(100vw - 40px)) !important;
 }
@@ -1832,18 +1838,58 @@ li.ant-calendar-time-picker-select-option-selected {
     color: #ffffff !important;
 }
 
-/* Dashboard and login polish */
-#content-layout .ant-progress-text {
-    color: var(--ui-text);
-    font-weight: 650;
+/* Modern Progress Bars & Dashboard Gauges */
+.ant-progress-line {
+    font-size: 12px;
+}
+
+.ant-progress-inner {
+    background-color: var(--ui-surface-muted) !important;
+    border-radius: 9999px !important;
+    overflow: hidden;
+}
+
+.dark .ant-progress-inner {
+    background-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+html[data-theme="ultra-dark"] .ant-progress-inner {
+    background-color: #1a1a1e !important;
+}
+
+.ant-progress-bg {
+    border-radius: 9999px !important;
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    position: relative;
 }
 
 .ant-progress:not(.ant-progress-status-exception):not(.ant-progress-status-success) .ant-progress-bg {
     background-color: var(--ui-primary);
 }
 
+#content-layout .ant-progress-text {
+    color: var(--ui-text);
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: -0.2px;
+}
+
 #content-layout .ant-progress-circle-trail {
-    stroke: var(--ui-border);
+    stroke: rgba(0, 0, 0, 0.06);
+    transition: stroke 0.3s;
+}
+
+.dark #content-layout .ant-progress-circle-trail {
+    stroke: rgba(255, 255, 255, 0.08);
+}
+
+html[data-theme="ultra-dark"] #content-layout .ant-progress-circle-trail {
+    stroke: #222226;
+}
+
+#content-layout .ant-progress-circle-path {
+    stroke-linecap: round !important;
+    transition: stroke-dashoffset 0.5s cubic-bezier(0.16, 1, 0.3, 1), stroke 0.3s ease !important;
 }
 
 #login {

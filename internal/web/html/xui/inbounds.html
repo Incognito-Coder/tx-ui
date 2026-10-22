@@ -266,19 +266,38 @@
                                         </a-menu>
                                     </a-dropdown>
                                 </a-col>
-                                <a-col :lg="12" :sm="12" :xs="12" style="text-align: right; display: flex; align-items: center; justify-content: flex-end; gap: 8px;">
-                                    <a-select :dropdown-class-name="themeSwitcher.currentTheme"
-                                              @change="changeRefreshInterval"
-                                              style="width: 65px; margin-right: 2px;"
-                                              v-if="isRefreshEnabled"
-                                              v-model="refreshInterval">
-                                        <a-select-option :value="key*1000" v-for="key in [5,10,15,20,25,30,60]">[[ key
-                                            ]]s
-                                        </a-select-option>
-                                    </a-select>
-                                    <a-icon :spin="refreshing" @click="manualRefresh" style="margin: 0 6px; cursor: pointer; font-size: 16px;"
-                                            type="sync"></a-icon>
-                                    <a-switch @change="toggleRefresh" style="margin-left: 2px;" v-model="isRefreshEnabled"></a-switch>
+                                <a-col :lg="12" :sm="12" :xs="12" style="text-align: right; display: flex; align-items: center; justify-content: flex-end;">
+                                    <a-dropdown :trigger="['click']" placement="bottomRight">
+                                        <a-button :type="isRefreshEnabled ? 'primary' : 'default'" :ghost="isRefreshEnabled">
+                                            <a-icon :spin="refreshing" type="sync"></a-icon>
+                                            <span v-if="isRefreshEnabled" style="margin-left: 4px; font-weight: 500;">[[ refreshInterval / 1000 ]]s</span>
+                                            <a-icon type="down" style="font-size: 10px; margin-left: 4px;"></a-icon>
+                                        </a-button>
+                                        <a-menu slot="overlay" :theme="themeSwitcher.currentTheme">
+                                            <a-menu-item key="manual" @click="manualRefresh">
+                                                <a-icon :spin="refreshing" type="sync"></a-icon>
+                                                <span style="margin-left: 6px;">{{ i18n "pages.inbounds.refresh" }}</span>
+                                            </a-menu-item>
+                                            <a-menu-divider></a-menu-divider>
+                                            <a-menu-item key="toggle" @click="toggleRefresh">
+                                                <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px;">
+                                                    <span>{{ i18n "pages.inbounds.autoRefresh" }}</span>
+                                                    <a-switch size="small" :checked="isRefreshEnabled" @click.stop.prevent="toggleRefresh"></a-switch>
+                                                </div>
+                                            </a-menu-item>
+                                            <template v-if="isRefreshEnabled">
+                                                <a-menu-divider></a-menu-divider>
+                                                <a-menu-item-group :title="'{{ i18n "pages.inbounds.autoRefreshInterval" }}'">
+                                                    <a-menu-item v-for="key in [5,10,15,20,25,30,60]" :key="'interval-' + key" @click="setRefreshInterval(key * 1000)">
+                                                        <div style="display: flex; align-items: center; justify-content: space-between; min-width: 90px;">
+                                                            <span>[[ key ]]s</span>
+                                                            <a-icon type="check" v-if="refreshInterval === key * 1000" style="color: var(--ui-primary); font-size: 11px;"></a-icon>
+                                                        </div>
+                                                    </a-menu-item>
+                                                </a-menu-item-group>
+                                            </template>
+                                        </a-menu>
+                                    </a-dropdown>
                                 </a-col>
                             </a-row>
                         </div>
@@ -1535,10 +1554,15 @@
                 }
             },
             toggleRefresh() {
+                this.isRefreshEnabled = !this.isRefreshEnabled;
                 localStorage.setItem("isRefreshEnabled", this.isRefreshEnabled);
                 if (this.isRefreshEnabled) {
                     this.startDataRefreshLoop();
                 }
+            },
+            setRefreshInterval(val) {
+                this.refreshInterval = val;
+                this.changeRefreshInterval();
             },
             changeRefreshInterval() {
                 localStorage.setItem("refreshInterval", this.refreshInterval);

@@ -1081,18 +1081,37 @@
                                         </a-button>
                                     </div>
                                     <div class="clients-refresh-box">
-                                        <a-select :dropdown-class-name="themeSwitcher.currentTheme"
-                                                  @change="changeClientsRefreshInterval"
-                                                  style="width: 65px;"
-                                                  v-if="isClientsRefreshEnabled"
-                                                  v-model="clientsRefreshInterval">
-                                            <a-select-option :value="key*1000" v-for="key in [5,10,15,20,25,30,60]">[[ key
-                                                ]]s
-                                            </a-select-option>
-                                        </a-select>
-                                        <a-icon :spin="isLoadingClients" @click="manualRefresh" class="clients-refresh-icon"
-                                            type="sync"></a-icon>
-                                        <a-switch @change="toggleClientsRefresh" v-model="isClientsRefreshEnabled"></a-switch>
+                                        <a-dropdown :trigger="['click']" placement="bottomRight">
+                                            <a-button :type="isClientsRefreshEnabled ? 'primary' : 'default'" :ghost="isClientsRefreshEnabled">
+                                                <a-icon :spin="isLoadingClients" type="sync"></a-icon>
+                                                <span v-if="isClientsRefreshEnabled" style="margin-left: 4px; font-weight: 500;">[[ clientsRefreshInterval / 1000 ]]s</span>
+                                                <a-icon type="down" style="font-size: 10px; margin-left: 4px;"></a-icon>
+                                            </a-button>
+                                            <a-menu slot="overlay" :theme="themeSwitcher.currentTheme">
+                                                <a-menu-item key="manual" @click="manualRefresh">
+                                                    <a-icon :spin="isLoadingClients" type="sync"></a-icon>
+                                                    <span style="margin-left: 6px;">{{ i18n "pages.inbounds.refresh" }}</span>
+                                                </a-menu-item>
+                                                <a-menu-divider></a-menu-divider>
+                                                <a-menu-item key="toggle" @click="toggleClientsRefresh">
+                                                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px;">
+                                                        <span>{{ i18n "pages.inbounds.autoRefresh" }}</span>
+                                                        <a-switch size="small" :checked="isClientsRefreshEnabled" @click.stop.prevent="toggleClientsRefresh"></a-switch>
+                                                    </div>
+                                                </a-menu-item>
+                                                <template v-if="isClientsRefreshEnabled">
+                                                    <a-menu-divider></a-menu-divider>
+                                                    <a-menu-item-group :title="'{{ i18n "pages.inbounds.autoRefreshInterval" }}'">
+                                                        <a-menu-item v-for="key in [5,10,15,20,25,30,60]" :key="'interval-' + key" @click="setClientsRefreshInterval(key * 1000)">
+                                                            <div style="display: flex; align-items: center; justify-content: space-between; min-width: 90px;">
+                                                                <span>[[ key ]]s</span>
+                                                                <a-icon type="check" v-if="clientsRefreshInterval === key * 1000" style="color: var(--ui-primary); font-size: 11px;"></a-icon>
+                                                            </div>
+                                                        </a-menu-item>
+                                                    </a-menu-item-group>
+                                                </template>
+                                            </a-menu>
+                                        </a-dropdown>
                                     </div>
                                 </div>
                             </div>
@@ -1760,7 +1779,7 @@
         <!-- Client Detail Modal -->
         <a-modal :class="themeSwitcher.currentTheme" :closable="true" :footer="null" :mask-closable="true"
             id="client-detail-modal" :title="'{{ i18n "pages.inbounds.details" }}' + (detailModal.client ? ' - ' + detailModal.client.email : '')"
-            v-model="detailModal.visible" width="600px" wrap-class-name="panel-modal panel-modal-detail">
+            v-model="detailModal.visible" width="880px" wrap-class-name="panel-modal panel-modal-detail">
             <template v-if="detailModal.client">
                 <!-- Top 3-Stat Summary Cards (Compact) -->
                 <div class="detail-stats-grid">
@@ -3368,12 +3387,17 @@
                     }
                 },
                 toggleClientsRefresh() {
+                    this.isClientsRefreshEnabled = !this.isClientsRefreshEnabled;
                     localStorage.setItem("clientsRefreshEnabled", this.isClientsRefreshEnabled);
                     if (this.isClientsRefreshEnabled) {
                         this.startClientsRefreshLoop();
                     } else {
                         this.stopClientsRefreshLoop();
                     }
+                },
+                setClientsRefreshInterval(interval) {
+                    this.clientsRefreshInterval = interval;
+                    this.changeClientsRefreshInterval();
                 },
                 changeClientsRefreshInterval() {
                     localStorage.setItem("clientsRefreshInterval", this.clientsRefreshInterval);
