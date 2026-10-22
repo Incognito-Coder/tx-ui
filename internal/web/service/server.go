@@ -88,9 +88,12 @@ type Status struct {
 		Total   uint64 `json:"total"`
 	} `json:"disk"`
 	Xray struct {
-		State    ProcessState `json:"state"`
-		ErrorMsg string       `json:"errorMsg"`
-		Version  string       `json:"version"`
+		State            ProcessState `json:"state"`
+		ErrorMsg         string       `json:"errorMsg"`
+		Version          string       `json:"version"`
+		IsRolledBack     bool         `json:"isRolledBack"`
+		HasWorkingConfig bool         `json:"hasWorkingConfig"`
+		RollbackReason   string       `json:"rollbackReason"`
 	} `json:"xray"`
 	Uptime   uint64    `json:"uptime"`
 	HostName string    `json:"hostname"`
@@ -325,6 +328,9 @@ func (s *ServerService) GetStatus(lastStatus *Status) *Status {
 		status.Xray.ErrorMsg = s.xrayService.GetXrayResult()
 	}
 	status.Xray.Version = s.xrayService.GetXrayVersion()
+	status.Xray.IsRolledBack = s.xrayService.IsRolledBack()
+	status.Xray.HasWorkingConfig = s.xrayService.HasLastWorkingConfig()
+	status.Xray.RollbackReason = s.xrayService.GetLastRollbackReason()
 	var rtm runtime.MemStats
 	runtime.ReadMemStats(&rtm)
 
@@ -540,6 +546,14 @@ func (s *ServerService) RestartXrayService() (string error) {
 	}()
 
 	return nil
+}
+
+func (s *ServerService) RollbackXrayConfig() error {
+	return s.xrayService.RollbackToLastWorkingConfig()
+}
+
+func (s *ServerService) GetXrayRollbackStatus() map[string]interface{} {
+	return s.xrayService.GetRollbackStatus()
 }
 
 func (s *ServerService) downloadXRay(version string) (string, error) {

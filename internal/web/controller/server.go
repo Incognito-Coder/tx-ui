@@ -60,6 +60,8 @@ func (a *ServerController) initRouter(g *gin.RouterGroup) {
 
 	g.POST("/stopXrayService", a.stopXrayService)
 	g.POST("/restartXrayService", a.restartXrayService)
+	g.POST("/rollbackXrayConfig", a.rollbackXrayConfig)
+	g.GET("/getRollbackStatus", a.getRollbackStatus)
 	g.POST("/installPanel", a.installPanel)
 	g.POST("/installPanel/:version", a.installPanel)
 	g.GET("/getPanelVersions", a.getPanelVersions)
@@ -187,6 +189,19 @@ func (a *ServerController) restartXrayService(c *gin.Context) {
 		return
 	}
 	jsonMsg(c, "Xray restarted", err)
+}
+
+func (a *ServerController) rollbackXrayConfig(c *gin.Context) {
+	err := a.serverService.RollbackXrayConfig()
+	if err != nil {
+		jsonMsg(c, I18nWeb(c, "pages.server.rollbackFailed"), err)
+		return
+	}
+	jsonMsg(c, I18nWeb(c, "pages.server.rollbackSuccess"), nil)
+}
+
+func (a *ServerController) getRollbackStatus(c *gin.Context) {
+	jsonObj(c, a.serverService.GetXrayRollbackStatus(), nil)
 }
 
 func (a *ServerController) getPanelVersions(c *gin.Context) {

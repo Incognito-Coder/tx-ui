@@ -44,6 +44,61 @@ func GetConfigPath() string {
 	return config.GetBinFolderPath() + "/config.json"
 }
 
+func GetLastWorkingConfigPath() string {
+	return config.GetBinFolderPath() + "/config.json.last_working"
+}
+
+func GetLastFailedConfigPath() string {
+	return config.GetBinFolderPath() + "/config.json.failed"
+}
+
+func HasLastWorkingConfig() bool {
+	info, err := os.Stat(GetLastWorkingConfigPath())
+	return err == nil && info.Size() > 0
+}
+
+func BackupLastWorkingConfig() error {
+	src := GetConfigPath()
+	data, err := os.ReadFile(src)
+	if err != nil {
+		return err
+	}
+	if len(data) == 0 {
+		return errors.New("cannot backup empty config")
+	}
+	return os.WriteFile(GetLastWorkingConfigPath(), data, fs.ModePerm)
+}
+
+func SaveLastFailedConfig(data []byte) error {
+	if len(data) == 0 {
+		return nil
+	}
+	return os.WriteFile(GetLastFailedConfigPath(), data, fs.ModePerm)
+}
+
+func RollbackToLastWorkingConfig() error {
+	src := GetLastWorkingConfigPath()
+	data, err := os.ReadFile(src)
+	if err != nil {
+		return common.NewErrorf("cannot read last working config: %v", err)
+	}
+	if len(data) == 0 {
+		return errors.New("last working config is empty")
+	}
+	dst := GetConfigPath()
+	return os.WriteFile(dst, data, fs.ModePerm)
+}
+
+func TestConfigFile(configPath string) (bool, string, error) {
+	cmd := exec.Command(GetBinaryPath(), "-test", "-c", configPath)
+	out, err := cmd.CombinedOutput()
+	outputStr := strings.TrimSpace(string(out))
+	if err != nil {
+		return false, outputStr, err
+	}
+	return true, outputStr, nil
+}
+
 func GetGeositePath() string {
 	return config.GetBinFolderPath() + "/geosite.dat"
 }
@@ -113,6 +168,14 @@ func NewProcess(xrayConfig *Config) *Process {
 // The config file at configPath is removed when the process is stopped.
 func NewTestProcess(xrayConfig *Config, configPath string) *Process {
 	p := &Process{newTestProcess(xrayConfig, configPath)}
+	runtime.SetFinalizer(p, stopProcess)
+	return p
+}
+
+// NewProcessFromConfigFile creates an Xray process that starts directly from an existing config file on disk.
+func NewProcessFromConfigFile(configPath string) *Process {
+	p := &Process{newProcess(nil)}
+	p.configPath = configPath
 	runtime.SetFinalizer(p, stopProcess)
 	return p
 }
@@ -238,11 +301,6 @@ func (p *process) Start() (err error) {
 		}
 	}()
 
-	data, err := json.MarshalIndent(p.config, "", "  ")
-	if err != nil {
-		return common.NewErrorf("Failed to generate XRAY configuration files: %v", err)
-	}
-
 	err = os.MkdirAll(config.GetLogFolder(), 0o770)
 	if err != nil {
 		logger.Warningf("Failed to create log folder: %s", err)
@@ -252,9 +310,58 @@ func (p *process) Start() (err error) {
 	if p.configPath != "" {
 		configPath = p.configPath
 	}
-	err = os.WriteFile(configPath, data, fs.ModePerm)
-	if err != nil {
-		return common.NewErrorf("Failed to write configuration file: %v", err)
+
+	isMainInstance := (p.configPath == "" || p.configPath == GetConfigPath())
+
+	var data []byte
+	if p.config != nil {
+		data, err = json.MarshalIndent(p.config, "", "  ")
+		if err != nil {
+			return common.NewErrorf("Failed to generate XRAY configuration files: %v", err)
+		}
+	} else {
+		data, err = os.ReadFile(configPath)
+		if err != nil {
+			return common.NewErrorf("Failed to read configuration file: %v", err)
+		}
+		cfg := &Config{}
+		if uErr := json.Unmarshal(data, cfg); uErr == nil {
+			p.config = cfg
+		}
+	}
+
+	// For main Xray instance, pre-flight test new config before applying
+	if isMainInstance && p.config != nil {
+		testConfigPath := config.GetBinFolderPath() + "/config_test.json"
+		if writeErr := os.WriteFile(testConfigPath, data, fs.ModePerm); writeErr == nil {
+			defer os.Remove(testConfigPath)
+			ok, testOut, testErr := TestConfigFile(testConfigPath)
+			if !ok {
+				_ = SaveLastFailedConfig(data)
+				logger.Errorf("Xray config pre-test failed: %v\nOutput: %s", testErr, testOut)
+				errMsg := testOut
+				if errMsg == "" && testErr != nil {
+					errMsg = testErr.Error()
+				}
+				return common.NewErrorf("Config test failed: %s", errMsg)
+			}
+		}
+	}
+
+	// If main instance and a valid working config already exists on disk, backup before overwriting
+	if isMainInstance {
+		if curData, readErr := os.ReadFile(configPath); readErr == nil && len(curData) > 0 {
+			if !HasLastWorkingConfig() {
+				_ = BackupLastWorkingConfig()
+			}
+		}
+	}
+
+	if p.config != nil {
+		err = os.WriteFile(configPath, data, fs.ModePerm)
+		if err != nil {
+			return common.NewErrorf("Failed to write configuration file: %v", err)
+		}
 	}
 
 	cmd := exec.Command(GetBinaryPath(), "-c", configPath)
@@ -263,13 +370,42 @@ func (p *process) Start() (err error) {
 	cmd.Stdout = p.logWriter
 	cmd.Stderr = p.logWriter
 
-	go func() {
-		err := cmd.Run()
-		if err != nil {
-			logger.Error("Failure in running xray-core:", err)
-			p.exitErr = err
+	err = cmd.Start()
+	if err != nil {
+		if isMainInstance {
+			_ = SaveLastFailedConfig(data)
 		}
+		return common.NewErrorf("Failed to execute xray-core binary: %v", err)
+	}
+
+	exitChan := make(chan error, 1)
+	go func() {
+		waitErr := cmd.Wait()
+		if waitErr != nil {
+			if !(runtime.GOOS == "windows" && strings.Contains(strings.ToLower(waitErr.Error()), "exit status 1")) {
+				logger.Error("Failure in running xray-core:", waitErr)
+				p.exitErr = waitErr
+			}
+		}
+		exitChan <- waitErr
 	}()
+
+	// Brief health-check window (400ms) to detect immediate core exit on bad config
+	select {
+	case waitErr := <-exitChan:
+		if waitErr != nil && !(runtime.GOOS == "windows" && strings.Contains(strings.ToLower(waitErr.Error()), "exit status 1")) {
+			if isMainInstance {
+				_ = SaveLastFailedConfig(data)
+			}
+			lastLog := p.GetResult()
+			return common.NewErrorf("Xray core exited with error: %v (last log: %s)", waitErr, lastLog)
+		}
+	case <-time.After(400 * time.Millisecond):
+		// Core is still running; backup this working state
+		if isMainInstance {
+			_ = BackupLastWorkingConfig()
+		}
+	}
 
 	p.refreshVersion()
 	p.refreshAPIPort()

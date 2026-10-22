@@ -8,6 +8,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [v0.9.3] - 2026-10-22
 
 ### 🚀 Features & Enhancements
+- **Automatic & Manual Config State Rollback on Core Error**:
+  - **Pre-flight Configuration Verification**: Added `TestConfigFile` via `xray -test -c <path>` to validate configuration files before overwriting active `config.json`, preventing malformed JSON or incompatible options from reaching production.
+  - **Immediate Core Exit Detection**: Implemented startup monitoring window in `xray/process.go` to catch instant runtime core exits (e.g., port binding conflicts or core initialization errors) and capture detailed diagnostic logs.
+  - **Automatic Fallback to Last Working State**: On restart failures or core exit errors, `RestartXray` automatically reverts `config.json` to `config.json.last_working` and restores the database template (`lastWorkingXrayTemplateConfig`), immediately restarting Xray with the known-good configuration to prevent service disruption.
+  - **Crash Recovery in Background Job**: Enhanced `CheckXrayRunningJob` to automatically recover and rollback to `config.json.last_working` if the core exits unexpectedly and restarting with the current config fails.
+  - **Failed Config Preservation**: Automatically archives invalid configurations to `config.json.failed` upon test or startup errors for post-mortem troubleshooting.
+  - **Manual Rollback API & UI Controls**:
+    - Added backend endpoints: `POST /panel/api/server/rollbackXrayConfig` and `POST /panel/xray/rollback`.
+    - Added status endpoints: `GET /panel/api/server/getRollbackStatus` and `GET /panel/xray/getRollbackStatus`.
+    - Added rollback action tag and rolled-back warning badge to the Dashboard Xray status card (`index.html`).
+    - Added "Rollback Config" action button and rollback notice alert to the Xray Settings page (`xray.html`).
+    - Added localization strings across English (`translate.en_US.toml`) and Persian (`translate.fa_IR.toml`).
 - **Xray-core Update to v26.10.21**:
   - Updated Xray-core to latest release commit `1b1647cd9ddf` (`v26.10.21`).
   - Synchronized `go.mod`, `go.sum`, and vendor dependencies.

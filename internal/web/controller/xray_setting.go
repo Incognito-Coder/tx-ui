@@ -34,6 +34,8 @@ func (a *XraySettingController) initRouter(g *gin.RouterGroup) {
 	g.GET("/getOutboundsTraffic", a.getOutboundsTraffic)
 	g.POST("/resetOutboundsTraffic", a.resetOutboundsTraffic)
 	g.POST("/testOutbound", a.testOutbound)
+	g.POST("/rollback", a.rollback)
+	g.GET("/getRollbackStatus", a.getRollbackStatus)
 }
 
 func (a *XraySettingController) getXraySetting(c *gin.Context) {
@@ -161,4 +163,17 @@ func (a *XraySettingController) testOutbound(c *gin.Context) {
 	}
 
 	jsonObj(c, result, nil)
+}
+
+func (a *XraySettingController) rollback(c *gin.Context) {
+	err := a.XrayService.RollbackToLastWorkingConfig()
+	if err != nil {
+		jsonMsg(c, I18nWeb(c, "pages.server.rollbackFailed"), err)
+		return
+	}
+	jsonMsg(c, I18nWeb(c, "pages.server.rollbackSuccess"), nil)
+}
+
+func (a *XraySettingController) getRollbackStatus(c *gin.Context) {
+	jsonObj(c, a.XrayService.GetRollbackStatus(), nil)
 }

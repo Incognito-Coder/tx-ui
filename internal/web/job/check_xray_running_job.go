@@ -26,6 +26,12 @@ func (j *CheckXrayRunningJob) Run() {
 			j.checkTime = 0
 			if err != nil {
 				logger.Error("Restart xray failed:", err)
+				if j.xrayService.HasLastWorkingConfig() && !j.xrayService.IsXrayRunning() {
+					logger.Warning("Core crashed and restart failed. Rolling back to last working config...")
+					if rbErr := j.xrayService.RollbackToLastWorkingConfig(); rbErr != nil {
+						logger.Errorf("Automatic rollback to last working config failed: %v", rbErr)
+					}
+				}
 			}
 		}
 	}

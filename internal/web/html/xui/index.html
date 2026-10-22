@@ -180,6 +180,16 @@
                                 <a-tag @click="restartXrayService" color="purple" style="cursor: pointer;" :style="isMobile ? 'margin-bottom: 10px;' : ''">{{ i18n
                                     "pages.index.restartXray" }}
                                 </a-tag>
+                                <a-tag v-if="status.xray && status.xray.hasWorkingConfig"
+                                       @click="rollbackXrayConfig" :color="status.xray.isRolledBack || status.xray.state === State.Error ? 'orange' : 'purple'"
+                                       style="cursor: pointer;" :style="isMobile ? 'margin-bottom: 10px;' : ''">
+                                    <a-icon type="rollback"></a-icon> {{ i18n "pages.index.rollbackXray" }}
+                                </a-tag>
+                                <a-tooltip v-if="status.xray && status.xray.isRolledBack" :title="status.xray.rollbackReason">
+                                    <a-tag color="orange" style="cursor: default;">
+                                        <a-icon type="warning"></a-icon> {{ i18n "pages.index.rolledBack" }}
+                                    </a-tag>
+                                </a-tooltip>
                                 <a-tag @click="openSelectV2rayVersion" color="purple" style="cursor: pointer;">v[[
                                     status.xray.version ]]
                                 </a-tag>
@@ -889,6 +899,25 @@
                 if (!msg.success) {
                     return;
                 }
+            },
+            rollbackXrayConfig() {
+                this.$confirm({
+                    title: '{{ i18n "pages.index.rollbackXray" }}',
+                    content: '{{ i18n "pages.index.rollbackConfirm" }}',
+                    class: this.themeSwitcher.currentTheme,
+                    okText: '{{ i18n "sure" }}',
+                    cancelText: '{{ i18n "cancel" }}',
+                    onOk: async () => {
+                        this.loading(true);
+                        const msg = await HttpUtil.post('/panel/api/server/rollbackXrayConfig');
+                        this.loading(false);
+                        if (msg.success) {
+                            this.$message.success(msg.msg || "Rolled back successfully");
+                            await PromiseUtil.sleep(500);
+                            await this.getStatus();
+                        }
+                    }
+                });
             },
             async openSelectPanelVersion() {
                 this.loading(true);

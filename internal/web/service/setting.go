@@ -254,6 +254,18 @@ func (s *SettingService) GetXrayConfigTemplate() (string, error) {
 	return s.getString("xrayTemplateConfig")
 }
 
+func (s *SettingService) SetXrayConfigTemplate(template string) error {
+	return s.saveSetting("xrayTemplateConfig", template)
+}
+
+func (s *SettingService) GetLastWorkingXrayConfigTemplate() (string, error) {
+	return s.getString("lastWorkingXrayTemplateConfig")
+}
+
+func (s *SettingService) SetLastWorkingXrayConfigTemplate(template string) error {
+	return s.saveSetting("lastWorkingXrayTemplateConfig", template)
+}
+
 func (s *SettingService) GetXrayOutboundTestUrl() (string, error) {
 	return s.getString("xrayOutboundTestUrl")
 }

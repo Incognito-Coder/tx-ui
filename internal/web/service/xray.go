@@ -5,8 +5,10 @@ import (
 	"errors"
 	"runtime"
 	"sync"
+	"time"
 
 	"x-ui/internal/logger"
+	"x-ui/internal/util/common"
 	"x-ui/internal/util/json_util"
 	"x-ui/xray"
 
@@ -14,11 +16,14 @@ import (
 )
 
 var (
-	p                 *xray.Process
-	lock              sync.Mutex
-	isNeedXrayRestart atomic.Bool
-	isManuallyStopped atomic.Bool
-	result            string
+	p                  *xray.Process
+	lock               sync.Mutex
+	isNeedXrayRestart  atomic.Bool
+	isManuallyStopped  atomic.Bool
+	result             string
+	isRolledBack       atomic.Bool
+	lastRollbackReason atomic.String
+	lastRollbackTime   atomic.Int64
 )
 
 type XrayService struct {
@@ -299,9 +304,105 @@ func (s *XrayService) RestartXray(isForce bool) error {
 	result = ""
 	err = p.Start()
 	if err != nil {
+		logger.Errorf("Failed to start Xray with new config: %v", err)
+		if xray.HasLastWorkingConfig() {
+			logger.Warning("Core exited with error in config.json. Automatically rolling back to last working state of config.json...")
+			s.recordRollback(err.Error())
+
+			// Restore template in DB if available
+			if lastTpl, tplErr := s.settingService.GetLastWorkingXrayConfigTemplate(); tplErr == nil && lastTpl != "" {
+				_ = s.settingService.SetXrayConfigTemplate(lastTpl)
+			}
+
+			// Rollback config.json on disk
+			_ = xray.RollbackToLastWorkingConfig()
+
+			// Start from the restored last working config file
+			lastWorkingProcess := xray.NewProcessFromConfigFile(xray.GetConfigPath())
+			if startErr := lastWorkingProcess.Start(); startErr == nil {
+				p = lastWorkingProcess
+				logger.Info("Successfully rolled back to last working state of config.json and restarted Xray")
+				return common.NewErrorf("Xray core exited with error in config.json (%v); automatically rolled back to last working state", err)
+			} else {
+				logger.Errorf("Failed to start Xray even with last working config: %v", startErr)
+			}
+		}
 		return err
 	}
+
+	// Success! If this config ran and was verified, record working template
+	s.clearRollback()
+	if currentTpl, tplErr := s.settingService.GetXrayConfigTemplate(); tplErr == nil && currentTpl != "" {
+		_ = s.settingService.SetLastWorkingXrayConfigTemplate(currentTpl)
+	}
+
 	return nil
+}
+
+func (s *XrayService) RollbackToLastWorkingConfig() error {
+	lock.Lock()
+	defer lock.Unlock()
+
+	if !xray.HasLastWorkingConfig() {
+		return errors.New("no last working config.json backup exists")
+	}
+
+	if s.IsXrayRunning() {
+		p.Stop()
+	}
+
+	if err := xray.RollbackToLastWorkingConfig(); err != nil {
+		return err
+	}
+
+	if lastTpl, err := s.settingService.GetLastWorkingXrayConfigTemplate(); err == nil && lastTpl != "" {
+		_ = s.settingService.SetXrayConfigTemplate(lastTpl)
+	}
+
+	lastWorkingProcess := xray.NewProcessFromConfigFile(xray.GetConfigPath())
+	result = ""
+	if err := lastWorkingProcess.Start(); err != nil {
+		return common.NewErrorf("failed to start Xray with restored config: %v", err)
+	}
+	p = lastWorkingProcess
+	isNeedXrayRestart.Store(false)
+	isManuallyStopped.Store(false)
+	s.clearRollback()
+	logger.Info("Successfully manually rolled back to last working state of config.json")
+	return nil
+}
+
+func (s *XrayService) HasLastWorkingConfig() bool {
+	return xray.HasLastWorkingConfig()
+}
+
+func (s *XrayService) IsRolledBack() bool {
+	return isRolledBack.Load()
+}
+
+func (s *XrayService) GetLastRollbackReason() string {
+	return lastRollbackReason.Load()
+}
+
+func (s *XrayService) GetRollbackStatus() map[string]interface{} {
+	return map[string]interface{}{
+		"hasLastWorkingConfig": xray.HasLastWorkingConfig(),
+		"isRolledBack":         isRolledBack.Load(),
+		"lastRollbackReason":   lastRollbackReason.Load(),
+		"lastRollbackTime":     lastRollbackTime.Load(),
+	}
+}
+
+func (s *XrayService) recordRollback(reason string) {
+	isRolledBack.Store(true)
+	lastRollbackReason.Store(reason)
+	lastRollbackTime.Store(time.Now().Unix())
+}
+
+func (s *XrayService) clearRollback() {
+	isRolledBack.Store(false)
+	lastRollbackReason.Store("")
+	lastRollbackTime.Store(0)
 }
 
 func (s *XrayService) StopXray() error {
