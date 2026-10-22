@@ -185,16 +185,40 @@
                     });
                 }
             },
+            isValidBase64Key(key, expectedBytes) {
+                if (!key || typeof key !== 'string') return false;
+                try {
+                    const bin = atob(key.trim());
+                    return bin.length === expectedBytes;
+                } catch (e) {
+                    return false;
+                }
+            },
             SSMethodChange() {
+                const method = this.inModal.inbound.settings.method;
+                const is2022 = this.inModal.inbound.isSS2022;
+                const expectedBytes = (method && method.includes('128')) ? 16 : 32;
+
+                if (is2022) {
+                    if (!this.isValidBase64Key(this.inModal.inbound.settings.password, expectedBytes)) {
+                        this.inModal.inbound.settings.password = RandomUtil.randomShadowsocksPassword(method);
+                    }
+                } else if (!this.inModal.inbound.settings.password) {
+                    this.inModal.inbound.settings.password = RandomUtil.randomShadowsocksPassword(method);
+                }
+
                 if (this.inModal.inbound.isSSMultiUser) {
-                    if (!this.inModal.inbound.isSS2022) {
+                    if (!is2022) {
                         this.inModal.inbound.settings.shadowsockses.forEach(client => {
-                            client.method = this.inModal.inbound.settings.method;
-                        })
+                            client.method = method;
+                        });
                     } else {
                         this.inModal.inbound.settings.shadowsockses.forEach(client => {
                             client.method = "";
-                        })
+                            if (!this.isValidBase64Key(client.password, expectedBytes)) {
+                                client.password = RandomUtil.randomShadowsocksPassword(method);
+                            }
+                        });
                     }
                 } else {
                     if (this.inModal.inbound.settings.shadowsockses.length > 0) {

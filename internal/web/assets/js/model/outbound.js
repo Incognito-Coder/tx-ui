@@ -33,13 +33,36 @@ const Protocols = {
 const SSMethods = {
     AES_256_GCM: 'aes-256-gcm',
     AES_128_GCM: 'aes-128-gcm',
-    CHACHA20_POLY1305: 'chacha20-poly1305',
     CHACHA20_IETF_POLY1305: 'chacha20-ietf-poly1305',
-    XCHACHA20_POLY1305: 'xchacha20-poly1305',
     XCHACHA20_IETF_POLY1305: 'xchacha20-ietf-poly1305',
     BLAKE3_AES_128_GCM: '2022-blake3-aes-128-gcm',
     BLAKE3_AES_256_GCM: '2022-blake3-aes-256-gcm',
     BLAKE3_CHACHA20_POLY1305: '2022-blake3-chacha20-poly1305',
+};
+
+const TLS_CIPHER_OPTION = {
+    AES_128_GCM: "TLS_AES_128_GCM_SHA256",
+    AES_256_GCM: "TLS_AES_256_GCM_SHA384",
+    CHACHA20_POLY1305: "TLS_CHACHA20_POLY1305_SHA256",
+    ECDHE_ECDSA_AES_128_GCM: "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
+    ECDHE_ECDSA_AES_256_GCM: "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
+    ECDHE_RSA_AES_128_GCM: "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
+    ECDHE_RSA_AES_256_GCM: "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
+    ECDHE_ECDSA_CHACHA20_POLY1305: "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256",
+    ECDHE_RSA_CHACHA20_POLY1305: "TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256",
+    ECDHE_ECDSA_AES_128_CBC: "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA",
+    ECDHE_ECDSA_AES_256_CBC: "TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA",
+    ECDHE_RSA_AES_128_CBC: "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA",
+    ECDHE_RSA_AES_256_CBC: "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA",
+    ECDHE_ECDSA_AES_128_CBC_SHA256: "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256",
+    ECDHE_RSA_AES_128_CBC_SHA256: "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256",
+    RSA_AES_128_GCM: "TLS_RSA_WITH_AES_128_GCM_SHA256",
+    RSA_AES_256_GCM: "TLS_RSA_WITH_AES_256_GCM_SHA384",
+    RSA_AES_128_CBC: "TLS_RSA_WITH_AES_128_CBC_SHA",
+    RSA_AES_256_CBC: "TLS_RSA_WITH_AES_256_CBC_SHA",
+    RSA_AES_128_CBC_SHA256: "TLS_RSA_WITH_AES_128_CBC_SHA256",
+    ECDHE_RSA_3DES_EDE_CBC: "TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA",
+    RSA_3DES_EDE_CBC: "TLS_RSA_WITH_3DES_EDE_CBC_SHA",
 };
 
 const TLS_FLOW_CONTROL = {
@@ -124,6 +147,7 @@ const ADDRESS_PORT_STRATEGY = {
 
 Object.freeze(Protocols);
 Object.freeze(SSMethods);
+Object.freeze(TLS_CIPHER_OPTION);
 Object.freeze(TLS_FLOW_CONTROL);
 Object.freeze(UTLS_FINGERPRINT);
 Object.freeze(ALPN_OPTION);
@@ -848,6 +872,11 @@ class UdpMask extends CommonClass {
                     header: settings.header || '',
                     value: settings.value || '',
                 };
+            case 'filter':
+                return {
+                    allowedSourceIPs: Array.isArray(settings.allowedSourceIPs) ? settings.allowedSourceIPs : (settings.allowedSourceIPs ? [settings.allowedSourceIPs] : []),
+                    blockedSourceIPs: Array.isArray(settings.blockedSourceIPs) ? settings.blockedSourceIPs : (settings.blockedSourceIPs ? [settings.blockedSourceIPs] : []),
+                };
             case 'mkcp-original':
             case 'header-dtls':
             case 'header-srtp':
@@ -923,6 +952,11 @@ class TcpMask extends CommonClass {
                 clients: Array.isArray(settings.clients) ? settings.clients : (Array.isArray(settings.client) ? [settings.client] : []),
                 servers: Array.isArray(settings.servers) ? settings.servers : (Array.isArray(settings.server) ? [settings.server] : []),
                 errors: Array.isArray(settings.errors) ? settings.errors : []
+            };
+        } else if (type === 'filter') {
+            return {
+                allowedSourceIPs: Array.isArray(settings.allowedSourceIPs) ? settings.allowedSourceIPs : (settings.allowedSourceIPs ? [settings.allowedSourceIPs] : []),
+                blockedSourceIPs: Array.isArray(settings.blockedSourceIPs) ? settings.blockedSourceIPs : (settings.blockedSourceIPs ? [settings.blockedSourceIPs] : []),
             };
         }
         return settings;

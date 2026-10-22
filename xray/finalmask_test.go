@@ -103,3 +103,33 @@ func TestUpgradeXDNSMasks(t *testing.T) {
 		t.Fatalf("names = %v", d0["names"])
 	}
 }
+
+func TestStripFilterMasks(t *testing.T) {
+	streamJSON := `{
+		"finalmask": {
+			"tcp": [
+				{"type": "filter", "settings": {"allowedSourceIPs": ["1.1.1.1"]}},
+				{"type": "header-custom", "settings": {}}
+			],
+			"udp": [
+				{"type": "filter", "settings": {"blockedSourceIPs": ["2.2.2.2"]}}
+			]
+		}
+	}`
+	var stream map[string]any
+	json.Unmarshal([]byte(streamJSON), &stream)
+
+	if !StripFilterMasks(stream) {
+		t.Fatal("expected StripFilterMasks to report changed")
+	}
+
+	fm := stream["finalmask"].(map[string]any)
+	tcp := fm["tcp"].([]any)
+	if len(tcp) != 1 || tcp[0].(map[string]any)["type"] != "header-custom" {
+		t.Fatalf("tcp masks unexpected: %v", tcp)
+	}
+	if _, ok := fm["udp"]; ok {
+		t.Fatalf("expected udp to be deleted when only filter was present, got: %v", fm["udp"])
+	}
+}
+

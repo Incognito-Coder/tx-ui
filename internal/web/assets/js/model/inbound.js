@@ -21,7 +21,6 @@ Object.defineProperty(Protocols, 'Wireguard', {
 const SSMethods = {
     AES_256_GCM: 'aes-256-gcm',
     AES_128_GCM: 'aes-128-gcm',
-    CHACHA20_POLY1305: 'chacha20-poly1305',
     CHACHA20_IETF_POLY1305: 'chacha20-ietf-poly1305',
     XCHACHA20_IETF_POLY1305: 'xchacha20-ietf-poly1305',
     BLAKE3_AES_128_GCM: '2022-blake3-aes-128-gcm',
@@ -45,16 +44,25 @@ const TLS_CIPHER_OPTION = {
     AES_128_GCM: "TLS_AES_128_GCM_SHA256",
     AES_256_GCM: "TLS_AES_256_GCM_SHA384",
     CHACHA20_POLY1305: "TLS_CHACHA20_POLY1305_SHA256",
-    ECDHE_ECDSA_AES_128_CBC: "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA",
-    ECDHE_ECDSA_AES_256_CBC: "TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA",
-    ECDHE_RSA_AES_128_CBC: "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA",
-    ECDHE_RSA_AES_256_CBC: "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA",
     ECDHE_ECDSA_AES_128_GCM: "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
     ECDHE_ECDSA_AES_256_GCM: "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
     ECDHE_RSA_AES_128_GCM: "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
     ECDHE_RSA_AES_256_GCM: "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
     ECDHE_ECDSA_CHACHA20_POLY1305: "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256",
     ECDHE_RSA_CHACHA20_POLY1305: "TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256",
+    ECDHE_ECDSA_AES_128_CBC: "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA",
+    ECDHE_ECDSA_AES_256_CBC: "TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA",
+    ECDHE_RSA_AES_128_CBC: "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA",
+    ECDHE_RSA_AES_256_CBC: "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA",
+    ECDHE_ECDSA_AES_128_CBC_SHA256: "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256",
+    ECDHE_RSA_AES_128_CBC_SHA256: "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256",
+    RSA_AES_128_GCM: "TLS_RSA_WITH_AES_128_GCM_SHA256",
+    RSA_AES_256_GCM: "TLS_RSA_WITH_AES_256_GCM_SHA384",
+    RSA_AES_128_CBC: "TLS_RSA_WITH_AES_128_CBC_SHA",
+    RSA_AES_256_CBC: "TLS_RSA_WITH_AES_256_CBC_SHA",
+    RSA_AES_128_CBC_SHA256: "TLS_RSA_WITH_AES_128_CBC_SHA256",
+    ECDHE_RSA_3DES_EDE_CBC: "TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA",
+    RSA_3DES_EDE_CBC: "TLS_RSA_WITH_3DES_EDE_CBC_SHA",
 };
 
 const UTLS_FINGERPRINT = {
@@ -1365,6 +1373,11 @@ class UdpMask extends XrayCommonClass {
                     header: settings.header || '',
                     value: settings.value || '',
                 };
+            case 'filter':
+                return {
+                    allowedSourceIPs: Array.isArray(settings.allowedSourceIPs) ? settings.allowedSourceIPs : (settings.allowedSourceIPs ? [settings.allowedSourceIPs] : []),
+                    blockedSourceIPs: Array.isArray(settings.blockedSourceIPs) ? settings.blockedSourceIPs : (settings.blockedSourceIPs ? [settings.blockedSourceIPs] : []),
+                };
             default:
                 return settings;
         }
@@ -1433,6 +1446,11 @@ class TcpMask extends XrayCommonClass {
                 clients: Array.isArray(settings.clients) ? settings.clients : (Array.isArray(settings.client) ? [settings.client] : []),
                 servers: Array.isArray(settings.servers) ? settings.servers : (Array.isArray(settings.server) ? [settings.server] : []),
                 errors: Array.isArray(settings.errors) ? settings.errors : []
+            };
+        } else if (type === 'filter') {
+            return {
+                allowedSourceIPs: Array.isArray(settings.allowedSourceIPs) ? settings.allowedSourceIPs : (settings.allowedSourceIPs ? [settings.allowedSourceIPs] : []),
+                blockedSourceIPs: Array.isArray(settings.blockedSourceIPs) ? settings.blockedSourceIPs : (settings.blockedSourceIPs ? [settings.blockedSourceIPs] : []),
             };
         }
         return settings;
@@ -2125,6 +2143,14 @@ class Inbound extends XrayCommonClass {
     getFinalMaskForShare() {
         const fm = this.stream.finalmask?.toJson();
         if (!fm) return undefined;
+        if (fm.tcp) {
+            fm.tcp = fm.tcp.filter(m => m && m.type !== 'filter');
+            if (fm.tcp.length === 0) delete fm.tcp;
+        }
+        if (fm.udp) {
+            fm.udp = fm.udp.filter(m => m && m.type !== 'filter');
+            if (fm.udp.length === 0) delete fm.udp;
+        }
         const udpHop = fm.quicParams?.udpHop;
         if (udpHop) {
             delete fm.quicParams.udpHop;
@@ -2349,8 +2375,19 @@ class Inbound extends XrayCommonClass {
 
 
         let password = new Array();
-        if (this.isSS2022) password.push(settings.password);
-        if (this.isSSMultiUser) password.push(clientPassword);
+        if (this.isSS2022) {
+            if (settings.password) password.push(settings.password);
+            if (clientPassword) password.push(clientPassword);
+        } else {
+            if (clientPassword) {
+                password.push(clientPassword);
+            } else if (settings.password) {
+                password.push(settings.password);
+            }
+        }
+        if (password.length === 0 && settings.password) {
+            password.push(settings.password);
+        }
 
         let link = `ss://${safeBase64(settings.method + ':' + password.join(':'))}@${address}:${port}`;
         const url = new URL(link);
@@ -3221,7 +3258,7 @@ Inbound.TrojanSettings.Fallback = class extends XrayCommonClass {
 Inbound.ShadowsocksSettings = class extends Inbound.Settings {
     constructor(protocol,
                 method = SSMethods.BLAKE3_AES_256_GCM,
-                password = RandomUtil.randomShadowsocksPassword(),
+                password = RandomUtil.randomShadowsocksPassword(SSMethods.BLAKE3_AES_256_GCM),
                 network = 'tcp,udp',
                 shadowsockses = [],
                 ivCheck = false,
@@ -3259,12 +3296,12 @@ Inbound.ShadowsocksSettings = class extends Inbound.Settings {
 Inbound.ShadowsocksSettings.Shadowsocks = class extends Inbound.ClientBase {
     constructor(
         method = '',
-        password = RandomUtil.randomShadowsocksPassword(),
+        password = '',
         email, limitIp, totalGB, expiryTime, enable, tgId, subId, comment, reset
     ) {
         super(email, limitIp, totalGB, expiryTime, enable, tgId, subId, comment, reset);
         this.method = method;
-        this.password = password;
+        this.password = password || RandomUtil.randomShadowsocksPassword(method);
     }
 
     static fromJson(json = {}) {

@@ -709,6 +709,13 @@ func addClientToInboundSettings(inbound *model.Inbound, nc *model.NodeClient, fl
 	case "wireguard":
 		newClientMap["publicKey"] = nc.UUID
 		newClientMap["privateKey"] = nc.Password
+	case "masque":
+		pass := nc.Password
+		if pass == "" {
+			pass = nc.UUID
+		}
+		newClientMap["pass"] = pass
+		newClientMap["password"] = pass
 	default:
 		newClientMap["id"] = nc.UUID
 		newClientMap["flow"] = clientFlow
@@ -1704,6 +1711,7 @@ func (s *NodeClientService) synthesiseClient(nc *model.NodeClient, link *model.N
 	return model.Client{
 		ID:         nc.UUID,
 		Password:   nc.Password,
+		Pass:       nc.Password,
 		Auth:       auth,
 		Security:   nc.Security,
 		Flow:       flow,

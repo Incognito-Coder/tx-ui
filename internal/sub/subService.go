@@ -86,7 +86,9 @@ func (s *SubService) GetSubs(subId string, host string) ([]string, string, []str
 		for _, client := range clients {
 			if client.Enable && client.SubID == subId {
 				link := s.getLink(inbound, client.Email)
-				result = append(result, link)
+				if link != "" {
+					result = append(result, link)
+				}
 				clientTraffics = append(clientTraffics, s.getClientTraffics(inbound.ClientStats, client.Email))
 				emails = append(emails, client.Email)
 			}
@@ -184,9 +186,9 @@ func (s *SubService) getInboundsBySubId(subId string) ([]*model.Inbound, error) 
 	err := db.Model(model.Inbound{}).Preload("ClientStats").Where(`id in (
 		SELECT DISTINCT inbounds.id
 		FROM inbounds,
-			JSON_EACH(JSON_EXTRACT(inbounds.settings, '$.clients')) AS client
+			JSON_EACH(COALESCE(JSON_EXTRACT(inbounds.settings, '$.clients'), JSON_EXTRACT(inbounds.settings, '$.users'))) AS client
 		WHERE
-			protocol in ('vmess','vless','trojan','shadowsocks','hysteria','wireguard')
+			protocol in ('vmess','vless','trojan','shadowsocks','hysteria','wireguard','masque')
 			AND JSON_EXTRACT(client.value, '$.subId') = ? AND enable = ?
 		UNION
 		SELECT DISTINCT node_client_links.inbound_id
@@ -194,7 +196,7 @@ func (s *SubService) getInboundsBySubId(subId string) ([]*model.Inbound, error) 
 			JOIN node_clients ON node_clients.id = node_client_links.node_client_id
 			JOIN inbounds ON inbounds.id = node_client_links.inbound_id
 		WHERE node_clients.sub_id = ?
-			AND inbounds.protocol in ('vmess','vless','trojan','shadowsocks','hysteria','wireguard')
+			AND inbounds.protocol in ('vmess','vless','trojan','shadowsocks','hysteria','wireguard','masque')
 			AND inbounds.enable = ?
 	)`, subId, true, subId, true).Find(&inbounds).Error
 	if err != nil {
@@ -209,9 +211,9 @@ func (s *SubService) getInboundsByEmail(email string) ([]*model.Inbound, error) 
 	err := db.Model(model.Inbound{}).Preload("ClientStats").Where(`id in (
 		SELECT DISTINCT inbounds.id
 		FROM inbounds,
-			JSON_EACH(JSON_EXTRACT(inbounds.settings, '$.clients')) AS client
+			JSON_EACH(COALESCE(JSON_EXTRACT(inbounds.settings, '$.clients'), JSON_EXTRACT(inbounds.settings, '$.users'))) AS client
 		WHERE
-			protocol in ('vmess','vless','trojan','shadowsocks','hysteria','wireguard')
+			protocol in ('vmess','vless','trojan','shadowsocks','hysteria','wireguard','masque')
 			AND LOWER(JSON_EXTRACT(client.value, '$.email')) = LOWER(?) AND enable = ?
 		UNION
 		SELECT DISTINCT node_client_links.inbound_id
@@ -219,7 +221,7 @@ func (s *SubService) getInboundsByEmail(email string) ([]*model.Inbound, error) 
 			JOIN node_clients ON node_clients.id = node_client_links.node_client_id
 			JOIN inbounds ON inbounds.id = node_client_links.inbound_id
 		WHERE LOWER(node_clients.email) = LOWER(?)
-			AND inbounds.protocol in ('vmess','vless','trojan','shadowsocks','hysteria','wireguard')
+			AND inbounds.protocol in ('vmess','vless','trojan','shadowsocks','hysteria','wireguard','masque')
 			AND inbounds.enable = ?
 	)`, email, true, email, true).Find(&inbounds).Error
 	if err != nil {
@@ -229,9 +231,9 @@ func (s *SubService) getInboundsByEmail(email string) ([]*model.Inbound, error) 
 		_ = db.Model(model.Inbound{}).Preload("ClientStats").Where(`id in (
 			SELECT DISTINCT inbounds.id
 			FROM inbounds,
-				JSON_EACH(JSON_EXTRACT(inbounds.settings, '$.clients')) AS client
+				JSON_EACH(COALESCE(JSON_EXTRACT(inbounds.settings, '$.clients'), JSON_EXTRACT(inbounds.settings, '$.users'))) AS client
 			WHERE
-				protocol in ('vmess','vless','trojan','shadowsocks','hysteria','wireguard')
+				protocol in ('vmess','vless','trojan','shadowsocks','hysteria','wireguard','masque')
 				AND LOWER(JSON_EXTRACT(client.value, '$.email')) = LOWER(?)
 			UNION
 			SELECT DISTINCT node_client_links.inbound_id
@@ -239,7 +241,7 @@ func (s *SubService) getInboundsByEmail(email string) ([]*model.Inbound, error) 
 				JOIN node_clients ON node_clients.id = node_client_links.node_client_id
 				JOIN inbounds ON inbounds.id = node_client_links.inbound_id
 			WHERE LOWER(node_clients.email) = LOWER(?)
-				AND inbounds.protocol in ('vmess','vless','trojan','shadowsocks','hysteria','wireguard')
+				AND inbounds.protocol in ('vmess','vless','trojan','shadowsocks','hysteria','wireguard','masque')
 		)`, email, email).Find(&inbounds).Error
 	}
 	return inbounds, nil
@@ -442,8 +444,171 @@ func (s *SubService) getLink(inbound *model.Inbound, email string) string {
 		return s.genHysteriaLink(inbound, email)
 	case "wireguard":
 		return s.genWireguardLink(inbound, email)
+	case "masque":
+		return s.genMasqueLink(inbound, email)
 	}
 	return ""
+}
+
+func (s *SubService) genMasqueLink(inbound *model.Inbound, email string) string {
+	address := s.address
+	if inbound.Listen != "" && inbound.Listen != "0.0.0.0" {
+		address = inbound.Listen
+	}
+	if inbound.Protocol != model.Masque {
+		return ""
+	}
+	var stream map[string]interface{}
+	json.Unmarshal([]byte(inbound.StreamSettings), &stream)
+	clients, _ := s.getClients(inbound)
+	clientIndex := -1
+	for i, client := range clients {
+		if strings.EqualFold(client.Email, email) {
+			clientIndex = i
+			break
+		}
+	}
+	if clientIndex < 0 || clientIndex >= len(clients) {
+		return ""
+	}
+	client := clients[clientIndex]
+	clientPass := client.Password
+	if clientPass == "" {
+		clientPass = client.Pass
+	}
+	if clientPass == "" {
+		clientPass = client.ID
+	}
+	if clientPass == "" {
+		var settings map[string]interface{}
+		json.Unmarshal([]byte(inbound.Settings), &settings)
+		if p, ok := settings["pass"].(string); ok && p != "" {
+			clientPass = p
+		} else if p, ok := settings["password"].(string); ok && p != "" {
+			clientPass = p
+		}
+	}
+	if clientPass == "" {
+		if masqueStream, ok := stream["masqueSettings"].(map[string]interface{}); ok {
+			if p, ok := masqueStream["pass"].(string); ok && p != "" {
+				clientPass = p
+			}
+		}
+	}
+
+	port := inbound.Port
+	params := make(map[string]string)
+	params["type"] = "masque"
+
+	if masqueSettings, ok := stream["masqueSettings"].(map[string]interface{}); ok {
+		if host, ok := masqueSettings["host"].(string); ok && host != "" {
+			params["host"] = host
+		}
+		if path, ok := masqueSettings["path"].(string); ok && path != "" {
+			params["path"] = path
+		}
+	}
+
+	params["security"] = "tls"
+	tlsSetting, _ := stream["tlsSettings"].(map[string]interface{})
+	if alpns, ok := tlsSetting["alpn"].([]interface{}); ok {
+		var alpn []string
+		for _, a := range alpns {
+			if str, ok := a.(string); ok && str != "" {
+				alpn = append(alpn, str)
+			}
+		}
+		if len(alpn) > 0 {
+			params["alpn"] = strings.Join(alpn, ",")
+		}
+	} else if alpnStr, ok := tlsSetting["alpn"].(string); ok && alpnStr != "" {
+		params["alpn"] = alpnStr
+	}
+	if sniValue, ok := searchKey(tlsSetting, "serverName"); ok {
+		if s, ok := sniValue.(string); ok && s != "" {
+			params["sni"] = s
+		}
+	} else if host, ok := params["host"]; ok && host != "" {
+		params["sni"] = host
+	}
+
+	tlsSettings, _ := searchKey(tlsSetting, "settings")
+	if tlsSetting != nil {
+		if fpValue, ok := searchKey(tlsSettings, "fingerprint"); ok {
+			if fp, ok := fpValue.(string); ok && fp != "" {
+				params["fp"] = fp
+			}
+		}
+		if insecure, ok := searchKey(tlsSettings, "allowInsecure"); ok {
+			if isInsecure, ok := insecure.(bool); ok && isInsecure {
+				params["insecure"] = "1"
+			}
+		}
+		if echValue, ok := searchKey(tlsSettings, "echConfigList"); ok {
+			if ech, ok := echValue.(string); ok && strings.TrimSpace(ech) != "" {
+				params["ech"] = strings.TrimSpace(ech)
+			}
+		}
+	}
+	if insecure, ok := searchKey(tlsSetting, "allowInsecure"); ok && params["insecure"] == "" {
+		if isInsecure, ok := insecure.(bool); ok && isInsecure {
+			params["insecure"] = "1"
+		}
+	}
+	if echValue, ok := searchKey(tlsSetting, "echConfigList"); ok && params["ech"] == "" {
+		if ech, ok := echValue.(string); ok && strings.TrimSpace(ech) != "" {
+			params["ech"] = strings.TrimSpace(ech)
+		}
+	}
+
+	addFinalMaskParam(params, stream)
+
+	externalProxies, _ := stream["externalProxy"].([]interface{})
+	if len(externalProxies) > 0 {
+		var links string
+		for index, externalProxy := range externalProxies {
+			ep, ok := externalProxy.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			dest, _ := ep["dest"].(string)
+			epPort := port
+			if p, ok := ep["port"].(float64); ok {
+				epPort = int(p)
+			} else if p, ok := ep["port"].(int); ok {
+				epPort = p
+			}
+			link := fmt.Sprintf("masque://%s@%s:%d", url.QueryEscape(clientPass), dest, epPort)
+			u, _ := url.Parse(link)
+			q := u.Query()
+			epParams := make(map[string]string)
+			for k, v := range params {
+				epParams[k] = v
+			}
+			applyExternalProxyTlsParams(epParams, ep, "tls")
+			for k, v := range epParams {
+				q.Add(k, v)
+			}
+			u.RawQuery = formatRawQuery(q)
+			remark, _ := ep["remark"].(string)
+			u.Fragment = s.genRemark(inbound, email, remark)
+			if index > 0 {
+				links += "\n"
+			}
+			links += u.String()
+		}
+		return links
+	}
+
+	link := fmt.Sprintf("masque://%s@%s:%d", url.QueryEscape(clientPass), address, port)
+	u, _ := url.Parse(link)
+	q := u.Query()
+	for k, v := range params {
+		q.Add(k, v)
+	}
+	u.RawQuery = formatRawQuery(q)
+	u.Fragment = s.genRemark(inbound, email, "")
+	return u.String()
 }
 
 func getWireguardPubKey(privKeyB64 string) string {
@@ -1533,7 +1698,7 @@ func (s *SubService) genShadowsocksLink(inbound *model.Inbound, email string) st
 			break
 		}
 	}
-	if clientIndex < 0 || clientIndex >= len(clients) {
+	if clientIndex < 0 && (len(clients) > 0 || inboundPassword == "") {
 		return ""
 	}
 	streamNetwork, _ := stream["network"].(string)
@@ -1657,9 +1822,16 @@ func (s *SubService) genShadowsocksLink(inbound *model.Inbound, email string) st
 		}
 	}
 
-	encPart := fmt.Sprintf("%s:%s", method, clients[clientIndex].Password)
-	if len(method) > 0 && method[0] == '2' {
-		encPart = fmt.Sprintf("%s:%s:%s", method, inboundPassword, clients[clientIndex].Password)
+	var encPart string
+	if clientIndex >= 0 {
+		encPart = fmt.Sprintf("%s:%s", method, clients[clientIndex].Password)
+		if len(method) > 0 && method[0] == '2' {
+			if inboundPassword != "" {
+				encPart = fmt.Sprintf("%s:%s:%s", method, inboundPassword, clients[clientIndex].Password)
+			}
+		}
+	} else {
+		encPart = fmt.Sprintf("%s:%s", method, inboundPassword)
 	}
 
 	externalProxies, _ := stream["externalProxy"].([]interface{})
@@ -1880,6 +2052,7 @@ func addFinalMaskParam(params map[string]string, stream map[string]interface{}) 
 		return
 	}
 	xray.MoveUDPHopToMask(clientStream)
+	xray.StripFilterMasks(clientStream)
 	fm, _ := clientStream["finalmask"].(map[string]any)
 	if len(fm) == 0 {
 		return

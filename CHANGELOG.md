@@ -5,6 +5,41 @@ All notable changes to **TX-UI** will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.9.3] - 2026-10-22
+
+### 🚀 Features & Enhancements
+- **Xray-core Update to v26.10.21**:
+  - Updated Xray-core to latest release commit `1b1647cd9ddf` (`v26.10.21`).
+  - Synchronized `go.mod`, `go.sum`, and vendor dependencies.
+- **Xray v26.10.21 Features**:
+  - **Finalmask Source IP ACL Filter**: Added `filter` mask type to TCP and UDP Finalmask streams with `allowedSourceIPs` and `blockedSourceIPs` tag-based multi-input controls in Web UI (`stream_finalmask.html`) and models (`inbound.js`, `outbound.js`).
+  - **Automatic Filter Mask Stripping**: Implemented `StripFilterMasks` in `xray/finalmask.go` and integrated with `subService.go`, `subJsonService.go`, and `inbound.js` (`getFinalMaskForShare`) to ensure server-side access control lists are stripped from client share links and subscriptions.
+  - **XDRIVE Transport Enhancements**: Migrated Google Drive service option to canonical `google-drive` while preserving backward compatibility with existing databases; added `eagerWindowMs` and `holeTimeoutMs` configuration fields in both inbound (`stream_xdrive.html`) and outbound (`outbound.html`) modals; enabled UDP mask configuration for XDRIVE.
+  - **Extended TLS Cipher Suites**: Expanded `TLS_CIPHER_OPTION` across `inbound.js` and `outbound.js` to include RSA-AES-GCM/CBC, ECDHE-CBC-SHA256, and 3DES cipher suites supported by Xray-core.
+- **Design Pattern Consistency & UI Optimization**:
+  - Standardized all newly added form components, tag selectors, and modal inputs with Ant Design Vue design tokens and theme-aware dropdown styling (`:dropdown-class-name="themeSwitcher.currentTheme"`).
+  - Added comprehensive localization for Finalmask filter and XDRIVE settings in `translate.en_US.toml` and `translate.zh_CN.toml`.
+
+### 🐛 Bug Fixes & Shadowsocks Protocol Alignment
+- **Shadowsocks 2022 Key Generation & "Bad Key" Resolution**:
+  - Fixed `RandomUtil.randomShadowsocksPassword(method)` in `utils.js` to generate correct key lengths: 16 bytes (Base64) for 128-bit ciphers (`2022-blake3-aes-128-gcm`, `aes-128-gcm`) and 32 bytes (Base64) for 256-bit ciphers (`2022-blake3-aes-256-gcm`, `2022-blake3-chacha20-poly1305`, etc.), completely resolving the `ErrBadKey` failure.
+  - Added automatic Base64 key length validation and re-generation on method change in `inbound_modal.html`.
+  - Fixed inbound method resolution in `client_modal.html`, `client_bulk_modal.html`, and `form/client.html` when generating client passwords.
+- **Single-User Legacy Shadowsocks Password Visibility**:
+  - Corrected conditional visibility in `form/protocol/shadowsocks.html` so single-user legacy Shadowsocks correctly displays the password input field.
+- **Cipher Suite Cleanup**:
+  - Removed duplicate and redundant Shadowsocks ciphers (`chacha20-poly1305`, `xchacha20-poly1305`) from `SSMethods` across `inbound.js` and `outbound.js`, standardizing on canonical `chacha20-ietf-poly1305` and `xchacha20-ietf-poly1305`.
+- **Xray API Dynamic User Alteration**:
+  - Fixed `xray.AddUser` for Shadowsocks 2022: corrected protobuf account payload from `shadowsocks_2022.ServerConfig` to `shadowsocks_2022.Account{Key: password}` and added fallback to `method` when `cipher` is not explicitly passed.
+- **Backend Validation & Subscription Alignment**:
+  - Enforced client and single-user password presence checks in `internal/web/service/inbound.go`.
+  - Enhanced `genShadowsocksLink` in `subService.go` and `genServer` in `subJsonService.go` to support single-user Shadowsocks link generation and correct multi-user SIP002/SIP022 formatting.
+- **MASQUE Subscription Link & JSON Generation**:
+  - Included `masque` in database subscription queries in `subService.go` (`getInboundsBySubId`, `getInboundsByEmail`) and added fallback to `users` settings array, resolving HTTP 400 errors when fetching subscriptions for MASQUE users.
+  - Implemented `genMasqueLink` in `subService.go` with full support for external proxies, TLS parameters (`sni`, `alpn`, `fp`, `insecure`, `ech`), and Finalmask export.
+  - Implemented `genMasque` in `subJsonService.go` generating valid Xray client proxy outbounds with `network: "masque"`, TLS settings, and MASQUE credentials (`user`, `pass`).
+  - Added unit test coverage in `sub_test.go` (`TestMasqueSubService_LinkAndExternalProxy`, `TestMasqueSubJsonService`).
+
 ## [v0.9.2] - 2026-10-20
 
 ### 🚀 Features & Enhancements

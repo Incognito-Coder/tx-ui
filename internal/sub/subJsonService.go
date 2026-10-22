@@ -216,6 +216,8 @@ func (s *SubJsonService) getConfig(inbound *model.Inbound, client model.Client, 
 			newOutbounds = append(newOutbounds, s.genHy(inbound, newStream, client))
 		case "wireguard":
 			newOutbounds = append(newOutbounds, s.genWireguard(inbound, client))
+		case "masque":
+			newOutbounds = append(newOutbounds, s.genMasque(inbound, newStream, client))
 		}
 
 		newOutbounds = append(newOutbounds, s.defaultOutbounds...)
@@ -232,6 +234,85 @@ func (s *SubJsonService) getConfig(inbound *model.Inbound, client model.Client, 
 	}
 
 	return newJsonArray
+}
+
+func (s *SubJsonService) genMasque(inbound *model.Inbound, newStream map[string]any, client model.Client) json_util.RawMessage {
+	outbound := Outbound{}
+
+	outbound.Protocol = "masque"
+	outbound.Tag = "proxy"
+
+	if s.mux != "" {
+		outbound.Mux = json_util.RawMessage(s.mux)
+	}
+
+	address := inbound.Listen
+	if address == "" || address == "0.0.0.0" {
+		address = s.SubService.address
+	}
+
+	outbound.Settings = OutboundSettings{
+		Address: address,
+		Port:    inbound.Port,
+	}
+
+	var stream map[string]any
+	json.Unmarshal([]byte(inbound.StreamSettings), &stream)
+
+	clientPass := client.Password
+	if clientPass == "" {
+		clientPass = client.Pass
+	}
+	if clientPass == "" {
+		clientPass = client.ID
+	}
+
+	outMasqueStream := map[string]any{}
+	if stream != nil {
+		if masqueStream, ok := stream["masqueSettings"].(map[string]any); ok {
+			for k, v := range masqueStream {
+				outMasqueStream[k] = v
+			}
+		}
+		if finalmask, ok := stream["finalmask"].(map[string]any); ok {
+			newStream["finalmask"] = finalmask
+		}
+		xray.StripFilterMasks(newStream)
+	}
+
+	if clientPass == "" {
+		if p, ok := outMasqueStream["pass"].(string); ok && p != "" {
+			clientPass = p
+		}
+	}
+
+	outMasqueStream["user"] = client.Email
+	outMasqueStream["pass"] = clientPass
+	newStream["masqueSettings"] = outMasqueStream
+
+	newStream["network"] = "masque"
+	sec, _ := newStream["security"].(string)
+	if sec == "" || sec == "none" {
+		newStream["security"] = "tls"
+	}
+	if _, ok := newStream["tlsSettings"]; !ok {
+		newStream["tlsSettings"] = map[string]any{}
+	}
+	if tls, ok := newStream["tlsSettings"].(map[string]any); ok {
+		if alpns, ok := tls["alpn"].([]interface{}); !ok || len(alpns) == 0 {
+			tls["alpn"] = []string{"h3"}
+		}
+		if sn, ok := tls["serverName"].(string); !ok || sn == "" {
+			if h, ok := outMasqueStream["host"].(string); ok && h != "" {
+				tls["serverName"] = h
+			}
+		}
+	}
+
+	outbound.StreamSettings, _ = json.MarshalIndent(newStream, "", "  ")
+
+	result, _ := json.MarshalIndent(outbound, "", "  ")
+	return result
 }
 
 func (s *SubJsonService) genHy(inbound *model.Inbound, newStream map[string]any, client model.Client) json_util.RawMessage {
@@ -278,6 +359,7 @@ func (s *SubJsonService) genHy(inbound *model.Inbound, newStream map[string]any,
 		if finalmask, ok := stream["finalmask"].(map[string]any); ok {
 			newStream["finalmask"] = finalmask
 		}
+		xray.StripFilterMasks(newStream)
 	}
 	outHyStream["auth"] = auth
 	newStream["hysteriaSettings"] = outHyStream
@@ -305,6 +387,7 @@ func (s *SubJsonService) streamData(stream string) map[string]interface{} {
 		}
 	}
 	delete(streamSettings, "sockopt")
+	xray.StripFilterMasks(streamSettings)
 
 	if s.fragmentOrNoises {
 		streamSettings["sockopt"] = json_util.RawMessage(`{"dialerProxy": "direct_out", "tcpKeepAliveIdle": 100}`)
@@ -470,7 +553,15 @@ func (s *SubJsonService) genServer(inbound *model.Inbound, streamSettings json_u
 		// server password in multi-user 2022 protocols
 		if strings.HasPrefix(method, "2022") {
 			if serverPassword, ok := inboundSettings["password"].(string); ok {
-				serverData[0].Password = fmt.Sprintf("%s:%s", serverPassword, client.Password)
+				if client.Password != "" {
+					serverData[0].Password = fmt.Sprintf("%s:%s", serverPassword, client.Password)
+				} else {
+					serverData[0].Password = serverPassword
+				}
+			}
+		} else if client.Password == "" {
+			if serverPassword, ok := inboundSettings["password"].(string); ok {
+				serverData[0].Password = serverPassword
 			}
 		}
 	}

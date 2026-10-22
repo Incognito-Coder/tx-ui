@@ -150,6 +150,13 @@ func (s *InboundService) GetClients(inbound *model.Inbound) ([]model.Client, err
 		}
 	}
 
+	if rawUsers, ok := settings["users"]; ok && rawUsers != nil {
+		var clients []model.Client
+		usersBytes, _ := json.Marshal(rawUsers)
+		json.Unmarshal(usersBytes, &clients)
+		return clients, nil
+	}
+
 	return nil, nil
 }
 
@@ -261,7 +268,7 @@ func (s *InboundService) AddInbound(inbound *model.Inbound) (*model.Inbound, boo
 				return inbound, false, common.NewError("empty client ID")
 			}
 		} else if inbound.Protocol == "shadowsocks" {
-			if client.Email == "" {
+			if client.Email == "" || client.Password == "" {
 				return inbound, false, common.NewError("empty client ID")
 			}
 		} else if inbound.Protocol == "hysteria" {
@@ -279,6 +286,15 @@ func (s *InboundService) AddInbound(inbound *model.Inbound) (*model.Inbound, boo
 		} else {
 			if client.ID == "" {
 				return inbound, false, common.NewError("empty client ID")
+			}
+		}
+	}
+
+	if inbound.Protocol == "shadowsocks" && len(clients) == 0 {
+		var sSettings map[string]interface{}
+		if json.Unmarshal([]byte(inbound.Settings), &sSettings) == nil {
+			if pwd, _ := sSettings["password"].(string); strings.TrimSpace(pwd) == "" {
+				return inbound, false, common.NewError("empty password")
 			}
 		}
 	}
@@ -614,7 +630,7 @@ func (s *InboundService) AddInboundClient(data *model.Inbound) (bool, error) {
 				return false, common.NewError("empty client ID")
 			}
 		} else if oldInbound.Protocol == "shadowsocks" {
-			if client.Email == "" {
+			if client.Email == "" || client.Password == "" {
 				return false, common.NewError("empty client ID")
 			}
 		} else if oldInbound.Protocol == "hysteria" {

@@ -3,14 +3,14 @@
     <a-form-item label='{{ i18n "pages.xray.xdrive.service" }}'>
         <a-select :dropdown-class-name="themeSwitcher.currentTheme" v-model="inbound.stream.xdrive.service">
             <a-select-option value="local">local</a-select-option>
-            <a-select-option value="Google Drive">Google Drive</a-select-option>
+            <a-select-option value="google-drive">Google Drive</a-select-option>
             <a-select-option value="template">template</a-select-option>
         </a-select>
     </a-form-item>
     <a-form-item label='{{ i18n "pages.xray.xdrive.remoteFolder" }}'>
         <a-input placeholder="xray_drive_folder" v-model.trim="inbound.stream.xdrive.remoteFolder"></a-input>
     </a-form-item>
-    <a-form-item v-if="inbound.stream.xdrive.service === 'Google Drive'">
+    <a-form-item v-if="inbound.stream.xdrive.service === 'google-drive' || inbound.stream.xdrive.service === 'Google Drive'">
         <template slot="label">
             <a-tooltip>
                 <template slot="title">
@@ -43,5 +43,12 @@
     <a-form-item label='{{ i18n "pages.xray.xdrive.concurrency" }}'>
         <a-input-number :min="1" placeholder="4" v-model.number="inbound.stream.xdrive.concurrency"></a-input-number>
     </a-form-item>
+    <a-form-item label='{{ i18n "pages.xray.xdrive.eagerWindowMs" }}'>
+        <a-input-number :min="0" placeholder="0" v-model.number="inbound.stream.xdrive.eagerWindowMs"></a-input-number>
+    </a-form-item>
+    <a-form-item label='{{ i18n "pages.xray.xdrive.holeTimeoutMs" }}'>
+        <a-input-number :min="0" placeholder="0" v-model.number="inbound.stream.xdrive.holeTimeoutMs"></a-input-number>
+    </a-form-item>
 </a-form>
 {{end}}
+

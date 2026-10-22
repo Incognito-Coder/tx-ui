@@ -910,6 +910,8 @@ pollIntervalMs = "Poll Interval (ms)"
 maxPollIntervalMs = "Max Poll Interval (ms)"
 sessionTtlSeconds = "Session TTL (seconds)"
 concurrency = "Concurrency"
+eagerWindowMs = "Eager Window (ms)"
+holeTimeoutMs = "Hole Timeout (ms)"
 
 [pages.xray.finalmask]
 tcpMasks = "TCP Masks"
@@ -934,6 +936,9 @@ paddingMax = "Padding Max"
 randRange = "Random Range"
 noiseScript = "Noise Lua Script"
 noiseScriptDesc = "Custom Lua script to generate packet noise manipulation"
+filter = "Filter (Source IP)"
+allowedSourceIPs = "Allowed Source IPs"
+blockedSourceIPs = "Blocked Source IPs"
 
 [pages.xray.dns]
 title = "DNS"
@@ -1104,6 +1109,9 @@ congestion = "Congestion"
 "xmcHostnameDesc" = "The server address the client puts in its Minecraft handshake; empty uses the real one"
 "bbrProfile" = "BBR Profile"
 "bbrProfileDesc" = "Preset for BBR, used whenever BBR controls congestion: with bbr, with brutal when it falls back to BBR, and by default on XHTTP/3"
+"filter" = "Filter (Source IP)"
+"allowedSourceIPs" = "Allowed Source IPs"
+"blockedSourceIPs" = "Blocked Source IPs"
 
 [pages.outbounds]
 "finalRules" = "Final Rules"

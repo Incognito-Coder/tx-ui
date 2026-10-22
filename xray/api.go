@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math"
 	"regexp"
+	"strings"
 	"time"
 
 	"x-ui/internal/logger"
@@ -136,7 +137,10 @@ func (x *XrayAPI) AddUser(Protocol string, inboundTag string, user map[string]in
 	case "shadowsocks":
 		var ssCipherType shadowsocks.CipherType
 		cipher := safeGetString(user, "cipher")
-		switch cipher {
+		if cipher == "" {
+			cipher = safeGetString(user, "method")
+		}
+		switch strings.ToLower(cipher) {
 		case "aes-128-gcm":
 			ssCipherType = shadowsocks.CipherType_AES_128_GCM
 		case "aes-256-gcm":
@@ -155,9 +159,8 @@ func (x *XrayAPI) AddUser(Protocol string, inboundTag string, user map[string]in
 				CipherType: ssCipherType,
 			})
 		} else {
-			account = serial.ToTypedMessage(&shadowsocks_2022.ServerConfig{
-				Key:   safeGetString(user, "password"),
-				Email: safeGetString(user, "email"),
+			account = serial.ToTypedMessage(&shadowsocks_2022.Account{
+				Key: safeGetString(user, "password"),
 			})
 		}
 	case "hysteria":

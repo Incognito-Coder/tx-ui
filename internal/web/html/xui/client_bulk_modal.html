@@ -222,8 +222,10 @@
                 case Protocols.TROJAN:
                     return new Inbound.TrojanSettings.Trojan();
                 case Protocols.SHADOWSOCKS: {
-                    const method = clientsBulkModal.inbound.settings.shadowsockses && clientsBulkModal.inbound.settings.shadowsockses[0] ? clientsBulkModal.inbound.settings.shadowsockses[0].method : "";
-                    return new Inbound.ShadowsocksSettings.Shadowsocks(method);
+                    const inboundMethod = clientsBulkModal.inbound?.settings?.method || "";
+                    const clientMethod = clientsBulkModal.inbound?.isSS2022 ? "" : inboundMethod;
+                    const password = RandomUtil.randomShadowsocksPassword(inboundMethod);
+                    return new Inbound.ShadowsocksSettings.Shadowsocks(clientMethod, password);
                 }
                 case Protocols.HYSTERIA:
                     return new Inbound.HysteriaSettings.Hysteria();

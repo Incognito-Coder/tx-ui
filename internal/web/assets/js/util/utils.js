@@ -146,10 +146,16 @@ class RandomUtil {
         });
     }
 
-    static randomShadowsocksPassword() {
-        let array = new Uint8Array(32);
+    static randomShadowsocksPassword(method = '') {
+        const is128 = method && (method.indexOf('128') !== -1);
+        const len = is128 ? 16 : 32;
+        let array = new Uint8Array(len);
         window.crypto.getRandomValues(array);
-        return btoa(String.fromCharCode.apply(null, array));
+        let binary = '';
+        for (let i = 0; i < array.byteLength; i++) {
+            binary += String.fromCharCode(array[i]);
+        }
+        return btoa(binary);
     }
 }
 

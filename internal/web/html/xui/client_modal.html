@@ -90,8 +90,10 @@
                     clients.push(newClient);
                     return newClient;
                 case Protocols.SHADOWSOCKS: {
-                    const method = (clients && clients.length > 0 && clients[0]) ? clients[0].method : (this.inbound?.settings?.method || "");
-                    newClient = new Inbound.ShadowsocksSettings.Shadowsocks(method);
+                    const inboundMethod = this.inbound?.settings?.method || "";
+                    const clientMethod = this.inbound?.isSS2022 ? "" : inboundMethod;
+                    const password = RandomUtil.randomShadowsocksPassword(inboundMethod);
+                    newClient = new Inbound.ShadowsocksSettings.Shadowsocks(clientMethod, password);
                     clients.push(newClient);
                     return newClient;
                 }

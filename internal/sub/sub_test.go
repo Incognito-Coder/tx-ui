@@ -517,5 +517,209 @@ func TestExternalProxy_CustomClientTLS(t *testing.T) {
 	}
 }
 
+func TestMasqueSubService_LinkAndExternalProxy(t *testing.T) {
+	subService := NewSubService(false, "-ieo")
+	subService.address = "server.example.com"
+
+	streamSettings := `{
+		"network": "masque",
+		"security": "tls",
+		"masqueSettings": {
+			"host": "masque.example.com",
+			"path": "/.well-known/masque/ip/*/*/"
+		},
+		"tlsSettings": {
+			"serverName": "masque.example.com",
+			"alpn": ["h3"]
+		},
+		"finalmask": {
+			"udp": [{"type": "salamander", "settings": {"password": "obfs-password"}}]
+		}
+	}`
+
+	masqueInbound := &model.Inbound{
+		Id:             201,
+		Port:           4433,
+		Protocol:       model.Masque,
+		Settings:       `{"clients":[{"pass":"masquepass123","email":"masque@test.com"}]}`,
+		StreamSettings: streamSettings,
+		Remark:         "Test-Masque",
+	}
+
+	// 1. Direct Link
+	link := subService.getLink(masqueInbound, "masque@test.com")
+	if link == "" {
+		t.Fatalf("expected non-empty masque link, got empty")
+	}
+	u, err := url.Parse(link)
+	if err != nil {
+		t.Fatalf("failed to parse masque link: %v", err)
+	}
+	if u.Scheme != "masque" {
+		t.Errorf("expected scheme=masque, got %s", u.Scheme)
+	}
+	if u.User.Username() != "masquepass123" {
+		t.Errorf("expected username=masquepass123, got %s", u.User.Username())
+	}
+	if u.Host != "server.example.com:4433" {
+		t.Errorf("expected host=server.example.com:4433, got %s", u.Host)
+	}
+	q := u.Query()
+	if q.Get("type") != "masque" {
+		t.Errorf("expected type=masque, got %s", q.Get("type"))
+	}
+	if q.Get("host") != "masque.example.com" {
+		t.Errorf("expected host=masque.example.com, got %s", q.Get("host"))
+	}
+	if q.Get("path") != "/.well-known/masque/ip/*/*/" {
+		t.Errorf("expected path=/.well-known/masque/ip/*/*/, got %s", q.Get("path"))
+	}
+	if q.Get("security") != "tls" {
+		t.Errorf("expected security=tls, got %s", q.Get("security"))
+	}
+	if q.Get("sni") != "masque.example.com" {
+		t.Errorf("expected sni=masque.example.com, got %s", q.Get("sni"))
+	}
+	if q.Get("alpn") != "h3" {
+		t.Errorf("expected alpn=h3, got %s", q.Get("alpn"))
+	}
+	if q.Get("fm") == "" {
+		t.Errorf("expected fm parameter to be set, got empty")
+	}
+
+	// 2. External Proxy
+	streamSettingsEP := `{
+		"network": "masque",
+		"security": "tls",
+		"masqueSettings": {
+			"host": "masque.example.com",
+			"path": "/.well-known/masque/ip/*/*/"
+		},
+		"tlsSettings": {
+			"serverName": "masque.example.com",
+			"alpn": ["h3"]
+		},
+		"externalProxy": [
+			{
+				"dest": "ep.example.com",
+				"port": 8443,
+				"forceTls": "tls",
+				"remark": "EP-Masque",
+				"tlsSettings": {
+					"serverName": "ep-sni.example.com",
+					"alpn": ["h3"]
+				}
+			}
+		]
+	}`
+
+	masqueInboundEP := &model.Inbound{
+		Id:             202,
+		Port:           4433,
+		Protocol:       model.Masque,
+		Settings:       `{"clients":[{"pass":"masquepass123","email":"masque@test.com"}]}`,
+		StreamSettings: streamSettingsEP,
+		Remark:         "Test-Masque-EP",
+	}
+
+	epLink := subService.getLink(masqueInboundEP, "masque@test.com")
+	uEP, err := url.Parse(epLink)
+	if err != nil {
+		t.Fatalf("failed to parse ep masque link: %v", err)
+	}
+	if uEP.Host != "ep.example.com:8443" {
+		t.Errorf("expected ep host=ep.example.com:8443, got %s", uEP.Host)
+	}
+	qEP := uEP.Query()
+	if qEP.Get("sni") != "ep-sni.example.com" {
+		t.Errorf("expected ep sni=ep-sni.example.com, got %s", qEP.Get("sni"))
+	}
+	if !strings.Contains(uEP.Fragment, "EP-Masque") {
+		t.Errorf("expected remark to contain EP-Masque, got %s", uEP.Fragment)
+	}
+}
+
+func TestMasqueSubJsonService(t *testing.T) {
+	subService := NewSubService(false, "-ieo")
+	subService.address = "server.example.com"
+
+	streamSettings := `{
+		"network": "masque",
+		"security": "tls",
+		"masqueSettings": {
+			"host": "masque.example.com",
+			"path": "/.well-known/masque/ip/*/*/"
+		},
+		"tlsSettings": {
+			"serverName": "masque.example.com",
+			"alpn": ["h3"]
+		}
+	}`
+
+	masqueInbound := &model.Inbound{
+		Id:             203,
+		Port:           4433,
+		Protocol:       model.Masque,
+		Settings:       `{"clients":[{"pass":"masquepass123","email":"masque@test.com"}]}`,
+		StreamSettings: streamSettings,
+		Remark:         "Masque-JSON",
+	}
+
+	subJsonService := NewSubJsonService("", "", "", "", subService)
+	cfgs := subJsonService.getConfig(masqueInbound, model.Client{Email: "masque@test.com", Pass: "masquepass123"}, "server.example.com")
+	if len(cfgs) == 0 {
+		t.Fatalf("expected json config, got none")
+	}
+
+	var jsonCfg map[string]interface{}
+	if err := json.Unmarshal([]byte(cfgs[0]), &jsonCfg); err != nil {
+		t.Fatalf("failed to parse json config: %v", err)
+	}
+
+	outbounds := jsonCfg["outbounds"].([]interface{})
+	proxyOut := outbounds[0].(map[string]interface{})
+	if proxyOut["protocol"] != "masque" {
+		t.Errorf("expected protocol=masque, got %v", proxyOut["protocol"])
+	}
+	if proxyOut["tag"] != "proxy" {
+		t.Errorf("expected tag=proxy, got %v", proxyOut["tag"])
+	}
+
+	settings := proxyOut["settings"].(map[string]interface{})
+	if settings["address"] != "server.example.com" {
+		t.Errorf("expected address=server.example.com, got %v", settings["address"])
+	}
+	if settings["port"] != float64(4433) {
+		t.Errorf("expected port=4433, got %v", settings["port"])
+	}
+
+	streamSt := proxyOut["streamSettings"].(map[string]interface{})
+	if streamSt["network"] != "masque" {
+		t.Errorf("expected network=masque, got %v", streamSt["network"])
+	}
+	if streamSt["security"] != "tls" {
+		t.Errorf("expected security=tls, got %v", streamSt["security"])
+	}
+
+	masqueSt := streamSt["masqueSettings"].(map[string]interface{})
+	if masqueSt["host"] != "masque.example.com" {
+		t.Errorf("expected masqueSettings.host=masque.example.com, got %v", masqueSt["host"])
+	}
+	if masqueSt["path"] != "/.well-known/masque/ip/*/*/" {
+		t.Errorf("expected masqueSettings.path=/.well-known/masque/ip/*/*/, got %v", masqueSt["path"])
+	}
+	if masqueSt["user"] != "masque@test.com" {
+		t.Errorf("expected masqueSettings.user=masque@test.com, got %v", masqueSt["user"])
+	}
+	if masqueSt["pass"] != "masquepass123" {
+		t.Errorf("expected masqueSettings.pass=masquepass123, got %v", masqueSt["pass"])
+	}
+
+	tlsSt := streamSt["tlsSettings"].(map[string]interface{})
+	if tlsSt["serverName"] != "masque.example.com" {
+		t.Errorf("expected tlsSettings.serverName=masque.example.com, got %v", tlsSt["serverName"])
+	}
+}
+
 
 

@@ -910,6 +910,8 @@ pollIntervalMs = "轮询间隔 (毫秒)"
 maxPollIntervalMs = "最大轮询间隔 (毫秒)"
 sessionTtlSeconds = "会话超时时间 (秒)"
 concurrency = "并发数"
+eagerWindowMs = "急切窗口 (毫秒)"
+holeTimeoutMs = "打洞超时 (毫秒)"
 
 [pages.xray.finalmask]
 tcpMasks = "TCP 掩码"
@@ -934,6 +936,9 @@ paddingMax = "最大填充"
 randRange = "随机范围"
 noiseScript = "Noise Lua 脚本"
 noiseScriptDesc = "用于生成数据包噪声混淆的自定义 Lua 脚本"
+filter = "过滤 (源 IP)"
+allowedSourceIPs = "允许的源 IP"
+blockedSourceIPs = "阻止的源 IP"
 
 [pages.xray.dns]
 title = "DNS"
@@ -1104,6 +1109,9 @@ congestion = "拥塞控制"
 "xmcHostnameDesc" = "客户端在 Minecraft 握手中填写的服务器地址；留空则使用真实地址"
 "bbrProfile" = "BBR 配置"
 "bbrProfileDesc" = "BBR 预设，在由 BBR 控制拥塞时生效：选择 bbr 时、brutal 回退到 BBR 时，以及 XHTTP/3 默认情况下"
+"filter" = "过滤 (源 IP)"
+"allowedSourceIPs" = "允许的源 IP"
+"blockedSourceIPs" = "阻止的源 IP"
 
 [pages.outbounds]
 "finalRules" = "最终规则"

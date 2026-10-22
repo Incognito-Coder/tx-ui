@@ -27,6 +27,7 @@
                         <a-select-option value="fragment">Fragment</a-select-option>
                         <a-select-option value="sudoku">Sudoku</a-select-option>
                         <a-select-option value="xmc">XMC (Minecraft)</a-select-option>
+                        <a-select-option value="filter">{{ i18n "pages.inbounds.stream.finalmask.filter" }}</a-select-option>
                     </a-select>
                 </a-form-item>
 
@@ -121,12 +122,28 @@
                         <a-input-number v-model.number="mask.settings.paddingMax" :min="0" />
                     </a-form-item>
                 </template>
+
+                <!-- TCP filter -->
+                <template v-if="mask.type === 'filter'">
+                    <a-form-item label='{{ i18n "pages.inbounds.stream.finalmask.allowedSourceIPs" }}'>
+                        <a-select mode="tags" v-model="mask.settings.allowedSourceIPs"
+                            :dropdown-class-name="themeSwitcher.currentTheme"
+                            placeholder="e.g. geoip:cn, 10.0.0.0/8, fd00::/8">
+                        </a-select>
+                    </a-form-item>
+                    <a-form-item label='{{ i18n "pages.inbounds.stream.finalmask.blockedSourceIPs" }}'>
+                        <a-select mode="tags" v-model="mask.settings.blockedSourceIPs"
+                            :dropdown-class-name="themeSwitcher.currentTheme"
+                            placeholder="e.g. 10.20.0.0/16, fd00:20::/48">
+                        </a-select>
+                    </a-form-item>
+                </template>
             </a-form>
         </template>
     </template>
 
-    <!-- UDP Masks (RAW UDP, KCP, Hysteria, XHTTP H3) -->
-    <template v-if="inbound.protocol == Protocols.HYSTERIA || ['kcp', 'xhttp', 'masque'].includes(inbound.stream.network)">
+    <!-- UDP Masks (RAW UDP, KCP, Hysteria, XHTTP H3, XDRIVE) -->
+    <template v-if="inbound.protocol == Protocols.HYSTERIA || ['kcp', 'xhttp', 'masque', 'xdrive'].includes(inbound.stream.network)">
         <a-form-item label='{{ i18n "pages.inbounds.stream.finalmask.udpMasks" }}'>
             <a-button icon="plus" type="primary" size="small"
                 @click="inbound.stream.addUdpMask([Protocols.HYSTERIA, Protocols.MASQUE].includes(inbound.protocol) ? 'salamander' : 'mkcp-legacy')"></a-button>
@@ -148,6 +165,7 @@
                         <template v-if="inbound.protocol === Protocols.HYSTERIA">
                             <a-select-option value="salamander">Salamander (Hysteria2)</a-select-option>
                             <a-select-option value="realm">Realm</a-select-option>
+                            <a-select-option value="filter">{{ i18n "pages.inbounds.stream.finalmask.filter" }}</a-select-option>
                         </template>
                         <template v-else>
                             <a-select-option value="mkcp-legacy">mKCP Legacy</a-select-option>
@@ -157,6 +175,7 @@
                             <a-select-option value="noise">Noise</a-select-option>
                             <a-select-option value="salamander">Salamander</a-select-option>
                             <a-select-option value="sudoku">Sudoku</a-select-option>
+                            <a-select-option value="filter">{{ i18n "pages.inbounds.stream.finalmask.filter" }}</a-select-option>
                         </template>
                     </a-select>
                 </a-form-item>
@@ -266,6 +285,20 @@
                 </template>
                 <template v-if="mask.type === 'realm'">
                     {{template "form/realmFields" "mask"}}
+                </template>
+                <template v-if="mask.type === 'filter'">
+                    <a-form-item label='{{ i18n "pages.inbounds.stream.finalmask.allowedSourceIPs" }}'>
+                        <a-select mode="tags" v-model="mask.settings.allowedSourceIPs"
+                            :dropdown-class-name="themeSwitcher.currentTheme"
+                            placeholder="e.g. geoip:cn, 10.0.0.0/8, fd00::/8">
+                        </a-select>
+                    </a-form-item>
+                    <a-form-item label='{{ i18n "pages.inbounds.stream.finalmask.blockedSourceIPs" }}'>
+                        <a-select mode="tags" v-model="mask.settings.blockedSourceIPs"
+                            :dropdown-class-name="themeSwitcher.currentTheme"
+                            placeholder="e.g. 10.20.0.0/16, fd00:20::/48">
+                        </a-select>
+                    </a-form-item>
                 </template>
             </a-form>
         </template>

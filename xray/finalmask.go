@@ -198,3 +198,53 @@ func upgradeXDNSSettings(settings map[string]any) bool {
 	}
 	return true
 }
+
+// StripFilterMasks removes any "filter" masks from TCP and UDP masks in a stream settings map.
+// Filter masks are server-side source IP ACLs and must not be distributed to clients.
+func StripFilterMasks(stream map[string]any) bool {
+	if stream == nil {
+		return false
+	}
+	finalmask, ok := stream["finalmask"].(map[string]any)
+	if !ok || finalmask == nil {
+		return false
+	}
+	changed := false
+	if tcp, ok := finalmask["tcp"].([]any); ok {
+		var filteredTCP []any
+		for _, m := range tcp {
+			if mask, ok := m.(map[string]any); ok && mask["type"] == "filter" {
+				changed = true
+				continue
+			}
+			filteredTCP = append(filteredTCP, m)
+		}
+		if len(filteredTCP) > 0 {
+			finalmask["tcp"] = filteredTCP
+		} else {
+			delete(finalmask, "tcp")
+			changed = true
+		}
+	}
+	if udp, ok := finalmask["udp"].([]any); ok {
+		var filteredUDP []any
+		for _, m := range udp {
+			if mask, ok := m.(map[string]any); ok && mask["type"] == "filter" {
+				changed = true
+				continue
+			}
+			filteredUDP = append(filteredUDP, m)
+		}
+		if len(filteredUDP) > 0 {
+			finalmask["udp"] = filteredUDP
+		} else {
+			delete(finalmask, "udp")
+			changed = true
+		}
+	}
+	if len(finalmask) == 0 {
+		delete(stream, "finalmask")
+	}
+	return changed
+}
+
