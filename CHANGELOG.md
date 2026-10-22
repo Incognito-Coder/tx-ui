@@ -21,6 +21,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added comprehensive localization for Finalmask filter and XDRIVE settings in `translate.en_US.toml` and `translate.zh_CN.toml`.
 
 ### 🐛 Bug Fixes & Shadowsocks Protocol Alignment
+- **Decoupled Trojan & Shadowsocks Client Password Generation**:
+  - Separated client password generation across all views: introduced dedicated `RandomUtil.randomTrojanPassword()` (alphanumeric string) and `RandomUtil.randomShadowsocksPassword(method)` (strict 16/32-byte Base64 key).
+  - Refactored `form/client.html` into distinct form items for Trojan, Shadowsocks, and MASQUE, eliminating mixed password generators.
+  - Enhanced Node Clients management (`clients.html`): added distinct Trojan (`Trojan ⟳`) and Shadowsocks (`SS 🔑`) generator badges, dynamic placeholder hinting key format, intelligent default protocol detection in `showAdd()`, and automatic cipher-aware Base64 key generation in bulk creation (`handleBulkModalOk`).
+  - Added backend safeguards in `node_client.go` (`addClientToInboundSettings` and `hotAddUserToInbound`) guaranteeing valid Shadowsocks 2022 Base64 keys when attaching or dynamically loading clients into Shadowsocks 2022 inbounds.
 - **Shadowsocks 2022 Key Generation & "Bad Key" Resolution**:
   - Fixed `RandomUtil.randomShadowsocksPassword(method)` in `utils.js` to generate correct key lengths: 16 bytes (Base64) for 128-bit ciphers (`2022-blake3-aes-128-gcm`, `aes-128-gcm`) and 32 bytes (Base64) for 256-bit ciphers (`2022-blake3-aes-256-gcm`, `2022-blake3-chacha20-poly1305`, etc.), completely resolving the `ErrBadKey` failure.
   - Added automatic Base64 key length validation and re-generation on method change in `inbound_modal.html`.

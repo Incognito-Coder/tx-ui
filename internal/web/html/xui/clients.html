@@ -1400,13 +1400,26 @@
 
                             <a-form-item>
                                 <template slot="label">
-                                    <a-tooltip title='{{ i18n "pages.node_clients.forTrojanShadowsocksProtocols" }}'>
-                                        {{ i18n "password" }} (Trojan/SS)
-                                        <a-icon @click="clientModal.client.password = RandomUtil.randomSeq(10)"
-                                            type="sync"></a-icon>
-                                    </a-tooltip>
+                                    <span style="display: inline-flex; align-items: center; gap: 4px;">
+                                        <a-tooltip title='{{ i18n "pages.node_clients.forTrojanShadowsocksProtocols" }}'>
+                                            <span>{{ i18n "password" }}</span>
+                                        </a-tooltip>
+                                        <a-tooltip title="Generate Trojan password">
+                                            <a-tag color="orange" style="cursor: pointer; margin: 0; padding: 0 5px; font-size: 11px; line-height: 18px;"
+                                                @click="clientModal.client.password = RandomUtil.randomTrojanPassword()">
+                                                Trojan <a-icon type="sync"></a-icon>
+                                            </a-tag>
+                                        </a-tooltip>
+                                        <a-tooltip title="Generate Shadowsocks Base64 key">
+                                            <a-tag color="blue" style="cursor: pointer; margin: 0; padding: 0 5px; font-size: 11px; line-height: 18px;"
+                                                @click="genClientModalSSPassword()">
+                                                SS <a-icon type="key"></a-icon>
+                                            </a-tag>
+                                        </a-tooltip>
+                                    </span>
                                 </template>
-                                <a-input v-model.trim="clientModal.client.password"></a-input>
+                                <a-input v-model.trim="clientModal.client.password"
+                                    :placeholder="getClientModalPasswordPlaceholder()"></a-input>
                             </a-form-item>
 
                             <a-form-item>
@@ -2264,11 +2277,24 @@
                         this.isEdit = false;
                         this.title = '{{ i18n "pages.client.add" }}';
                         this.okText = '{{ i18n "sure" }}';
+                        const selectedInboundIds = defaultInboundId ? [Number(defaultInboundId)] : app.allInbounds.map(i => Number(i.id));
+                        let initialPassword = RandomUtil.randomTrojanPassword();
+                        if (defaultInboundId) {
+                            const defInb = app.allInbounds.find(i => Number(i.id) === Number(defaultInboundId));
+                            if (defInb && defInb.protocol === 'shadowsocks') {
+                                let method = '';
+                                try {
+                                    const s = JSON.parse(defInb.settings);
+                                    method = s.method || '';
+                                } catch (e) {}
+                                initialPassword = RandomUtil.randomShadowsocksPassword(method);
+                            }
+                        }
                         this.client = {
                             email: RandomUtil.randomLowerAndNum(9),
                             subId: RandomUtil.randomLowerAndNum(16),
                             uuid: RandomUtil.randomUUID(),
-                            password: RandomUtil.randomSeq(10),
+                            password: initialPassword,
                             auth: RandomUtil.randomSeq(10),
                             flow: '',
                             totalGB: 0,
@@ -2280,7 +2306,7 @@
                             reset: 0,
                             comment: '',
                         };
-                        this.selectedInboundIds = defaultInboundId ? [Number(defaultInboundId)] : app.allInbounds.map(i => Number(i.id));
+                        this.selectedInboundIds = selectedInboundIds;
                         this.expiryTimeModel = null;
                         this.delayedStart = false;
                         this.delayedExpireDays = 0;
@@ -2794,6 +2820,32 @@
                         this.bulkModal.selectedInboundIds = this.bulkModal.selectedInboundIds.filter(i => Number(i) !== numId);
                     }
                 },
+                genClientModalSSPassword() {
+                    let method = '';
+                    const selectedIds = (this.clientModal && this.clientModal.selectedInboundIds) ? this.clientModal.selectedInboundIds.map(Number) : [];
+                    const ssInbound = this.allInbounds.find(i => selectedIds.includes(Number(i.id)) && i.protocol === 'shadowsocks');
+                    if (ssInbound) {
+                        try {
+                            const s = JSON.parse(ssInbound.settings);
+                            method = s.method || '';
+                        } catch (e) {}
+                    }
+                    this.clientModal.client.password = RandomUtil.randomShadowsocksPassword(method);
+                },
+                getClientModalPasswordPlaceholder() {
+                    const selectedIds = (this.clientModal && this.clientModal.selectedInboundIds) ? this.clientModal.selectedInboundIds.map(Number) : [];
+                    const ssInbound = this.allInbounds.find(i => selectedIds.includes(Number(i.id)) && i.protocol === 'shadowsocks');
+                    if (ssInbound) {
+                        try {
+                            const s = JSON.parse(ssInbound.settings);
+                            const is128 = s.method && s.method.includes('128');
+                            return is128 ? '16-byte Base64 key (Shadowsocks)' : '32-byte Base64 key (Shadowsocks)';
+                        } catch (e) {
+                            return '32-byte Base64 key (Shadowsocks)';
+                        }
+                    }
+                    return 'Password (Trojan) or Base64 Key (Shadowsocks)';
+                },
                 async handleClientModalOk() {
                     const cm = this.clientModal;
                     if (!cm.client || !cm.client.email || !cm.client.email.trim()) {
@@ -2846,6 +2898,18 @@
                         ? -86400000 * (Number(bm.delayedExpireDays) || 0)
                         : (bm.expiryTimeModel && typeof bm.expiryTimeModel.valueOf === 'function' ? bm.expiryTimeModel.valueOf() : (bm.expiryTimeModel || 0));
 
+                    const inbIds = (bm.selectedInboundIds || []).map(Number);
+                    const selectedInbs = this.allInbounds.filter(ib => inbIds.includes(Number(ib.id)));
+                    const hasSS = selectedInbs.some(ib => ib.protocol === 'shadowsocks');
+                    let ssMethod = '';
+                    if (hasSS) {
+                        const ssInb = selectedInbs.find(ib => ib.protocol === 'shadowsocks');
+                        try {
+                            const s = JSON.parse(ssInb.settings);
+                            ssMethod = s.method || '';
+                        } catch (e) {}
+                    }
+
                     for (let i = start; i < end; i++) {
                         let email = '';
                         if (bm.emailMethod === 0) email = RandomUtil.randomLowerAndNum(9);
@@ -2854,11 +2918,14 @@
                         else if (bm.emailMethod === 3) email = bm.emailPrefix + i.toString() + bm.emailPostfix;
 
                         const bulkGb = Number(bm.totalGB);
+                        const pwd = hasSS
+                            ? RandomUtil.randomShadowsocksPassword(ssMethod)
+                            : RandomUtil.randomTrojanPassword();
                         clients.push({
                             email: email,
                             subId: RandomUtil.randomLowerAndNum(16),
                             uuid: RandomUtil.randomUUID(),
-                            password: RandomUtil.randomSeq(10),
+                            password: pwd,
                             auth: RandomUtil.randomSeq(10),
                             totalGB: (!isNaN(bulkGb) && bulkGb > 0) ? Math.round(bulkGb * ONE_GB) : 0,
                             expiryTime: expTime,

@@ -146,6 +146,10 @@ class RandomUtil {
         });
     }
 
+    static randomTrojanPassword(len = 10) {
+        return RandomUtil.randomSeq(len);
+    }
+
     static randomShadowsocksPassword(method = '') {
         const is128 = method && (method.indexOf('128') !== -1);
         const len = is128 ? 16 : 32;

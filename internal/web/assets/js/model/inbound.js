@@ -3193,7 +3193,7 @@ Inbound.TrojanSettings = class extends Inbound.Settings {
 
 Inbound.TrojanSettings.Trojan = class extends Inbound.ClientBase {
     constructor(
-        password = RandomUtil.randomSeq(10),
+        password = RandomUtil.randomTrojanPassword(),
         email, limitIp, totalGB, expiryTime, enable, tgId, subId, comment, reset
     ) {
         super(email, limitIp, totalGB, expiryTime, enable, tgId, subId, comment, reset);

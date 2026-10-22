@@ -15,17 +15,44 @@
         </template>
         <a-input v-model.trim="client.email"></a-input>
     </a-form-item>
-    <a-form-item v-if="inbound.protocol === Protocols.TROJAN || inbound.protocol === Protocols.SHADOWSOCKS || inbound.protocol === Protocols.MASQUE">
+    <!-- Trojan -->
+    <a-form-item v-if="inbound.protocol === Protocols.TROJAN">
         <template slot="label">
             <a-tooltip>
                 <template slot="title">
                     <span>{{ i18n "reset" }}</span>
                 </template>
                 {{ i18n "password" }}
-                <a-icon @click="client.password = RandomUtil.randomShadowsocksPassword(inbound.settings.method)"
-                        type="sync" v-if="inbound.protocol === Protocols.SHADOWSOCKS"></a-icon>
-                <a-icon @click="client.password = RandomUtil.randomSeq(10)" type="sync"
-                        v-if="inbound.protocol === Protocols.TROJAN || inbound.protocol === Protocols.MASQUE"></a-icon>
+                <a-icon @click="client.password = RandomUtil.randomTrojanPassword()" type="sync"></a-icon>
+            </a-tooltip>
+        </template>
+        <a-input v-model.trim="client.password"></a-input>
+    </a-form-item>
+
+    <!-- Shadowsocks -->
+    <a-form-item v-if="inbound.protocol === Protocols.SHADOWSOCKS">
+        <template slot="label">
+            <a-tooltip>
+                <template slot="title">
+                    <span>{{ i18n "reset" }}</span>
+                </template>
+                {{ i18n "password" }}
+                <a-icon @click="client.password = RandomUtil.randomShadowsocksPassword(inbound.settings ? inbound.settings.method : (client.method || ''))"
+                        type="sync"></a-icon>
+            </a-tooltip>
+        </template>
+        <a-input v-model.trim="client.password" :placeholder="(inbound.isSS2022 || (inbound.settings && inbound.settings.method && inbound.settings.method.startsWith('2022'))) ? (inbound.settings && inbound.settings.method && inbound.settings.method.includes('128') ? '16-byte base64 key' : '32-byte base64 key') : 'Password'"></a-input>
+    </a-form-item>
+
+    <!-- MASQUE -->
+    <a-form-item v-if="inbound.protocol === Protocols.MASQUE">
+        <template slot="label">
+            <a-tooltip>
+                <template slot="title">
+                    <span>{{ i18n "reset" }}</span>
+                </template>
+                {{ i18n "password" }}
+                <a-icon @click="client.password = RandomUtil.randomSeq(10)" type="sync"></a-icon>
             </a-tooltip>
         </template>
         <a-input v-model.trim="client.password"></a-input>
