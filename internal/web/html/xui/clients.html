@@ -2887,6 +2887,12 @@
                             method = s.method || '';
                         } catch (e) {}
                     }
+                    if (method && !method.startsWith('2022')) {
+                        if (typeof RandomUtil !== 'undefined' && typeof RandomUtil.randomSeq === 'function') {
+                            this.clientModal.client.ssPassword = RandomUtil.randomSeq(16);
+                            return;
+                        }
+                    }
                     if (typeof RandomUtil !== 'undefined' && typeof RandomUtil.randomShadowsocksPassword === 'function') {
                         this.clientModal.client.ssPassword = RandomUtil.randomShadowsocksPassword(method);
                     } else {
@@ -2907,13 +2913,17 @@
                     if (ssInbound) {
                         try {
                             const s = JSON.parse(ssInbound.settings);
-                            const is128 = s.method && s.method.includes('128');
-                            return is128 ? '16-byte Base64 key (Shadowsocks)' : '32-byte Base64 key (Shadowsocks)';
+                            if (s.method && s.method.startsWith('2022')) {
+                                const is128 = s.method && s.method.includes('128');
+                                return is128 ? '16-byte Base64 key (Shadowsocks 2022)' : '32-byte Base64 key (Shadowsocks 2022)';
+                            } else {
+                                return 'Password (Traditional Shadowsocks)';
+                            }
                         } catch (e) {
-                            return '32-byte Base64 key (Shadowsocks)';
+                            return 'Base64 key or Password (Shadowsocks)';
                         }
                     }
-                    return '16 or 32-byte Base64 key (Shadowsocks)';
+                    return '16/32-byte Base64 key or Password (Shadowsocks)';
                 },
                 async handleClientModalOk() {
                     const cm = this.clientModal;

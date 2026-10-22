@@ -1824,10 +1824,14 @@ func (s *SubService) genShadowsocksLink(inbound *model.Inbound, email string) st
 
 	var encPart string
 	if clientIndex >= 0 {
-		encPart = fmt.Sprintf("%s:%s", method, clients[clientIndex].Password)
+		clientPwd := clients[clientIndex].Password
+		if clients[clientIndex].SSPassword != "" {
+			clientPwd = clients[clientIndex].SSPassword
+		}
+		encPart = fmt.Sprintf("%s:%s", method, clientPwd)
 		if len(method) > 0 && method[0] == '2' {
 			if inboundPassword != "" {
-				encPart = fmt.Sprintf("%s:%s:%s", method, inboundPassword, clients[clientIndex].Password)
+				encPart = fmt.Sprintf("%s:%s:%s", method, inboundPassword, clientPwd)
 			}
 		}
 	} else {

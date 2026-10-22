@@ -550,19 +550,24 @@ func (s *SubJsonService) genServer(inbound *model.Inbound, streamSettings json_u
 		method, _ := inboundSettings["method"].(string)
 		serverData[0].Method = method
 
+		clientPwd := client.Password
+		if client.SSPassword != "" {
+			clientPwd = client.SSPassword
+		}
+
 		// server password in multi-user 2022 protocols
 		if strings.HasPrefix(method, "2022") {
 			if serverPassword, ok := inboundSettings["password"].(string); ok {
-				if client.Password != "" {
-					serverData[0].Password = fmt.Sprintf("%s:%s", serverPassword, client.Password)
+				if clientPwd != "" {
+					serverData[0].Password = fmt.Sprintf("%s:%s", serverPassword, clientPwd)
 				} else {
 					serverData[0].Password = serverPassword
 				}
 			}
-		} else if client.Password == "" {
-			if serverPassword, ok := inboundSettings["password"].(string); ok {
-				serverData[0].Password = serverPassword
-			}
+		} else if clientPwd != "" {
+			serverData[0].Password = clientPwd
+		} else if serverPassword, ok := inboundSettings["password"].(string); ok {
+			serverData[0].Password = serverPassword
 		}
 	}
 

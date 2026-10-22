@@ -43,6 +43,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added comprehensive localization for Finalmask filter and XDRIVE settings in `translate.en_US.toml` and `translate.zh_CN.toml`.
 
 ### 🐛 Bug Fixes & Shadowsocks Protocol Alignment
+- **Complete Shadowsocks & Shadowsocks 2022 Architecture Overhaul & Bug Fixes**:
+  - **Single-User vs Multi-User 2022 Protocol Enforcement**: Fixed Xray core crash (`shadowsocks 2022 (multi-user): only blake3-aes-*-gcm methods are supported`) by enforcing single-user mode for `2022-blake3-chacha20-poly1305` in `CheckShadowsocks2022Keys` and automatically stripping `clients` array in `BuildInboundConfig`.
+  - **Traditional Multi-User Shadowsocks Method Injection**: Added automatic client `method` assignment for legacy ciphers (`aes-128-gcm`, `aes-256-gcm`, `chacha20-ietf-poly1305`, `xchacha20-ietf-poly1305`) in `BuildInboundConfig`, eliminating `unsupported cipher method` errors while stripping `method` for SS 2022 users as strictly required by core spec.
+  - **Graceful Single-User Hot-Add Promotion**: Resolved `proxy is not a UserManager` error in `hotAddUserToInbound` and `hotRemoveUserFromInbound`; gracefully catches single-user proxy states and schedules seamless core reload into multi-user mode without alarming warning logs.
+  - **Accurate Subscription Link Credential Routing**: Updated `subService.go` and `subJsonService.go` to prioritize `client.SSPassword` over generic `Password` for Shadowsocks inbounds, guaranteeing valid SIP002 and Shadowsocks 2022 links (`method:serverKey:clientKey@host:port`).
+  - **Clarified Inbound & Client UI Form Semantics**: Labeled Shadowsocks 2022 inbound password field as `Server PSK (Master Key)` in `form/protocol/shadowsocks.html` to eliminate ambiguity with user client passwords, added warning alert on selecting `2022-blake3-chacha20-poly1305` single-user cipher, and improved placeholder text and password generation in `clients.html`.
 - **Full Protocol-Separated Password Generation & Persistence (Trojan, Shadowsocks & MASQUE)**:
   - Added dedicated `RandomUtil.randomMasquePassword()` in `utils.js` alongside `randomTrojanPassword()` and `randomShadowsocksPassword(method)`.
   - Fully decoupled credentials in Node Clients modal (`clients.html`): provided distinct form items with dedicated generator controls for **Password (Trojan)**, **Key (Shadowsocks)**, and **Password (MASQUE)**, eliminating shared password fields.

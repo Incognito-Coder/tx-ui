@@ -12,6 +12,7 @@ import (
 	"x-ui/internal/database/model"
 	"x-ui/internal/logger"
 	"x-ui/internal/util/common"
+	"x-ui/internal/util/random"
 	"x-ui/xray"
 
 	"gorm.io/gorm"
@@ -2744,7 +2745,19 @@ func (s *InboundService) BuildInboundConfig(inbound *model.Inbound, txs ...*gorm
 
 		if inbound.Protocol == model.Shadowsocks {
 			if m, ok := settings["method"].(string); ok {
-				if length := xray.Shadowsocks2022KeyLength(m); length > 0 {
+				mTrimmed := strings.TrimSpace(m)
+				// 1. Single-user ChaCha20-Poly1305 check:
+				// In SS 2022 spec, 2022-blake3-chacha20-poly1305 only supports single-user.
+				// Strip any clients array to prevent core crash: "only blake3-aes-*-gcm methods are supported"
+				if xray.IsShadowsocks2022SingleUserOnly(mTrimmed) {
+					delete(settings, "clients")
+					length := 32
+					if srvPwd, ok := settings["password"].(string); !ok || !xray.ValidShadowsocks2022Key(srvPwd, length) {
+						settings["password"] = xray.NewShadowsocks2022Key(length)
+						logger.Warningf("BuildInboundConfig: repaired invalid Shadowsocks 2022 server key for inbound %d", inbound.Id)
+					}
+				} else if length := xray.Shadowsocks2022KeyLength(mTrimmed); length > 0 {
+					// 2. Shadowsocks 2022 multi-user (2022-blake3-aes-128-gcm / 2022-blake3-aes-256-gcm)
 					if srvPwd, ok := settings["password"].(string); ok {
 						if !xray.ValidShadowsocks2022Key(srvPwd, length) {
 							settings["password"] = xray.NewShadowsocks2022Key(length)
@@ -2758,6 +2771,22 @@ func (s *InboundService) BuildInboundConfig(inbound *model.Inbound, txs ...*gorm
 								if !xray.ValidShadowsocks2022Key(cPwd, length) {
 									cMap["password"] = xray.NewShadowsocks2022Key(length)
 									logger.Warningf("BuildInboundConfig: repaired invalid Shadowsocks 2022 client key for inbound %d (%v)", inbound.Id, cMap["email"])
+								}
+								// Shadowsocks 2022 core requires each user to have an empty method
+								delete(cMap, "method")
+							}
+						}
+					}
+				} else {
+					// 3. Traditional Shadowsocks (aes-128-gcm, aes-256-gcm, chacha20-ietf-poly1305, etc.)
+					// Xray core requires each user to have method set to the cipher method
+					if clientsList, ok := settings["clients"].([]interface{}); ok {
+						for _, item := range clientsList {
+							if cMap, ok := item.(map[string]interface{}); ok {
+								cMap["method"] = mTrimmed
+								cPwd, _ := cMap["password"].(string)
+								if strings.TrimSpace(cPwd) == "" {
+									cMap["password"] = random.Seq(16)
 								}
 							}
 						}

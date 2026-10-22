@@ -828,6 +828,10 @@ func (s *NodeClientService) hotAddUserToInbound(xrayApi *xray.XrayAPI, inbound *
 		var settings map[string]interface{}
 		_ = json.Unmarshal([]byte(inbound.Settings), &settings)
 		if m, ok := settings["method"].(string); ok {
+			if xray.IsShadowsocks2022SingleUserOnly(m) {
+				// 2022-blake3-chacha20-poly1305 is strictly single-user, cannot hot-add clients
+				return false
+			}
 			cipher = m
 			if length := xray.Shadowsocks2022KeyLength(m); length > 0 {
 				if !xray.ValidShadowsocks2022Key(password, length) {
@@ -859,6 +863,11 @@ func (s *NodeClientService) hotAddUserToInbound(xrayApi *xray.XrayAPI, inbound *
 		if strings.Contains(err.Error(), "already exists") {
 			return false
 		}
+		if strings.Contains(err.Error(), "not a UserManager") {
+			// Inbound is currently running in single-user mode in Xray core; restart will reload config.json into multi-user mode
+			logger.Infof("hotAddUserToInbound: inbound %s is currently running in single-user mode; reloading core into multi-user", inbound.Tag)
+			return true
+		}
 		logger.Warningf("hotAddUserToInbound: failed to add %s to %s: %v", nc.Email, inbound.Tag, err)
 		return true
 	}
@@ -876,6 +885,9 @@ func (s *NodeClientService) hotRemoveUserFromInbound(xrayApi *xray.XrayAPI, inbo
 		if strings.Contains(err.Error(), fmt.Sprintf("User %s not found.", email)) ||
 			strings.Contains(err.Error(), "not found") {
 			return false
+		}
+		if strings.Contains(err.Error(), "not a UserManager") {
+			return true
 		}
 		logger.Warningf("hotRemoveUserFromInbound: failed to remove %s from %s: %v", email, inbound.Tag, err)
 		return true
