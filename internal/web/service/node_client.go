@@ -692,7 +692,10 @@ func addClientToInboundSettings(inbound *model.Inbound, nc *model.NodeClient, fl
 	case "trojan":
 		newClientMap["password"] = nc.Password
 	case "shadowsocks":
-		password := nc.Password
+		password := nc.SSPassword
+		if password == "" {
+			password = nc.Password
+		}
 		if m, ok := settings["method"].(string); ok {
 			newClientMap["method"] = m
 			if length := xray.Shadowsocks2022KeyLength(m); length > 0 {
@@ -716,7 +719,10 @@ func addClientToInboundSettings(inbound *model.Inbound, nc *model.NodeClient, fl
 		newClientMap["publicKey"] = nc.UUID
 		newClientMap["privateKey"] = nc.Password
 	case "masque":
-		pass := nc.Password
+		pass := nc.MasquePass
+		if pass == "" {
+			pass = nc.Password
+		}
 		if pass == "" {
 			pass = nc.UUID
 		}
@@ -813,6 +819,9 @@ func (s *NodeClientService) hotAddUserToInbound(xrayApi *xray.XrayAPI, inbound *
 	cipher := ""
 	password := nc.Password
 	if inbound.Protocol == "shadowsocks" {
+		if nc.SSPassword != "" {
+			password = nc.SSPassword
+		}
 		var settings map[string]interface{}
 		_ = json.Unmarshal([]byte(inbound.Settings), &settings)
 		if m, ok := settings["method"].(string); ok {
@@ -822,6 +831,10 @@ func (s *NodeClientService) hotAddUserToInbound(xrayApi *xray.XrayAPI, inbound *
 					password = xray.NewShadowsocks2022Key(length)
 				}
 			}
+		}
+	} else if inbound.Protocol == "masque" {
+		if nc.MasquePass != "" {
+			password = nc.MasquePass
 		}
 	}
 
@@ -1720,10 +1733,15 @@ func (s *NodeClientService) synthesiseClient(nc *model.NodeClient, link *model.N
 		auth = nc.Password
 	}
 
+	pass := nc.MasquePass
+	if pass == "" {
+		pass = nc.Password
+	}
+
 	return model.Client{
 		ID:         nc.UUID,
 		Password:   nc.Password,
-		Pass:       nc.Password,
+		Pass:       pass,
 		Auth:       auth,
 		Security:   nc.Security,
 		Flow:       flow,

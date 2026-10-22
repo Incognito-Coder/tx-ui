@@ -161,6 +161,10 @@ class RandomUtil {
         }
         return btoa(binary);
     }
+
+    static randomMasquePassword(len = 16) {
+        return RandomUtil.randomSeq(len);
+    }
 }
 
 class ObjectUtil {

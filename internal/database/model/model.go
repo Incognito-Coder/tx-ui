@@ -295,7 +295,9 @@ type NodeClient struct {
 	Email      string `json:"email"      form:"email"      gorm:"uniqueIndex"`
 	SubID      string `json:"subId"      form:"subId"      gorm:"uniqueIndex"`
 	UUID       string `json:"uuid"       form:"uuid"       gorm:"column:uuid"` // for vmess/vless
-	Password   string `json:"password"   form:"password"`                      // for trojan/shadowsocks
+	Password   string `json:"password"   form:"password"`                      // for trojan
+	SSPassword string `json:"ssPassword" form:"ssPassword"`                    // for shadowsocks
+	MasquePass string `json:"masquePass" form:"masquePass"`                    // for masque
 	Auth       string `json:"auth"       form:"auth"`                          // for hysteria
 	Security   string `json:"security"   form:"security"`
 	Flow       string `json:"flow"       form:"flow"` // global flow default; per-link override wins

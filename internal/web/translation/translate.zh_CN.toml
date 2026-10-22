@@ -165,6 +165,9 @@ geoVersion = "版本"
 geoSize = "大小"
 geoUpdated = "更新时间"
 
+rolledBack = "已回滚"
+rollbackXray = "回滚配置"
+rollbackConfirm = "您确定要回滚到上一次正常运行的 config.json 状态吗？"
 [pages.inbounds]
 title = "入站列表"
 totalDownUp = "总上传 / 下载"
@@ -310,6 +313,9 @@ telegramChatId = "Telegram 聊天 ID"
 depleted = "已耗尽"
 expired = "已过期"
 
+forTrojanProtocol = "适用于 Trojan 协议"
+forShadowsocksProtocol = "适用于 Shadowsocks 协议"
+forMasqueProtocol = "适用于 MASQUE 协议"
 [pages.clients]
 bulkDelete = "批量删除"
 bulkManageLinks = "批量关联入站"
@@ -615,9 +621,15 @@ statsOutboundDownlinkDesc = "开启统计所有出站代理的下行流量。"
 statsOutboundUplink = "出站上行流量统计"
 statsOutboundUplinkDesc = "开启统计所有出站代理的上行流量。"
 
+rollback = "回滚配置"
+rollbackConfirm = "您确定要恢复上一次正常运行的配置并重启 Xray 吗？"
+rolledBackNoticeTitle = "Xray 核心已回滚到最后正常状态"
+rolledBackNoticeDesc = "Xray 核心因上一配置错误而退出。系统已自动回滚至 config.json 的最后正常状态，以保持您的服务在线。"
 [pages.server]
 loadError = "加载失败"
 
+rollbackSuccess = "Xray 配置已成功回滚到上一正常状态"
+rollbackFailed = "回滚 Xray 配置失败"
 [tgbot.commands]
 unknown = "❗ 未知命令"
 pleaseChoose = "👇 请选择：\r\n"

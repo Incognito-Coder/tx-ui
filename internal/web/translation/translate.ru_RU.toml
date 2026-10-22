@@ -165,6 +165,9 @@ geoVersion = "Версия"
 geoSize = "Размер"
 geoUpdated = "Обновлено"
 
+rolledBack = "Откачено"
+rollbackXray = "Откатить конфиг"
+rollbackConfirm = "Вы уверены, что хотите откатиться к последней рабочей версии config.json?"
 [pages.inbounds]
 title = "Подключения"
 totalDownUp = "Общий объем отправленного/полученного трафика"
@@ -254,6 +257,9 @@ useSystemCADesc = "Использовать корневые сертифика�
 clientTlsSettings = "Настройки TLS клиента"
 allowInsecure = "Разрешить небезопасные"
 
+clientsSeparatedNotice = "Клиенты управляются отдельно. Вы можете добавить клиентов к этому входящему подключению после его создания."
+noClients = "Клиенты не настроены"
+noClientsToast = "Для этого входящего подключения клиенты не настроены. Сначала добавьте клиента."
 [pages.node_clients]
 bulkDelete = "Массовое удаление"
 bulkManageLinks = "Массовая привязка inbound"
@@ -297,6 +303,19 @@ telegramChatId = "ID чата Telegram"
 depleted = "Истощён"
 expired = "Просрочен"
 
+forTrojanProtocol = "Для протокола Trojan"
+forShadowsocksProtocol = "Для протокола Shadowsocks"
+forMasqueProtocol = "Для протокола MASQUE"
+deviceInfo = "Информация об устройстве"
+deviceModel = "Модель устройства"
+deviceHwid = "HWID устройства"
+clientApp = "Клиентское приложение"
+devices = "Устройства"
+clientOS = "ОС / Платформа"
+lastSubTime = "Последняя синхронизация подписки"
+lastSubIP = "Последний IP подписки"
+connectedDevices = "Подключенные устройства"
+clearDevices = "Очистить устройства"
 [pages.clients]
 bulkDelete = "Массовое удаление"
 bulkManageLinks = "Массовая привязка inbound"
@@ -602,9 +621,15 @@ statsOutboundDownlinkDesc = "Включить сбор статистики ис
 statsOutboundUplink = "Статистика исходящей отдачи"
 statsOutboundUplinkDesc = "Включить сбор статистики исходящей отдачи для каждого прокси."
 
+rollback = "Откатить конфиг"
+rollbackConfirm = "Вы уверены, что хотите восстановить последнюю рабочую конфигурацию и перезапустить Xray?"
+rolledBackNoticeTitle = "Ядро Xray откачено к последнему рабочему состоянию"
+rolledBackNoticeDesc = "Ядро Xray аварийно завершилось из-за ошибки в конфигурации. Система автоматически вернулась к последней рабочей версии config.json, чтобы сохранить работоспособность ваших сервисов."
 [pages.server]
 loadError = "Ошибка загрузки"
 
+rollbackSuccess = "Конфигурация Xray успешно восстановлена"
+rollbackFailed = "Не удалось восстановить конфигурацию Xray"
 [tgbot.commands]
 unknown = "❗ Неизвестная команда"
 pleaseChoose = "👇 Пожалуйста, выберите:\r\n"
@@ -905,6 +930,9 @@ randRange = "Случайный диапазон"
 noiseScript = "Lua скрипт для Noise"
 noiseScriptDesc = "Пользовательский Lua скрипт для генерации шумовых пакетов"
 
+filter = "Фильтр (Исходный IP)"
+allowedSourceIPs = "Разрешенные исходные IP"
+blockedSourceIPs = "Заблокированные исходные IP"
 [pages.xray.dns]
 title = "DNS"
 enable = "Включить DNS"
@@ -1008,6 +1036,8 @@ service = "Поставщик услуг"
 sessionTtlSeconds = "Время жизни сессии (сек)"
 template = "Шаблон"
 
+eagerWindowMs = "Окно Eager (мс)"
+holeTimeoutMs = "Таймаут Hole (мс)"
 [pages.inbounds.stream.general]
 request = "Запрос"
 response = "Ответ"
@@ -1092,6 +1122,9 @@ congestion = "Контроль перегрузки"
 "bbrProfile" = "Профиль BBR"
 "bbrProfileDesc" = "Пресет BBR, применяется всякий раз, когда перегрузкой управляет BBR: с bbr, с brutal при откате на BBR и по умолчанию в XHTTP/3"
 
+filter = "Фильтр (Исходный IP)"
+allowedSourceIPs = "Разрешенные исходные IP"
+blockedSourceIPs = "Заблокированные исходные IP"
 [pages.outbounds]
 "finalRules" = "Финальные правила"
 "action" = "Действие"

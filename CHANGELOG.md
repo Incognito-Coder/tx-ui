@@ -33,6 +33,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added comprehensive localization for Finalmask filter and XDRIVE settings in `translate.en_US.toml` and `translate.zh_CN.toml`.
 
 ### 🐛 Bug Fixes & Shadowsocks Protocol Alignment
+- **Full Protocol-Separated Password Generation Fields (Trojan, Shadowsocks & MASQUE)**:
+  - Added dedicated `RandomUtil.randomMasquePassword()` in `utils.js` alongside `randomTrojanPassword()` and `randomShadowsocksPassword(method)`.
+  - Fully decoupled credentials in Node Clients modal (`clients.html`): provided distinct, full form items with dedicated generator controls for **Password (Trojan)**, **Key (Shadowsocks)**, and **Password (MASQUE)**, eliminating shared password fields.
+  - Added `ssPassword` and `masquePass` fields to `NodeClient` struct in `model.go` with automatic GORM database migration, ensuring each protocol preserves its dedicated credential.
+  - Enhanced `addClientToInboundSettings`, `hotAddUserToInbound`, and `synthesiseClient` in `node_client.go` to route `SSPassword` to Shadowsocks inbounds and `MasquePass` to MASQUE inbounds with graceful fallbacks.
+  - Updated bulk creation in `clients.html` (`handleBulkModalOk`) and `client_bulk_modal.html` to generate unique protocol-appropriate credentials for each user.
+- **Complete Internationalization (i18n) Synchronization Across All 13 Languages**:
+  - Audited all TOML localization files against `translate.en_US.toml`, achieving 100% key coverage (0 missing keys across all languages).
+  - Added natural, native translations for missing core rollback keys, Finalmask IP ACL filters, XDRIVE configuration, Node Client device management, bulk linking, and protocol credential tooltips across:
+    - Persian (`translate.fa_IR.toml`)
+    - Simplified Chinese (`translate.zh_CN.toml`)
+    - Traditional Chinese (`translate.zh_TW.toml`)
+    - Russian (`translate.ru_RU.toml`)
+    - Arabic (`translate.ar_EG.toml`)
+    - Spanish (`translate.es_ES.toml`)
+    - Indonesian (`translate.id_ID.toml`)
+    - Japanese (`translate.ja_JP.toml`)
+    - Portuguese (`translate.pt_BR.toml`)
+    - Turkish (`translate.tr_TR.toml`)
+    - Ukrainian (`translate.uk_UA.toml`)
+    - Vietnamese (`translate.vi_VN.toml`)
 - **Decoupled Trojan & Shadowsocks Client Password Generation**:
   - Separated client password generation across all views: introduced dedicated `RandomUtil.randomTrojanPassword()` (alphanumeric string) and `RandomUtil.randomShadowsocksPassword(method)` (strict 16/32-byte Base64 key).
   - Refactored `form/client.html` into distinct form items for Trojan, Shadowsocks, and MASQUE, eliminating mixed password generators.

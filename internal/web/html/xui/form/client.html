@@ -52,7 +52,7 @@
                     <span>{{ i18n "reset" }}</span>
                 </template>
                 {{ i18n "password" }}
-                <a-icon @click="client.password = RandomUtil.randomSeq(10)" type="sync"></a-icon>
+                <a-icon @click="client.password = RandomUtil.randomMasquePassword()" type="sync"></a-icon>
             </a-tooltip>
         </template>
         <a-input v-model.trim="client.password"></a-input>

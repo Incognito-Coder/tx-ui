@@ -313,6 +313,9 @@ clientsSelected = "کاربر انتخاب شده"
 subscriptionUrl = "آدرس اشتراک"
 subscriptionUrlJson = "آدرس جیسون اشتراک"
 
+forTrojanProtocol = "برای پروتکل تروجان"
+forShadowsocksProtocol = "برای پروتکل شدوساکس"
+forMasqueProtocol = "برای پروتکل ماسک (MASQUE)"
 [pages.clients]
 showLinks = "نمایش لینک\u200cها"
 noLinks = "هیچ لینکی موجود نیست"
@@ -920,6 +923,8 @@ maxPollIntervalMs = "حداکثر بازه نظرسنجی (میلی\u200cثان�
 sessionTtlSeconds = "طول عمر نشست (ثانیه)"
 concurrency = "همزمانی (Concurrency)"
 
+eagerWindowMs = "پنجره Eager (میلی\u200cثانیه)"
+holeTimeoutMs = "مهلت زمانی Hole (میلی\u200cثانیه)"
 [pages.xray.finalmask]
 tcpMasks = "ماسک\u200cهای TCP"
 tcpMask = "ماسک TCP"
@@ -944,6 +949,9 @@ randRange = "محدوده تصادفی"
 noiseScript = "اسکریپت نویز با Lua"
 noiseScriptDesc = "اسکریپت سفارشی Lua برای دستکاری و تولید نویز بسته‌ها"
 
+filter = "فیلتر (آی\u200cپی مبدأ)"
+allowedSourceIPs = "آی\u200cپی\u200cهای مبدأ مجاز"
+blockedSourceIPs = "آی\u200cپی\u200cهای مبدأ مسدود شده"
 [pages.xray.dns]
 title = "DNS"
 enable = "فعال کردن حل دامنه"
@@ -1114,6 +1122,9 @@ congestion = "کنترل ازدحام"
 "bbrProfile" = "پروفایل BBR"
 "bbrProfileDesc" = "پیش‌تنظیم BBR که هر جا BBR کنترل ازدحام را بر عهده دارد استفاده می‌شود: با bbr، با brutal وقتی به BBR برمی‌گردد، و به‌صورت پیش‌فرض در XHTTP/3"
 
+filter = "فیلتر (آی\u200cپی مبدأ)"
+allowedSourceIPs = "آی\u200cپی\u200cهای مبدأ مجاز"
+blockedSourceIPs = "آی\u200cپی\u200cهای مبدأ مسدود شده"
 [pages.outbounds]
 "finalRules" = "قوانین نهایی"
 "action" = "اقدام"

@@ -3746,7 +3746,7 @@ Inbound.MasqueSettings = class extends Inbound.Settings {
 
 Inbound.MasqueSettings.Masque = class extends Inbound.ClientBase {
     constructor(
-        pass = RandomUtil.randomSeq(10),
+        pass = RandomUtil.randomMasquePassword(),
         email, limitIp, totalGB, expiryTime, enable, tgId, subId, comment, reset
     ) {
         super(email, limitIp, totalGB, expiryTime, enable, tgId, subId, comment, reset);
@@ -3779,7 +3779,7 @@ Inbound.MasqueSettings.Masque = class extends Inbound.ClientBase {
 
     static fromJson(json = {}) {
         return new Inbound.MasqueSettings.Masque(
-            json.pass || json.password || json.id || RandomUtil.randomSeq(10),
+            json.pass || json.password || json.id || RandomUtil.randomMasquePassword(),
             ...Inbound.ClientBase.commonArgsFromJson(json),
         );
     }
