@@ -177,6 +177,16 @@ func (s *SubJsonService) getConfig(inbound *model.Inbound, client model.Client, 
 		for k, v := range stream {
 			newStream[k] = v
 		}
+		if fm, ok := newStream["finalmask"].(map[string]any); ok && len(fm) > 0 {
+			if raw, err := json.Marshal(fm); err == nil {
+				var clonedFM map[string]any
+				if json.Unmarshal(raw, &clonedFM) == nil {
+					newStream["finalmask"] = clonedFM
+					xray.MoveUDPHopToMask(newStream)
+					xray.StripFilterMasks(newStream)
+				}
+			}
+		}
 		forceTls, _ := extPrxy["forceTls"].(string)
 		switch forceTls {
 		case "tls":
@@ -274,9 +284,17 @@ func (s *SubJsonService) genMasque(inbound *model.Inbound, newStream map[string]
 				outMasqueStream[k] = v
 			}
 		}
-		if finalmask, ok := stream["finalmask"].(map[string]any); ok {
-			newStream["finalmask"] = finalmask
+		if _, exists := newStream["finalmask"]; !exists {
+			if finalmask, ok := stream["finalmask"].(map[string]any); ok {
+				if raw, err := json.Marshal(finalmask); err == nil {
+					var clonedFM map[string]any
+					if json.Unmarshal(raw, &clonedFM) == nil {
+						newStream["finalmask"] = clonedFM
+					}
+				}
+			}
 		}
+		xray.MoveUDPHopToMask(newStream)
 		xray.StripFilterMasks(newStream)
 	}
 
@@ -352,13 +370,28 @@ func (s *SubJsonService) genHy(inbound *model.Inbound, newStream map[string]any,
 			if udpIdleTimeout, ok := hyStream["udpIdleTimeout"].(float64); ok {
 				outHyStream["udpIdleTimeout"] = int(udpIdleTimeout)
 			}
-			if finalmask, ok := hyStream["finalmask"].(map[string]any); ok {
-				newStream["finalmask"] = finalmask
+			if _, exists := newStream["finalmask"]; !exists {
+				if finalmask, ok := hyStream["finalmask"].(map[string]any); ok {
+					if raw, err := json.Marshal(finalmask); err == nil {
+						var clonedFM map[string]any
+						if json.Unmarshal(raw, &clonedFM) == nil {
+							newStream["finalmask"] = clonedFM
+						}
+					}
+				}
 			}
 		}
-		if finalmask, ok := stream["finalmask"].(map[string]any); ok {
-			newStream["finalmask"] = finalmask
+		if _, exists := newStream["finalmask"]; !exists {
+			if finalmask, ok := stream["finalmask"].(map[string]any); ok {
+				if raw, err := json.Marshal(finalmask); err == nil {
+					var clonedFM map[string]any
+					if json.Unmarshal(raw, &clonedFM) == nil {
+						newStream["finalmask"] = clonedFM
+					}
+				}
+			}
 		}
+		xray.MoveUDPHopToMask(newStream)
 		xray.StripFilterMasks(newStream)
 	}
 	outHyStream["auth"] = auth

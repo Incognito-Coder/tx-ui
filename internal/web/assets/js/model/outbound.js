@@ -1085,7 +1085,7 @@ class QuicParams extends CommonClass {
             bbrProfile: params.get('bbrProfile') ?? '',
             brutalUp: QuicParams.getMbpsInt(params.get('upmbps') ?? params.get('up')),
             brutalDown: QuicParams.getMbpsInt(params.get('downmbps') ?? params.get('down')),
-            udpHopPorts: params.get('mport') ?? '',
+            udpHopPorts: params.get('mport') ?? params.get('ports') ?? '',
         });
     }
 
@@ -1154,15 +1154,18 @@ class FinalMaskStreamSettings extends CommonClass {
     }
 
     toJson(includeTcp = true) {
-        const result = {
-            tcp: includeTcp ? this.tcp.map(mask => mask.toJson()) : undefined,
-            udp: this.udp.map(udp => udp.toJson())
-        };
+        const result = {};
+        if (includeTcp && this.tcp && this.tcp.length > 0) {
+            result.tcp = this.tcp.map(mask => mask.toJson());
+        }
+        if (this.udp && this.udp.length > 0) {
+            result.udp = this.udp.map(udp => udp.toJson());
+        }
         if (this.quicParams) {
             const qp = this.quicParams.toJson();
             if (qp) result.quicParams = qp;
         }
-        return result;
+        return Object.keys(result).length > 0 ? result : undefined;
     }
 
     get quicParamsEnable() {
@@ -1300,7 +1303,8 @@ class StreamSettings extends CommonClass {
 
     get hasFinalMask() {
         return (this.finalmask.tcp && this.finalmask.tcp.length > 0) ||
-            (this.finalmask.udp && this.finalmask.udp.length > 0);
+            (this.finalmask.udp && this.finalmask.udp.length > 0) ||
+            (this.finalmask.quicParams && !!this.finalmask.quicParams.toJson());
     }
 
     get isTls() {
@@ -1371,8 +1375,10 @@ class StreamSettings extends CommonClass {
 
     toJson() {
         const network = this.network;
-        const finalMaskEnabled = (this.finalmask.udp && this.finalmask.udp.length > 0) ||
-            (!['kcp', 'hysteria'].includes(network) && this.finalmask.tcp && this.finalmask.tcp.length > 0);
+        const hasTcp = !['kcp', 'hysteria'].includes(network) && this.finalmask.tcp && this.finalmask.tcp.length > 0;
+        const hasUdp = this.finalmask.udp && this.finalmask.udp.length > 0;
+        const hasQuic = this.finalmask.quicParams && !!this.finalmask.quicParams.toJson();
+        const finalMaskEnabled = hasTcp || hasUdp || hasQuic;
         return {
             network: network,
             security: this.security,
@@ -1507,6 +1513,11 @@ class Outbound extends CommonClass {
                 json.sni,
                 json.alpn ? json.alpn.split(',') : [],
                 json.fp);
+        }
+
+        if (json.fm) {
+            const finalmask = FinalMaskStreamSettings.fromShareParam(typeof json.fm === 'string' ? json.fm : JSON.stringify(json.fm));
+            if (finalmask) stream.finalmask = finalmask;
         }
 
         const port = json.port * 1;

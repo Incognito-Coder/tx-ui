@@ -148,17 +148,21 @@ func upgradeXDNSSettings(settings map[string]any) bool {
 		switch resolver := r.(type) {
 		case string:
 			changed = true
-			head, addr, ok := strings.Cut(resolver, "+")
-			if !ok || !strings.Contains(addr, "://") {
-				continue
+			addr := resolver
+			head, rest, hasHead := strings.Cut(resolver, "+")
+			if hasHead {
+				addr = rest
+				name, recordType, _ := strings.Cut(head, ":")
+				code, ok := xdnsRecordTypes[strings.ToLower(recordType)]
+				if !ok {
+					code = 16
+				}
+				if name != "" {
+					addType(name, code)
+				}
 			}
-			name, recordType, _ := strings.Cut(head, ":")
-			code, ok := xdnsRecordTypes[strings.ToLower(recordType)]
-			if !ok {
-				code = 16
-			}
-			if name != "" {
-				addType(name, code)
+			if !strings.Contains(addr, "://") {
+				addr = "udp://" + addr
 			}
 			addrs = append(addrs, addr)
 		case map[string]any:

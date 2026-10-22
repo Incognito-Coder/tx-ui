@@ -1342,7 +1342,7 @@ class UdpMask extends XrayCommonClass {
             case 'header-dns':
                 return {domain: settings.domain || ''};
             case 'xdns':
-                return { domains: Array.isArray(settings.domains) ? settings.domains : [], extraPoll: settings.extraPoll ?? 0 };
+                return { resolvers: Array.isArray(settings.resolvers) ? settings.resolvers : [], domains: Array.isArray(settings.domains) ? settings.domains : [], extraPoll: settings.extraPoll ?? 0 };
             case 'xicmp':
                 return {ip: settings.ip || '', id: settings.id ?? 0};
             case 'mkcp-original':
@@ -1619,15 +1619,18 @@ class FinalMaskStreamSettings extends XrayCommonClass {
     }
 
     toJson(includeTcp = true) {
-        const result = {
-            tcp: includeTcp ? this.tcp.map(mask => mask.toJson()) : undefined,
-            udp: this.udp.map(udp => udp.toJson())
-        };
+        const result = {};
+        if (includeTcp && this.tcp && this.tcp.length > 0) {
+            result.tcp = this.tcp.map(mask => mask.toJson());
+        }
+        if (this.udp && this.udp.length > 0) {
+            result.udp = this.udp.map(udp => udp.toJson());
+        }
         if (this.quicParams) {
             const qp = this.quicParams.toJson();
             if (qp) result.quicParams = qp;
         }
-        return result;
+        return Object.keys(result).length > 0 ? result : undefined;
     }
 
     get quicParamsEnable() {
@@ -1678,7 +1681,8 @@ class StreamSettings extends XrayCommonClass {
 
     get hasFinalMask() {
         return (this.finalmask.tcp && this.finalmask.tcp.length > 0) ||
-            (this.finalmask.udp && this.finalmask.udp.length > 0);
+            (this.finalmask.udp && this.finalmask.udp.length > 0) ||
+            (this.finalmask.quicParams && !!this.finalmask.quicParams.toJson());
     }
 
     get isTls() {
@@ -1771,8 +1775,10 @@ class StreamSettings extends XrayCommonClass {
 
     toJson() {
         const network = this.network;
-        const finalMaskEnabled = (this.finalmask.udp && this.finalmask.udp.length > 0) ||
-            (!['kcp', 'hysteria'].includes(network) && this.finalmask.tcp && this.finalmask.tcp.length > 0);
+        const hasTcp = !['kcp', 'hysteria'].includes(network) && this.finalmask.tcp && this.finalmask.tcp.length > 0;
+        const hasUdp = this.finalmask.udp && this.finalmask.udp.length > 0;
+        const hasQuic = this.finalmask.quicParams && !!this.finalmask.quicParams.toJson();
+        const finalMaskEnabled = hasTcp || hasUdp || hasQuic;
         return {
             network: network,
             security: this.security,
@@ -2134,6 +2140,11 @@ class Inbound extends XrayCommonClass {
             }
         }
 
+        const fm = this.getFinalMaskForShare();
+        if (fm) {
+            obj.fm = JSON.stringify(fm);
+        }
+
         return 'vmess://' + base64(JSON.stringify(obj, null, 2));
     }
 
@@ -2141,7 +2152,8 @@ class Inbound extends XrayCommonClass {
     // the client needs it. Port hopping, kept here as quicParams.udpHop for
     // share links, reaches the client as the udphop mask the core expects.
     getFinalMaskForShare() {
-        const fm = this.stream.finalmask?.toJson();
+        const includeTcp = !['kcp', 'hysteria'].includes(this.stream.network);
+        const fm = this.stream.finalmask?.toJson(includeTcp);
         if (!fm) return undefined;
         if (fm.tcp) {
             fm.tcp = fm.tcp.filter(m => m && m.type !== 'filter');
@@ -2523,17 +2535,22 @@ class Inbound extends XrayCommonClass {
         const sni = (epTls && !ObjectUtil.isEmpty(epTls.serverName)) ? epTls.serverName : this.stream.tls.sni;
         if (!ObjectUtil.isEmpty(sni)) params.set("sni", sni);
 
-        // Obfuscation and udpHop from FinalMask UDP masks
+        // Obfuscation and udpHop from FinalMask UDP masks or quicParams
         if (this.stream.finalmask && Array.isArray(this.stream.finalmask.udp)) {
             for (const mask of this.stream.finalmask.udp) {
                 if (mask.type === 'salamander' && mask.settings?.password) {
                     params.set("obfs", "salamander");
                     params.set("obfs-password", mask.settings.password);
                 }
-                if (mask.type === 'udpHop' && mask.settings?.ports) {
-                    params.set("mport", mask.settings.ports);
+                const maskType = mask.type ? mask.type.toLowerCase() : '';
+                if (maskType === 'udphop') {
+                    const ports = mask.settings?.ports || mask.settings?.remotePorts;
+                    if (ports) params.set("mport", ports);
                 }
             }
+        }
+        if (!params.has("mport") && this.stream.finalmask?.quicParams?.udpHopPorts) {
+            params.set("mport", this.stream.finalmask.quicParams.udpHopPorts);
         }
         if (!params.has("mport") && this.stream.hysteria?.udphopPort) {
             params.set("mport", this.stream.hysteria.udphopPort);
@@ -2713,6 +2730,11 @@ class Inbound extends XrayCommonClass {
                 params.set("alpn", Array.isArray(alpn) ? alpn.join(',') : alpn);
             }
         }
+        const fm = this.getFinalMaskForShare();
+        if (fm) {
+            params.set("fm", JSON.stringify(fm));
+        }
+
         const link = `masque://${encodeURIComponent(clientPass)}@${address}:${port}`;
         const url = new URL(link);
         for (const [key, value] of params) {

@@ -2842,6 +2842,7 @@ func (s *InboundService) BuildInboundConfig(inbound *model.Inbound, txs ...*gorm
 			delete(realitySettings, "settings")
 		}
 		delete(stream, "externalProxy")
+		xray.TakeUDPHop(stream)
 		newStream, err := json.MarshalIndent(stream, "", "  ")
 		if err != nil {
 			return nil, err

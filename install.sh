@@ -399,6 +399,9 @@ install_x-ui() {
         fi
     else
         tag_version=$1
+        if [[ "$tag_version" != v* ]]; then
+            tag_version="v$tag_version"
+        fi
         tag_version_numeric=${tag_version#v}
         min_version="0.1"
 
@@ -408,10 +411,10 @@ install_x-ui() {
         fi
 
         url="https://github.com/Incognito-Coder/tx-ui/releases/download/${tag_version}/x-ui-linux-$(arch).tar.gz"
-        echo -e "Beginning to install x-ui $1"
+        echo -e "Beginning to install tx-ui $1"
         wget -N --no-check-certificate -O /usr/local/x-ui-linux-$(arch).tar.gz ${url}
         if [[ $? -ne 0 ]]; then
-            echo -e "${red}Download x-ui $1 failed, please check if the version exists ${plain}"
+            echo -e "${red}Download tx-ui $1 failed, please check if the version exists ${plain}"
             exit 1
         fi
     fi
@@ -451,18 +454,19 @@ install_x-ui() {
     wget --no-check-certificate -O /usr/bin/x-ui https://raw.githubusercontent.com/Incognito-Coder/tx-ui/main/x-ui.sh
     chmod +x /usr/local/x-ui/x-ui.sh
     chmod +x /usr/bin/x-ui
+    ln -sf /usr/bin/x-ui /usr/bin/tx-ui
     config_after_install
 
     systemctl daemon-reload
     systemctl enable x-ui
     systemctl start x-ui
 
-    echo -e "${green}x-ui ${tag_version}${plain} installation finished, it is running now...\n"
+    echo -e "${green}tx-ui ${tag_version}${plain} installation finished, it is running now...\n"
 
     echo -e "┌───────────────────────────────────────────────────────┐"
-    echo -e "│  ${blue}x-ui control menu usages (subcommands):${plain}              │"
+    echo -e "│  ${blue}tx-ui / x-ui control menu usages (subcommands):${plain}      │"
     echo -e "│                                                       │"
-    echo -e "│  ${blue}x-ui${plain}              - Admin Management Script          │"
+    echo -e "│  ${blue}tx-ui / x-ui${plain}        - Admin Management Script          │"
     echo -e "│  ${blue}x-ui start${plain}        - Start                            │"
     echo -e "│  ${blue}x-ui stop${plain}         - Stop                             │"
     echo -e "│  ${blue}x-ui restart${plain}      - Restart                          │"

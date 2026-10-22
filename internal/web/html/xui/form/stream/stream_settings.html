@@ -65,8 +65,8 @@
     {{template "form/streamSockopt"}}
 </template>
 
-<!-- finalmask - only for TCP, WS, HTTPUpgrade, XHTTP, mKCP, Hysteria -->
-<template v-if="['tcp', 'ws', 'httpupgrade', 'xhttp', 'kcp', 'hysteria'].includes(inbound.stream.network)">
+<!-- finalmask - for TCP, WS, HTTPUpgrade, XHTTP, mKCP, Hysteria, gRPC, Masque, XDrive -->
+<template v-if="inbound.protocol == Protocols.HYSTERIA || inbound.protocol == Protocols.MASQUE || ['tcp', 'kcp', 'ws', 'grpc', 'httpupgrade', 'xhttp', 'hysteria', 'masque', 'xdrive'].includes(inbound.stream.network)">
     {{template "form/streamFinalMask"}}
 </template>
 {{end}}

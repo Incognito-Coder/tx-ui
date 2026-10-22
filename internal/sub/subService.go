@@ -835,16 +835,30 @@ func (s *SubService) genHysteriaLink(inbound *model.Inbound, email string) strin
 				if maskMap, ok := m.(map[string]interface{}); ok {
 					maskType, _ := maskMap["type"].(string)
 					maskSettings, _ := maskMap["settings"].(map[string]interface{})
-					if maskType == "salamander" && maskSettings != nil {
+					if strings.EqualFold(maskType, "salamander") && maskSettings != nil {
 						if pass, ok := maskSettings["password"].(string); ok && pass != "" {
 							params["obfs"] = "salamander"
 							params["obfs-password"] = pass
 						}
 					}
-					if maskType == "udpHop" && maskSettings != nil {
+					if strings.EqualFold(maskType, "udphop") && maskSettings != nil {
 						if ports, ok := maskSettings["ports"].(string); ok && ports != "" {
 							params["mport"] = ports
 						}
+					}
+				}
+			}
+		}
+		if params["mport"] == "" {
+			if qp, ok := finalmask["quicParams"].(map[string]interface{}); ok {
+				if udpHop, ok := qp["udpHop"].(map[string]interface{}); ok {
+					if ports, ok := udpHop["ports"].(string); ok && ports != "" {
+						params["mport"] = ports
+					}
+				}
+				if params["mport"] == "" {
+					if rp, ok := qp["remotePorts"].(string); ok && rp != "" {
+						params["mport"] = rp
 					}
 				}
 			}
@@ -1057,6 +1071,10 @@ func (s *SubService) genVmessLink(inbound *model.Inbound, email string) string {
 	}
 	obj["id"] = clients[clientIndex].ID
 	obj["scy"] = clients[clientIndex].Security
+
+	if fmStr := getClientFinalMaskString(stream); fmStr != "" {
+		obj["fm"] = fmStr
+	}
 
 	externalProxies, _ := stream["externalProxy"].([]interface{})
 
@@ -2038,31 +2056,42 @@ func searchHost(headers interface{}) string {
 	return ""
 }
 
-// addFinalMaskParam shares the inbound's finalmask as "fm", which Xray's share
-// link standard defines as the whole object in JSON. Port hopping, kept in the
-// inbound as quicParams.udpHop for share links, reaches the client as the
-// udphop mask the core now expects.
-func addFinalMaskParam(params map[string]string, stream map[string]interface{}) {
+// getClientFinalMaskString returns the serialized client-ready finalmask object in JSON.
+// Port hopping, kept in the inbound as quicParams.udpHop for share links, reaches
+// the client as the udphop mask the core expects, and filter masks are stripped.
+func getClientFinalMaskString(stream map[string]interface{}) string {
+	if stream == nil {
+		return ""
+	}
 	finalmask, ok := stream["finalmask"].(map[string]interface{})
 	if !ok || len(finalmask) == 0 {
-		return
+		return ""
 	}
 	raw, err := json.Marshal(finalmask)
 	if err != nil {
-		return
+		return ""
 	}
 	clientStream := map[string]any{}
 	if json.Unmarshal([]byte(`{"finalmask":`+string(raw)+`}`), &clientStream) != nil {
-		return
+		return ""
 	}
 	xray.MoveUDPHopToMask(clientStream)
 	xray.StripFilterMasks(clientStream)
 	fm, _ := clientStream["finalmask"].(map[string]any)
 	if len(fm) == 0 {
-		return
+		return ""
 	}
 	if fmJSON, err := json.Marshal(fm); err == nil {
-		params["fm"] = string(fmJSON)
+		return string(fmJSON)
+	}
+	return ""
+}
+
+// addFinalMaskParam shares the inbound's finalmask as "fm", which Xray's share
+// link standard defines as the whole object in JSON.
+func addFinalMaskParam(params map[string]string, stream map[string]interface{}) {
+	if fmStr := getClientFinalMaskString(stream); fmStr != "" {
+		params["fm"] = fmStr
 	}
 }
 

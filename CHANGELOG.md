@@ -5,6 +5,28 @@ All notable changes to **TX-UI** will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.9.4] - 2026-10-23
+
+### 🚀 Features & Enhancements
+- **Finalmask Obfuscation & Stream-Masking System Overhaul**:
+  - **Modular Reusable Templates**: Created `stream_finalmask_fields.html` consolidating shared mask components (`xdnsDomains`, `noiseFields`, `fragmentFields`, `sudokuFields`, `filterFields`, `udpHopFields`, `headerCustomTcp`, `headerCustomUdp`).
+  - **Inbound & Outbound Parity**: Unified `stream_finalmask.html`, `stream_settings.html`, and `outbound.html` with support for all mask types across TCP and UDP (including `filter` IP ACLs, `realm`, and QUIC parameters for `masque` and `hysteria`).
+  - **Standalone QUIC Parameters**: Fixed `hasFinalMask` and `toJson` in both `inbound.js` and `outbound.js` so QUIC parameters (congestion, brutal upload/download, window sizes) are saved and retained without requiring non-empty TCP/UDP mask arrays.
+  - **Core Compatibility & udpHop Migration**: Stripped server-side `quicParams.udpHop` in `GenXrayInboundConfig` and `BuildInboundConfig` via `xray.TakeUDPHop` to prevent Xray-core rejection; transformed client udpHop to the required `udphop` UDP mask in `subService.go` and `subJsonService.go`.
+  - **Safe Client Distribution**: Implemented `getClientFinalMaskString` and deep-cloning in subscription services to strip server-side `filter` IP ACLs and prevent leaking internal filters to client links.
+  - **Expanded Share Links**: Added `fm` query/JSON export to VMess and Masque share links and link parsers.
+  - **Unit Test Coverage**: Created `xray/finalmask_test.go` verifying `TakeUDPHop`, `MoveUDPHopToMask`, `UpgradeXDNSMasks`, and `StripFilterMasks`.
+
+- **Telegram Bot Multi-Protocol Credential Architecture**:
+  - Upgraded client addition handler in `internal/web/service/tgbot.go` to support Shadowsocks 2022 (correct key length calculation and generation), traditional Shadowsocks AEAD, Trojan, Hysteria (`Auth`), and Masque (`MasquePass`).
+  - Synced client credential fields with database models and node client services.
+
+- **Bash Management Scripts & Aliases**:
+  - **Command Alias**: Added `/usr/bin/tx-ui` symlink in `install.sh` and `x-ui.sh`, allowing users to manage the panel using either `tx-ui` or `x-ui`.
+  - **Version Tag Normalization**: Enhanced `install.sh` and `legacy_version` in `x-ui.sh` to automatically normalize version inputs with or without the `v` prefix.
+  - **Menu Option Range**: Fixed main menu selection prompt and error validation in `x-ui.sh` from `[0-25]` to `[0-26]` to fully include Theme Management.
+  - **Branch Sync**: Fixed uninstall script URL to use the `main` branch instead of deprecated `master`.
+
 ## [v0.9.3] - 2026-10-22
 
 ### 🚀 Features & Enhancements

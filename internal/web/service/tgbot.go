@@ -2,9 +2,8 @@ package service
 
 import (
 	"context"
-	"crypto/rand"
 	"embed"
-	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net"
@@ -311,13 +310,29 @@ func (t *Tgbot) OnReceive() {
 				Reset:      0,
 			}
 
-			if inbound.Protocol == "shadowsocks" {
-				bytes := make([]byte, 32)
-				rand.Read(bytes)
-				client.Password = base64.StdEncoding.EncodeToString(bytes)
-			} else if inbound.Protocol == "trojan" {
+			switch inbound.Protocol {
+			case model.Shadowsocks:
+				var settings map[string]interface{}
+				json.Unmarshal([]byte(inbound.Settings), &settings)
+				m, _ := settings["method"].(string)
+				var key string
+				if length := xray.Shadowsocks2022KeyLength(m); length > 0 {
+					key = xray.NewShadowsocks2022Key(length)
+				} else {
+					key = random.Seq(16)
+				}
+				client.Password = key
+				client.SSPassword = key
+			case model.Trojan, model.Hysteria:
 				client.Password = random.Seq(10)
-			} else {
+				client.Auth = client.Password
+			case model.Masque:
+				client.Password = random.Seq(16)
+				client.MasquePass = client.Password
+				client.Pass = client.Password
+			case model.WireGuard:
+				client.ID = uuid.New().String()
+			default:
 				client.ID = uuid.New().String()
 			}
 

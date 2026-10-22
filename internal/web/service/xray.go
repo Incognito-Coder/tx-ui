@@ -208,6 +208,9 @@ func NormalizeStreamSettings(stream map[string]interface{}) bool {
 			}
 		}
 	}
+	if xray.UpgradeXDNSMasks(stream) {
+		changed = true
+	}
 	return changed
 }
 

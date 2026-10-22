@@ -85,12 +85,23 @@ func (i *Inbound) GenXrayInboundConfig() *xray.InboundConfig {
 	} else if i.Protocol == Masque {
 		settings = masqueSettingsNormalize(settings)
 	}
+	streamSettings := i.StreamSettings
+	if streamSettings != "" {
+		var stream map[string]any
+		if err := json.Unmarshal([]byte(streamSettings), &stream); err == nil && stream != nil {
+			if xray.TakeUDPHop(stream) != nil {
+				if b, err := json.Marshal(stream); err == nil {
+					streamSettings = string(b)
+				}
+			}
+		}
+	}
 	return &xray.InboundConfig{
 		Listen:         json_util.RawMessage(listen),
 		Port:           i.Port,
 		Protocol:       string(i.Protocol),
 		Settings:       json_util.RawMessage(settings),
-		StreamSettings: json_util.RawMessage(i.StreamSettings),
+		StreamSettings: json_util.RawMessage(streamSettings),
 		Tag:            i.Tag,
 		Sniffing:       json_util.RawMessage(i.Sniffing),
 	}

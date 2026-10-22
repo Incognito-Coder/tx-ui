@@ -163,6 +163,7 @@ update_menu() {
     wget --no-check-certificate -O /usr/bin/x-ui https://raw.githubusercontent.com/Incognito-Coder/tx-ui/main/x-ui.sh
     chmod +x /usr/local/x-ui/x-ui.sh
     chmod +x /usr/bin/x-ui
+    ln -sf /usr/bin/x-ui /usr/bin/tx-ui
 
     if [[ $? == 0 ]]; then
         echo -e "${green}Update successful. The panel has automatically restarted.${plain}"
@@ -174,15 +175,16 @@ update_menu() {
 }
 
 legacy_version() {
-    echo "Enter the panel version (like 0.2):"
+    echo "Enter the panel version (like 0.9.3):"
     read tag_version
 
     if [ -z "$tag_version" ]; then
         echo "Panel version cannot be empty. Exiting."
         exit 1
     fi
+    tag_version=${tag_version#v}
     # Use the entered panel version in the download link
-    install_command="bash <(curl -Ls "https://raw.githubusercontent.com/Incognito-Coder/tx-ui/v$tag_version/install.sh") v$tag_version"
+    install_command="bash <(curl -Ls \"https://raw.githubusercontent.com/Incognito-Coder/tx-ui/v$tag_version/install.sh\") v$tag_version"
 
     echo "Downloading and installing panel version $tag_version..."
     eval $install_command
@@ -209,11 +211,12 @@ uninstall() {
     systemctl reset-failed
     rm /etc/x-ui/ -rf
     rm /usr/local/x-ui/ -rf
+    rm -f /usr/bin/x-ui /usr/bin/tx-ui
 
     echo ""
     echo -e "Uninstalled Successfully.\n"
     echo "If you need to install this panel again, you can use below command:"
-    echo -e "${green}bash <(curl -Ls https://raw.githubusercontent.com/Incognito-Coder/tx-ui/master/install.sh)${plain}"
+    echo -e "${green}bash <(curl -Ls https://raw.githubusercontent.com/Incognito-Coder/tx-ui/main/install.sh)${plain}"
     echo ""
     # Trap the SIGTERM signal
     trap delete_script SIGTERM
@@ -1851,7 +1854,7 @@ show_menu() {
 ╚────────────────────────────────────────────────╝
 "
     show_status
-    echo && read -p "Please enter your selection [0-25]: " num
+    echo && read -p "Please enter your selection [0-26]: " num
 
     case "${num}" in
     0)
@@ -1936,7 +1939,7 @@ show_menu() {
         bash <(curl -Ls https://raw.githubusercontent.com/Incognito-Coder/tx-themehub/master/install.sh)
         ;;
     *)
-        LOGE "Please enter the correct number [0-25]"
+        LOGE "Please enter the correct number [0-26]"
         ;;
     esac
 }
