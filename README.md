@@ -311,22 +311,25 @@ computing environments. The following are key architectures that we support:
 
 ## Features
 
-- Force HTTPs installation of panel
-- System Status Monitoring
-- Search within all inbounds and clients
-- Dark/Light theme
-- Supports multi-user and multi-protocol
-- Supports protocols, including VMESS, VLESS, Trojan, Shadowsocks, Dokodemo-door, Socks, HTTP, wireguard
-- Supports XTLS native Protocols, including RPRX-Direct, Vision, REALITY
-- Traffic statistics, traffic limit, expiration time limit
-- Customizable Xray configuration templates
-- Supports HTTPS access panel (self-provided domain name + SSL certificate)
-- Supports One-Click SSL certificate application and automatic renewal
-- For more advanced configuration items, please refer to the panel
-- Fixes API routes (user setting will be created with API)
-- Supports changing configs by different items provided in the panel.
-- Supports export/import database from the panel
-- Built-in application updater
+- **Interactive In-Panel API Documentation (`/panel/docs`)**: Explore, search, copy endpoints, and view live cURL and code snippets directly inside the web UI.
+- **Automatic & Manual Config State Rollback**: Pre-flight verification, instant core exit detection, and automatic recovery to `config.json.last_working` preventing service disruptions.
+- **Updated Xray Core (v26.10.21)**: Full support for Finalmask Source IP ACL filtering (`allowedSourceIPs`/`blockedSourceIPs`), automatic filter stripping from share links, XDRIVE transport enhancements, and extended TLS cipher suites.
+- **Protocol-Separated Client Credentials**: Dedicated, isolated password generation and persistence for Trojan, Shadowsocks 2022 (strict 16/32-byte Base64 key generator & auto-repair), MASQUE, and Hysteria.
+- **Connected Devices Management**: Track and manage connected devices (IP, client app, OS, user-agent, last seen) per client with history clearing.
+- **Database Health & Maintenance**: In-panel SQLite diagnostics, WAL truncation, PRAGMA optimization, vacuum, and orphaned row cleanup.
+- **Force HTTPS installation of panel**
+- **System Status Monitoring** (CPU, RAM, swap, disk, TCP/UDP sockets, live traffic)
+- **Search and filter** within all inbounds and clients
+- **Dark, Ultra Dark, and Light themes**
+- **Supports multi-user and multi-protocol**: VMess, VLESS, Trojan, Shadowsocks, MASQUE, Hysteria, Dokodemo-door, Socks, HTTP, WireGuard
+- **Supports XTLS native protocols**: RPRX-Direct, Vision, REALITY
+- **Traffic statistics, traffic limit, expiration time limit**
+- **Customizable Xray configuration templates**
+- **Supports HTTPS access panel** (self-provided domain name + SSL certificate)
+- **One-Click SSL certificate application and automatic renewal**
+- **Complete 100% Internationalization (i18n)** across 13 languages
+- **Export/import database from the panel**
+- **Built-in application updater**
 
 ## Default Panel Settings
 
@@ -477,7 +480,8 @@ than one, Just separate them with ,)
 
 #### Full Documentation
 
-- **Full Documentation & Code Examples:** See [API.md](API.md)
+- **Interactive In-Panel Documentation:** Accessible directly at `/panel/docs` in your TX-UI web panel.
+- **Full API Specification & Code Examples:** See [API.md](API.md)
 - [Postman Collection](https://www.postman.com/incognito-coder/tx-ui/collection/q1l5l0u/tx-ui)
 - Authentication: `POST /login` with `{ "username": "admin", "password": "..." }` sets session cookie.
 
@@ -487,7 +491,7 @@ than one, Just separate them with ,)
 |:------:|------|--------|
 | `GET`  | `"/list"` | Get all clients with details & inbound links |
 | `GET`  | `"/get/:id"` | Get single client by ID |
-| `POST` | `"/create"` | Create a new client and link to inbounds |
+| `POST` | `"/create"` | Create a new client with protocol passwords (`password`, `ssPassword`, `masquePass`, `auth`) |
 | `POST` | `"/bulkCreate"` | Bulk generate clients |
 | `POST` | `"/update/:id"` | Update client configuration |
 | `POST` | `"/del/:id"` | Delete client |
@@ -501,6 +505,8 @@ than one, Just separate them with ,)
 | `POST` | `"/:id/resetTraffic"` | Reset client traffic |
 | `POST` | `"/resetAllTraffics"` | Reset all clients' traffic |
 | `POST` | `"/delDepleted"` | Delete all expired/depleted clients |
+| `GET`  | `"/:id/devices"` | Get connected device history (IP, user-agent, OS, app) |
+| `POST` | `"/:id/clearDevices"` | Clear connected devices log |
 
 #### Inbounds API (`/panel/api/inbounds`)
 
@@ -528,13 +534,15 @@ than one, Just separate them with ,)
 | `POST` | `"/depleted"`                      | Get depleted users (list of emails)                |
 | `POST` | `"/disabled"`                      | Get disabled users (list of emails)                |
 
-#### Server API (`/panel/api/server`)
+#### Server & System API (`/panel/api/server`)
 
 | Method | Path                    | Action                             |
 |:------:|-------------------------|------------------------------------|
 | `GET`  | `"/status"`             | Get CPU, memory, disk & Xray state |
 | `POST` | `"/restartXrayService"` | Restart Xray core service          |
 | `POST` | `"/stopXrayService"`    | Stop Xray core service             |
+| `POST` | `"/rollbackXrayConfig"` | Roll back Xray to last working state |
+| `GET`  | `"/getRollbackStatus"`  | Get config rollback status & reason |
 | `GET`  | `"/getXrayVersion"`     | Get installed Xray version         |
 | `GET`  | `"/getConfigJson"`      | Get active Xray config.json        |
 | `GET`  | `"/getDb"`              | Download database backup           |
@@ -543,6 +551,31 @@ than one, Just separate them with ,)
 | `POST` | `"/xraylogs/:count"`    | View Xray core log lines           |
 | `GET`  | `"/getNewUUID"`         | Generate UUID v4                   |
 | `GET`  | `"/getNewX25519Cert"`   | Generate Reality keypair           |
+| `POST` | `"/installPanel"`       | Update or install panel package    |
+
+#### Settings & Database Maintenance (`/panel/setting`)
+
+| Method | Path                  | Action                                             |
+|:------:|-----------------------|----------------------------------------------------|
+| `POST` | `"/all"`              | Retrieve all panel settings                        |
+| `POST` | `"/update"`           | Update panel settings                              |
+| `POST` | `"/restartPanel"`     | Gracefully restart panel web process               |
+| `POST` | `"/dbStatus"`         | Check SQLite database size, WAL size & integrity   |
+| `POST` | `"/optimizeDatabase"` | Optimize database (WAL truncate, PRAGMA optimize)  |
+| `POST` | `"/vacuumDatabase"`   | Reclaim unused disk space via VACUUM               |
+| `POST` | `"/cleanDatabase"`    | Scan and delete orphaned or corrupted rows         |
+
+#### Xray Configuration API (`/panel/xray`)
+
+| Method | Path                  | Action                                             |
+|:------:|-----------------------|----------------------------------------------------|
+| `POST` | `"/"`                 | Get advanced Xray JSON configuration               |
+| `POST` | `"/update"`           | Validate and save advanced configuration           |
+| `POST` | `"/rollback"`         | Roll back to last working configuration            |
+| `GET`  | `"/getRollbackStatus"`| Retrieve rollback status flag and reason           |
+| `POST` | `"/testOutbound"`     | Test outbound connectivity and latency             |
+| `GET`  | `"/getOutboundsTraffic"` | Get cumulative traffic per outbound tag         |
+| `POST` | `"/resetOutboundsTraffic"` | Reset outbound traffic counters               |
 
 [<img src="https://run.pstmn.io/button.svg" alt="Run In Postman" style="width: 128px; height: 32px;">](https://app.getpostman.com/run-collection/5146551-dda3cab3-0e33-485f-96f9-d4262f437ac5?action=collection%2Ffork&source=rip_markdown&collection-url=entityId%3D5146551-dda3cab3-0e33-485f-96f9-d4262f437ac5%26entityType%3Dcollection%26workspaceId%3Dd64f609f-485a-4951-9b8f-876b3f917124)
 

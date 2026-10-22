@@ -93,6 +93,7 @@ link = "Yönet"
 node_clients = "Node Clients"
 clients = "İstemciler"
 txThemeHub = "TX ThemeHub"
+apiDocs = "API Belgeleri"
 
 [tgbot]
 keyboardClosed = "❌ Klavye kapatıldı!"
@@ -376,6 +377,9 @@ expireDays = "Süre"
 days = "Gün"
 renew = "Otomatik Yenile"
 renewDesc = "Süresi dolduktan sonra otomatik yenileme. (0 = devre dışı)(birim: gün)"
+
+[pages.docs]
+title = "API Belgeleri"
 
 [pages.settings]
 subUI = "Özel Abonelik Şablonu"

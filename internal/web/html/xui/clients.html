@@ -2720,7 +2720,6 @@
                     if (!c || !c.id) return;
                     const msg = await HttpUtil.post(`/panel/api/clients/${c.id}/clearDevices`);
                     if (msg.success) {
-                        this.$message.success('{{ i18n "success" }}');
                         this.$set(c, 'devices', []);
                         this.$set(c, 'deviceModel', '');
                         this.$set(c, 'deviceHwid', '');
@@ -2777,7 +2776,6 @@
                     if (!email) return;
                     const msg = await HttpUtil.post(`/panel/api/inbounds/clearClientIps/${email}`);
                     if (msg.success) {
-                        this.$message.success('{{ i18n "success" }}');
                         this.detailModal.clientIps = '';
                     }
                 },
@@ -3162,7 +3160,6 @@
                         onOk: async () => {
                             const res = await HttpUtil.post(`/panel/api/clients/${c.id}/resetTraffic`);
                             if (res.success) {
-                                this.$message.success('{{ i18n "success" }}');
                                 const total = (this.trafficMap[c.id] || {}).total || 0;
                                 this.$set(this.trafficMap, c.id, {
                                     up: 0,

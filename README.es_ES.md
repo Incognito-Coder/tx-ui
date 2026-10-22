@@ -306,20 +306,23 @@ Nuestra plataforma ofrece compatibilidad con una amplia gama de arquitecturas y 
 
 ## Características
 
+- **Documentación REST API Interactiva en el Panel (`/panel/docs`)**: Explora, busca, copia rutas y consulta fragmentos de código interactivos en cURL, Python y Node.js directamente dentro del panel web.
+- **Reversión Automática y Manual del Estado de Configuración**: Verificación previa de configuración, detección instantánea de caídas del núcleo y recuperación automática a `config.json.last_working` para evitar interrupciones del servicio.
+- **Núcleo Xray Actualizado (v26.10.21)**: Soporte completo para filtrado de IP de origen Finalmask (`allowedSourceIPs`/`blockedSourceIPs`), eliminación automática de filtros en enlaces de suscripción, mejoras de transporte XDRIVE y suites de cifrado TLS ampliadas.
+- **Generación y Persistencia Aislada de Credenciales por Protocolo**: Contraseñas dedicadas para Trojan, Shadowsocks 2022 (generación estricta de claves Base64 de 16/32 bytes y autocorrección), MASQUE e Hysteria.
+- **Gestión de Dispositivos Conectados**: Rastreo y administración de dispositivos conectados por cliente (IP, aplicación, SO, última conexión) con limpieza de historial.
+- **Salud y Mantenimiento de Base de Datos SQLite**: Diagnóstico en panel, truncado de WAL, optimización PRAGMA, desfragmentación VACUUM y limpieza de registros huérfanos.
 - Forzar la instalación del panel mediante HTTPS
-- Monitoreo del Estado del Sistema
-- Búsqueda dentro de todas las reglas de entrada y clientes
-- Tema Oscuro/Claro
-- Soporta multiusuario y multiprotocolo
-- Soporta protocolos, incluyendo VMess, VLESS, Trojan, Shadowsocks, Dokodemo-door, Socks, HTTP, wireguard
-- Soporta Protocolos nativos XTLS, incluyendo RPRX-Direct, Visión, REALITY
+- Monitoreo del Estado del Sistema (CPU, memoria, swap, disco, sockets TCP/UDP y tráfico en vivo)
+- Búsqueda y filtrado dentro de todas las reglas de entrada y clientes
+- Tema Oscuro, Ultra Dark y Claro
+- Soporta multiusuario y multiprotocolo: VMess, VLESS, Trojan, Shadowsocks, MASQUE, Hysteria, Dokodemo-door, Socks, HTTP, WireGuard
+- Soporta Protocolos nativos XTLS: RPRX-Direct, Vision, REALITY
 - Estadísticas de tráfico, límite de tráfico, límite de tiempo de vencimiento
 - Plantillas de configuración de Xray personalizables
-- Soporta acceso HTTPS al panel (dominio proporcionado por uno mismo + certificado SSL)
-- Soporta la solicitud y renovación automática de certificados SSL con un clic
-- Para elementos de configuración más avanzados, consulta el panel
-- Corrige rutas de API (la configuración del usuario se creará con la API)
-- Soporta cambiar las configuraciones por diferentes elementos proporcionados en el panel.
+- Soporta acceso HTTPS al panel (dominio propio + certificado SSL)
+- Solicitud y renovación automática de certificados SSL con un clic
+- Internacionalización completa 100% en 13 idiomas
 - Soporta exportar/importar base de datos desde el panel
 - Actualizador de aplicaciones integrado
 
@@ -478,43 +481,104 @@ administradores del bot. (Puedes ingresar más de uno, solo sepáralos con ,)
 - `/login` con `POST` datos de usuario: `{username: '', password: ''}` para iniciar sesión
 - `/panel/api/inbounds` base para las siguientes acciones:
 
-| Método | Ruta                               | Acción                                                                               |
-|:------:|------------------------------------|--------------------------------------------------------------------------------------|
-| `GET`  | `"/list"`                          | Obtener todas los Entradas                                                           |
-| `GET`  | `"/get/:id"`                       | Obtener Entrada con inbound.id                                                       |
-| `GET`  | `"/getClientTraffics/:email"`      | Obtener Tráficos del Cliente con email                                               |
-| `GET`  | `"/createbackup"`                  | El bot de Telegram envía copia de seguridad a los admins                             |
-| `POST` | `"/add"`                           | Agregar Entrada                                                                      |
-| `POST` | `"/del/:id"`                       | Eliminar Entrada                                                                     |
-| `POST` | `"/update/:id"`                    | Actualizar Entrada                                                                   |
-| `POST` | `"/clientIps/:email"`              | Dirección IP del Cliente                                                             |
-| `POST` | `"/clearClientIps/:email"`         | Borrar Dirección IP del Cliente                                                      |
-| `POST` | `"/addClient"`                     | Agregar Cliente a la Entrada                                                         |
-| `POST` | `"/:id/delClient/:clientId"`       | Eliminar Cliente por clientId*                                                       |
-| `POST` | `"/updateClient/:clientId"`        | Actualizar Cliente por clientId*                                                     |
-| `POST` | `"/updateClientTraffic/:email"`    | Actualizar el tráfico del cliente por correo electrónico, los valores están en bytes |
-| `POST` | `"/:id/resetClientTraffic/:email"` | Restablecer Tráfico del Cliente                                                      |
-| `POST` | `"/resetAllTraffics"`              | Restablecer tráfico de todos las Entradas                                            |
-| `POST` | `"/resetAllClientTraffics/:id"`    | Restablecer tráfico de todos los clientes en una Entrada                             |
-| `POST` | `"/delDepletedClients/:id"`        | Eliminar clientes agotados de la entrada (-1: todos)                                 |
-| `POST` | `"/onlines"`                       | Obtener usuarios en línea (lista de correos electrónicos)                            |
-| `POST` | `"/depleted"`                      | Obtener usuarios agotados (lista de correos electrónicos)                            |
-| `POST` | `"/disabled"`                      | Obtener usuarios desactivado (lista de correos electrónicos)                         |
+#### Documentación Completa
 
-*- El campo `clientId` debe llenarse por:
+- **Documentación Interactiva en el Panel:** Accesible directamente en `/panel/docs` en tu interfaz web de TX-UI.
+- **Especificación Completa y Ejemplos de Código:** Consulta [API.md](API.md)
+- [Colección de Postman](https://www.postman.com/incognito-coder/tx-ui/collection/q1l5l0u/tx-ui)
+- Autenticación: `POST /login` con `{ "username": "admin", "password": "..." }` establece la cookie de sesión.
 
-- `client.id` para VMESS y VLESS
-- `client.password` para TROJAN
-- `client.email` para Shadowsocks \ .
+#### API de Clientes (`/panel/api/clients`)
 
-`/panel/api/server` base para las siguientes acciones:
+| Método | Ruta | Acción |
+|:------:|------|--------|
+| `GET`  | `"/list"` | Obtener todos los clientes con detalles y enlaces de entrada |
+| `GET`  | `"/get/:id"` | Obtener cliente por ID |
+| `POST` | `"/create"` | Crear nuevo cliente con contraseñas por protocolo (`password`, `ssPassword`, `masquePass`, `auth`) |
+| `POST` | `"/bulkCreate"` | Generación masiva de clientes |
+| `POST` | `"/update/:id"` | Actualizar configuración de cliente |
+| `POST` | `"/del/:id"` | Eliminar cliente |
+| `POST` | `"/bulkDel"` | Eliminación masiva de clientes |
+| `POST` | `"/:id/toggle"` | Habilitar o deshabilitar cliente |
+| `GET`  | `"/:id/links"` | Obtener entradas vinculadas al cliente |
+| `POST` | `"/:id/addLink"` | Vincular cliente a entrada |
+| `POST` | `"/:id/setLinks"` | Establecer todas las entradas vinculadas |
+| `POST` | `"/:id/removeLink/:inboundId"` | Desvincular de entrada específica |
+| `GET`  | `"/:id/traffic"` | Estadísticas de tráfico en tiempo real |
+| `POST` | `"/:id/resetTraffic"` | Restablecer tráfico del cliente |
+| `POST` | `"/resetAllTraffics"` | Restablecer tráfico de todos los clientes |
+| `POST` | `"/delDepleted"` | Eliminar clientes vencidos o agotados |
+| `GET`  | `"/:id/devices"` | Historial de dispositivos conectados (IP, SO, app) |
+| `POST` | `"/:id/clearDevices"` | Limpiar historial de dispositivos |
 
-| Método | Ruta                    | Acción                         |
-|:------:|-------------------------|--------------------------------|
-| `GET`  | `"/status"`             | Obtener el estado del servidor |
-| `GET`  | `"/restartXrayService"` | Reanudar xray-core             |
+#### API de Entradas (`/panel/api/inbounds`)
+
+| Método | Ruta | Acción |
+|:------:|------|--------|
+| `GET`  | `"/list"` | Obtener todas las entradas |
+| `GET`  | `"/get/:id"` | Obtener entrada con inbound.id |
+| `GET`  | `"/getClientTraffics/:email"` | Obtener tráfico de cliente por email |
+| `GET`  | `"/getClientTrafficsById/:id"` | Obtener tráfico de cliente por ID |
+| `POST` | `"/add"` | Agregar entrada |
+| `POST` | `"/del/:id"` | Eliminar entrada |
+| `POST` | `"/update/:id"` | Actualizar entrada |
+| `POST` | `"/reorder"` | Reordenar entradas |
+| `POST` | `"/clientIps/:email"` | Registro de direcciones IP del cliente |
+| `POST` | `"/clearClientIps/:email"` | Limpiar registro de direcciones IP |
+| `POST` | `"/updateClientTraffic/:email"` | Actualizar tráfico del cliente manualmente (bytes) |
+| `POST` | `"/:id/resetClientTraffic/:email"` | Restablecer tráfico del cliente |
+| `POST` | `"/resetAllTraffics"` | Restablecer tráfico de todas las entradas |
+| `POST` | `"/resetAllClientTraffics/:id"` | Restablecer tráfico de todos los clientes (-1: todos) |
+| `POST` | `"/delDepletedClients/:id"` | Eliminar clientes agotados de la entrada (-1: todos) |
+| `POST` | `"/onlines"` | Obtener usuarios en línea (lista de correos) |
+| `POST` | `"/depleted"` | Obtener usuarios agotados (lista de correos) |
+| `POST` | `"/disabled"` | Obtener usuarios desactivados (lista de correos) |
+
+#### API de Servidor y Sistema (`/panel/api/server`)
+
+| Método | Ruta | Acción |
+|:------:|------|--------|
+| `GET`  | `"/status"` | Obtener estado de CPU, memoria, disco y núcleo Xray |
+| `POST` | `"/restartXrayService"` | Reiniciar servicio del núcleo Xray |
+| `POST` | `"/stopXrayService"` | Detener servicio del núcleo Xray |
+| `POST` | `"/rollbackXrayConfig"` | Revertir configuración a último estado funcional |
+| `GET`  | `"/getRollbackStatus"` | Estado y motivo de reversión de configuración |
+| `GET`  | `"/getXrayVersion"` | Versión instalada del núcleo Xray |
+| `GET`  | `"/getConfigJson"` | Obtener archivo activo config.json |
+| `GET`  | `"/getDb"` | Descargar copia de seguridad de la base de datos |
+| `POST` | `"/importDB"` | Restaurar base de datos desde archivo .db |
+| `POST` | `"/logs/:count"` | Ver registros del panel |
+| `POST` | `"/xraylogs/:count"` | Ver registros del núcleo Xray |
+| `GET`  | `"/getNewUUID"` | Generar UUID v4 aleatorio |
+| `GET`  | `"/getNewX25519Cert"` | Generar par de claves Reality X25519 |
+| `POST` | `"/installPanel"` | Actualizar o instalar paquete del panel |
+
+#### API de Configuración y Mantenimiento (`/panel/setting`)
+
+| Método | Ruta | Acción |
+|:------:|------|--------|
+| `POST` | `"/all"` | Obtener todas las configuraciones del panel |
+| `POST` | `"/update"` | Guardar y actualizar configuraciones |
+| `POST` | `"/restartPanel"` | Reiniciar ordenadamente el proceso web del panel |
+| `POST` | `"/dbStatus"` | Diagnóstico de base de datos SQLite, tamaño y WAL |
+| `POST` | `"/optimizeDatabase"` | Optimizar base de datos (truncar WAL y PRAGMA optimize) |
+| `POST` | `"/vacuumDatabase"` | Recuperar espacio en disco mediante VACUUM |
+| `POST` | `"/cleanDatabase"` | Buscar y eliminar filas huérfanas o dañadas |
+
+#### API de Configuración Avanzada Xray (`/panel/xray`)
+
+| Método | Ruta | Acción |
+|:------:|------|--------|
+| `POST` | `"/"` | Obtener configuración avanzada de plantilla Xray JSON |
+| `POST` | `"/update"` | Validar y guardar configuración avanzada |
+| `POST` | `"/rollback"` | Revertir a la última configuración funcional |
+| `GET`  | `"/getRollbackStatus"` | Obtener indicador y motivo de reversión |
+| `POST` | `"/testOutbound"` | Probar conectividad y latencia de salidas |
+| `GET`  | `"/getOutboundsTraffic"` | Tráfico acumulado por etiqueta de salida |
+| `POST` | `"/resetOutboundsTraffic"` | Restablecer contadores de tráfico de salida |
 
 [<img src="https://run.pstmn.io/button.svg" alt="Run In Postman" style="width: 128px; height: 32px;">](https://app.getpostman.com/run-collection/5146551-dda3cab3-0e33-485f-96f9-d4262f437ac5?action=collection%2Ffork&source=rip_markdown&collection-url=entityId%3D5146551-dda3cab3-0e33-485f-96f9-d4262f437ac5%26entityType%3Dcollection%26workspaceId%3Dd64f609f-485a-4951-9b8f-876b3f917124)
+
 </details>
 
 ## Variables de Entorno

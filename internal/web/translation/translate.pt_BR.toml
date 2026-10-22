@@ -93,6 +93,7 @@ link = "Gerenciar"
 node_clients = "Node Clients"
 clients = "Clientes"
 txThemeHub = "TX ThemeHub"
+apiDocs = "Documentação API"
 
 [tgbot]
 keyboardClosed = "❌ Teclado fechado!"
@@ -376,6 +377,9 @@ expireDays = "Duração"
 days = "Dia(s)"
 renew = "Renovação Automática"
 renewDesc = "Renovação automática após expiração. (0 = desativado)(unidade: dia)"
+
+[pages.docs]
+title = "Documentação API"
 
 [pages.settings]
 subUI = "Modelo de assinatura personalizado"

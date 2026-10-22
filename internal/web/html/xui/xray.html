@@ -1982,7 +1982,6 @@
                         const msg = await HttpUtil.post("/panel/xray/rollback");
                         this.loading(false);
                         if (msg.success) {
-                            this.$message.success(msg.msg || "Rolled back successfully");
                             await PromiseUtil.sleep(500);
                             await this.getXraySetting();
                             await this.getXrayResult();
@@ -2595,7 +2594,9 @@
                             success: false,
                             error: msg.msg || '{{ i18n "pages.xray.outbound.testError" }}'
                         });
-                        Vue.prototype.$message.error(msg.msg || '{{ i18n "pages.xray.outbound.testError" }}');
+                        if (!msg.msg) {
+                            Vue.prototype.$message.error('{{ i18n "pages.xray.outbound.testError" }}');
+                        }
                     }
                 } catch (error) {
                     this.$set(this.outboundTestStates[index], 'testing', false);

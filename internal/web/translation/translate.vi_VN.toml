@@ -93,6 +93,7 @@ link = "Quản lý"
 node_clients = "Node Clients"
 clients = "Khách hàng"
 txThemeHub = "TX ThemeHub"
+apiDocs = "Tài liệu API"
 
 [tgbot]
 keyboardClosed = "❌ Bàn phím đã đóng!"
@@ -376,6 +377,9 @@ expireDays = "Khoảng thời gian"
 days = "ngày"
 renew = "Tự động gia hạn"
 renewDesc = "Tự động gia hạn sau khi hết hạn. (0 = tắt)(đơn vị: ngày)"
+
+[pages.docs]
+title = "Tài liệu API"
 
 [pages.settings]
 subUI = "Mẫu đăng ký tùy chỉnh"

@@ -912,7 +912,6 @@
                         const msg = await HttpUtil.post('/panel/api/server/rollbackXrayConfig');
                         this.loading(false);
                         if (msg.success) {
-                            this.$message.success(msg.msg || "Rolled back successfully");
                             await PromiseUtil.sleep(500);
                             await this.getStatus();
                         }

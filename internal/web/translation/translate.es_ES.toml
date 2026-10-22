@@ -93,6 +93,7 @@ link = "Gestionar"
 node_clients = "Node Clients"
 clients = "Clientes"
 txThemeHub = "TX ThemeHub"
+apiDocs = "Documentación API"
 
 [tgbot]
 keyboardClosed = "❌ Teclado cerrado!"
@@ -376,6 +377,9 @@ expireDays = "Duración"
 days = "Día(s)"
 renew = "Renovación automática"
 renewDesc = "Renovación automática después de la expiración. (0 = desactivar) (unidad: día)"
+
+[pages.docs]
+title = "Documentación API"
 
 [pages.settings]
 title = "Configuraciones"

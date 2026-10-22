@@ -23,6 +23,7 @@ This document describes the HTTP REST API exposed by **TX-UI**. All endpoints re
 
 ## Overview & Architecture
 
+- **Interactive In-Panel Documentation:** Accessible directly at `<base_path>panel/docs` in your TX-UI web panel.
 - **Base Path:** Typically `/` or custom subpath configured via `webBasePath` (default: `/`).
 - **API Base:** `<base_path>panel/api/`
 - **Protocol:** HTTP or HTTPS depending on panel configuration.
@@ -170,7 +171,10 @@ Create a new client identity and optionally link it to inbounds.
     "email": "newuser@example.com",
     "subId": "custom_sub_id",
     "uuid": "auto_or_custom_uuid",
-    "password": "optional_password",
+    "password": "trojan_password",
+    "ssPassword": "base64_shadowsocks_key",
+    "masquePass": "masque_password",
+    "auth": "hysteria_auth",
     "flow": "xtls-rprx-vision",
     "totalGB": 53687091200,
     "expiryTime": 0,
@@ -183,6 +187,7 @@ Create a new client identity and optionally link it to inbounds.
   }
   ```
   *(Note: `totalGB` is passed in bytes. E.g., `50 * 1024 * 1024 * 1024 = 53687091200` for 50 GB. Set `0` for unlimited).*
+  *(Credential details: `password` is used for Trojan inbounds; `ssPassword` is a strict 16- or 32-byte Base64 key for Shadowsocks 2022; `masquePass` is used for MASQUE inbounds; `auth` is used for Hysteria).*
 
 ### 2.4 Bulk Create Clients
 Generate multiple clients at once and link them to designated inbounds.
@@ -195,9 +200,12 @@ Generate multiple clients at once and link them to designated inbounds.
     "clients": [
       {
         "email": "user_1@example.com",
-        "subId": "custom_sub_id",
+        "subId": "custom_sub_id_1",
         "uuid": "auto_or_custom_uuid",
-        "password": "optional_password",
+        "password": "trojan_password",
+        "ssPassword": "base64_shadowsocks_key",
+        "masquePass": "masque_password",
+        "auth": "hysteria_auth",
         "flow": "",
         "totalGB": 21474836480,
         "expiryTime": 0,
@@ -216,7 +224,7 @@ Update an existing client's settings.
 - **Path:** `/panel/api/clients/update/:id`
 - **Parameters:**
   - `id` (`integer`, path): Client ID.
-- **Request Body:** Same fields as create (e.g. `email`, `totalGB`, `expiryTime`, `enable`, `limitIp`, `comment`, `inboundIds`).
+- **Request Body:** Same fields as create (e.g. `email`, `password`, `ssPassword`, `masquePass`, `auth`, `totalGB`, `expiryTime`, `enable`, `limitIp`, `comment`, `inboundIds`).
 
 ### 2.6 Delete Client
 Permanently delete a client and its associated links.
@@ -265,6 +273,10 @@ Enable or disable a client.
 - **`POST /panel/api/clients/resetAllTraffics`**: Reset traffic statistics for all node clients.
 - **`POST /panel/api/clients/delDepleted`**: Delete all node clients whose traffic quota or expiration date is depleted.
 - **`GET /panel/api/clients/inboundLinkCounts`**: Get count of clients linked to each inbound.
+
+### 2.11 Connected Devices Management
+- **`GET /panel/api/clients/:id/devices`**: Retrieve list of active or recently connected devices for a client (IP, User-Agent, Client App, OS, and last seen timestamp).
+- **`POST /panel/api/clients/:id/clearDevices`**: Clear recorded device history for a client.
 
 ---
 
@@ -375,13 +387,16 @@ Retrieve CPU, memory, disk, network, and uptime metrics.
   }
   ```
 
-### 4.2 Xray Core Controls
+### 4.2 Xray Core Controls & State Rollback
 - **`POST /panel/api/server/restartXrayService`**: Restart the Xray core service.
 - **`POST /panel/api/server/stopXrayService`**: Stop the Xray core service.
+- **`POST /panel/api/server/rollbackXrayConfig`**: Manually roll back Xray configuration to `config.json.last_working` and restore working template.
+- **`GET /panel/api/server/getRollbackStatus`**: Get rollback status (`hasLastWorkingConfig`, `isRolledBack`, `lastRollbackReason`).
 - **`GET /panel/api/server/getXrayVersion`**: Get installed Xray version.
 - **`GET /panel/api/server/getXrayMetrics`**: Get internal Prometheus metrics from Xray.
 - **`GET /panel/api/server/getConfigJson`**: Retrieve the generated `config.json` running in Xray.
 - **`POST /panel/api/server/installXray/:version`**: Download and install a specific Xray core release.
+- **`POST /panel/api/server/installPanel`** / **`POST /panel/api/server/installPanel/:version`**: Update or install panel package.
 
 ### 4.3 Cryptographic Tools
 - **`GET /panel/api/server/getNewUUID`**: Generate a new random UUID v4.
@@ -431,6 +446,8 @@ Retrieve CPU, memory, disk, network, and uptime metrics.
 
 - **`POST /panel/xray/`**: Retrieve complete Xray advanced configuration (routing, DNS, balancers, outbounds).
 - **`POST /panel/xray/update`**: Save and apply advanced Xray JSON configuration.
+- **`POST /panel/xray/rollback`**: Roll back to last working configuration from Xray settings page.
+- **`GET /panel/xray/getRollbackStatus`**: Retrieve rollback status flag and reason.
 - **`GET /panel/xray/getXrayResult`**: Validate current configuration and return test results.
 - **`POST /panel/xray/testOutbound`**: Test outbound connectivity and latency (`outbound`, optional `allOutbounds`).
 - **`GET /panel/xray/getOutboundsTraffic`**: Get cumulative traffic per outbound tag.

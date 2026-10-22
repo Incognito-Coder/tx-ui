@@ -93,6 +93,7 @@ link = "Kelola"
 node_clients = "Node Clients"
 clients = "Klien"
 txThemeHub = "TX ThemeHub"
+apiDocs = "Dokumentasi API"
 
 [tgbot]
 keyboardClosed = "❌ Keyboard ditutup!"
@@ -376,6 +377,9 @@ expireDays = "Durasi"
 days = "Hari"
 renew = "Perpanjang Otomatis"
 renewDesc = "Perpanjangan otomatis setelah kedaluwarsa. (0 = nonaktif)(unit: hari)"
+
+[pages.docs]
+title = "Dokumentasi API"
 
 [pages.settings]
 title = "Pengaturan Panel"

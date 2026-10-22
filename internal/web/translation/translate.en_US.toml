@@ -89,6 +89,7 @@ link = "Manage"
 node_clients = "Node Clients"
 clients = "Clients"
 txThemeHub = "TX ThemeHub"
+apiDocs = "API Docs"
 theme = "Theme"
 themeDark = "Dark"
 themeUltra = "Ultra"
@@ -376,6 +377,9 @@ expireDays = "Duration"
 days = "Day(s)"
 renew = "Auto Renew"
 renewDesc = "Auto-renewal after expiration. (0 = disable)(unit: day)"
+
+[pages.docs]
+title = "API Documentation"
 
 [pages.settings]
 title = "Panel Settings"

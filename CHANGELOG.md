@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [v0.9.3] - 2026-10-22
 
 ### 🚀 Features & Enhancements
+- **Interactive In-Panel REST API Documentation (`/panel/docs`)**:
+  - Built a dedicated, interactive REST API Documentation dashboard (`docs.html`) directly inside the TX-UI web panel.
+  - Added primary navigation entry in `common_sider.html` with an API icon and full localization across all 13 supported languages.
+  - Features real-time endpoint search, category filtering (Auth, Clients, Inbounds, Server, Settings, Xray), HTTP method badges, parameter tables, request body schemas, and response previews.
+  - Included interactive cURL generator tailored to current host/port/basePath, one-click copy buttons with instant toast feedback, and multi-language integration code examples (Python, Bash, Node.js).
+  - Added `/panel/docs` and `/panel/api-docs` route mappings in `XUIController` (`xui.go`).
+- **Comprehensive Documentation & README Synchronization**:
+  - Synchronized all 6 project READMEs (`README.md`, `README.fa_IR.md`, `README.zh_CN.md`, `README.ru_RU.md`, `README.es_ES.md`, `README.ar_EG.md`) with the latest v0.9.3 feature set.
+  - Updated API reference tables across all READMEs with Node Client connected device management, Xray core rollback controls, SQLite database optimization/cleanup endpoints, and advanced Xray configuration routes.
+  - Updated `API.md` with in-panel documentation links and dedicated protocol credential documentation (`password`, `ssPassword`, `masquePass`, `auth`).
 - **Automatic & Manual Config State Rollback on Core Error**:
   - **Pre-flight Configuration Verification**: Added `TestConfigFile` via `xray -test -c <path>` to validate configuration files before overwriting active `config.json`, preventing malformed JSON or incompatible options from reaching production.
   - **Immediate Core Exit Detection**: Implemented startup monitoring window in `xray/process.go` to catch instant runtime core exits (e.g., port binding conflicts or core initialization errors) and capture detailed diagnostic logs.

@@ -93,6 +93,7 @@ link = "إدارة"
 node_clients = "Node Clients"
 clients = "العملاء"
 txThemeHub = "TX ThemeHub"
+apiDocs = "وثائق API"
 
 [tgbot]
 keyboardClosed = "❌ لوحة المفاتيح مغلقة!"
@@ -376,6 +377,9 @@ expireDays = "المدة"
 days = "يوم/أيام"
 renew = "تجديد تلقائي"
 renewDesc = "تجديد تلقائي بعد انتهاء الصلاحية. (0 = تعطيل)(الوحدة: يوم)"
+
+[pages.docs]
+title = "وثائق API"
 
 [pages.settings]
 title = "إعدادات البانل"

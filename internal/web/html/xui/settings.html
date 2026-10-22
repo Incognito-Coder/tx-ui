@@ -1146,7 +1146,6 @@
                         this.subTemplateModal.msg = res.msg || '{{ i18n "pages.settings.subTemplateModalApplySuccess" }}';
                         this.subTemplateModal.msgType = 'success';
                         this.allSetting.subCustomUI = true;
-                        this.$message.success('{{ i18n "pages.settings.subTemplateModalApplyToast" }}');
                         setTimeout(() => {
                             window.location.reload();
                         }, 3000);
@@ -1170,7 +1169,6 @@
                         this.subTemplateModal.msg = res.msg || '{{ i18n "pages.settings.subTemplateModalResetSuccess" }}';
                         this.subTemplateModal.msgType = 'success';
                         this.allSetting.subCustomUI = false;
-                        this.$message.success('{{ i18n "pages.settings.subTemplateModalResetToast" }}');
                         setTimeout(() => {
                             window.location.reload();
                         }, 3000);
@@ -1229,8 +1227,8 @@
                         } else {
                             await this.fetchDBStatus();
                         }
-                    } else {
-                        this.$message.error(res ? res.msg : 'Error optimizing database');
+                    } else if (!res || !res.msg) {
+                        this.$message.error('Error optimizing database');
                     }
                 } catch (e) {
                     this.$message.error(e.message || 'Error optimizing database');
@@ -1250,8 +1248,8 @@
                             this.$message.success('{{ i18n "pages.settings.toasts.vacuumSuccess" }}');
                         }
                         await this.fetchDBStatus();
-                    } else {
-                        this.$message.error(res ? res.msg : 'Error vacuuming database');
+                    } else if (!res || !res.msg) {
+                        this.$message.error('Error vacuuming database');
                     }
                 } catch (e) {
                     this.$message.error(e.message || 'Error vacuuming database');
@@ -1268,8 +1266,8 @@
                         const tmpl = '{{ i18n "pages.settings.toasts.cleanSuccess" }}';
                         this.$message.success(tmpl.replace('{count}', count));
                         await this.fetchDBStatus();
-                    } else {
-                        this.$message.error(res ? res.msg : 'Error cleaning database');
+                    } else if (!res || !res.msg) {
+                        this.$message.error('Error cleaning database');
                     }
                 } catch (e) {
                     this.$message.error(e.message || 'Error cleaning database');

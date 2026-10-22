@@ -1,0 +1,1547 @@
+<!DOCTYPE html>
+<html lang="en">
+{{template "head" .}}
+<style>
+    .docs-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding-bottom: 60px;
+    }
+
+    /* Hero Banner */
+    .docs-hero {
+        background: linear-gradient(135deg, rgba(37, 99, 235, 0.08) 0%, rgba(124, 58, 237, 0.08) 100%);
+        border: 1px solid var(--ui-border);
+        border-radius: var(--ui-radius-lg);
+        padding: 28px 32px;
+        margin-bottom: 24px;
+        position: relative;
+        overflow: hidden;
+        backdrop-filter: blur(8px);
+    }
+
+    .dark .docs-hero {
+        background: linear-gradient(135deg, rgba(37, 99, 235, 0.16) 0%, rgba(124, 58, 237, 0.14) 100%);
+        border-color: rgba(255, 255, 255, 0.08);
+    }
+
+    .docs-hero-title {
+        font-size: 26px;
+        font-weight: 700;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        color: var(--ui-text);
+    }
+
+    .docs-hero-badge {
+        font-size: 12px;
+        font-weight: 600;
+        padding: 2px 10px;
+        border-radius: 9999px;
+        background: #2563eb;
+        color: #ffffff;
+        letter-spacing: 0.5px;
+    }
+
+    .docs-hero-desc {
+        font-size: 14px;
+        color: var(--ui-text-muted);
+        max-width: 800px;
+        line-height: 1.6;
+        margin-bottom: 18px;
+    }
+
+    /* Stats Strip */
+    .docs-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 12px;
+        margin-top: 16px;
+    }
+
+    .docs-stat-card {
+        background: var(--ui-surface);
+        border: 1px solid var(--ui-border);
+        border-radius: var(--ui-radius);
+        padding: 12px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        transition: all 0.2s ease;
+    }
+
+    .docs-stat-card:hover {
+        border-color: var(--ui-primary);
+        transform: translateY(-1px);
+    }
+
+    .docs-stat-label {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        color: var(--ui-text-muted);
+        font-weight: 600;
+    }
+
+    .docs-stat-value {
+        font-size: 13px;
+        font-weight: 600;
+        font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, Courier, monospace;
+        color: var(--ui-text);
+        word-break: break-all;
+    }
+
+    /* Filter & Search Bar */
+    .docs-toolbar {
+        background: var(--ui-surface);
+        border: 1px solid var(--ui-border);
+        border-radius: var(--ui-radius);
+        padding: 16px 20px;
+        margin-bottom: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        position: sticky;
+        top: 12px;
+        z-index: 10;
+        backdrop-filter: blur(12px);
+        box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+    }
+
+    .dark .docs-toolbar {
+        box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.35);
+    }
+
+    .docs-toolbar-top {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .docs-search-input {
+        flex: 1 1 320px;
+    }
+
+    .docs-category-pills {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .docs-pill {
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 500;
+        padding: 4px 12px;
+        border-radius: 9999px;
+        border: 1px solid var(--ui-border);
+        background: var(--ui-surface-muted);
+        color: var(--ui-text);
+        transition: all 0.2s ease;
+        user-select: none;
+    }
+
+    .docs-pill:hover {
+        border-color: var(--ui-primary);
+        color: var(--ui-primary);
+    }
+
+    .docs-pill.active {
+        background: var(--ui-primary);
+        border-color: var(--ui-primary);
+        color: #ffffff;
+        box-shadow: 0 2px 6px rgba(37, 99, 235, 0.35);
+    }
+
+    /* Group Container */
+    .docs-group {
+        margin-bottom: 32px;
+    }
+
+    .docs-group-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 14px;
+        padding-bottom: 8px;
+        border-bottom: 2px solid var(--ui-border);
+    }
+
+    .docs-group-title {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--ui-text);
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .docs-group-badge {
+        font-size: 11px;
+        font-weight: 600;
+        padding: 2px 8px;
+        border-radius: 12px;
+        background: var(--ui-surface-muted);
+        border: 1px solid var(--ui-border);
+        color: var(--ui-text-muted);
+    }
+
+    /* Endpoint Card */
+    .endpoint-card {
+        background: var(--ui-surface);
+        border: 1px solid var(--ui-border);
+        border-radius: var(--ui-radius);
+        margin-bottom: 12px;
+        transition: all 0.2s ease;
+        overflow: hidden;
+    }
+
+    .endpoint-card:hover {
+        border-color: var(--ui-border-strong);
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+    }
+
+    .dark .endpoint-card:hover {
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .endpoint-card.expanded {
+        border-color: rgba(37, 99, 235, 0.4);
+    }
+
+    .endpoint-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 18px;
+        cursor: pointer;
+        gap: 12px;
+        user-select: none;
+    }
+
+    .endpoint-header-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 0;
+        flex: 1;
+    }
+
+    .endpoint-method {
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        padding: 3px 8px;
+        border-radius: 6px;
+        min-width: 58px;
+        text-align: center;
+        text-transform: uppercase;
+    }
+
+    .method-get {
+        background: rgba(16, 185, 129, 0.15);
+        color: #10b981;
+        border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .method-post {
+        background: rgba(59, 130, 246, 0.15);
+        color: #3b82f6;
+        border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+
+    .method-delete {
+        background: rgba(239, 68, 68, 0.15);
+        color: #ef4444;
+        border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .endpoint-path {
+        font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, Courier, monospace;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--ui-text);
+        word-break: break-all;
+    }
+
+    .endpoint-summary {
+        font-size: 13px;
+        color: var(--ui-text-muted);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: none;
+    }
+
+    @media (min-width: 900px) {
+        .endpoint-summary {
+            display: inline-block;
+        }
+    }
+
+    .endpoint-header-right {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    /* Endpoint Body Details */
+    .endpoint-body {
+        padding: 16px 20px 20px 20px;
+        border-top: 1px solid var(--ui-border);
+        background: var(--ui-surface-muted);
+    }
+
+    .endpoint-desc {
+        font-size: 13px;
+        color: var(--ui-text);
+        margin-bottom: 16px;
+        line-height: 1.5;
+    }
+
+    .endpoint-subheading {
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        color: var(--ui-text-muted);
+        margin-top: 16px;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    /* Code Blocks */
+    .code-container {
+        position: relative;
+        background: #0f172a;
+        border-radius: var(--ui-radius-sm);
+        border: 1px solid #1e293b;
+        margin-bottom: 12px;
+        overflow: hidden;
+    }
+
+    .code-content {
+        margin: 0;
+        padding: 14px 16px;
+        color: #e2e8f0;
+        font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, Courier, monospace;
+        font-size: 12px;
+        line-height: 1.55;
+        overflow-x: auto;
+    }
+
+    .copy-button {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        padding: 3px 8px;
+        font-size: 11px;
+        border-radius: 4px;
+        background: rgba(255, 255, 255, 0.1);
+        color: #94a3b8;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .copy-button:hover {
+        background: rgba(255, 255, 255, 0.2);
+        color: #ffffff;
+    }
+
+    /* Table styling */
+    .param-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+        margin-bottom: 14px;
+        background: var(--ui-surface);
+        border-radius: var(--ui-radius-sm);
+        border: 1px solid var(--ui-border);
+        overflow: hidden;
+    }
+
+    .param-table th {
+        background: var(--ui-surface-muted);
+        padding: 8px 12px;
+        text-align: left;
+        font-weight: 600;
+        color: var(--ui-text-muted);
+        border-bottom: 1px solid var(--ui-border);
+    }
+
+    .param-table td {
+        padding: 8px 12px;
+        border-bottom: 1px solid var(--ui-border);
+        color: var(--ui-text);
+        vertical-align: top;
+    }
+
+    .param-table tr:last-child td {
+        border-bottom: none;
+    }
+
+    .param-name {
+        font-family: SFMono-Regular, Consolas, monospace;
+        font-weight: 600;
+        color: var(--ui-primary);
+    }
+
+    .param-type {
+        font-family: SFMono-Regular, Consolas, monospace;
+        font-size: 11px;
+        color: #d97706;
+    }
+
+    .param-tag {
+        font-size: 10px;
+        padding: 1px 6px;
+        border-radius: 4px;
+        background: rgba(220, 38, 38, 0.1);
+        color: #dc2626;
+        font-weight: 600;
+        display: inline-block;
+        margin-left: 4px;
+    }
+
+    /* Examples Section */
+    .examples-card {
+        background: var(--ui-surface);
+        border: 1px solid var(--ui-border);
+        border-radius: var(--ui-radius);
+        padding: 24px;
+        margin-top: 32px;
+    }
+</style>
+
+<body>
+<a-layout :class="themeSwitcher.currentTheme" id="app" v-cloak>
+    {{ template "commonSider" . }}
+    <a-layout id="content-layout">
+        <a-layout-content>
+            <div class="docs-container">
+                <!-- Hero Header -->
+                <div class="docs-hero">
+                    <div class="docs-hero-title">
+                        <span><a-icon type="api" style="color: #2563eb;"></a-icon> TX-UI REST API</span>
+                        <span class="docs-hero-badge">v{{ .cur_ver }}</span>
+                    </div>
+                    <div class="docs-hero-desc">
+                        Comprehensive interactive HTTP REST API reference for <strong>TX-UI</strong>. Automate client management,
+                        monitor real-time system metrics, configure Xray-core inbounds/outbounds, trigger rollbacks, and manage database operations.
+                    </div>
+                    <div>
+                        <a-button type="primary" icon="copy" @click="copyBaseUrl">
+                            Copy API Base URL
+                        </a-button>
+                        <a-button icon="folder-open" style="margin-left: 8px;" @click="toggleAll(true)">
+                            Expand All
+                        </a-button>
+                        <a-button icon="folder" style="margin-left: 8px;" @click="toggleAll(false)">
+                            Collapse All
+                        </a-button>
+                        <a-button icon="file-text" style="margin-left: 8px;" @click="openMarkdownDocs">
+                            View API.md
+                        </a-button>
+                    </div>
+
+                    <!-- Quick Stats Strip -->
+                    <div class="docs-stats">
+                        <div class="docs-stat-card">
+                            <span class="docs-stat-label">API Base Path</span>
+                            <span class="docs-stat-value">[[ apiBasePath ]]</span>
+                        </div>
+                        <div class="docs-stat-card">
+                            <span class="docs-stat-label">Authentication Scheme</span>
+                            <span class="docs-stat-value">Cookie (tx-ui) via POST /login</span>
+                        </div>
+                        <div class="docs-stat-card">
+                            <span class="docs-stat-label">Response Schema</span>
+                            <span class="docs-stat-value">{ success, msg, obj }</span>
+                        </div>
+                        <div class="docs-stat-card">
+                            <span class="docs-stat-label">Total Endpoints</span>
+                            <span class="docs-stat-value">[[ totalEndpointsCount ]] documented</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sticky Toolbar (Search & Filter) -->
+                <div class="docs-toolbar">
+                    <div class="docs-toolbar-top">
+                        <div class="docs-search-input">
+                            <a-input-search
+                                v-model="searchQuery"
+                                placeholder="Search endpoints by path, description, or method (e.g. clients, rollback, status)..."
+                                allow-clear
+                                size="large">
+                            </a-input-search>
+                        </div>
+                        <div>
+                            <a-radio-group v-model="selectedMethod" size="small" button-style="solid">
+                                <a-radio-button value="ALL">ALL METHODS</a-radio-button>
+                                <a-radio-button value="GET">GET</a-radio-button>
+                                <a-radio-button value="POST">POST</a-radio-button>
+                            </a-radio-group>
+                        </div>
+                    </div>
+
+                    <!-- Category Pills -->
+                    <div class="docs-category-pills">
+                        <div
+                            class="docs-pill"
+                            :class="{ active: selectedCategory === 'ALL' }"
+                            @click="selectedCategory = 'ALL'">
+                            All Categories ([[ totalEndpointsCount ]])
+                        </div>
+                        <div
+                            v-for="cat in categories"
+                            :key="cat.id"
+                            class="docs-pill"
+                            :class="{ active: selectedCategory === cat.id }"
+                            @click="selectedCategory = cat.id">
+                            [[ cat.icon ]] [[ cat.name ]] ([[ getCategoryCount(cat.id) ]])
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Empty State -->
+                <div v-if="filteredGroups.length === 0" style="text-align: center; padding: 48px 0;">
+                    <a-empty description="No endpoints match your search criteria"></a-empty>
+                    <a-button style="margin-top: 12px;" @click="resetFilters">Reset Filters</a-button>
+                </div>
+
+                <!-- Endpoint Groups -->
+                <div v-for="group in filteredGroups" :key="group.id" class="docs-group">
+                    <div class="docs-group-header">
+                        <h3 class="docs-group-title">
+                            <span>[[ group.icon ]]</span>
+                            <span>[[ group.name ]]</span>
+                        </h3>
+                        <span class="docs-group-badge">[[ group.endpoints.length ]] endpoints</span>
+                        <small style="color: var(--ui-text-muted); margin-left: 8px;">[[ group.description ]]</small>
+                    </div>
+
+                    <!-- Endpoints in Group -->
+                    <div
+                        v-for="ep in group.endpoints"
+                        :key="ep.id"
+                        class="endpoint-card"
+                        :class="{ expanded: isExpanded(ep.id) }">
+                        <!-- Header -->
+                        <div class="endpoint-header" @click="toggleEndpoint(ep.id)">
+                            <div class="endpoint-header-left">
+                                <span class="endpoint-method" :class="'method-' + ep.method.toLowerCase()">
+                                    [[ ep.method ]]
+                                </span>
+                                <span class="endpoint-path">[[ ep.path ]]</span>
+                                <span class="endpoint-summary">[[ ep.summary ]]</span>
+                            </div>
+                            <div class="endpoint-header-right">
+                                <a-tooltip title="Copy endpoint path">
+                                    <a-button
+                                        size="small"
+                                        icon="copy"
+                                        @click.stop="copyText(ep.path, 'Endpoint path copied')">
+                                    </a-button>
+                                </a-tooltip>
+                                <a-icon :type="isExpanded(ep.id) ? 'up' : 'down'" style="font-size: 12px; color: var(--ui-text-muted);"></a-icon>
+                            </div>
+                        </div>
+
+                        <!-- Collapsible Body -->
+                        <div v-if="isExpanded(ep.id)" class="endpoint-body">
+                            <div class="endpoint-desc">[[ ep.description || ep.summary ]]</div>
+
+                            <!-- Parameters Table (if any) -->
+                            <div v-if="ep.params && ep.params.length > 0">
+                                <div class="endpoint-subheading">Parameters</div>
+                                <table class="param-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Type</th>
+                                            <th>In</th>
+                                            <th>Required</th>
+                                            <th>Description</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-for="p in ep.params" :key="p.name">
+                                            <td><span class="param-name">[[ p.name ]]</span></td>
+                                            <td><span class="param-type">[[ p.type ]]</span></td>
+                                            <td><code>[[ p.in ]]</code></td>
+                                            <td>
+                                                <span v-if="p.required" class="param-tag">required</span>
+                                                <span v-else style="color: var(--ui-text-muted);">optional</span>
+                                            </td>
+                                            <td>[[ p.description ]]</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- Request Body Example -->
+                            <div v-if="ep.requestBody">
+                                <div class="endpoint-subheading">
+                                    <span>Request Body (<code>[[ ep.contentType || 'application/json' ]]</code>)</span>
+                                </div>
+                                <div class="code-container">
+                                    <button class="copy-button" @click="copyText(formatJson(ep.requestBody), 'Request payload copied')">
+                                        Copy JSON
+                                    </button>
+                                    <pre class="code-content"><code>[[ formatJson(ep.requestBody) ]]</code></pre>
+                                </div>
+                            </div>
+
+                            <!-- Response Example -->
+                            <div v-if="ep.response">
+                                <div class="endpoint-subheading">
+                                    <span>Standard Response (<code>application/json</code>)</span>
+                                </div>
+                                <div class="code-container">
+                                    <button class="copy-button" @click="copyText(formatJson(ep.response), 'Response JSON copied')">
+                                        Copy JSON
+                                    </button>
+                                    <pre class="code-content"><code>[[ formatJson(ep.response) ]]</code></pre>
+                                </div>
+                            </div>
+
+                            <!-- Interactive cURL Snippet -->
+                            <div>
+                                <div class="endpoint-subheading">
+                                    <span>cURL Snippet</span>
+                                </div>
+                                <div class="code-container">
+                                    <button class="copy-button" @click="copyText(generateCurl(ep), 'cURL command copied')">
+                                        Copy cURL
+                                    </button>
+                                    <pre class="code-content"><code>[[ generateCurl(ep) ]]</code></pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Code Integration Examples Section -->
+                <div class="examples-card">
+                    <h3 style="margin-bottom: 16px; font-weight: 700; color: var(--ui-text); display: flex; align-items: center; gap: 8px;">
+                        <a-icon type="code" style="color: #2563eb;"></a-icon>
+                        Client Integration Examples
+                    </h3>
+                    <p style="color: var(--ui-text-muted); font-size: 13px; margin-bottom: 20px;">
+                        Because TX-UI endpoints require an authenticated session, your client script must first call <code>POST /login</code>,
+                        store the returned <code>tx-ui</code> cookie, and pass it with subsequent API calls.
+                    </p>
+
+                    <a-tabs default-active-key="python">
+                        <a-tab-pane key="python" tab="Python (requests)">
+                            <div class="code-container">
+                                <button class="copy-button" @click="copyText(pythonExampleCode, 'Python snippet copied')">
+                                    Copy Code
+                                </button>
+                                <pre class="code-content"><code>[[ pythonExampleCode ]]</code></pre>
+                            </div>
+                        </a-tab-pane>
+
+                        <a-tab-pane key="bash" tab="cURL / Bash">
+                            <div class="code-container">
+                                <button class="copy-button" @click="copyText(bashExampleCode, 'Bash snippet copied')">
+                                    Copy Code
+                                </button>
+                                <pre class="code-content"><code>[[ bashExampleCode ]]</code></pre>
+                            </div>
+                        </a-tab-pane>
+
+                        <a-tab-pane key="node" tab="Node.js / Axios">
+                            <div class="code-container">
+                                <button class="copy-button" @click="copyText(nodeExampleCode, 'Node.js snippet copied')">
+                                    Copy Code
+                                </button>
+                                <pre class="code-content"><code>[[ nodeExampleCode ]]</code></pre>
+                            </div>
+                        </a-tab-pane>
+                    </a-tabs>
+                </div>
+            </div>
+        </a-layout-content>
+    </a-layout>
+</a-layout>
+
+{{template "js" .}}
+{{template "component/themeSwitcher" .}}
+
+<script>
+    const API_ENDPOINTS_DATA = [
+        {
+            category: "auth",
+            id: "auth-login",
+            method: "POST",
+            path: "/login",
+            summary: "Authenticate and create admin session",
+            description: "Submits username, password, and optional two-factor code. On success, responds with success: true and sets the tx-ui session cookie.",
+            contentType: "application/json",
+            requestBody: {
+                username: "admin",
+                password: "your_password",
+                loginSecret: ""
+            },
+            response: {
+                success: true,
+                msg: "Login successful",
+                obj: null
+            }
+        },
+        {
+            category: "auth",
+            id: "auth-logout",
+            method: "GET",
+            path: "/logout",
+            summary: "Terminate current session",
+            description: "Clears session authentication on the server and redirects to /login.",
+            response: {
+                success: true,
+                msg: "Logged out successfully"
+            }
+        },
+        {
+            category: "auth",
+            id: "auth-secret-status",
+            method: "POST",
+            path: "/getSecretStatus",
+            summary: "Check two-factor authentication status",
+            description: "Returns whether two-factor authentication (TOTP login secret) is enforced for the panel.",
+            response: {
+                success: true,
+                msg: "",
+                obj: false
+            }
+        },
+        {
+            category: "clients",
+            id: "clients-list",
+            method: "GET",
+            path: "/panel/api/clients/list",
+            summary: "List all clients",
+            description: "Retrieves complete list of node clients including traffic stats, expiration timestamp, quotas, and linked inbounds.",
+            response: {
+                success: true,
+                msg: "",
+                obj: [
+                    {
+                        id: 1,
+                        email: "user@example.com",
+                        subId: "sub_user_abc123",
+                        uuid: "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+                        password: "trojan_password",
+                        ssPassword: "base64_shadowsocks_key",
+                        masquePass: "masque_password",
+                        auth: "hysteria_auth",
+                        flow: "xtls-rprx-vision",
+                        totalGB: 53687091200,
+                        expiryTime: 0,
+                        limitIp: 2,
+                        tgId: 0,
+                        enable: true,
+                        reset: 0,
+                        comment: "VIP Client",
+                        up: 1048576,
+                        down: 10485760,
+                        total: 11534336,
+                        inboundLinks: [{ id: 1, nodeClientId: 1, inboundId: 1, flow: "" }]
+                    }
+                ]
+            }
+        },
+        {
+            category: "clients",
+            id: "clients-get",
+            method: "GET",
+            path: "/panel/api/clients/get/:id",
+            summary: "Get single client details",
+            description: "Fetch comprehensive profile and inbound links for a specific client by ID.",
+            params: [
+                { name: "id", type: "integer", in: "path", required: true, description: "Client unique database ID" }
+            ],
+            response: {
+                success: true,
+                obj: { id: 1, email: "user@example.com", totalGB: 53687091200, enable: true }
+            }
+        },
+        {
+            category: "clients",
+            id: "clients-create",
+            method: "POST",
+            path: "/panel/api/clients/create",
+            summary: "Create new client with protocol-specific credentials",
+            description: "Generates a new client identity. Pass totalGB in bytes (0 = unlimited). Dedicated password fields support Trojan (password), Shadowsocks 2022 (ssPassword Base64 key), MASQUE (masquePass), and Hysteria (auth).",
+            requestBody: {
+                email: "newuser@example.com",
+                subId: "custom_sub_id",
+                uuid: "auto_or_custom_uuid",
+                password: "trojan_password",
+                ssPassword: "base64_shadowsocks_key",
+                masquePass: "masque_password",
+                auth: "hysteria_auth",
+                flow: "xtls-rprx-vision",
+                totalGB: 53687091200,
+                expiryTime: 0,
+                limitIp: 2,
+                enable: true,
+                comment: "Created via API",
+                inboundIds: [1]
+            },
+            response: {
+                success: true,
+                msg: "Client created successfully",
+                obj: { id: 2, email: "newuser@example.com" }
+            }
+        },
+        {
+            category: "clients",
+            id: "clients-bulk-create",
+            method: "POST",
+            path: "/panel/api/clients/bulkCreate",
+            summary: "Bulk create multiple clients",
+            description: "Generate multiple client accounts in a single atomic request and attach them to target inbounds.",
+            requestBody: {
+                clients: [
+                    {
+                        email: "user_1@domain.com",
+                        uuid: "auto_or_custom_uuid",
+                        password: "trojan_password",
+                        ssPassword: "base64_ss_key",
+                        totalGB: 21474836480,
+                        expiryTime: 0,
+                        enable: true
+                    }
+                ],
+                inboundIds: [1, 2]
+            },
+            response: {
+                success: true,
+                msg: "Bulk clients created successfully"
+            }
+        },
+        {
+            category: "clients",
+            id: "clients-update",
+            method: "POST",
+            path: "/panel/api/clients/update/:id",
+            summary: "Update existing client configuration",
+            description: "Modifies parameters such as email, quotas, expiration, IP limits, protocol passwords, and inbound links.",
+            params: [
+                { name: "id", type: "integer", in: "path", required: true, description: "Client ID to update" }
+            ],
+            requestBody: {
+                email: "updated@example.com",
+                password: "new_trojan_password",
+                ssPassword: "new_base64_shadowsocks_key",
+                masquePass: "new_masque_password",
+                totalGB: 107374182400,
+                expiryTime: 0,
+                limitIp: 3,
+                enable: true,
+                inboundIds: [1]
+            },
+            response: {
+                success: true,
+                msg: "Client updated successfully"
+            }
+        },
+        {
+            category: "clients",
+            id: "clients-delete",
+            method: "POST",
+            path: "/panel/api/clients/del/:id",
+            summary: "Delete client permanently",
+            description: "Deletes the client record, traffic counters, device logs, and inbound links.",
+            params: [
+                { name: "id", type: "integer", in: "path", required: true, description: "Client ID to delete" }
+            ],
+            response: {
+                success: true,
+                msg: "Client deleted successfully"
+            }
+        },
+        {
+            category: "clients",
+            id: "clients-bulk-delete",
+            method: "POST",
+            path: "/panel/api/clients/bulkDel",
+            summary: "Bulk delete clients",
+            description: "Delete an array of client IDs at once.",
+            requestBody: {
+                ids: [1, 2, 3]
+            },
+            response: {
+                success: true,
+                msg: "Clients deleted successfully"
+            }
+        },
+        {
+            category: "clients",
+            id: "clients-toggle",
+            method: "POST",
+            path: "/panel/api/clients/:id/toggle",
+            summary: "Toggle client status",
+            description: "Quickly enable or disable client network access without modifying configuration.",
+            params: [
+                { name: "id", type: "integer", in: "path", required: true, description: "Client ID" }
+            ],
+            requestBody: {
+                enable: false
+            },
+            response: {
+                success: true,
+                msg: "Client status updated"
+            }
+        },
+        {
+            category: "clients",
+            id: "clients-devices",
+            method: "GET",
+            path: "/panel/api/clients/:id/devices",
+            summary: "Get connected devices",
+            description: "Retrieves list of active or recently connected devices for a client (IP, user agent, app, OS, last seen).",
+            params: [
+                { name: "id", type: "integer", in: "path", required: true, description: "Client ID" }
+            ],
+            response: {
+                success: true,
+                obj: [
+                    { ip: "203.0.113.195", clientApp: "v2rayNG", clientOS: "Android", lastSeen: 1775000000 }
+                ]
+            }
+        },
+        {
+            category: "clients",
+            id: "clients-clear-devices",
+            method: "POST",
+            path: "/panel/api/clients/:id/clearDevices",
+            summary: "Clear connected devices log",
+            description: "Resets the device tracking history for a client.",
+            params: [
+                { name: "id", type: "integer", in: "path", required: true, description: "Client ID" }
+            ],
+            response: {
+                success: true,
+                msg: "Device history cleared"
+            }
+        },
+        {
+            category: "clients",
+            id: "clients-reset-traffic",
+            method: "POST",
+            path: "/panel/api/clients/:id/resetTraffic",
+            summary: "Reset client traffic quota",
+            description: "Resets up and down bytes to 0 and re-enables client if disabled due to quota depletion.",
+            params: [
+                { name: "id", type: "integer", in: "path", required: true, description: "Client ID" }
+            ],
+            response: {
+                success: true,
+                msg: "Traffic reset successfully"
+            }
+        },
+        {
+            category: "clients",
+            id: "clients-del-depleted",
+            method: "POST",
+            path: "/panel/api/clients/delDepleted",
+            summary: "Delete all depleted clients",
+            description: "Scans all clients and permanently purges any accounts that have exhausted their traffic cap or reached their expiration date.",
+            response: {
+                success: true,
+                msg: "Depleted clients deleted"
+            }
+        },
+        {
+            category: "inbounds",
+            id: "inbounds-list",
+            method: "GET",
+            path: "/panel/api/inbounds/list",
+            summary: "List all inbounds",
+            description: "Returns all listening inbounds, protocols (VLESS, VMess, Trojan, Shadowsocks, MASQUE, Hysteria), ports, stream settings, and sniffing rules.",
+            response: {
+                success: true,
+                obj: [
+                    {
+                        id: 1,
+                        port: 443,
+                        protocol: "vless",
+                        settings: "{\"clients\":[]}",
+                        streamSettings: "{\"network\":\"tcp\",\"security\":\"reality\"}",
+                        tag: "inbound-443",
+                        up: 1048576,
+                        down: 104857600
+                    }
+                ]
+            }
+        },
+        {
+            category: "inbounds",
+            id: "inbounds-get",
+            method: "GET",
+            path: "/panel/api/inbounds/get/:id",
+            summary: "Get inbound by ID",
+            description: "Retrieve specific inbound configuration.",
+            params: [
+                { name: "id", type: "integer", in: "path", required: true, description: "Inbound ID" }
+            ],
+            response: {
+                success: true,
+                obj: { id: 1, port: 443, protocol: "vless" }
+            }
+        },
+        {
+            category: "inbounds",
+            id: "inbounds-add",
+            method: "POST",
+            path: "/panel/api/inbounds/add",
+            summary: "Create proxy inbound",
+            description: "Creates and binds a new proxy port with specific protocol, streamSettings, and TLS/Reality parameters.",
+            requestBody: {
+                enable: true,
+                remark: "VLESS-Reality",
+                listen: "0.0.0.0",
+                port: 443,
+                protocol: "vless",
+                settings: "{\"clients\":[],\"decryption\":\"none\",\"fallbacks\":[]}",
+                streamSettings: "{\"network\":\"tcp\",\"security\":\"reality\",\"realitySettings\":{}}",
+                sniffing: "{\"enabled\":true,\"destOverride\":[\"http\",\"tls\",\"quic\"]}"
+            },
+            response: {
+                success: true,
+                msg: "Inbound created successfully",
+                obj: { id: 2 }
+            }
+        },
+        {
+            category: "inbounds",
+            id: "inbounds-del",
+            method: "POST",
+            path: "/panel/api/inbounds/del/:id",
+            summary: "Delete inbound",
+            description: "Stops and removes the listening port and deletes its associated in-memory bindings.",
+            params: [
+                { name: "id", type: "integer", in: "path", required: true, description: "Inbound ID" }
+            ],
+            response: {
+                success: true,
+                msg: "Inbound deleted successfully"
+            }
+        },
+        {
+            category: "inbounds",
+            id: "inbounds-onlines",
+            method: "POST",
+            path: "/panel/api/inbounds/onlines",
+            summary: "Get online client emails",
+            description: "Returns list of client email identifiers currently connected and transmitting traffic.",
+            response: {
+                success: true,
+                obj: ["client1@domain.com", "client2@domain.com"]
+            }
+        },
+        {
+            category: "server",
+            id: "server-status",
+            method: "GET",
+            path: "/panel/api/server/status",
+            summary: "System and Xray status metrics",
+            description: "Returns real-time server CPU percentage, memory allocation, swap, disk usage, active TCP/UDP connection count, network I/O, uptime, and Xray core state.",
+            response: {
+                success: true,
+                obj: {
+                    cpu: 14.2,
+                    mem: { current: 1073741824, total: 4294967296 },
+                    disk: { current: 12884901888, total: 64424509440 },
+                    xray: { state: "running", errorMsg: "", version: "v26.10.21" },
+                    uptime: 172800,
+                    tcpCount: 54,
+                    udpCount: 16
+                }
+            }
+        },
+        {
+            category: "server",
+            id: "server-restart-xray",
+            method: "POST",
+            path: "/panel/api/server/restartXrayService",
+            summary: "Restart Xray core service",
+            description: "Restarts the Xray process. If a configuration error occurs, the server automatically rolls back to config.json.last_working to maintain uptime.",
+            response: {
+                success: true,
+                msg: "Xray core restarted successfully"
+            }
+        },
+        {
+            category: "server",
+            id: "server-stop-xray",
+            method: "POST",
+            path: "/panel/api/server/stopXrayService",
+            summary: "Stop Xray core service",
+            description: "Shuts down the running Xray core proxy process.",
+            response: {
+                success: true,
+                msg: "Xray core stopped"
+            }
+        },
+        {
+            category: "server",
+            id: "server-rollback-xray",
+            method: "POST",
+            path: "/panel/api/server/rollbackXrayConfig",
+            summary: "Manually roll back Xray configuration",
+            description: "Rolls back active config.json to the known good config.json.last_working, restores the working template in the database, and restarts the core.",
+            response: {
+                success: true,
+                msg: "Xray configuration rolled back successfully to last working state"
+            }
+        },
+        {
+            category: "server",
+            id: "server-get-rollback-status",
+            method: "GET",
+            path: "/panel/api/server/getRollbackStatus",
+            summary: "Get config rollback status",
+            description: "Returns whether a last working configuration exists, whether the core is currently running in a rolled-back state, and the reason for the last rollback.",
+            response: {
+                success: true,
+                obj: {
+                    hasLastWorkingConfig: true,
+                    isRolledBack: false,
+                    lastRollbackReason: ""
+                }
+            }
+        },
+        {
+            category: "server",
+            id: "server-get-config-json",
+            method: "GET",
+            path: "/panel/api/server/getConfigJson",
+            summary: "Retrieve active config.json",
+            description: "Returns the complete generated JSON file currently executing within Xray core.",
+            response: {
+                success: true,
+                obj: { log: {}, inbounds: [], outbounds: [], routing: {} }
+            }
+        },
+        {
+            category: "server",
+            id: "server-get-new-uuid",
+            method: "GET",
+            path: "/panel/api/server/getNewUUID",
+            summary: "Generate random UUID v4",
+            description: "Cryptographically generates a fresh UUID for VMess or VLESS clients.",
+            response: {
+                success: true,
+                obj: "a2d10398-75b2-4d04-8b8d-6a58572e9478"
+            }
+        },
+        {
+            category: "server",
+            id: "server-get-new-x25519",
+            method: "GET",
+            path: "/panel/api/server/getNewX25519Cert",
+            summary: "Generate Reality X25519 keypair",
+            description: "Returns a new private key and public key pair for VLESS Reality.",
+            response: {
+                success: true,
+                obj: {
+                    privateKey: "wL...",
+                    publicKey: "0r..."
+                }
+            }
+        },
+        {
+            category: "server",
+            id: "server-get-db",
+            method: "GET",
+            path: "/panel/api/server/getDb",
+            summary: "Download database backup",
+            description: "Downloads the raw SQLite x-ui.db database file for safe local backup.",
+            response: {
+                success: true,
+                msg: "Database file binary stream"
+            }
+        },
+        {
+            category: "server",
+            id: "server-import-db",
+            method: "POST",
+            path: "/panel/api/server/importDB",
+            summary: "Restore database from file",
+            description: "Uploads a .db file (multipart/form-data with field name 'db') to restore panel configuration.",
+            contentType: "multipart/form-data",
+            response: {
+                success: true,
+                msg: "Database restored successfully"
+            }
+        },
+        {
+            category: "server",
+            id: "server-logs",
+            method: "POST",
+            path: "/panel/api/server/logs/:count",
+            summary: "View panel application logs",
+            description: "Fetches the last :count lines of TX-UI web panel logs.",
+            params: [
+                { name: "count", type: "integer", in: "path", required: true, description: "Number of lines (e.g. 100)" }
+            ],
+            response: {
+                success: true,
+                obj: ["2026/10/22 11:00:00 [INFO] ..."]
+            }
+        },
+        {
+            category: "settings",
+            id: "setting-all",
+            method: "POST",
+            path: "/panel/setting/all",
+            summary: "Get all panel settings",
+            description: "Returns dictionary of panel configuration keys (port, paths, telegram bot, security, IP limit options).",
+            response: {
+                success: true,
+                obj: {
+                    webPort: "2087",
+                    webCertFile: "",
+                    webKeyFile: "",
+                    webBasePath: "/"
+                }
+            }
+        },
+        {
+            category: "settings",
+            id: "setting-db-status",
+            method: "POST",
+            path: "/panel/setting/dbStatus",
+            summary: "Retrieve database health & diagnostics",
+            description: "Inspects SQLite database file size, WAL journal size, runs PRAGMA quick_check, and reports orphaned records across tables.",
+            response: {
+                success: true,
+                obj: {
+                    dbSize: 1048576,
+                    walSize: 32768,
+                    integrity: "ok",
+                    orphanedTraffics: 0,
+                    orphanedLinks: 0
+                }
+            }
+        },
+        {
+            category: "settings",
+            id: "setting-optimize-db",
+            method: "POST",
+            path: "/panel/setting/optimizeDatabase",
+            summary: "Optimize database performance",
+            description: "Executes PRAGMA wal_checkpoint(TRUNCATE), PRAGMA optimize, and ANALYZE to defragment indexes and optimize query plans.",
+            response: {
+                success: true,
+                msg: "Database optimized successfully"
+            }
+        },
+        {
+            category: "settings",
+            id: "setting-clean-db",
+            method: "POST",
+            path: "/panel/setting/cleanDatabase",
+            summary: "Clean orphaned database rows",
+            description: "Scans and cleans broken node client links, duplicate client links, and orphaned traffic logs.",
+            response: {
+                success: true,
+                msg: "Database cleaned successfully",
+                obj: { cleanedCount: 0 }
+            }
+        },
+        {
+            category: "xray",
+            id: "xray-get-advanced",
+            method: "POST",
+            path: "/panel/xray/",
+            summary: "Get advanced Xray template config",
+            description: "Returns the advanced Xray JSON template including routing rules, DNS, outbounds, and balancers.",
+            response: {
+                success: true,
+                obj: { routing: {}, dns: {}, outbounds: [] }
+            }
+        },
+        {
+            category: "xray",
+            id: "xray-update-advanced",
+            method: "POST",
+            path: "/panel/xray/update",
+            summary: "Save advanced Xray config",
+            description: "Validates and saves advanced routing, DNS, and balancer rules.",
+            requestBody: {
+                xrayConfig: "{ ... }"
+            },
+            response: {
+                success: true,
+                msg: "Configuration saved and applied"
+            }
+        },
+        {
+            category: "xray",
+            id: "xray-test-outbound",
+            method: "POST",
+            path: "/panel/xray/testOutbound",
+            summary: "Test outbound connectivity and latency",
+            description: "Tests proxy outbound connectivity against google.com and returns latency in milliseconds.",
+            requestBody: {
+                outbound: "proxy"
+            },
+            response: {
+                success: true,
+                obj: { delay: 142 }
+            }
+        }
+    ];
+
+    const app = new Vue({
+        delimiters: ['[[', ']]'],
+        el: '#app',
+        data: {
+            siderDrawer,
+            themeSwitcher,
+            searchQuery: '',
+            selectedCategory: 'ALL',
+            selectedMethod: 'ALL',
+            expandedIds: {},
+            categories: [
+                { id: 'auth', name: 'Auth & Sessions', icon: '🔐' },
+                { id: 'clients', name: 'Node Clients', icon: '👥' },
+                { id: 'inbounds', name: 'Inbounds', icon: '🌐' },
+                { id: 'server', name: 'Server & System', icon: '⚡' },
+                { id: 'settings', name: 'Settings & DB', icon: '⚙️' },
+                { id: 'xray', name: 'Xray Core', icon: '🔀' },
+            ],
+            endpoints: API_ENDPOINTS_DATA,
+        },
+        computed: {
+            apiBasePath() {
+                const origin = window.location.origin;
+                const path = basePath || '/';
+                const normPath = path.endsWith('/') ? path : path + '/';
+                return origin + normPath + 'panel/api/';
+            },
+            totalEndpointsCount() {
+                return this.endpoints.length;
+            },
+            filteredGroups() {
+                const query = this.searchQuery.trim().toLowerCase();
+                const cat = this.selectedCategory;
+                const method = this.selectedMethod;
+
+                return this.categories
+                    .filter(c => cat === 'ALL' || cat === c.id)
+                    .map(c => {
+                        const eps = this.endpoints.filter(ep => {
+                            if (ep.category !== c.id) return false;
+                            if (method !== 'ALL' && ep.method !== method) return false;
+                            if (!query) return true;
+                            return (
+                                ep.path.toLowerCase().includes(query) ||
+                                ep.summary.toLowerCase().includes(query) ||
+                                (ep.description && ep.description.toLowerCase().includes(query)) ||
+                                ep.method.toLowerCase().includes(query)
+                            );
+                        });
+
+                        return {
+                            id: c.id,
+                            name: c.name,
+                            icon: c.icon,
+                            endpoints: eps,
+                            description: this.getCategoryDescription(c.id)
+                        };
+                    })
+                    .filter(group => group.endpoints.length > 0);
+            },
+            pythonExampleCode() {
+                const host = window.location.origin;
+                return `import requests
+
+BASE_URL = "${host}"
+USERNAME = "admin"
+PASSWORD = "your_password"
+
+session = requests.Session()
+
+# 1. Login to obtain session cookie
+login_res = session.post(f"{BASE_URL}/login", json={
+    "username": USERNAME,
+    "password": PASSWORD
+})
+if not login_res.json().get("success"):
+    raise Exception(f"Login failed: {login_res.text}")
+
+print("✓ Logged into TX-UI successfully!")
+
+# 2. Query System Status
+status = session.get(f"{BASE_URL}/panel/api/server/status").json()
+print("Xray State:", status.get("obj", {}).get("xray", {}).get("state"))
+
+# 3. List Clients
+clients = session.get(f"{BASE_URL}/panel/api/clients/list").json().get("obj", [])
+print(f"Total clients: {len(clients)}")
+for c in clients:
+    print(f" - [{c.get('id')}] {c.get('email')} (Enabled: {c.get('enable')})")
+`;
+            },
+            bashExampleCode() {
+                const host = window.location.origin;
+                return `# 1. Login and save session cookies to cookies.txt
+curl -s -c cookies.txt -X POST "${host}/login" \\
+  -H "Content-Type: application/json" \\
+  -d '{"username": "admin", "password": "your_password"}'
+
+# 2. Get server & Xray status
+curl -s -b cookies.txt "${host}/panel/api/server/status"
+
+# 3. List all node clients
+curl -s -b cookies.txt "${host}/panel/api/clients/list"
+
+# 4. Trigger Xray restart
+curl -s -b cookies.txt -X POST "${host}/panel/api/server/restartXrayService"
+`;
+            },
+            nodeExampleCode() {
+                const host = window.location.origin;
+                return `const axios = require('axios');
+const { wrapper } = require('axios-cookiejar-support');
+const { CookieJar } = require('tough-cookie');
+
+const jar = new CookieJar();
+const client = wrapper(axios.create({ jar, baseURL: '${host}' }));
+
+async function main() {
+  // 1. Authenticate
+  const login = await client.post('/login', {
+    username: 'admin',
+    password: 'your_password'
+  });
+  console.log('Login result:', login.data);
+
+  // 2. Fetch clients
+  const clients = await client.get('/panel/api/clients/list');
+  console.log('Clients count:', clients.data.obj.length);
+}
+
+main().catch(console.error);
+`;
+            }
+        },
+        methods: {
+            getCategoryCount(catId) {
+                return this.endpoints.filter(e => e.category === catId).length;
+            },
+            getCategoryDescription(catId) {
+                const descMap = {
+                    auth: "Authentication, session verification, and two-factor status",
+                    clients: "Manage global clients, quotas, multi-protocol credentials, and connected devices",
+                    inbounds: "Configure proxy protocols, ports, stream settings, and client link traffic",
+                    server: "System health, Xray core execution, state rollbacks, crypto tools, and logs",
+                    settings: "Panel parameters, database status, optimization, and orphan cleanup",
+                    xray: "Advanced routing, outbounds, DNS, balancers, and latency benchmarking"
+                };
+                return descMap[catId] || "";
+            },
+            isExpanded(id) {
+                return !!this.expandedIds[id];
+            },
+            toggleEndpoint(id) {
+                this.$set(this.expandedIds, id, !this.expandedIds[id]);
+            },
+            toggleAll(expand) {
+                const newIds = {};
+                if (expand) {
+                    this.endpoints.forEach(e => {
+                        newIds[e.id] = true;
+                    });
+                }
+                this.expandedIds = newIds;
+            },
+            resetFilters() {
+                this.searchQuery = '';
+                this.selectedCategory = 'ALL';
+                this.selectedMethod = 'ALL';
+            },
+            formatJson(obj) {
+                try {
+                    return JSON.stringify(obj, null, 2);
+                } catch (e) {
+                    return String(obj);
+                }
+            },
+            generateCurl(ep) {
+                const origin = window.location.origin;
+                const path = ep.path.startsWith('/') ? ep.path : '/' + ep.path;
+                const url = origin + path;
+
+                let cmd = `curl -s -b cookies.txt `;
+                if (ep.method === 'POST') {
+                    cmd += `-X POST "${url}" \\\n  -H "Content-Type: ${ep.contentType || 'application/json'}"`;
+                    if (ep.requestBody) {
+                        cmd += ` \\\n  -d '${JSON.stringify(ep.requestBody)}'`;
+                    }
+                } else {
+                    cmd += `"${url}"`;
+                }
+                return cmd;
+            },
+            copyBaseUrl() {
+                this.copyText(this.apiBasePath, 'API Base URL copied to clipboard');
+            },
+            copyText(text, successMsg = 'Copied to clipboard') {
+                if (navigator.clipboard && window.isSecureContext) {
+                    navigator.clipboard.writeText(text).then(() => {
+                        this.$message.success(successMsg);
+                    }).catch(() => {
+                        this.fallbackCopy(text, successMsg);
+                    });
+                } else {
+                    this.fallbackCopy(text, successMsg);
+                }
+            },
+            fallbackCopy(text, successMsg) {
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                textarea.style.position = 'fixed';
+                textarea.style.opacity = '0';
+                document.body.appendChild(textarea);
+                textarea.focus();
+                textarea.select();
+                try {
+                    document.execCommand('copy');
+                    this.$message.success(successMsg);
+                } catch (err) {
+                    this.$message.error('Failed to copy');
+                }
+                document.body.removeChild(textarea);
+            },
+            openMarkdownDocs() {
+                window.open('https://github.com/Incognito-Coder/tx-ui/blob/main/API.md', '_blank', 'noopener,noreferrer');
+            }
+        },
+        mounted() {
+            // Expand first 2 endpoints by default for a warm greeting
+            if (this.endpoints.length > 0) {
+                this.$set(this.expandedIds, this.endpoints[0].id, true);
+                if (this.endpoints[1]) {
+                    this.$set(this.expandedIds, this.endpoints[1].id, true);
+                }
+            }
+        }
+    });
+</script>
+</body>
+</html>

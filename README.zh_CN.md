@@ -300,20 +300,24 @@ location /sub {
 
 ## Features
 
-- 系统状态监控
-- 在所有入站和客户端中搜索
-- 深色/浅色主题
-- 支持多用户和多协议
-- 支持多种协议，包括 VMess、VLESS、Trojan、Shadowsocks、Dokodemo-door、Socks、HTTP、wireguard
-- 支持 XTLS 原生协议，包括 RPRX-Direct、Vision、REALITY
-- 流量统计、流量限制、过期时间限制
-- 可自定义的 Xray配置模板
-- 支持HTTPS访问面板（自建域名+SSL证书）
-- 支持一键式SSL证书申请和自动续费
-- 更多高级配置项目请参考面板
-- 修复了 API 路由（用户设置将使用 API 创建）
-- 支持通过面板中提供的不同项目更改配置。
-- 支持从面板导出/导入数据库
+- **内置交互式面板 API 文档 (`/panel/docs`)**：在网页端直接浏览、检索端点、一键复制路径并查看实时 cURL 与多语言调用示例。
+- **配置状态自动与手动回滚**：前置配置测试验证、核心即时退出崩溃监控，发生异常时自动降级恢复至 `config.json.last_working` 确保服务不中断。
+- **最新 Xray-core 核心 (v26.10.21)**：完整支持 Finalmask 源 IP ACL 过滤 (`allowedSourceIPs`/`blockedSourceIPs`)、客户端分享链接自动剔除服务器端过滤、XDRIVE 传输增强与扩展 TLS 密码套件。
+- **协议密码完全独立生成与保存**：针对 Trojan、Shadowsocks 2022（严格自动修正 16/32 字节 Base64 密钥与防错）、MASQUE 及 Hysteria 提供独立密码字段与持久化。
+- **已连接设备跟踪与管理**：记录每个客户端的活跃连接设备（IP、客户端软件、操作系统及最后活跃时间），支持一键清理。
+- **数据库健康诊断与维护**：面板内置 SQLite 状态体检、WAL 截断、PRAGMA 优化、空间释放 (VACUUM) 与孤立破损记录清理。
+- 强制使用 HTTPS 安装与访问面板
+- 系统状态监控（CPU、内存、Swap、磁盘、网络实时吞吐量与连接数）
+- 在所有入站和客户端中搜索与筛选
+- 深色、极黑 (Ultra Dark) 与浅色主题
+- 支持多用户和多协议：VMess、VLESS、Trojan、Shadowsocks、MASQUE、Hysteria、Dokodemo-door、Socks、HTTP、WireGuard
+- 支持 XTLS 原生协议：RPRX-Direct、Vision、REALITY
+- 流量统计、流量配额限制、过期时间限制
+- 可自定义的 Xray 配置模板
+- 支持一键式 SSL 证书申请与自动续期
+- 完整 100% 国际化多语言支持（涵盖 13 种语言）
+- 支持从面板导出与导入数据库
+- 内置面板应用更新程序
 
 ## 默认面板设置
 
@@ -487,40 +491,101 @@ Web 面板通过 Telegram Bot 支持每日流量、面板登录、数据库备�
 <details>
   <summary>点击查看 API 路由</summary>
 
-#### 使用
+#### 完整文档
 
-- [API 文档](https://www.postman.com/incognito-coder/tx-ui/collection/q1l5l0u/tx-ui)
-- `/login` 使用 `POST` 用户名称 & 密码： `{username: '', password: ''}` 登录
-- `/panel/api/inbounds` 以下操作的基础：
+- **内置交互式面板文档**：可直接在 TX-UI 面板的 `/panel/docs` 页面查看并交互测试。
+- **完整 API 规范与多语言代码示例**：参阅 [API.md](API.md)
+- [Postman 接口集合](https://www.postman.com/incognito-coder/tx-ui/collection/q1l5l0u/tx-ui)
+- 身份认证：向 `/login` 发送 `POST` 请求（携带 `{ "username": "admin", "password": "..." }`）即可自动设置会话 Cookie。
 
-|   方法   | 路径                                 | 操作                    |
-|:------:|------------------------------------|-----------------------|
-| `GET`  | `"/list"`                          | 获取所有入站                |
-| `GET`  | `"/get/:id"`                       | 获取所有入站以及inbound.id    |
-| `GET`  | `"/getClientTraffics/:email"`      | 通过电子邮件获取客户端流量         |
-| `GET`  | `"/createbackup"`                  | Telegram 机器人向管理员发送备份  |
-| `POST` | `"/add"`                           | 添加入站                  |
-| `POST` | `"/del/:id"`                       | 删除入站                  |
-| `POST` | `"/update/:id"`                    | 更新入站                  |
-| `POST` | `"/clientIps/:email"`              | 客户端 IP 地址             |
-| `POST` | `"/clearClientIps/:email"`         | 清除客户端 IP 地址           |
-| `POST` | `"/addClient"`                     | 将客户端添加到入站             |
-| `POST` | `"/:id/delClient/:clientId"`       | 通过 clientId* 删除客户端    |
-| `POST` | `"/updateClient/:clientId"`        | 通过 clientId* 更新客户端    |
-| `POST` | `"/updateClientTraffic/:email"`    | 通过电子邮件更新客户端流量，值以字节为单位 |
-| `POST` | `"/:id/resetClientTraffic/:email"` | 重置客户端的流量              |
-| `POST` | `"/resetAllTraffics"`              | 重置所有入站的流量             |
-| `POST` | `"/resetAllClientTraffics/:id"`    | 重置入站中所有客户端的流量         |
-| `POST` | `"/delDepletedClients/:id"`        | 删除入站耗尽的客户端 （-1： all）  |
-| `POST` | `"/onlines"`                       | 获取在线用户 （ 电子邮件列表 ）     |
-| `POST` | `"/depleted"`                      | 获取耗尽的用户（电子邮件列表）       |
-| `POST` | `"/disabled"`                      | 获取已禁用用户（电子邮件列表）       |
+#### 客户端接口 (`/panel/api/clients`)
 
-\*- `clientId` 项应该使用下列数据
+| 方法 | 路径 | 说明 |
+|:---:|------|-----|
+| `GET` | `"/list"` | 获取所有客户端及其流量统计、过期时间与入站绑定信息 |
+| `GET` | `"/get/:id"` | 根据唯一 ID 获取指定客户端配置 |
+| `POST` | `"/create"` | 新建客户端并可指定协议密码 (`password`, `ssPassword`, `masquePass`, `auth`) |
+| `POST` | `"/bulkCreate"` | 批量生成客户端 |
+| `POST` | `"/update/:id"` | 更新客户端配置与配额 |
+| `POST` | `"/del/:id"` | 删除客户端 |
+| `POST` | `"/bulkDel"` | 批量删除客户端 |
+| `POST` | `"/:id/toggle"` | 快捷启用或禁用客户端 |
+| `GET` | `"/:id/links"` | 获取客户端关联绑定的所有入站 ID |
+| `POST` | `"/:id/addLink"` | 将客户端关联至指定入站 |
+| `POST` | `"/:id/setLinks"` | 批量重置并替换客户端入站绑定 |
+| `POST` | `"/:id/removeLink/:inboundId"` | 解除客户端与指定入站的绑定 |
+| `GET` | `"/:id/traffic"` | 获取客户端实时上行与下行流量统计 |
+| `POST` | `"/:id/resetTraffic"` | 重置客户端已用流量并在未过期时恢复启用 |
+| `POST` | `"/resetAllTraffics"` | 重置所有客户端的流量计数器 |
+| `POST` | `"/delDepleted"` | 清理删除所有流量耗尽或已过期的客户端 |
+| `GET` | `"/:id/devices"` | 获取客户端的已连接设备历史（IP、系统、应用等） |
+| `POST` | `"/:id/clearDevices"` | 清空客户端已连接设备记录 |
 
-- `client.id`  VMESS and VLESS
-- `client.password`  TROJAN
-- `client.email`  Shadowsocks
+#### 入站接口 (`/panel/api/inbounds`)
+
+| 方法 | 路径 | 说明 |
+|:---:|------|-----|
+| `GET` | `"/list"` | 获取所有代理入站规则 |
+| `GET` | `"/get/:id"` | 根据入站 ID 获取详情 |
+| `GET` | `"/getClientTraffics/:email"` | 根据邮箱获取客户端流量 |
+| `GET` | `"/getClientTrafficsById/:id"` | 根据 ID 获取客户端流量 |
+| `POST` | `"/add"` | 新增代理入站配置 |
+| `POST` | `"/del/:id"` | 删除指定入站规则 |
+| `POST` | `"/update/:id"` | 更新指定入站规则 |
+| `POST` | `"/reorder"` | 调整入站规则排序 |
+| `POST` | `"/clientIps/:email"` | 获取客户端连接 IP 记录 |
+| `POST` | `"/clearClientIps/:email"` | 清除客户端连接 IP 记录 |
+| `POST` | `"/updateClientTraffic/:email"` | 调整客户端流量配额（单位为字节） |
+| `POST` | `"/:id/resetClientTraffic/:email"` | 重置入站中指定客户端的流量 |
+| `POST` | `"/resetAllTraffics"` | 重置所有入站的汇总流量 |
+| `POST` | `"/resetAllClientTraffics/:id"` | 重置入站中所有客户端的流量 (-1 表示全部) |
+| `POST` | `"/delDepletedClients/:id"` | 删除入站中耗尽/过期的客户端 (-1 表示全部) |
+| `POST` | `"/onlines"` | 获取当前在线的客户端邮箱列表 |
+| `POST` | `"/depleted"` | 获取已耗尽配额的客户端邮箱列表 |
+| `POST` | `"/disabled"` | 获取已禁用的客户端邮箱列表 |
+
+#### 系统与服务接口 (`/panel/api/server`)
+
+| 方法 | 路径 | 说明 |
+|:---:|------|-----|
+| `GET` | `"/status"` | 获取 CPU、内存、磁盘状态及 Xray 运行状况 |
+| `POST` | `"/restartXrayService"` | 重启 Xray 核心服务 |
+| `POST` | `"/stopXrayService"` | 停止 Xray 核心服务 |
+| `POST` | `"/rollbackXrayConfig"` | 发生错误时回滚 Xray 配置至最后正常工作状态 |
+| `GET` | `"/getRollbackStatus"` | 获取当前回滚状态及触发原因 |
+| `GET` | `"/getXrayVersion"` | 获取当前已安装的 Xray 核心版本 |
+| `GET` | `"/getConfigJson"` | 获取正在运行的激活 config.json 文件 |
+| `GET` | `"/getDb"` | 下载 SQLite 数据库备份文件 |
+| `POST` | `"/importDB"` | 通过上传 .db 文件恢复数据库 |
+| `POST` | `"/logs/:count"` | 获取面板最新日志记录 |
+| `POST` | `"/xraylogs/:count"` | 获取 Xray 核心最新日志记录 |
+| `GET` | `"/getNewUUID"` | 生成全新 UUID v4 |
+| `GET` | `"/getNewX25519Cert"` | 生成 Reality X25519 密钥对 |
+| `POST` | `"/installPanel"` | 更新或安装面板程序包 |
+
+#### 设置与数据库维护接口 (`/panel/setting`)
+
+| 方法 | 路径 | 说明 |
+|:---:|------|-----|
+| `POST` | `"/all"` | 获取全部面板配置项 |
+| `POST` | `"/update"` | 保存更新面板配置项 |
+| `POST` | `"/restartPanel"` | 平滑重启面板 Web 进程 |
+| `POST` | `"/dbStatus"` | 检查 SQLite 数据库大小、WAL 日志与完整性 |
+| `POST` | `"/optimizeDatabase"` | 执行数据库优化 (WAL 截断与 PRAGMA 优化) |
+| `POST` | `"/vacuumDatabase"` | 碎片整理并通过 VACUUM 释放磁盘空间 |
+| `POST` | `"/cleanDatabase"` | 扫描并清理孤立破损数据行 |
+
+#### Xray 高级配置接口 (`/panel/xray`)
+
+| 方法 | 路径 | 说明 |
+|:---:|------|-----|
+| `POST` | `"/"` | 获取完整的高级 Xray 模板配置 |
+| `POST` | `"/update"` | 保存并应用高级 Xray 规则 |
+| `POST` | `"/rollback"` | 在 Xray 设置中回滚至上一次正常工作配置 |
+| `GET` | `"/getRollbackStatus"` | 查询回滚标识与详细原因 |
+| `POST` | `"/testOutbound"` | 测试出站连通性与网络延迟 |
+| `GET` | `"/getOutboundsTraffic"` | 获取出站标签累计流量 |
+| `POST` | `"/resetOutboundsTraffic"` | 重置出站流量计数器 |
 
 - [<img src="https://run.pstmn.io/button.svg" alt="Run In Postman" style="width: 128px; height: 32px;">](https://app.getpostman.com/run-collection/5146551-dda3cab3-0e33-485f-96f9-d4262f437ac5?action=collection%2Ffork&source=rip_markdown&collection-url=entityId%3D5146551-dda3cab3-0e33-485f-96f9-d4262f437ac5%26entityType%3Dcollection%26workspaceId%3Dd64f609f-485a-4951-9b8f-876b3f917124)
 

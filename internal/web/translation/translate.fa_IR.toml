@@ -89,6 +89,7 @@ link = "مدیریت"
 node_clients = "گره کاربران"
 clients = "کاربران"
 txThemeHub = "تم هاب"
+apiDocs = "مستندات API"
 theme = "تم"
 themeDark = "تیره"
 themeUltra = "تیره تر"
@@ -376,6 +377,9 @@ expireDays = "مدت زمان"
 days = "(روز)"
 renew = "تمدید خودکار"
 renewDesc = "(تمدید خودکار پس\u200cاز \u200cانقضا. (0 = غیرفعال)(واحد: روز"
+
+[pages.docs]
+title = "مستندات API"
 
 [pages.settings]
 title = "تنظیمات پنل"

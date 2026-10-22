@@ -93,6 +93,7 @@ link = "リンク管理"
 node_clients = "Node Clients"
 clients = "クライアント"
 txThemeHub = "TX ThemeHub"
+apiDocs = "API ドキュメント"
 
 [tgbot]
 keyboardClosed = "❌ キーボードを閉じました！"
@@ -376,6 +377,9 @@ expireDays = "期間"
 days = "日"
 renew = "自動更新"
 renewDesc = "期限が切れた後に自動更新。（0 = 無効）（単位：日）"
+
+[pages.docs]
+title = "API ドキュメント"
 
 [pages.settings]
 subUI = "カスタム購読テンプレート"

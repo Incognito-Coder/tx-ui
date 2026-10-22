@@ -93,6 +93,7 @@ link = "Керувати"
 node_clients = "Node Clients"
 clients = "Клієнти"
 txThemeHub = "TX ThemeHub"
+apiDocs = "Документація API"
 
 [tgbot]
 keyboardClosed = "❌ Клавіатуру закрито!"
@@ -376,6 +377,9 @@ expireDays = "Тривалість"
 days = "Дні(в)"
 renew = "Автоматичне оновлення"
 renewDesc = "Автоматичне поновлення після закінчення терміну дії. (0 = вимкнено)(одиниця: день)"
+
+[pages.docs]
+title = "Документація API"
 
 [pages.settings]
 subUI = "Власний шаблон підписки"

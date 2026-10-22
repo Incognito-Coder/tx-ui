@@ -93,6 +93,7 @@ link = "管理"
 node_clients = "Node Clients"
 clients = "使用者列表"
 txThemeHub = "TX ThemeHub"
+apiDocs = "API 文件"
 
 [tgbot]
 keyboardClosed = "❌ 自定義鍵盤已關閉！"
@@ -376,6 +377,9 @@ expireDays = "期間"
 days = "天"
 renew = "自動續訂"
 renewDesc = "到期後自動續訂。(0 = 禁用)(單位: 天)"
+
+[pages.docs]
+title = "API 文件"
 
 [pages.settings]
 subUI = "自訂訂閱範本"

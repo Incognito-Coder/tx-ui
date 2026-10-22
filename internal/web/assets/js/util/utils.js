@@ -1,3 +1,102 @@
+// Global toast notification deduplicator for Vue and Ant Design
+(function() {
+    if (typeof window === 'undefined') return;
+
+    const recentToasts = new Map();
+    const DEDUP_WINDOW_MS = 1500;
+
+    function getMessageKey(type, args) {
+        if (!args || args.length === 0) return '';
+        const first = args[0];
+        if (typeof first === 'string' || typeof first === 'number') {
+            return type + ':::' + String(first).trim();
+        }
+        if (first && typeof first === 'object') {
+            if (first.key) {
+                return type + '::key::' + String(first.key);
+            }
+            if (typeof first.content === 'string' || typeof first.content === 'number') {
+                return (first.type || type) + ':::' + String(first.content).trim();
+            }
+            try {
+                return type + ':::' + JSON.stringify(first);
+            } catch (e) {
+                return '';
+            }
+        }
+        return '';
+    }
+
+    function shouldSuppress(type, args) {
+        const key = getMessageKey(type, args);
+        if (!key) return false;
+        const now = Date.now();
+        const lastTime = recentToasts.get(key) || 0;
+        if (now - lastTime < DEDUP_WINDOW_MS) {
+            return true;
+        }
+        recentToasts.set(key, now);
+        if (recentToasts.size > 80) {
+            for (const [k, t] of recentToasts.entries()) {
+                if (now - t > DEDUP_WINDOW_MS * 2) {
+                    recentToasts.delete(k);
+                }
+            }
+        }
+        return false;
+    }
+
+    function wrapMessageInstance(originalMessage) {
+        if (!originalMessage || originalMessage._deduped) return originalMessage;
+
+        const noopClose = () => {};
+        noopClose.then = (resolve) => {
+            if (typeof resolve === 'function') resolve();
+            return noopClose;
+        };
+
+        const wrapped = function(...args) {
+            if (shouldSuppress('open', args)) return noopClose;
+            return originalMessage.apply(this, args);
+        };
+
+        const methods = ['info', 'success', 'error', 'warning', 'warn', 'loading'];
+        methods.forEach(type => {
+            if (typeof originalMessage[type] === 'function') {
+                wrapped[type] = function(...args) {
+                    if (shouldSuppress(type, args)) return noopClose;
+                    return originalMessage[type].apply(this, args);
+                };
+            }
+        });
+
+        if (typeof originalMessage.open === 'function') {
+            wrapped.open = function(...args) {
+                const first = args[0] || {};
+                const effectiveType = first.type || 'open';
+                if (shouldSuppress(effectiveType, args)) return noopClose;
+                return originalMessage.open.apply(this, args);
+            };
+        }
+
+        for (const prop in originalMessage) {
+            if (!(prop in wrapped)) {
+                wrapped[prop] = originalMessage[prop];
+            }
+        }
+
+        wrapped._deduped = true;
+        return wrapped;
+    }
+
+    if (typeof Vue !== 'undefined' && Vue.prototype && Vue.prototype.$message) {
+        Vue.prototype.$message = wrapMessageInstance(Vue.prototype.$message);
+    }
+    if (window.antd && window.antd.message) {
+        window.antd.message = wrapMessageInstance(window.antd.message);
+    }
+})();
+
 class Msg {
     constructor(success = false, msg = "", obj = null) {
         this.success = success;
@@ -7,7 +106,10 @@ class Msg {
 }
 
 class HttpUtil {
-    static _handleMsg(msg) {
+    static _handleMsg(msg, options = {}) {
+        if (options && options.silenceMsg) {
+            return;
+        }
         if (!(msg instanceof Msg) || msg.msg === "") {
             return;
         }
@@ -33,12 +135,12 @@ class HttpUtil {
         try {
             const resp = await axios.get(url, {params, ...options});
             const msg = this._respToMsg(resp);
-            this._handleMsg(msg);
+            this._handleMsg(msg, options);
             return msg;
         } catch (error) {
             console.error('GET request failed:', error);
             const errorMsg = new Msg(false, error.response?.data?.message || error.message || 'Request failed');
-            this._handleMsg(errorMsg);
+            this._handleMsg(errorMsg, options);
             return errorMsg;
         }
     }
@@ -47,12 +149,12 @@ class HttpUtil {
         try {
             const resp = await axios.post(url, data, options);
             const msg = this._respToMsg(resp);
-            this._handleMsg(msg);
+            this._handleMsg(msg, options);
             return msg;
         } catch (error) {
             console.error('POST request failed:', error);
             const errorMsg = new Msg(false, error.response?.data?.message || error.message || 'Request failed');
-            this._handleMsg(errorMsg);
+            this._handleMsg(errorMsg, options);
             return errorMsg;
         }
     }

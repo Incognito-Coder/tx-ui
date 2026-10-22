@@ -26,6 +26,8 @@ func (a *XUIController) initRouter(g *gin.RouterGroup) {
 	g.GET("/clients", a.clients)
 	g.GET("/settings", a.settings)
 	g.GET("/xray", a.xraySettings)
+	g.GET("/docs", a.docs)
+	g.GET("/api-docs", a.docs)
 
 	a.settingController = NewSettingController(g)
 	a.xraySettingController = NewXraySettingController(g)
@@ -49,4 +51,8 @@ func (a *XUIController) settings(c *gin.Context) {
 
 func (a *XUIController) xraySettings(c *gin.Context) {
 	html(c, "xray.html", "pages.xray.title", nil)
+}
+
+func (a *XUIController) docs(c *gin.Context) {
+	html(c, "docs.html", "pages.docs.title", nil)
 }
