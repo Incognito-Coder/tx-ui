@@ -945,30 +945,36 @@
                 <a-spin :delay="500" :spinning="spinning" tip='{{ i18n "loading"}}'>
                     <!-- Header Stats Cards -->
                     <transition appear name="list">
-                        <a-card hoverable style="margin-bottom: 12px;">
-                            <div style="display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: center; line-height: 1.8;">
-                                <span>
-                                    {{ i18n "clients" }}:
+                        <a-card hoverable class="page-stats-card">
+                            <div class="stats-items-wrap">
+                                <span class="stats-item">
+                                    <a-icon type="team" style="color: #10b981;"></a-icon>
+                                    <span>{{ i18n "clients" }}:</span>
                                     <a-tag color="green" style="font-weight: bold;">[[ clients.length ]]</a-tag>
                                 </span>
-                                <span>
-                                    {{ i18n "enabled" }}:
+                                <span class="stats-item">
+                                    <a-icon type="check-circle" style="color: #3b82f6;"></a-icon>
+                                    <span>{{ i18n "enabled" }}:</span>
                                     <a-tag color="blue">[[ clients.filter(c => isClientActive(c)).length ]]</a-tag>
                                 </span>
-                                <span>
-                                    {{ i18n "disabled" }}:
+                                <span class="stats-item">
+                                    <a-icon type="stop" style="color: #ef4444;"></a-icon>
+                                    <span>{{ i18n "disabled" }}:</span>
                                     <a-tag color="red">[[ clients.filter(c => !c.enable).length ]]</a-tag>
                                 </span>
-                                <span>
-                                    {{ i18n "depleted" }}:
+                                <span class="stats-item">
+                                    <a-icon type="warning" style="color: #f59e0b;"></a-icon>
+                                    <span>{{ i18n "depleted" }}:</span>
                                     <a-tag color="orange">[[ clients.filter(c => c.enable && isDepletedOrExpired(c)).length ]]</a-tag>
                                 </span>
-                                <span>
-                                    {{ i18n "depletingSoon" }}:
+                                <span class="stats-item">
+                                    <a-icon type="clock-circle" style="color: #8b5cf6;"></a-icon>
+                                    <span>{{ i18n "depletingSoon" }}:</span>
                                     <a-tag color="purple">[[ clients.filter(c => isDepletingSoon(c)).length ]]</a-tag>
                                 </span>
-                                <span>
-                                    {{ i18n "online" }}:
+                                <span class="stats-item">
+                                    <a-icon type="global" style="color: #06b6d4;"></a-icon>
+                                    <span>{{ i18n "online" }}:</span>
                                     <a-tag color="cyan">[[ onlineClients.length ]]</a-tag>
                                 </span>
                             </div>

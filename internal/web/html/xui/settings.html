@@ -97,15 +97,15 @@
                         </template>
                     </a-alert>
                 </transition>
-                <a-space direction="vertical">
+                <a-space direction="vertical" style="width: 100%;">
                     <a-card hoverable style="margin-bottom: .5rem; overflow-x: hidden;">
                         <a-row class="panel-toolbar">
                             <a-col :sm="10" :xs="24" class="panel-toolbar-actions">
                                 <div class="panel-action-row">
-                                    <a-button :disabled="saveBtnDisable" @click="updateAllSetting" type="primary">{{
+                                    <a-button :disabled="saveBtnDisable" @click="updateAllSetting" icon="save" type="primary">{{
                                         i18n "pages.settings.save" }}
                                     </a-button>
-                                    <a-button :disabled="!saveBtnDisable" @click="restartPanel" type="danger">{{ i18n
+                                    <a-button :disabled="!saveBtnDisable" @click="restartPanel" icon="reload" type="danger">{{ i18n
                                         "pages.settings.restartPanel" }}
                                     </a-button>
                                 </div>

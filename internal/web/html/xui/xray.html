@@ -305,15 +305,15 @@
                              v-if="isRolledBack">
                     </a-alert>
                 </transition>
-                <a-space direction="vertical">
+                <a-space direction="vertical" style="width: 100%;">
                     <a-card hoverable style="margin-bottom: .5rem;">
                         <a-row class="panel-toolbar">
                             <a-col :sm="10" :xs="24" class="panel-toolbar-actions">
                                 <div class="panel-action-row">
-                                    <a-button :disabled="saveBtnDisable" @click="updateXraySetting" type="primary">{{
+                                    <a-button :disabled="saveBtnDisable" @click="updateXraySetting" icon="save" type="primary">{{
                                         i18n "pages.xray.save" }}
                                     </a-button>
-                                    <a-button :disabled="!saveBtnDisable" @click="restartXray" type="danger">{{ i18n
+                                    <a-button :disabled="!saveBtnDisable" @click="restartXray" icon="reload" type="danger">{{ i18n
                                         "pages.xray.restart" }}
                                     </a-button>
                                     <a-button v-if="hasWorkingConfig" @click="rollbackXray" type="dashed" style="color: #fa8c16; border-color: #fa8c16;">

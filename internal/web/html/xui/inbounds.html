@@ -171,64 +171,59 @@
                     </a-alert>
                 </transition>
                 <transition appear name="list">
-                    <a-card hoverable>
-                        <a-row>
-                            <a-col :lg="12" :sm="24" :xs="24">
-                                {{ i18n "pages.inbounds.totalDownUp" }}:
+                    <a-card hoverable class="page-stats-card">
+                        <div class="stats-items-wrap">
+                            <span class="stats-item">
+                                <a-icon type="swap" style="color: #3b82f6;"></a-icon>
+                                <span>{{ i18n "pages.inbounds.totalDownUp" }}:</span>
                                 <a-tag color="green">[[ sizeFormat(total.up) ]] / [[ sizeFormat(total.down) ]]</a-tag>
-                            </a-col>
-                            <a-col :lg="12" :sm="24" :xs="24">
-                                {{ i18n "pages.inbounds.totalUsage" }}:
+                            </span>
+                            <span class="stats-item">
+                                <a-icon type="pie-chart" style="color: #10b981;"></a-icon>
+                                <span>{{ i18n "pages.inbounds.totalUsage" }}:</span>
                                 <a-tag color="green">[[ sizeFormat(total.up + total.down) ]]</a-tag>
-                            </a-col>
-                            <a-col :lg="12" :sm="24" :xs="24">
-                                {{ i18n "pages.inbounds.inboundCount" }}:
+                            </span>
+                            <span class="stats-item">
+                                <a-icon type="cluster" style="color: #8b5cf6;"></a-icon>
+                                <span>{{ i18n "pages.inbounds.inboundCount" }}:</span>
                                 <a-tag color="green">[[ dbInbounds.length ]]</a-tag>
-                            </a-col>
-                            <a-col :lg="12" :sm="24" :xs="24">
-                                <template>
-                                    <div>
-                                        <a-back-top :target="() => document.getElementById('content-layout')"
-                                                    visibility-height="200"></a-back-top>
-                                        {{ i18n "clients" }}:
-                                        <a-tag color="green" style="cursor: pointer;" @click="goToClients()">[[ total.clients ]]</a-tag>
-                                        <a-popover :overlay-class-name="themeSwitcher.currentTheme"
-                                                   title='{{ i18n "disabled" }}'>
-                                            <template slot="content">
-                                                <p v-for="clientEmail in total.deactive">[[ clientEmail ]]</p>
-                                            </template>
-                                            <a-tag v-if="total.deactive.length">[[ total.deactive.length ]]</a-tag>
-                                        </a-popover>
-                                        <a-popover :overlay-class-name="themeSwitcher.currentTheme"
-                                                   title='{{ i18n "depleted" }}'>
-                                            <template slot="content">
-                                                <p v-for="clientEmail in total.depleted">[[ clientEmail ]]</p>
-                                            </template>
-                                            <a-tag color="red" v-if="total.depleted.length">[[ total.depleted.length
-                                                ]]
-                                            </a-tag>
-                                        </a-popover>
-                                        <a-popover :overlay-class-name="themeSwitcher.currentTheme"
-                                                   title='{{ i18n "depletingSoon" }}'>
-                                            <template slot="content">
-                                                <p v-for="clientEmail in total.expiring">[[ clientEmail ]]</p>
-                                            </template>
-                                            <a-tag color="orange" v-if="total.expiring.length">[[ total.expiring.length
-                                                ]]
-                                            </a-tag>
-                                        </a-popover>
-                                        <a-popover :overlay-class-name="themeSwitcher.currentTheme"
-                                                   title='{{ i18n "online" }}'>
-                                            <template slot="content">
-                                                <p v-for="clientEmail in onlineClients">[[ clientEmail ]]</p>
-                                            </template>
-                                            <a-tag color="blue" v-if="onlineClients.length">[[ onlineClients.length ]]
-                                            </a-tag>
-                                        </a-popover>
-                                    </div>
-                                </template>
-                            </a-col>
-                        </a-row>
+                            </span>
+                            <span class="stats-item">
+                                <a-back-top :target="() => document.getElementById('content-layout')"
+                                            visibility-height="200"></a-back-top>
+                                <a-icon type="team" style="color: #06b6d4;"></a-icon>
+                                <span>{{ i18n "clients" }}:</span>
+                                <a-tag color="green" style="cursor: pointer;" @click="goToClients()">[[ total.clients ]]</a-tag>
+                                <a-popover :overlay-class-name="themeSwitcher.currentTheme"
+                                           title='{{ i18n "disabled" }}'>
+                                    <template slot="content">
+                                        <p v-for="clientEmail in total.deactive">[[ clientEmail ]]</p>
+                                    </template>
+                                    <a-tag v-if="total.deactive.length">[[ total.deactive.length ]]</a-tag>
+                                </a-popover>
+                                <a-popover :overlay-class-name="themeSwitcher.currentTheme"
+                                           title='{{ i18n "depleted" }}'>
+                                    <template slot="content">
+                                        <p v-for="clientEmail in total.depleted">[[ clientEmail ]]</p>
+                                    </template>
+                                    <a-tag color="red" v-if="total.depleted.length">[[ total.depleted.length ]]</a-tag>
+                                </a-popover>
+                                <a-popover :overlay-class-name="themeSwitcher.currentTheme"
+                                           title='{{ i18n "depletingSoon" }}'>
+                                    <template slot="content">
+                                        <p v-for="clientEmail in total.expiring">[[ clientEmail ]]</p>
+                                    </template>
+                                    <a-tag color="orange" v-if="total.expiring.length">[[ total.expiring.length ]]</a-tag>
+                                </a-popover>
+                                <a-popover :overlay-class-name="themeSwitcher.currentTheme"
+                                           title='{{ i18n "online" }}'>
+                                    <template slot="content">
+                                        <p v-for="clientEmail in onlineClients">[[ clientEmail ]]</p>
+                                    </template>
+                                    <a-tag color="blue" v-if="onlineClients.length">[[ onlineClients.length ]]</a-tag>
+                                </a-popover>
+                            </span>
+                        </div>
                     </a-card>
                 </transition>
                 <transition appear name="list">

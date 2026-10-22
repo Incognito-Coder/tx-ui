@@ -367,26 +367,52 @@
                     }
 
                     .ant-menu-item-selected,
-                    .ant-menu-item-selected a,
-                    .ant-menu-item-selected span,
-                    .ant-menu-item-selected b,
-                    .ant-menu-item-selected .anticon,
                     #sider .ant-menu-item-selected,
-                    #sider .ant-menu-item-selected a,
-                    #sider .ant-menu-item-selected span,
-                    #sider .ant-menu-item-selected b,
-                    #sider .ant-menu-item-selected .anticon,
                     #sider-drawer .ant-menu-item-selected,
-                    #sider-drawer .ant-menu-item-selected a,
-                    #sider-drawer .ant-menu-item-selected span,
-                    #sider-drawer .ant-menu-item-selected b,
-                    #sider-drawer .ant-menu-item-selected .anticon,
                     .ant-menu:not(.ant-menu-horizontal) .ant-menu-item-selected,
                     .ant-menu-dark .ant-menu-item-selected,
                     .ant-menu-dark.ant-menu-inline .ant-menu-item-selected {
                         background: ${theme.primary} !important;
                         background-color: ${theme.primary} !important;
                         background-image: none !important;
+                        color: #ffffff !important;
+                    }
+
+                    .ant-menu-item-selected a,
+                    .ant-menu-item-selected span,
+                    .ant-menu-item-selected b,
+                    .ant-menu-item-selected .anticon,
+                    #sider .ant-menu-item-selected a,
+                    #sider .ant-menu-item-selected span,
+                    #sider .ant-menu-item-selected b,
+                    #sider .ant-menu-item-selected .anticon,
+                    #sider-drawer .ant-menu-item-selected a,
+                    #sider-drawer .ant-menu-item-selected span,
+                    #sider-drawer .ant-menu-item-selected b,
+                    #sider-drawer .ant-menu-item-selected .anticon {
+                        background: transparent !important;
+                        background-color: transparent !important;
+                        color: #ffffff !important;
+                    }
+
+                    .ant-menu-item-selected:hover,
+                    #sider .ant-menu-item-selected:hover,
+                    #sider-drawer .ant-menu-item-selected:hover {
+                        background: ${theme.hover} !important;
+                        background-color: ${theme.hover} !important;
+                        color: #ffffff !important;
+                    }
+
+                    .ant-menu-item-selected:hover a,
+                    .ant-menu-item-selected:hover span,
+                    .ant-menu-item-selected:hover b,
+                    .ant-menu-item-selected:hover .anticon,
+                    #sider .ant-menu-item-selected:hover a,
+                    #sider .ant-menu-item-selected:hover span,
+                    #sider .ant-menu-item-selected:hover b,
+                    #sider .ant-menu-item-selected:hover .anticon {
+                        background: transparent !important;
+                        background-color: transparent !important;
                         color: #ffffff !important;
                     }
 

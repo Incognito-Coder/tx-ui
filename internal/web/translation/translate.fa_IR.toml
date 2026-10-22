@@ -252,6 +252,7 @@ importInbound = "افزودن یک ورودی"
 reordered = "ورودی\u200cها با موفقیت مرتب شدند"
 autoRefresh = "به\u200cروزرسانی خودکار"
 autoRefreshInterval = "فاصله زمانی"
+refresh = "به‌روزرسانی"
 
 useSystemCA = "استفاده از CA سیستم"
 useSystemCADesc = "استفاده از گواهی‌های ریشه سیستم‌عامل به‌جای گواهی‌های داخلی Xray-core"

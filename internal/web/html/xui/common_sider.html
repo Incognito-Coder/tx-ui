@@ -1,47 +1,47 @@
 {{define "menuItems"}}
-<a-menu-item key="{{ .base_path }}panel/" title='{{ i18n "menu.dashboard"}}'>
+<a-menu-item key="{{ .base_path }}panel/">
     <a-icon type="dashboard"></a-icon>
     <span>
         <b>{{ i18n "menu.dashboard"}}</b>
     </span>
 </a-menu-item>
-<a-menu-item key="{{ .base_path }}panel/inbounds" title='{{ i18n "menu.inbounds"}}'>
+<a-menu-item key="{{ .base_path }}panel/inbounds">
     <a-icon type="cloud"></a-icon>
     <span>
         <b>{{ i18n "menu.inbounds"}}</b>
     </span>
 </a-menu-item>
-<a-menu-item key="{{ .base_path }}panel/clients" title='{{ i18n "menu.clients"}}'>
+<a-menu-item key="{{ .base_path }}panel/clients">
     <a-icon type="team"></a-icon>
     <span>
         <b>{{ i18n "menu.clients"}}</b>
     </span>
 </a-menu-item>
-<a-menu-item key="{{ .base_path }}panel/settings" title='{{ i18n "menu.settings"}}'>
+<a-menu-item key="{{ .base_path }}panel/settings">
     <a-icon type="setting"></a-icon>
     <span>
         <b>{{ i18n "menu.settings"}}</b>
     </span>
 </a-menu-item>
-<a-menu-item key="{{ .base_path }}panel/xray" title='{{ i18n "menu.xray"}}'>
+<a-menu-item key="{{ .base_path }}panel/xray">
     <a-icon type="tool"></a-icon>
     <span>
         <b>{{ i18n "menu.xray"}}</b>
     </span>
 </a-menu-item>
-<a-menu-item key="{{ .base_path }}panel/docs" title='{{ i18n "menu.apiDocs"}}'>
+<a-menu-item key="{{ .base_path }}panel/docs">
     <a-icon type="api"></a-icon>
     <span>
         <b>{{ i18n "menu.apiDocs"}}</b>
     </span>
 </a-menu-item>
-<a-menu-item key="https://github.com/Incognito-Coder/TX-ThemeHub" title='{{ i18n "menu.txThemeHub"}}'>
+<a-menu-item class="panel-menu-github" key="https://github.com/Incognito-Coder/TX-ThemeHub">
     <a-icon type="github"></a-icon>
     <span>
         <b>{{ i18n "menu.txThemeHub"}}</b>
     </span>
 </a-menu-item>
-<a-menu-item key="{{ .base_path }}logout" title='{{ i18n "menu.logout"}}'>
+<a-menu-item class="panel-menu-logout" key="{{ .base_path }}logout">
     <a-icon type="logout"></a-icon>
     <span>
         <b>{{ i18n "menu.logout"}}</b>

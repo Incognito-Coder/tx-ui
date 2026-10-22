@@ -86,82 +86,134 @@ body {
     overflow: hidden;
     border-inline-end: 1px solid var(--ui-border);
     background: var(--ui-surface);
-    box-shadow: none;
+    box-shadow: 2px 0 16px -4px rgba(0, 0, 0, 0.04);
+}
+
+.dark #sider,
+#app.dark #sider {
+    background: linear-gradient(180deg, #131b26 0%, #0d131d 100%) !important;
+    border-inline-end: 1px solid rgba(255, 255, 255, 0.07) !important;
+    box-shadow: 4px 0 24px -4px rgba(0, 0, 0, 0.45) !important;
+}
+
+html[data-theme="ultra-dark"] #sider {
+    background: #09090b !important;
+    border-inline-end: 1px solid #1f1f23 !important;
+    box-shadow: none !important;
 }
 
 #sider .ant-layout-sider-children {
     display: flex;
     flex-direction: column;
     height: calc(100% - 48px);
-    padding: 12px;
+    padding: 12px 8px;
     overflow-x: hidden;
     overflow-y: auto;
+}
+
+#sider .ant-layout-sider-children::-webkit-scrollbar {
+    width: 4px;
+}
+
+#sider .ant-layout-sider-children::-webkit-scrollbar-thumb {
+    background: var(--ui-border);
+    border-radius: 4px;
 }
 
 #sider .ant-layout-sider-trigger {
     height: 48px;
     line-height: 48px;
+    font-size: 15px;
     color: var(--ui-text-muted);
     border-top: 1px solid var(--ui-border);
     background: var(--ui-surface);
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease !important;
+}
+
+#sider .ant-layout-sider-trigger:hover {
+    background: var(--ui-surface-hover);
+    color: var(--ui-primary);
 }
 
 .panel-brand {
     display: flex;
     flex: 0 0 auto;
     align-items: center;
-    gap: 11px;
-    min-height: 58px;
-    margin: 0 2px 10px;
+    gap: 12px;
+    min-height: 60px;
+    margin: 2px 4px 12px;
     padding: 8px 10px;
     color: var(--ui-text);
+    border-radius: var(--ui-radius);
     border-bottom: 1px solid var(--ui-border);
     cursor: pointer;
     user-select: none;
+    transition: background 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.panel-brand:hover {
+    background: var(--ui-surface-hover);
 }
 
 .panel-brand:focus-visible {
-    border-radius: var(--ui-radius-sm);
+    border-radius: var(--ui-radius);
     outline: 2px solid var(--ui-primary);
     outline-offset: 2px;
 }
 
 .panel-brand-mark {
     display: inline-flex;
-    flex: 0 0 38px;
+    flex: 0 0 40px;
     align-items: center;
     justify-content: center;
-    width: 38px;
-    height: 38px;
+    width: 40px;
+    height: 40px;
     color: #ffffff;
-    font-size: 18px;
-    border-radius: 9px;
-    background: var(--ui-primary);
-    box-shadow: none;
+    font-size: 19px;
+    border-radius: 11px;
+    background: linear-gradient(135deg, var(--ui-primary) 0%, #3b82f6 100%);
+    box-shadow: 0 4px 14px -1px rgba(37, 99, 235, 0.35);
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.panel-brand:hover .panel-brand-mark {
+    transform: scale(1.05) rotate(-3deg);
 }
 
 .panel-brand-copy {
     display: flex;
     flex-direction: column;
     min-width: 0;
-    line-height: 1.2;
+    line-height: 1.25;
 }
 
 .panel-brand-copy strong {
-    color: inherit;
-    font-size: 16px;
-    letter-spacing: .02em;
+    color: var(--ui-text);
+    font-size: 16.5px;
+    font-weight: 750;
+    letter-spacing: -0.3px;
 }
 
 .panel-brand-copy small {
+    display: inline-flex;
+    align-items: center;
     margin-top: 3px;
+    padding: 1px 7px;
     color: var(--ui-text-muted);
-    font-size: 11px;
+    font-size: 10.5px;
+    font-weight: 600;
+    line-height: 1.3;
+    border-radius: 9999px;
+    background: var(--ui-surface-muted);
+    border: 1px solid var(--ui-border);
+    width: fit-content;
 }
 
 .ant-layout-sider-collapsed .panel-brand {
     justify-content: center;
     padding-inline: 0;
+    margin-inline: 0;
 }
 
 .ant-layout-sider-collapsed .panel-brand-copy {
@@ -186,34 +238,48 @@ body {
 }
 
 #sider.ant-layout-sider-collapsed .panel-brand-mark {
-    flex-basis: 36px;
-    width: 36px;
-    height: 36px;
+    flex-basis: 38px;
+    width: 38px;
+    height: 38px;
     border-radius: 11px;
 }
 
 #sider.ant-layout-sider-collapsed .ant-menu-inline-collapsed {
     width: 60px;
+    margin: 0 auto;
 }
 
 #sider.ant-layout-sider-collapsed .ant-menu-inline-collapsed>.ant-menu-item,
 #sider.ant-layout-sider-collapsed .ant-menu-inline-collapsed>.ant-menu-submenu>.ant-menu-submenu-title {
-    width: 52px;
-    margin: 4px;
-    padding: 0 17px !important;
-    border-radius: 12px;
+    width: 46px !important;
+    height: 46px !important;
+    line-height: 46px !important;
+    margin: 6px auto !important;
+    padding: 0 !important;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px !important;
+    transform: none !important;
 }
 
 #sider.ant-layout-sider-collapsed .ant-menu-inline-collapsed>.ant-menu-item .anticon,
 #sider.ant-layout-sider-collapsed .ant-menu-inline-collapsed>.ant-menu-submenu>.ant-menu-submenu-title .anticon {
-    margin: 0;
-    font-size: 18px;
+    margin: 0 !important;
+    font-size: 19px;
     line-height: 1;
 }
 
 #sider.ant-layout-sider-collapsed .ant-menu-item-selected {
-    border-radius: 12px;
-    box-shadow: none;
+    border-radius: 12px !important;
+    background: linear-gradient(135deg, var(--ui-primary) 0%, #2563eb 100%) !important;
+    box-shadow: 0 4px 14px -1px rgba(37, 99, 235, 0.45) !important;
+}
+
+#sider.ant-layout-sider-collapsed .ant-menu-item-selected:hover {
+    border-radius: 12px !important;
+    background: linear-gradient(135deg, var(--ui-primary-hover, var(--ui-primary)) 0%, #1d4ed8 100%) !important;
+    box-shadow: 0 6px 18px -1px rgba(37, 99, 235, 0.55) !important;
 }
 
 #sider.ant-layout-sider-collapsed .panel-theme-control {
@@ -224,15 +290,10 @@ body {
     width: 76px !important;
 }
 
-/* Disable all transitions and animations on common sider */
+/* Disable structural layout shift transitions on sider */
 #sider,
-#sider *,
-#sider::before,
-#sider::after,
 .ant-layout-sider,
-.ant-layout-sider *,
-.ant-layout-sider-trigger,
-.ant-menu-inline-collapsed {
+.ant-layout-sider-children {
     transition: none !important;
     animation: none !important;
 }
@@ -276,6 +337,22 @@ body {
     border: 0;
 }
 
+#sider,
+#sider *,
+#sider-drawer,
+#sider-drawer * {
+    -webkit-user-select: none !important;
+    -moz-user-select: none !important;
+    -ms-user-select: none !important;
+    user-select: none !important;
+}
+
+#sider *::selection,
+#sider-drawer *::selection {
+    background: transparent !important;
+    color: inherit !important;
+}
+
 #sider .ant-menu,
 #sider-drawer .ant-menu {
     color: var(--ui-text-muted);
@@ -286,23 +363,81 @@ body {
 #sider .ant-menu-submenu-title,
 #sider-drawer .ant-menu-item,
 #sider-drawer .ant-menu-submenu-title {
-    height: 44px;
-    margin-block: 3px;
-    line-height: 44px;
+    height: 42px;
+    margin: 3px 6px !important;
+    width: calc(100% - 12px) !important;
+    padding: 0 14px !important;
+    line-height: 42px;
     border-radius: 10px;
+    font-size: 13.5px;
+    color: var(--ui-text-muted);
+    -webkit-user-select: none !important;
+    user-select: none !important;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+#sider .ant-menu-item .anticon,
+#sider-drawer .ant-menu-item .anticon {
+    font-size: 16.5px;
+    margin-right: 12px;
+    vertical-align: -2px;
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), color 0.2s ease !important;
 }
 
 #sider .ant-menu-item b,
 #sider-drawer .ant-menu-item b {
-    font-weight: 600;
+    font-weight: 550;
+    letter-spacing: -0.15px;
 }
 
+/* Hover state on unselected menu items */
+#sider:not(.ant-layout-sider-collapsed) .ant-menu-item:not(.ant-menu-item-selected):hover,
+#sider:not(.ant-layout-sider-collapsed) .ant-menu-submenu-title:hover,
+#sider-drawer .ant-menu-item:not(.ant-menu-item-selected):hover {
+    background: var(--ui-surface-hover) !important;
+    color: var(--ui-text) !important;
+    transform: translateX(3px);
+}
+
+#sider .ant-menu-item:not(.ant-menu-item-selected):hover .anticon,
+#sider-drawer .ant-menu-item:not(.ant-menu-item-selected):hover .anticon {
+    color: var(--ui-primary);
+    transform: scale(1.1);
+}
+
+/* Selected state with vibrant gradient & subtle ambient glow */
 #sider .ant-menu-item-selected,
 #sider-drawer .ant-menu-item-selected {
     color: #ffffff !important;
-    background: var(--ui-primary) !important;
-    box-shadow: none;
-    animation: none;
+    font-weight: 650;
+    background: linear-gradient(135deg, var(--ui-primary) 0%, #2563eb 100%) !important;
+    box-shadow: 0 4px 14px -1px rgba(37, 99, 235, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
+    transform: none !important;
+}
+
+#sider .ant-menu-item-selected a,
+#sider .ant-menu-item-selected span,
+#sider .ant-menu-item-selected b,
+#sider .ant-menu-item-selected .anticon,
+#sider-drawer .ant-menu-item-selected a,
+#sider-drawer .ant-menu-item-selected span,
+#sider-drawer .ant-menu-item-selected b,
+#sider-drawer .ant-menu-item-selected .anticon {
+    background: transparent !important;
+    background-color: transparent !important;
+    color: #ffffff !important;
+}
+
+#sider .ant-menu-item-selected .anticon,
+#sider-drawer .ant-menu-item-selected .anticon {
+    color: #ffffff !important;
+    transform: scale(1.06);
+}
+
+#sider .ant-menu-item-selected b,
+#sider-drawer .ant-menu-item-selected b {
+    color: #ffffff !important;
+    font-weight: 650;
 }
 
 #sider .ant-menu-item-selected::after,
@@ -310,10 +445,76 @@ body {
     display: none;
 }
 
+/* Hover state on CURRENT SELECTED side menu item */
+#sider .ant-menu-item-selected:hover,
+#sider-drawer .ant-menu-item-selected:hover,
+#sider:not(.ant-layout-sider-collapsed) .ant-menu-item-selected:hover {
+    background: linear-gradient(135deg, var(--ui-primary-hover, var(--ui-primary)) 0%, #1d4ed8 100%) !important;
+    box-shadow: 0 6px 18px -1px rgba(37, 99, 235, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+    color: #ffffff !important;
+    transform: none !important;
+}
+
+#sider .ant-menu-item-selected:hover a,
+#sider .ant-menu-item-selected:hover span,
+#sider .ant-menu-item-selected:hover b,
+#sider .ant-menu-item-selected:hover .anticon,
+#sider-drawer .ant-menu-item-selected:hover a,
+#sider-drawer .ant-menu-item-selected:hover span,
+#sider-drawer .ant-menu-item-selected:hover b,
+#sider-drawer .ant-menu-item-selected:hover .anticon {
+    background: transparent !important;
+    background-color: transparent !important;
+    color: #ffffff !important;
+}
+
+#sider .ant-menu-item-selected:hover .anticon,
+#sider-drawer .ant-menu-item-selected:hover .anticon {
+    transform: scale(1.1);
+}
+
+/* Logout distinction with subtle separator */
+#sider .ant-menu-item.panel-menu-logout,
+#sider-drawer .ant-menu-item.panel-menu-logout,
+#sider .ant-menu-item:last-child,
+#sider-drawer .ant-menu-item:last-child {
+    margin-top: 14px !important;
+    position: relative;
+}
+
+#sider:not(.ant-layout-sider-collapsed) .ant-menu-item.panel-menu-logout::before,
+#sider-drawer .ant-menu-item.panel-menu-logout::before,
+#sider:not(.ant-layout-sider-collapsed) .ant-menu-item:last-child::before,
+#sider-drawer .ant-menu-item:last-child::before {
+    content: '';
+    position: absolute;
+    top: -8px;
+    left: 8px;
+    right: 8px;
+    height: 1px;
+    background: var(--ui-border);
+    opacity: 0.8;
+}
+
+#sider .ant-menu-item.panel-menu-logout:not(.ant-menu-item-selected):hover,
+#sider-drawer .ant-menu-item.panel-menu-logout:not(.ant-menu-item-selected):hover,
+#sider .ant-menu-item:last-child:not(.ant-menu-item-selected):hover,
+#sider-drawer .ant-menu-item:last-child:not(.ant-menu-item-selected):hover {
+    background: rgba(239, 68, 68, 0.1) !important;
+    color: #ef4444 !important;
+}
+
+#sider .ant-menu-item.panel-menu-logout:not(.ant-menu-item-selected):hover .anticon,
+#sider-drawer .ant-menu-item.panel-menu-logout:not(.ant-menu-item-selected):hover .anticon,
+#sider .ant-menu-item:last-child:not(.ant-menu-item-selected):hover .anticon,
+#sider-drawer .ant-menu-item:last-child:not(.ant-menu-item-selected):hover .anticon {
+    color: #ef4444 !important;
+}
+
 .panel-theme-control {
     flex: 0 0 auto;
     margin-top: auto;
-    padding-top: 8px;
+    padding-top: 10px;
     border-top: 1px solid var(--ui-border);
 }
 
@@ -343,33 +544,56 @@ body {
     box-shadow: none;
 }
 
-/* Shared surfaces */
+/* Shared surfaces & Modern Glassmorphic Cards */
 #content-layout .ant-card,
 #content-layout .ant-tabs {
     color: var(--ui-text);
-    border: 1px solid var(--ui-border);
-    border-radius: var(--ui-radius);
-    background: var(--ui-surface);
-    box-shadow: var(--ui-shadow-sm);
-}
-
-#content-layout .ant-card {
+    border: 1px solid var(--ui-border) !important;
+    border-radius: var(--ui-radius-lg) !important;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 250, 252, 0.96) 100%) !important;
+    box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.04), inset 0 1px 0 0 rgba(255, 255, 255, 0.7) !important;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
     overflow: hidden;
 }
 
 #content-layout .ant-card-hoverable:hover {
-    border-color: var(--ui-border-strong);
-    box-shadow: var(--ui-shadow);
+    transform: translateY(-2px);
+    border-color: var(--ui-primary) !important;
+    box-shadow: 0 8px 24px -4px rgba(37, 99, 235, 0.12), 0 0 0 1px var(--ui-primary) !important;
+}
+
+.dark #content-layout .ant-card,
+.dark #content-layout .ant-tabs {
+    background: linear-gradient(135deg, rgba(21, 28, 40, 0.85) 0%, rgba(13, 19, 31, 0.9) 100%) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.35), inset 0 1px 0 0 rgba(255, 255, 255, 0.08) !important;
+}
+
+.dark #content-layout .ant-card-hoverable:hover {
+    border-color: var(--ui-primary) !important;
+    box-shadow: 0 8px 28px -4px rgba(0, 0, 0, 0.45), 0 0 0 1px var(--ui-primary) !important;
+}
+
+html[data-theme="ultra-dark"] #content-layout .ant-card,
+html[data-theme="ultra-dark"] #content-layout .ant-tabs {
+    background: #09090b !important;
+    border-color: #222222 !important;
+    box-shadow: none !important;
+}
+
+html[data-theme="ultra-dark"] #content-layout .ant-card-hoverable:hover {
+    border-color: var(--ui-primary) !important;
+    box-shadow: 0 0 0 1px var(--ui-primary) !important;
 }
 
 #sider,
 .drawer-handle,
-.ant-card,
 .ant-btn,
 .ant-input,
 .ant-input-number,
 .ant-select-selection,
-.ant-modal-content,
 .ant-drawer-content,
 .ant-dropdown-menu,
 .ant-select-dropdown,
@@ -404,6 +628,25 @@ body {
     margin-top: 16px;
 }
 
+/* Ensure vertical space containers and direct children stretch 100% full width */
+#content-layout .ant-space-vertical,
+.ant-space-vertical {
+    display: flex !important;
+    width: 100% !important;
+}
+
+#content-layout .ant-space-vertical > .ant-space-item,
+.ant-space-vertical > .ant-space-item {
+    width: 100% !important;
+    min-width: 0 !important;
+}
+
+#content-layout .ant-tabs,
+#content-layout .ant-collapse,
+#content-layout .ant-card {
+    width: 100% !important;
+}
+
 .ant-divider-horizontal {
     border-top-color: var(--ui-border);
 }
@@ -429,12 +672,66 @@ body {
 }
 
 .ant-collapse {
-    border-radius: var(--ui-radius-sm);
-    background: var(--ui-surface-muted);
+    border-radius: var(--ui-radius) !important;
+    background: var(--ui-surface);
+    border: 1px solid var(--ui-border);
+    backdrop-filter: blur(10px);
+    overflow: hidden;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .ant-collapse-content {
     background: var(--ui-surface);
+    border-top: 1px solid var(--ui-border) !important;
+}
+
+/* Page Stats Cards (Inbounds, Clients) */
+.page-stats-card {
+    margin-bottom: 14px !important;
+}
+
+.page-stats-card .ant-card-body {
+    padding: 14px 20px !important;
+}
+
+.stats-items-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 24px;
+    line-height: 1.6;
+}
+
+.stats-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ui-text);
+}
+
+.stats-item .anticon {
+    font-size: 15px;
+    color: var(--ui-primary);
+}
+
+.stats-item .ant-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin: 0 !important;
+    padding: 2px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 9999px;
+    line-height: 1.5;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.stats-item .ant-tag:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
 }
 
 /* Save/restart toolbars use explicit flex alignment instead of Ant Space's
@@ -949,6 +1246,50 @@ a:focus-visible {
     overflow: hidden !important;
     margin-top: 10px;
     margin-bottom: 10px;
+}
+
+/* Tab panes collapse panels stretch edge-to-edge seamlessly */
+#content-layout .ant-tabs-tabpane:not(.xray-table-pane):not(.xray-advanced-pane) > .ant-collapse {
+    border: none !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+#content-layout .ant-tabs-tabpane:not(.xray-table-pane):not(.xray-advanced-pane) > .ant-collapse > .ant-collapse-item {
+    border-radius: 0 !important;
+    border-top: none !important;
+    border-left: none !important;
+    border-right: none !important;
+    border-bottom: 1px solid var(--ui-border) !important;
+}
+
+#content-layout .ant-tabs-tabpane:not(.xray-table-pane):not(.xray-advanced-pane) > .ant-collapse > .ant-collapse-item:last-child {
+    border-bottom: none !important;
+}
+
+#content-layout .ant-tabs-tabpane:not(.xray-table-pane):not(.xray-advanced-pane) > .ant-collapse > .ant-collapse-item > .ant-collapse-header {
+    border-radius: 0 !important;
+    padding: 14px 20px 14px 42px !important;
+    padding-inline-start: 42px !important;
+    padding-inline-end: 20px !important;
+    font-weight: 600;
+    transition: background 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+#content-layout .ant-tabs-tabpane:not(.xray-table-pane):not(.xray-advanced-pane) > .ant-collapse > .ant-collapse-item > .ant-collapse-header:hover,
+#content-layout .ant-tabs-tabpane:not(.xray-table-pane):not(.xray-advanced-pane) > .ant-collapse > .ant-collapse-item-active > .ant-collapse-header {
+    background: var(--ui-surface-hover);
+}
+
+#content-layout .ant-tabs-tabpane:not(.xray-table-pane):not(.xray-advanced-pane) > .ant-collapse > .ant-collapse-item > .ant-collapse-content {
+    border-radius: 0 !important;
+    border-top: 1px solid var(--ui-border) !important;
+    border-bottom: none !important;
+    border-left: none !important;
+    border-right: none !important;
+    background: var(--ui-surface-muted);
 }
 
 .ant-collapse>.ant-collapse-item {
@@ -1566,8 +1907,41 @@ li.ant-calendar-time-picker-select-option-selected {
     border-radius: var(--ui-radius-sm) !important;
 }
 
+/* Modern Glassmorphic Modals */
+.ant-modal-mask {
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    background-color: rgba(0, 0, 0, 0.45);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dark .ant-modal-mask,
+#app.dark ~ .ant-modal-root .ant-modal-mask {
+    background-color: rgba(0, 0, 0, 0.65);
+}
+
 .ant-modal-content {
     overflow: hidden;
+    border-radius: var(--ui-radius-lg) !important;
+    border: 1px solid var(--ui-border) !important;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.96) 0%, rgba(248, 250, 252, 0.98) 100%) !important;
+    box-shadow: 0 20px 48px -8px rgba(0, 0, 0, 0.16), 0 4px 16px -2px rgba(0, 0, 0, 0.08), inset 0 1px 0 0 rgba(255, 255, 255, 0.9) !important;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dark .ant-modal-content,
+#app.dark .ant-modal-content {
+    background: linear-gradient(135deg, rgba(24, 32, 47, 0.95) 0%, rgba(15, 23, 38, 0.98) 100%) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    box-shadow: 0 24px 64px -8px rgba(0, 0, 0, 0.7), 0 4px 20px -2px rgba(0, 0, 0, 0.4), inset 0 1px 0 0 rgba(255, 255, 255, 0.1) !important;
+}
+
+html[data-theme="ultra-dark"] .ant-modal-content {
+    background: #0d0d10 !important;
+    border-color: #27272a !important;
+    box-shadow: 0 24px 64px -8px rgba(0, 0, 0, 0.85) !important;
 }
 
 .panel-modal .ant-modal {
@@ -1717,9 +2091,9 @@ li.ant-calendar-time-picker-select-option-selected {
 
 .ant-modal-header,
 .ant-drawer-header {
-    padding: 17px 22px;
-    border-color: var(--ui-border);
-    border-radius: var(--ui-radius) var(--ui-radius) 0 0;
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--ui-border);
+    border-radius: var(--ui-radius-lg) var(--ui-radius-lg) 0 0;
     background: var(--ui-surface-muted);
 }
 
@@ -1727,16 +2101,28 @@ li.ant-calendar-time-picker-select-option-selected {
 .ant-drawer-title,
 .ant-popover-title {
     color: var(--ui-text);
-    font-weight: 650;
+    font-weight: 700;
+    font-size: 15.5px;
+    letter-spacing: -0.2px;
 }
 
 .ant-modal-close {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 54px;
-    height: 54px;
+    top: 14px;
+    right: 14px;
+    inset-inline-end: 14px;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     color: var(--ui-text-muted);
+}
+
+.ant-modal-close:hover {
+    background: var(--ui-surface-hover);
+    color: var(--ui-text);
 }
 
 .ant-modal-close-x {
@@ -1791,8 +2177,9 @@ li.ant-calendar-time-picker-select-option-selected {
     align-items: center;
     justify-content: flex-end;
     gap: 10px;
-    padding: 14px 22px;
-    border-color: var(--ui-border);
+    padding: 14px 24px;
+    border-top: 1px solid var(--ui-border);
+    border-radius: 0 0 var(--ui-radius-lg) var(--ui-radius-lg);
     background: var(--ui-surface-muted);
 }
 

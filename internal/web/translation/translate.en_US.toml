@@ -252,6 +252,7 @@ importInbound = "Import an Inbound"
 reordered = "Reordered Successfully"
 autoRefresh = "Auto Refresh"
 autoRefreshInterval = "Interval"
+refresh = "Refresh"
 
 useSystemCA = "Use System CA"
 useSystemCADesc = "Use operating system root certificates instead of Xray-core's built-in RootCAs"
