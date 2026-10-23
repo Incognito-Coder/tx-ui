@@ -8,6 +8,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [v0.9.4] - 2026-10-23
 
 ### 🚀 Features & Enhancements
+- **AmneziaWG Protocol Support (AWG 3.1)**:
+  - **Native Runner & Kernel Integration**: Added full support for AmneziaWG (AWG 3.1) inbounds and outbounds alongside WireGuard.
+  - **DPI-Resistant Obfuscation**: Implemented configurable handshake obfuscation parameters (`jc`, `jmin`, `jmax`, `s1`, `s2`, `s3`, `s4`, `h1`, `h2`, `h3`, `h4`) designed to evade Deep Packet Inspection (DPI) while preserving high wire-speed performance.
+  - **Downloadable Client Configurations**: Built one-click `.conf` file download generator creating complete `[Interface]` and `[Peer]` configuration profiles with custom DNS, MTU, client private keys, server public keys, and obfuscation parameters.
+  - **Mobile & Desktop Share Links**: Added support for standard `vpn://` (AmneziaWG format) and `wireguard://` share links, client QR codes, and clipboard export.
+
+- **MTProto Proxy Integration with FakeTLS (`mtg`)**:
+  - **Integrated `mtg` Sidecar**: Embedded process supervisor for `mtg-multi` (v1.16.0) across all Linux architectures (amd64, arm64, armv7, armv6, armv5, 386, s390x) and Darwin with automatic lifecycle and process monitoring.
+  - **FakeTLS Domain Camouflage**: Built generator and validator for FakeTLS secrets (`ee...` / `dd...` + 32-hex secret + hex-encoded domain) enabling Telegram traffic to masquerade as standard TLS traffic to camouflage hosts (e.g., Cloudflare).
+  - **One-Click Telegram Connection Links**: Direct `tg://proxy` and `t.me/proxy` link generation, interactive QR codes, and clipboard actions for seamless mobile integration.
+  - **Multi-Tenant User Accounting**: Support for multiple Telegram clients under a single inbound with independent credentials, email identifiers, and status tracking.
+
+- **External Proxy Endpoint Application Across Client Configs & URIs**:
+  - **Dynamic Ingress Endpoint Overrides**: Extended `streamSettings.externalProxy` (`dest`, `port`, `remark`, `forceTls`, `clientTlsSettings`) to override client connection endpoints without changing local server listening ports.
+  - **WireGuard & AmneziaWG `.conf` Export**: Configured external proxy host and port are automatically populated as `Endpoint = dest:port` in generated client `.conf` downloads, QR codes, and `vpn://` / `wireguard://` links.
+  - **Telegram Proxy Share Links**: Applied external proxy host and port to `tg://proxy?server=dest&port=port&secret=...` links across frontend modals (`inbound_info_modal.html`, `qrcode_modal.html`, `clients.html`) and backend subscription services (`subService.go`, `subJsonService.go`).
+  - **Automated Unit Testing**: Created comprehensive test suite in `internal/sub/sub_external_proxy_test.go` verifying endpoint overrides for AmneziaWG, WireGuard, and MTProto subscriptions and config downloads.
+
+- **Curve25519 Cryptographic Keypair Architecture**:
+  - **RFC 7748 Standard Clamping**: Implemented native `GenerateWireguardKeypair()`, `DerivePublicKey()`, and `GenerateWireguardPSK()` in `internal/util/wireguard/wireguard.go`.
+  - **Client Credential Decoupling**: Fixed client private key generation for AmneziaWG and WireGuard to ensure standard 32-byte Base64-encoded Curve25519 keys are always produced, resolving issues where Trojan password strings were previously reused.
+  - **Automatic Public Key Derivation**: Automatically calculates and validates the Curve25519 public key from the private key if omitted during client creation or update.
+
 - **Finalmask Obfuscation & Stream-Masking System Overhaul**:
   - **Modular Reusable Templates**: Created `stream_finalmask_fields.html` consolidating shared mask components (`xdnsDomains`, `noiseFields`, `fragmentFields`, `sudokuFields`, `filterFields`, `udpHopFields`, `headerCustomTcp`, `headerCustomUdp`).
   - **Inbound & Outbound Parity**: Unified `stream_finalmask.html`, `stream_settings.html`, and `outbound.html` with support for all mask types across TCP and UDP (including `filter` IP ACLs, `realm`, and QUIC parameters for `masque` and `hysteria`).

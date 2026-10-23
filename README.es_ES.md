@@ -306,17 +306,20 @@ Nuestra plataforma ofrece compatibilidad con una amplia gama de arquitecturas y 
 
 ## Características
 
+- **Soporte de Protocolo AmneziaWG (AWG 3.1)**: Integración nativa con el kernel y el ejecutable, parámetros de ofuscación de paquetes basura anti-DPI (`jc`, `jmin`, `jmax`, `s1`-`s4`, `h1`-`h4`), generación de pares de claves Curve25519 según RFC 7748, descarga de perfiles `.conf` en un clic y enlaces compartidos `vpn://` / `wireguard://`.
+- **Proxy MTProto con FakeTLS**: Supervisor sidecar nativo `mtg` multiusuario, generador automatizado de secretos FakeTLS con camuflaje de dominio (`ee...`/`dd...`), enlaces directos para Telegram (`tg://proxy`, `t.me/proxy`) y códigos QR.
+- **Soporte de External Proxy para Configuración y Enlaces**: Aplicación directa del host y puerto de proxy externo en archivos `.conf` de WireGuard/AmneziaWG (`Endpoint = dest:port`), enlaces `vpn://` / `wireguard://` y enlaces de Telegram `tg://proxy`.
 - **Documentación REST API Interactiva en el Panel (`/panel/docs`)**: Explora, busca, copia rutas y consulta fragmentos de código interactivos en cURL, Python y Node.js directamente dentro del panel web.
 - **Reversión Automática y Manual del Estado de Configuración**: Verificación previa de configuración, detección instantánea de caídas del núcleo y recuperación automática a `config.json.last_working` para evitar interrupciones del servicio.
 - **Núcleo Xray Actualizado (v26.10.21)**: Soporte completo para filtrado de IP de origen Finalmask (`allowedSourceIPs`/`blockedSourceIPs`), eliminación automática de filtros en enlaces de suscripción, mejoras de transporte XDRIVE y suites de cifrado TLS ampliadas.
-- **Generación y Persistencia Aislada de Credenciales por Protocolo**: Contraseñas dedicadas para Trojan, Shadowsocks 2022 (generación estricta de claves Base64 de 16/32 bytes y autocorrección), MASQUE e Hysteria.
+- **Generación y Persistencia Aislada de Credenciales por Protocolo**: Contraseñas dedicadas y claves para Trojan, Shadowsocks 2022 (generación estricta de claves Base64 de 16/32 bytes y autocorrección), MASQUE, Hysteria, MTProto y WireGuard/AmneziaWG.
 - **Gestión de Dispositivos Conectados**: Rastreo y administración de dispositivos conectados por cliente (IP, aplicación, SO, última conexión) con limpieza de historial.
 - **Salud y Mantenimiento de Base de Datos SQLite**: Diagnóstico en panel, truncado de WAL, optimización PRAGMA, desfragmentación VACUUM y limpieza de registros huérfanos.
 - Forzar la instalación del panel mediante HTTPS
 - Monitoreo del Estado del Sistema (CPU, memoria, swap, disco, sockets TCP/UDP y tráfico en vivo)
 - Búsqueda y filtrado dentro de todas las reglas de entrada y clientes
 - Tema Oscuro, Ultra Dark y Claro
-- Soporta multiusuario y multiprotocolo: VMess, VLESS, Trojan, Shadowsocks, MASQUE, Hysteria, Dokodemo-door, Socks, HTTP, WireGuard
+- Soporta multiusuario y multiprotocolo: VMess, VLESS, Trojan, Shadowsocks, WireGuard, AmneziaWG (AWG 3.1), MTProto (FakeTLS), MASQUE, Hysteria, Dokodemo-door, Socks, HTTP
 - Soporta Protocolos nativos XTLS: RPRX-Direct, Vision, REALITY
 - Estadísticas de tráfico, límite de tráfico, límite de tiempo de vencimiento
 - Plantillas de configuración de Xray personalizables
@@ -494,7 +497,7 @@ administradores del bot. (Puedes ingresar más de uno, solo sepáralos con ,)
 |:------:|------|--------|
 | `GET`  | `"/list"` | Obtener todos los clientes con detalles y enlaces de entrada |
 | `GET`  | `"/get/:id"` | Obtener cliente por ID |
-| `POST` | `"/create"` | Crear nuevo cliente con contraseñas por protocolo (`password`, `ssPassword`, `masquePass`, `auth`) |
+| `POST` | `"/create"` | Crear nuevo cliente con credenciales por protocolo (`password`, `ssPassword`, `masquePass`, `auth`, `secret`, `privateKey`, `publicKey`, `preSharedKey`) |
 | `POST` | `"/bulkCreate"` | Generación masiva de clientes |
 | `POST` | `"/update/:id"` | Actualizar configuración de cliente |
 | `POST` | `"/del/:id"` | Eliminar cliente |

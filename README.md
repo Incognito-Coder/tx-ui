@@ -311,17 +311,20 @@ computing environments. The following are key architectures that we support:
 
 ## Features
 
+- **AmneziaWG Protocol Support (AWG 3.1)**: Native runner and kernel integration, configurable DPI-resistant junk packet obfuscation (`jc`, `jmin`, `jmax`, `s1`-`s4`, `h1`-`h4`), RFC 7748 Curve25519 keypair generation, one-click `.conf` client configuration download, and mobile share links (`vpn://`, `wireguard://`).
+- **MTProto Proxy with FakeTLS**: Native `mtg` multi-tenant sidecar runner, automated FakeTLS secret generation with domain camouflage (`ee...`/`dd...`), direct Telegram connection links (`tg://proxy`, `t.me/proxy`), and QR codes.
+- **External Proxy Endpoint Overrides**: Configurable ingress host and port applied across WireGuard/AmneziaWG `.conf` files, `vpn://` / `wireguard://` share links, and Telegram `tg://proxy` URIs.
 - **Interactive In-Panel API Documentation (`/panel/docs`)**: Explore, search, copy endpoints, and view live cURL and code snippets directly inside the web UI.
 - **Automatic & Manual Config State Rollback**: Pre-flight verification, instant core exit detection, and automatic recovery to `config.json.last_working` preventing service disruptions.
 - **Updated Xray Core (v26.10.21)**: Full support for Finalmask Source IP ACL filtering (`allowedSourceIPs`/`blockedSourceIPs`), automatic filter stripping from share links, XDRIVE transport enhancements, and extended TLS cipher suites.
-- **Protocol-Separated Client Credentials**: Dedicated, isolated password generation and persistence for Trojan, Shadowsocks 2022 (strict 16/32-byte Base64 key generator & auto-repair), MASQUE, and Hysteria.
+- **Protocol-Separated Client Credentials**: Dedicated, isolated password generation and persistence for Trojan, Shadowsocks 2022 (strict 16/32-byte Base64 key generator & auto-repair), MASQUE, Hysteria, MTProto, and WireGuard/AmneziaWG.
 - **Connected Devices Management**: Track and manage connected devices (IP, client app, OS, user-agent, last seen) per client with history clearing.
 - **Database Health & Maintenance**: In-panel SQLite diagnostics, WAL truncation, PRAGMA optimization, vacuum, and orphaned row cleanup.
 - **Force HTTPS installation of panel**
 - **System Status Monitoring** (CPU, RAM, swap, disk, TCP/UDP sockets, live traffic)
 - **Search and filter** within all inbounds and clients
 - **Dark, Ultra Dark, and Light themes**
-- **Supports multi-user and multi-protocol**: VMess, VLESS, Trojan, Shadowsocks, MASQUE, Hysteria, Dokodemo-door, Socks, HTTP, WireGuard
+- **Supports multi-user and multi-protocol**: VMess, VLESS, Trojan, Shadowsocks, WireGuard, AmneziaWG (AWG 3.1), MTProto (FakeTLS), MASQUE, Hysteria, Dokodemo-door, Socks, HTTP
 - **Supports XTLS native protocols**: RPRX-Direct, Vision, REALITY
 - **Traffic statistics, traffic limit, expiration time limit**
 - **Customizable Xray configuration templates**
@@ -491,7 +494,7 @@ than one, Just separate them with ,)
 |:------:|------|--------|
 | `GET`  | `"/list"` | Get all clients with details & inbound links |
 | `GET`  | `"/get/:id"` | Get single client by ID |
-| `POST` | `"/create"` | Create a new client with protocol passwords (`password`, `ssPassword`, `masquePass`, `auth`) |
+| `POST` | `"/create"` | Create a new client with protocol credentials (`password`, `ssPassword`, `masquePass`, `auth`, `secret`, `privateKey`, `publicKey`, `preSharedKey`) |
 | `POST` | `"/bulkCreate"` | Bulk generate clients |
 | `POST` | `"/update/:id"` | Update client configuration |
 | `POST` | `"/del/:id"` | Delete client |

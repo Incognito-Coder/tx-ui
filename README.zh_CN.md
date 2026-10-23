@@ -300,17 +300,20 @@ location /sub {
 
 ## Features
 
+- **支持 AmneziaWG (AWG 3.1) 协议**：原生内核与运行时集成、可配置抗深度包检测 (DPI) 垃圾包混淆 (`jc`, `jmin`, `jmax`, `s1`-`s4`, `h1`-`h4`)、RFC 7748 Curve25519 密钥对生成、一键导出 `.conf` 客户端配置文件及 `vpn://` / `wireguard://` 分享链接与二维码。
+- **集成 FakeTLS 的 MTProto 代理**：原生集成 `mtg` 多租户边车进程管理器、自动化 FakeTLS 域名伪装密钥生成 (`ee...`/`dd...`)、一键生成 Telegram 专属直连链接 (`tg://proxy`, `t.me/proxy`) 及二维码。
+- **External Proxy 外部接入端点覆盖**：支持在 WireGuard/AmneziaWG `.conf` 配置文件 (`Endpoint = dest:port`)、`vpn://` / `wireguard://` 链接与 Telegram `tg://proxy` 链接中直接应用外部代理域名与端口。
 - **内置交互式面板 API 文档 (`/panel/docs`)**：在网页端直接浏览、检索端点、一键复制路径并查看实时 cURL 与多语言调用示例。
 - **配置状态自动与手动回滚**：前置配置测试验证、核心即时退出崩溃监控，发生异常时自动降级恢复至 `config.json.last_working` 确保服务不中断。
 - **最新 Xray-core 核心 (v26.10.21)**：完整支持 Finalmask 源 IP ACL 过滤 (`allowedSourceIPs`/`blockedSourceIPs`)、客户端分享链接自动剔除服务器端过滤、XDRIVE 传输增强与扩展 TLS 密码套件。
-- **协议密码完全独立生成与保存**：针对 Trojan、Shadowsocks 2022（严格自动修正 16/32 字节 Base64 密钥与防错）、MASQUE 及 Hysteria 提供独立密码字段与持久化。
+- **协议密码与密钥完全独立生成与保存**：针对 Trojan、Shadowsocks 2022（严格自动修正 16/32 字节 Base64 密钥与防错）、MASQUE、Hysteria、MTProto 及 WireGuard/AmneziaWG 提供独立的凭据生成与持久化存储。
 - **已连接设备跟踪与管理**：记录每个客户端的活跃连接设备（IP、客户端软件、操作系统及最后活跃时间），支持一键清理。
 - **数据库健康诊断与维护**：面板内置 SQLite 状态体检、WAL 截断、PRAGMA 优化、空间释放 (VACUUM) 与孤立破损记录清理。
-- 强制使用 HTTPS 安装与访问面板
-- 系统状态监控（CPU、内存、Swap、磁盘、网络实时吞吐量与连接数）
-- 在所有入站和客户端中搜索与筛选
-- 深色、极黑 (Ultra Dark) 与浅色主题
-- 支持多用户和多协议：VMess、VLESS、Trojan、Shadowsocks、MASQUE、Hysteria、Dokodemo-door、Socks、HTTP、WireGuard
+- **强制使用 HTTPS 安装与访问面板**
+- **系统状态监控**（CPU、内存、Swap、磁盘、网络实时吞吐量与连接数）
+- **在所有入站和客户端中搜索与筛选**
+- **深色、极黑 (Ultra Dark) 与浅色主题**
+- **支持多用户和多协议**：VMess、VLESS、Trojan、Shadowsocks、WireGuard、AmneziaWG (AWG 3.1)、MTProto (FakeTLS)、MASQUE、Hysteria、Dokodemo-door、Socks、HTTP
 - 支持 XTLS 原生协议：RPRX-Direct、Vision、REALITY
 - 流量统计、流量配额限制、过期时间限制
 - 可自定义的 Xray 配置模板
@@ -504,7 +507,7 @@ Web 面板通过 Telegram Bot 支持每日流量、面板登录、数据库备�
 |:---:|------|-----|
 | `GET` | `"/list"` | 获取所有客户端及其流量统计、过期时间与入站绑定信息 |
 | `GET` | `"/get/:id"` | 根据唯一 ID 获取指定客户端配置 |
-| `POST` | `"/create"` | 新建客户端并可指定协议密码 (`password`, `ssPassword`, `masquePass`, `auth`) |
+| `POST` | `"/create"` | 新建客户端并指定专属协议凭据 (`password`, `ssPassword`, `masquePass`, `auth`, `secret`, `privateKey`, `publicKey`, `preSharedKey`) |
 | `POST` | `"/bulkCreate"` | 批量生成客户端 |
 | `POST` | `"/update/:id"` | 更新客户端配置与配额 |
 | `POST` | `"/del/:id"` | 删除客户端 |

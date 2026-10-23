@@ -127,7 +127,15 @@ Retrieve all clients with traffic, status, and linked inbound details.
         "subId": "sub_random123",
         "uuid": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
         "password": "secret_password",
+        "ssPassword": "base64_shadowsocks_key",
+        "masquePass": "masque_password",
         "auth": "auth_token",
+        "secret": "ee000000000000000000000000000000017777772e636c6f7564666c6172652e636f6d",
+        "adTag": "",
+        "privateKey": "base64_curve25519_client_private_key",
+        "publicKey": "base64_curve25519_client_public_key",
+        "preSharedKey": "base64_preshared_key",
+        "forwardedPorts": "51820",
         "flow": "xtls-rprx-vision",
         "totalGB": 107374182400,
         "expiryTime": 1775000000000,
@@ -175,6 +183,11 @@ Create a new client identity and optionally link it to inbounds.
     "ssPassword": "base64_shadowsocks_key",
     "masquePass": "masque_password",
     "auth": "hysteria_auth",
+    "secret": "ee000000000000000000000000000000017777772e636c6f7564666c6172652e636f6d",
+    "privateKey": "base64_curve25519_client_private_key",
+    "publicKey": "base64_curve25519_client_public_key",
+    "preSharedKey": "base64_preshared_key",
+    "forwardedPorts": "",
     "flow": "xtls-rprx-vision",
     "totalGB": 53687091200,
     "expiryTime": 0,
@@ -187,7 +200,7 @@ Create a new client identity and optionally link it to inbounds.
   }
   ```
   *(Note: `totalGB` is passed in bytes. E.g., `50 * 1024 * 1024 * 1024 = 53687091200` for 50 GB. Set `0` for unlimited).*
-  *(Credential details: `password` is used for Trojan inbounds; `ssPassword` is a strict 16- or 32-byte Base64 key for Shadowsocks 2022; `masquePass` is used for MASQUE inbounds; `auth` is used for Hysteria).*
+  *(Credential details: `password` is used for Trojan inbounds; `ssPassword` is a strict 16- or 32-byte Base64 key for Shadowsocks 2022; `masquePass` is used for MASQUE inbounds; `auth` is used for Hysteria; `secret` is a 16-byte hex secret starting with `ee` or `dd` + domain hex for MTProto proxy; `privateKey`, `publicKey`, and `preSharedKey` are Base64-encoded Curve25519 keys for WireGuard and AmneziaWG inbounds).*
 
 ### 2.4 Bulk Create Clients
 Generate multiple clients at once and link them to designated inbounds.
@@ -206,6 +219,10 @@ Generate multiple clients at once and link them to designated inbounds.
         "ssPassword": "base64_shadowsocks_key",
         "masquePass": "masque_password",
         "auth": "hysteria_auth",
+        "secret": "ee000000000000000000000000000000017777772e636c6f7564666c6172652e636f6d",
+        "privateKey": "base64_curve25519_client_private_key",
+        "publicKey": "base64_curve25519_client_public_key",
+        "preSharedKey": "base64_preshared_key",
         "flow": "",
         "totalGB": 21474836480,
         "expiryTime": 0,
@@ -224,7 +241,7 @@ Update an existing client's settings.
 - **Path:** `/panel/api/clients/update/:id`
 - **Parameters:**
   - `id` (`integer`, path): Client ID.
-- **Request Body:** Same fields as create (e.g. `email`, `password`, `ssPassword`, `masquePass`, `auth`, `totalGB`, `expiryTime`, `enable`, `limitIp`, `comment`, `inboundIds`).
+- **Request Body:** Same fields as create (e.g. `email`, `password`, `ssPassword`, `masquePass`, `auth`, `secret`, `privateKey`, `publicKey`, `preSharedKey`, `totalGB`, `expiryTime`, `enable`, `limitIp`, `comment`, `inboundIds`).
 
 ### 2.6 Delete Client
 Permanently delete a client and its associated links.
@@ -284,6 +301,7 @@ Enable or disable a client.
 
 Manage listening ports, protocols, and stream configurations.
 - **Base Route:** `/panel/api/inbounds`
+- **Supported Protocols:** `vless`, `vmess`, `trojan`, `shadowsocks`, `dokodemo-door`, `socks`, `http`, `wireguard`, `hysteria`, `masque`, `amneziawg`, `mtproto`.
 
 ### 3.1 List Inbounds
 Retrieve all configured inbounds.
@@ -303,7 +321,7 @@ Create a new proxy inbound.
 
 - **Method:** `POST`
 - **Path:** `/panel/api/inbounds/add`
-- **Request Body:**
+- **Request Body (General Example - VLESS Reality):**
   ```json
   {
     "enable": true,
@@ -313,10 +331,91 @@ Create a new proxy inbound.
     "protocol": "vless",
     "expiryTime": 0,
     "settings": "{\"clients\":[],\"decryption\":\"none\",\"fallbacks\":[]}",
-    "streamSettings": "{\"network\":\"tcp\",\"security\":\"reality\",\"realitySettings\":{...}}",
+    "streamSettings": "{\"network\":\"tcp\",\"security\":\"reality\",\"realitySettings\":{}}",
     "sniffing": "{\"enabled\":true,\"destOverride\":[\"http\",\"tls\",\"quic\"]}"
   }
   ```
+
+#### 3.3.1 AmneziaWG Inbound (`amneziawg`)
+AmneziaWG inbounds implement the native AWG 3.1 protocol with configurable junk packet obfuscation and Curve25519 keypairs.
+
+- **`protocol`:** `"amneziawg"`
+- **`settings` JSON structure:**
+  ```json
+  {
+    "server": {
+      "listenPort": 51820,
+      "privateKey": "base64_server_curve25519_private_key",
+      "publicKey": "base64_server_curve25519_public_key",
+      "primaryDns": "1.1.1.1",
+      "secondaryDns": "8.8.8.8",
+      "mtu": 1420,
+      "jc": 4,
+      "jmin": 40,
+      "jmax": 70,
+      "s1": 20,
+      "s2": 40,
+      "s3": 60,
+      "s4": 80,
+      "h1": 1,
+      "h2": 2,
+      "h3": 3,
+      "h4": 4
+    },
+    "peers": [
+      {
+        "publicKey": "base64_client_public_key",
+        "presharedKey": "base64_preshared_key",
+        "allowedIPs": ["10.0.0.2/32"]
+      }
+    ]
+  }
+  ```
+  *(Note: Obfuscation parameters `jc` (junk packet count), `jmin`/`jmax` (junk packet sizes), `s1`-`s4` (init/response response junk sizes), and `h1`-`h4` (custom message headers) protect handshakes against deep packet inspection. Client `.conf` files and `vpn://` / `wireguard://` share links automatically include these settings).*
+
+#### 3.3.2 MTProto Inbound (`mtproto`)
+MTProto inbounds run via the high-performance `mtg` sidecar runner with FakeTLS domain camouflage.
+
+- **`protocol`:** `"mtproto"`
+- **`settings` JSON structure:**
+  ```json
+  {
+    "clients": [
+      {
+        "email": "telegram_user@example.com",
+        "secret": "ee000000000000000000000000000000017777772e636c6f7564666c6172652e636f6d"
+      }
+    ]
+  }
+  ```
+  *(Note: The `secret` format is a 32-character hexadecimal string prefixed with `ee` or `dd` for FakeTLS and suffixed with the hex-encoded camouflage domain, e.g. `www.cloudflare.com`. Generates direct Telegram `tg://proxy` and `t.me/proxy` share links).*
+
+#### 3.3.3 External Proxy Settings (`streamSettings.externalProxy`)
+Configure custom ingress endpoints, CDNs, or reverse proxies to override the connection target distributed to clients without altering the local listening binding.
+
+- **`streamSettings` JSON structure:**
+  ```json
+  {
+    "network": "tcp",
+    "security": "none",
+    "externalProxy": {
+      "dest": "cdn.yourdomain.com",
+      "port": 443,
+      "remark": "Cloudflare / CDN Relay",
+      "forceTls": "same",
+      "clientTlsSettings": {
+        "serverName": "cdn.yourdomain.com",
+        "allowInsecure": false,
+        "fingerprint": "chrome",
+        "alpn": ["h2", "http/1.1"]
+      }
+    }
+  }
+  ```
+- **Endpoint Application:**
+  - **WireGuard & AmneziaWG:** Automatically written to the generated `.conf` configuration files under `[Peer]` as `Endpoint = dest:port` and used in `vpn://` / `wireguard://` links and QR codes.
+  - **MTProto:** Telegram proxy links (`tg://proxy?server=dest&port=port&secret=...`) connect to the external proxy endpoint.
+  - **VLESS / VMess / Trojan / Shadowsocks / MASQUE / Hysteria:** Share links and JSON subscription outbounds route clients to `dest:port` with optional TLS overrides.
 
 ### 3.4 Update Inbound
 Update an existing inbound configuration.

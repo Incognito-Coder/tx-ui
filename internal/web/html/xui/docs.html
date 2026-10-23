@@ -1213,6 +1213,10 @@
                         ssPassword: "base64_shadowsocks_key",
                         masquePass: "masque_password",
                         auth: "hysteria_auth",
+                        secret: "ee000000000000000000000000000000017777772e636c6f7564666c6172652e636f6d",
+                        privateKey: "base64_curve25519_client_private_key",
+                        publicKey: "base64_curve25519_client_public_key",
+                        preSharedKey: "base64_preshared_key",
                         flow: "xtls-rprx-vision",
                         totalGB: 53687091200,
                         expiryTime: 0,
@@ -1250,7 +1254,7 @@
             method: "POST",
             path: "/panel/api/clients/create",
             summary: "Create new client with protocol-specific credentials",
-            description: "Generates a new client identity. Pass totalGB in bytes (0 = unlimited). Dedicated password fields support Trojan (password), Shadowsocks 2022 (ssPassword Base64 key), MASQUE (masquePass), and Hysteria (auth).",
+            description: "Generates a new client identity. Pass totalGB in bytes (0 = unlimited). Dedicated credential fields support Trojan (password), Shadowsocks 2022 (ssPassword Base64 key), MASQUE (masquePass), Hysteria (auth), MTProto (secret), and WireGuard/AmneziaWG (privateKey, publicKey, preSharedKey).",
             requestBody: {
                 email: "newuser@example.com",
                 subId: "custom_sub_id",
@@ -1259,6 +1263,10 @@
                 ssPassword: "base64_shadowsocks_key",
                 masquePass: "masque_password",
                 auth: "hysteria_auth",
+                secret: "ee000000000000000000000000000000017777772e636c6f7564666c6172652e636f6d",
+                privateKey: "base64_curve25519_client_private_key",
+                publicKey: "base64_curve25519_client_public_key",
+                preSharedKey: "base64_preshared_key",
                 flow: "xtls-rprx-vision",
                 totalGB: 53687091200,
                 expiryTime: 0,
@@ -1287,6 +1295,10 @@
                         uuid: "auto_or_custom_uuid",
                         password: "trojan_password",
                         ssPassword: "base64_ss_key",
+                        secret: "ee000000000000000000000000000000017777772e636c6f7564666c6172652e636f6d",
+                        privateKey: "base64_curve25519_client_private_key",
+                        publicKey: "base64_curve25519_client_public_key",
+                        preSharedKey: "base64_preshared_key",
                         totalGB: 21474836480,
                         expiryTime: 0,
                         enable: true
@@ -1305,7 +1317,7 @@
             method: "POST",
             path: "/panel/api/clients/update/:id",
             summary: "Update existing client configuration",
-            description: "Modifies parameters such as email, quotas, expiration, IP limits, protocol passwords, and inbound links.",
+            description: "Modifies parameters such as email, quotas, expiration, IP limits, protocol passwords/keys, and inbound links.",
             params: [
                 { name: "id", type: "integer", in: "path", required: true, description: "Client ID to update" }
             ],
@@ -1314,6 +1326,10 @@
                 password: "new_trojan_password",
                 ssPassword: "new_base64_shadowsocks_key",
                 masquePass: "new_masque_password",
+                secret: "new_mtproto_secret",
+                privateKey: "new_curve25519_private_key",
+                publicKey: "new_curve25519_public_key",
+                preSharedKey: "new_preshared_key",
                 totalGB: 107374182400,
                 expiryTime: 0,
                 limitIp: 3,
@@ -1438,7 +1454,7 @@
             method: "GET",
             path: "/panel/api/inbounds/list",
             summary: "List all inbounds",
-            description: "Returns all listening inbounds, protocols (VLESS, VMess, Trojan, Shadowsocks, MASQUE, Hysteria), ports, stream settings, and sniffing rules.",
+            description: "Returns all listening inbounds, protocols (VLESS, VMess, Trojan, Shadowsocks, WireGuard, AmneziaWG, MTProto, MASQUE, Hysteria), ports, stream settings, and sniffing rules.",
             response: {
                 success: true,
                 obj: [
@@ -1476,7 +1492,7 @@
             method: "POST",
             path: "/panel/api/inbounds/add",
             summary: "Create proxy inbound",
-            description: "Creates and binds a new proxy port with specific protocol, streamSettings, and TLS/Reality parameters.",
+            description: "Creates and binds a new proxy port with specific protocol (VLESS, VMess, Trojan, Shadowsocks, WireGuard, AmneziaWG, MTProto, MASQUE, Hysteria), streamSettings, TLS/Reality parameters, and externalProxy endpoint overrides.",
             requestBody: {
                 enable: true,
                 remark: "VLESS-Reality",
@@ -1484,7 +1500,7 @@
                 port: 443,
                 protocol: "vless",
                 settings: "{\"clients\":[],\"decryption\":\"none\",\"fallbacks\":[]}",
-                streamSettings: "{\"network\":\"tcp\",\"security\":\"reality\",\"realitySettings\":{}}",
+                streamSettings: "{\"network\":\"tcp\",\"security\":\"reality\",\"realitySettings\":{},\"externalProxy\":{\"dest\":\"proxy.domain.com\",\"port\":443,\"forceTls\":\"same\"}}",
                 sniffing: "{\"enabled\":true,\"destOverride\":[\"http\",\"tls\",\"quic\"]}"
             },
             response: {
