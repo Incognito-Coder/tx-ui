@@ -3046,7 +3046,7 @@ Inbound.ClientBase = class extends XrayCommonClass {
         totalGB = 0,
         expiryTime = 0,
         enable = true,
-        tgId = '',
+        tgId = 0,
         subId = RandomUtil.randomLowerAndNum(16),
         comment = '',
         reset = 0
@@ -3097,7 +3097,7 @@ Inbound.ClientBase = class extends XrayCommonClass {
             json.totalGB,
             json.expiryTime,
             json.enable,
-            json.tgId,
+            json.tgId ?? 0,
             json.subId,
             json.comment,
             json.reset
@@ -3105,13 +3105,15 @@ Inbound.ClientBase = class extends XrayCommonClass {
     }
 
     _clientBaseToJson() {
+        const tgId = Number(this.tgId);
         return {
             email: this.email,
             limitIp: this.limitIp,
             totalGB: this.totalGB,
             expiryTime: this.expiryTime,
             enable: this.enable,
-            tgId: this.tgId,
+            // Go stores tgId as int64; keep empty input fields numeric in JSON.
+            tgId: Number.isFinite(tgId) ? tgId : 0,
             subId: this.subId,
             comment: this.comment,
             reset: this.reset
