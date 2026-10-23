@@ -165,13 +165,14 @@ func (s *SubJsonService) getConfig(inbound *model.Inbound, client model.Client, 
 		if !ok {
 			continue
 		}
-		if dest, ok := extPrxy["dest"].(string); ok {
-			inbound.Listen = dest
+		inboundCopy := *inbound
+		if dest, ok := extPrxy["dest"].(string); ok && strings.TrimSpace(dest) != "" {
+			inboundCopy.Listen = strings.TrimSpace(dest)
 		}
-		if port, ok := extPrxy["port"].(float64); ok {
-			inbound.Port = int(port)
-		} else if portInt, ok := extPrxy["port"].(int); ok {
-			inbound.Port = portInt
+		if port, ok := extPrxy["port"].(float64); ok && port > 0 {
+			inboundCopy.Port = int(port)
+		} else if portInt, ok := extPrxy["port"].(int); ok && portInt > 0 {
+			inboundCopy.Port = portInt
 		}
 		newStream := make(map[string]interface{}, len(stream))
 		for k, v := range stream {
@@ -206,12 +207,12 @@ func (s *SubJsonService) getConfig(inbound *model.Inbound, client model.Client, 
 
 		var newOutbounds []json_util.RawMessage
 
-		switch inbound.Protocol {
+		switch inboundCopy.Protocol {
 		case "vmess":
-			newOutbounds = append(newOutbounds, s.genVnext(inbound, streamSettings, client, ""))
+			newOutbounds = append(newOutbounds, s.genVnext(&inboundCopy, streamSettings, client, ""))
 		case "vless":
 			var vlessSettings model.VLESSSettings
-			_ = json.Unmarshal([]byte(inbound.Settings), &vlessSettings)
+			_ = json.Unmarshal([]byte(inboundCopy.Settings), &vlessSettings)
 
 			enc := vlessSettings.Encryption
 			if (enc == "" || enc == "none") && vlessSettings.Decryption != "" && vlessSettings.Decryption != "none" {
@@ -219,15 +220,17 @@ func (s *SubJsonService) getConfig(inbound *model.Inbound, client model.Client, 
 			}
 
 			newOutbounds = append(newOutbounds,
-				s.genVnext(inbound, streamSettings, client, enc))
+				s.genVnext(&inboundCopy, streamSettings, client, enc))
 		case "trojan", "shadowsocks":
-			newOutbounds = append(newOutbounds, s.genServer(inbound, streamSettings, client))
+			newOutbounds = append(newOutbounds, s.genServer(&inboundCopy, streamSettings, client))
 		case "hysteria":
-			newOutbounds = append(newOutbounds, s.genHy(inbound, newStream, client))
+			newOutbounds = append(newOutbounds, s.genHy(&inboundCopy, newStream, client))
 		case "wireguard":
-			newOutbounds = append(newOutbounds, s.genWireguard(inbound, client))
+			newOutbounds = append(newOutbounds, s.genWireguard(&inboundCopy, client))
 		case "masque":
-			newOutbounds = append(newOutbounds, s.genMasque(inbound, newStream, client))
+			newOutbounds = append(newOutbounds, s.genMasque(&inboundCopy, newStream, client))
+		case "amneziawg", "mtproto":
+			continue
 		}
 
 		newOutbounds = append(newOutbounds, s.defaultOutbounds...)

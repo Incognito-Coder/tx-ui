@@ -123,9 +123,23 @@
     {{template "form/masque"}}
 </template>
 
+<!-- mtproto -->
+<template v-if="inbound.protocol === Protocols.MTPROTO">
+    {{template "form/mtproto"}}
+</template>
+
+<!-- amneziawg -->
+<template v-if="inbound.protocol === Protocols.AMNEZIAWG">
+    {{template "form/amneziawg"}}
+</template>
+
 <!-- stream settings -->
 <template v-if="inbound.canEnableStream()">
     {{template "form/streamSettings"}}
+</template>
+
+<!-- external proxy -->
+<template v-if="inbound.canEnableExternalProxy()">
     {{template "form/externalProxy" }}
 </template>
 

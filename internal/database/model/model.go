@@ -1,8 +1,12 @@
 package model
 
 import (
+	"crypto/rand"
+	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"x-ui/internal/util/json_util"
 	"x-ui/xray"
@@ -21,6 +25,8 @@ const (
 	WireGuard   Protocol = "wireguard"
 	Hysteria    Protocol = "hysteria"
 	Masque      Protocol = "masque"
+	MTProto     Protocol = "mtproto"
+	AmneziaWG   Protocol = "amneziawg"
 )
 
 type User struct {
@@ -281,18 +287,29 @@ type Client struct {
 	PublicKey  string         `json:"publicKey,omitempty"`  // WireGuard Public Key
 	PrivateKey string         `json:"privateKey,omitempty"` // WireGuard Private Key
 	AllowedIPs []string       `json:"allowedIPs,omitempty"` // WireGuard Allowed IPs
-	Psk        string         `json:"psk,omitempty"`        // WireGuard Preshared Key
-	KeepAlive  int            `json:"keepAlive,omitempty"`  // WireGuard KeepAlive
-	Reverse    *ClientReverse `json:"reverse" omitEmpty:"true"`
-	Email      string         `json:"email"`
-	LimitIP    int            `json:"limitIp"`
-	TotalGB    int64          `json:"totalGB" form:"totalGB"`
-	ExpiryTime int64          `json:"expiryTime" form:"expiryTime"`
-	Enable     bool           `json:"enable" form:"enable"`
-	TgID       int64          `json:"tgId" form:"tgId"`
-	SubID      string         `json:"subId" form:"subId"`
-	Comment    string         `json:"comment" form:"comment"`
-	Reset      int            `json:"reset" form:"reset"`
+	Psk            string         `json:"psk,omitempty"`        // WireGuard Preshared Key
+	PreSharedKey   string         `json:"preSharedKey,omitempty"` // WireGuard / AmneziaWG Preshared Key
+	ForwardedPorts string         `json:"forwardedPorts,omitempty"` // AmneziaWG forwarded ports
+	Secret         string         `json:"secret,omitempty"`     // MTProto FakeTLS secret
+	AdTag          string         `json:"adTag,omitempty"`      // MTProto AdTag
+	KeepAlive      int            `json:"keepAlive,omitempty"`  // WireGuard KeepAlive
+	Reverse        *ClientReverse `json:"reverse" omitEmpty:"true"`
+	Email          string         `json:"email"`
+	LimitIP        int            `json:"limitIp"`
+	TotalGB        int64          `json:"totalGB" form:"totalGB"`
+	ExpiryTime     int64          `json:"expiryTime" form:"expiryTime"`
+	Enable         bool           `json:"enable" form:"enable"`
+	TgID           int64          `json:"tgId" form:"tgId"`
+	SubID          string         `json:"subId" form:"subId"`
+	Comment        string         `json:"comment" form:"comment"`
+	Reset          int            `json:"reset" form:"reset"`
+}
+
+func (c *Client) KeepAliveSeconds() int {
+	if c == nil {
+		return 0
+	}
+	return c.KeepAlive
 }
 
 type VLESSSettings struct {
@@ -304,15 +321,21 @@ type VLESSSettings struct {
 
 // NodeClient is the shared, protocol-agnostic client identity.
 type NodeClient struct {
-	Id         int    `json:"id"         form:"id"         gorm:"primaryKey;autoIncrement"`
-	Email      string `json:"email"      form:"email"      gorm:"uniqueIndex"`
-	SubID      string `json:"subId"      form:"subId"      gorm:"uniqueIndex"`
-	UUID       string `json:"uuid"       form:"uuid"       gorm:"column:uuid"` // for vmess/vless
-	Password   string `json:"password"   form:"password"`                      // for trojan
-	SSPassword string `json:"ssPassword" form:"ssPassword"`                    // for shadowsocks
-	MasquePass string `json:"masquePass" form:"masquePass"`                    // for masque
-	Auth       string `json:"auth"       form:"auth"`                          // for hysteria
-	Security   string `json:"security"   form:"security"`
+	Id             int    `json:"id"             form:"id"             gorm:"primaryKey;autoIncrement"`
+	Email          string `json:"email"          form:"email"          gorm:"uniqueIndex"`
+	SubID          string `json:"subId"          form:"subId"          gorm:"uniqueIndex"`
+	UUID           string `json:"uuid"           form:"uuid"           gorm:"column:uuid"` // for vmess/vless
+	Password       string `json:"password"       form:"password"`                          // for trojan
+	SSPassword     string `json:"ssPassword"     form:"ssPassword"`                        // for shadowsocks
+	MasquePass     string `json:"masquePass"     form:"masquePass"`                        // for masque
+	Auth           string `json:"auth"           form:"auth"`                              // for hysteria
+	Secret         string `json:"secret"         form:"secret"`                            // for mtproto
+	AdTag          string `json:"adTag"          form:"adTag"`                             // for mtproto
+	PreSharedKey   string `json:"preSharedKey"   form:"preSharedKey"`                      // for wireguard/amneziawg
+	PublicKey      string `json:"publicKey"      form:"publicKey"`                         // for wireguard/amneziawg
+	PrivateKey     string `json:"privateKey"     form:"privateKey"`                        // for wireguard/amneziawg
+	ForwardedPorts string `json:"forwardedPorts" form:"forwardedPorts"`                   // for amneziawg
+	Security       string `json:"security"       form:"security"`
 	Flow       string `json:"flow"       form:"flow"` // global flow default; per-link override wins
 	TotalGB    int64  `json:"totalGB"    form:"totalGB"`
 	ExpiryTime int64  `json:"expiryTime" form:"expiryTime"`
@@ -354,5 +377,184 @@ type ClientDevice struct {
 	IP           string `json:"ip"`
 	LastSeen     int64  `json:"lastSeen"`
 	CreatedAt    int64  `json:"createdAt"`
+}
+
+// GenerateFakeTLSSecret builds an MTProto FakeTLS secret for the given domain:
+// the "ee" FakeTLS marker, 16 random bytes, then the domain encoded as hex.
+func GenerateFakeTLSSecret(domain string) string {
+	if domain == "" {
+		domain = "google.com"
+	}
+	return "ee" + mtprotoRandomMiddle() + hex.EncodeToString([]byte(domain))
+}
+
+// IsValidMtprotoSecret reports whether secret is a well-formed FakeTLS MTProto secret.
+// FakeTLS secrets begin with "ee" (or "dd") followed by at least 16 hex bytes and domain hex,
+// or represent a base64-encoded secret of sufficient length. Trojan/alphanumeric passwords return false.
+func IsValidMtprotoSecret(secret string) bool {
+	secret = strings.TrimSpace(secret)
+	if secret == "" {
+		return false
+	}
+	if strings.HasPrefix(secret, "ee") || strings.HasPrefix(secret, "dd") {
+		if len(secret) < 34 {
+			return false
+		}
+		_, err := hex.DecodeString(secret)
+		return err == nil
+	}
+	if len(secret) >= 22 {
+		if b, err := base64.StdEncoding.DecodeString(secret); err == nil && len(b) >= 17 {
+			return true
+		}
+		if b, err := base64.RawStdEncoding.DecodeString(secret); err == nil && len(b) >= 17 {
+			return true
+		}
+	}
+	return false
+}
+
+// EnsureMtprotoSecret guarantees a valid FakeTLS secret is returned. If the provided
+// secret is not a valid FakeTLS secret (such as a Trojan password or arbitrary text),
+// a fresh valid FakeTLS secret is generated.
+func EnsureMtprotoSecret(secret string, domain string) string {
+	if IsValidMtprotoSecret(secret) {
+		return strings.TrimSpace(secret)
+	}
+	return GenerateFakeTLSSecret(domain)
+}
+
+func mtprotoRandomMiddle() string {
+	buf := make([]byte, 16)
+	if _, err := rand.Read(buf); err != nil {
+		panic(fmt.Errorf("mtproto: crypto/rand read failed: %w", err))
+	}
+	return hex.EncodeToString(buf)
+}
+
+func mtprotoSecretMiddle(secret string) string {
+	s := secret
+	if strings.HasPrefix(s, "ee") || strings.HasPrefix(s, "dd") {
+		s = s[2:]
+	}
+	if len(s) >= 32 {
+		mid := s[:32]
+		if _, err := hex.DecodeString(mid); err == nil {
+			return mid
+		}
+	}
+	return mtprotoRandomMiddle()
+}
+
+// ValidMtprotoAdTag reports whether a Telegram advertising tag from
+// @MTProxybot is well-formed: exactly 16 bytes as 32 hex characters.
+func ValidMtprotoAdTag(tag string) bool {
+	if len(tag) != 32 {
+		return false
+	}
+	_, err := hex.DecodeString(tag)
+	return err == nil
+}
+
+// StripMtprotoInboundSecret removes the vestigial inbound-level `secret` from an
+// mtproto inbound's settings JSON.
+func StripMtprotoInboundSecret(settings string) (string, bool) {
+	if settings == "" {
+		return settings, false
+	}
+	var parsed map[string]any
+	if err := json.Unmarshal([]byte(settings), &parsed); err != nil {
+		return settings, false
+	}
+	if _, ok := parsed["secret"]; !ok {
+		return settings, false
+	}
+	delete(parsed, "secret")
+	out, err := json.MarshalIndent(parsed, "", "  ")
+	if err != nil {
+		return settings, false
+	}
+	return string(out), true
+}
+
+// StripMtprotoInboundAdTag drops the dead inbound-level `adTag`.
+func StripMtprotoInboundAdTag(settings string) (string, bool) {
+	if settings == "" {
+		return settings, false
+	}
+	var parsed map[string]any
+	if err := json.Unmarshal([]byte(settings), &parsed); err != nil {
+		return settings, false
+	}
+	if _, ok := parsed["adTag"]; !ok {
+		return settings, false
+	}
+	delete(parsed, "adTag")
+	out, err := json.MarshalIndent(parsed, "", "  ")
+	if err != nil {
+		return settings, false
+	}
+	return string(out), true
+}
+
+func mtprotoSecretDomain(secret string) string {
+	s := secret
+	if strings.HasPrefix(s, "ee") || strings.HasPrefix(s, "dd") {
+		s = s[2:]
+	}
+	if len(s) <= 32 {
+		return ""
+	}
+	decoded, err := hex.DecodeString(s[32:])
+	if err != nil || len(decoded) == 0 {
+		return ""
+	}
+	return string(decoded)
+}
+
+// HealMtprotoClientSecrets normalises every client's FakeTLS secret in an
+// mtproto inbound's settings JSON.
+func HealMtprotoClientSecrets(settings string) (string, bool) {
+	if settings == "" {
+		return settings, false
+	}
+	var parsed map[string]any
+	if err := json.Unmarshal([]byte(settings), &parsed); err != nil {
+		return settings, false
+	}
+	clients, ok := parsed["clients"].([]any)
+	if !ok || len(clients) == 0 {
+		return settings, false
+	}
+	defaultDomain, _ := parsed["fakeTlsDomain"].(string)
+	defaultDomain = strings.TrimSpace(defaultDomain)
+	changed := false
+	for _, raw := range clients {
+		client, ok := raw.(map[string]any)
+		if !ok {
+			continue
+		}
+		secret, _ := client["secret"].(string)
+		domain := mtprotoSecretDomain(secret)
+		if domain == "" {
+			domain = defaultDomain
+		}
+		if domain == "" {
+			continue
+		}
+		expected := "ee" + mtprotoSecretMiddle(secret) + hex.EncodeToString([]byte(domain))
+		if secret != expected {
+			client["secret"] = expected
+			changed = true
+		}
+	}
+	if !changed {
+		return settings, false
+	}
+	out, err := json.MarshalIndent(parsed, "", "  ")
+	if err != nil {
+		return settings, false
+	}
+	return string(out), true
 }
 

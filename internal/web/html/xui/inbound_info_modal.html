@@ -97,7 +97,7 @@
                 </table>
             </template>
         </a-col>
-        <template v-if="dbInbound.hasLink() && !dbInbound.isWireguard">
+        <template v-if="dbInbound.hasLink() && !dbInbound.isWireguard && !dbInbound.isAmneziaWG">
             {{ i18n "security" }}
             <a-tag :color="inbound.stream.security == 'none' ? 'red' : 'green'">[[ inbound.stream.security ]]</a-tag>
             <br/>
@@ -119,23 +119,23 @@
                 <a-tag color="orange" v-else>{{ i18n "none" }}</a-tag>
             </template>
         </template>
-        <template v-if="dbInbound.isWireguard">
+        <template v-if="dbInbound.isWireguard || dbInbound.isAmneziaWG">
             <table style="margin-bottom: 10px;">
-                <tr v-if="inbound.settings.pubKey">
+                <tr v-if="(inbound.settings && inbound.settings.pubKey) || (inbound.settings && inbound.settings.server && inbound.settings.server.publicKey)">
                     <td>Public Key</td>
                     <td>
-                        <a-tooltip :title="inbound.settings.pubKey">
-                            <a-tag class="info-large-tag">[[ inbound.settings.pubKey ]]</a-tag>
+                        <a-tooltip :title="inbound.settings.pubKey || (inbound.settings.server && inbound.settings.server.publicKey)">
+                            <a-tag class="info-large-tag">[[ inbound.settings.pubKey || (inbound.settings.server && inbound.settings.server.publicKey) ]]</a-tag>
                         </a-tooltip>
                     </td>
                 </tr>
                 <tr>
                     <td>MTU</td>
-                    <td><a-tag color="blue">[[ inbound.settings.mtu || 1420 ]]</a-tag></td>
+                    <td><a-tag color="blue">[[ (inbound.settings && (inbound.settings.mtu || (inbound.settings.server && inbound.settings.server.mtu))) || 1420 ]]</a-tag></td>
                 </tr>
-                <tr v-if="inbound.settings.address">
+                <tr v-if="(inbound.settings && inbound.settings.address) || (inbound.settings && inbound.settings.server && inbound.settings.server.subnetIp)">
                     <td>Interface Address</td>
-                    <td><a-tag color="green">[[ Array.isArray(inbound.settings.address) ? inbound.settings.address.join(', ') : inbound.settings.address ]]</a-tag></td>
+                    <td><a-tag color="green">[[ inbound.settings.address ? (Array.isArray(inbound.settings.address) ? inbound.settings.address.join(', ') : inbound.settings.address) : (inbound.settings.server.subnetIp + '/' + (inbound.settings.server.subnetCidr || 24)) ]]</a-tag></td>
                 </tr>
             </table>
         </template>
@@ -173,7 +173,7 @@
                         <a-tag color="red">{{ i18n "none" }}</a-tag>
                     </td>
                 </tr>
-                <template v-if="!dbInbound.isWireguard">
+                <template v-if="!dbInbound.isWireguard && !dbInbound.isAmneziaWG">
                     <tr v-if="infoModal.clientSettings.id">
                         <td>ID</td>
                         <td>
@@ -208,6 +208,22 @@
                         <td>
                             <a-tooltip :title="infoModal.clientSettings.auth">
                                 <a-tag class="info-large-tag">[[ infoModal.clientSettings.auth ]]</a-tag>
+                            </a-tooltip>
+                        </td>
+                    </tr>
+                    <tr v-if="infoModal.clientSettings.secret">
+                        <td>Secret</td>
+                        <td>
+                            <a-tooltip :title="infoModal.clientSettings.secret">
+                                <a-tag class="info-large-tag">[[ infoModal.clientSettings.secret ]]</a-tag>
+                            </a-tooltip>
+                        </td>
+                    </tr>
+                    <tr v-if="infoModal.clientSettings.adTag">
+                        <td>Ad Tag</td>
+                        <td>
+                            <a-tooltip :title="infoModal.clientSettings.adTag">
+                                <a-tag class="info-large-tag">[[ infoModal.clientSettings.adTag ]]</a-tag>
                             </a-tooltip>
                         </td>
                     </tr>
@@ -375,19 +391,19 @@
                 </tr-info-row>
             </template>
             <template v-if="dbInbound.hasLink()">
-                <a-divider>[[ dbInbound.isWireguard ? 'WireGuard Configuration' : 'URL' ]]</a-divider>
+                <a-divider>[[ (dbInbound.isWireguard || dbInbound.isAmneziaWG) ? (dbInbound.isAmneziaWG ? 'AmneziaWG Configuration' : 'WireGuard Configuration') : 'URL' ]]</a-divider>
                 <tr-info-row class="tr-info-row" v-for="(item,index) in infoModal.links">
                     <tr-info-title class="tr-info-title">
                         <a-tag class="tr-info-tag" color="green">[[ item.remark || ('Peer ' + (index + 1)) ]]</a-tag>
                         <a-tooltip title='{{ i18n "copy" }}'>
-                            <a-button :id="'copy-url-link-'+index" @click="copyToClipboard('copy-url-link-'+index, getLinkString(item))" icon="snippets" size="small"
+                            <a-button :id="'copy-url-link-'+index" @click="copyToClipboard('copy-url-link-'+index, (dbInbound.isWireguard || dbInbound.isAmneziaWG) ? getConfString(item) : getLinkString(item))" icon="snippets" size="small"
                                       style="min-width: 24px;"></a-button>
                         </a-tooltip>
-                        <a-tooltip title='{{ i18n "download" }}' v-if="dbInbound.isWireguard">
-                            <a-button :style="{ minWidth: '24px' }" @click="FileManager.downloadTextFile(getLinkString(item), (item.remark || 'wireguard') + '.conf')" icon="download" size="small"></a-button>
+                        <a-tooltip title='{{ i18n "download" }}' v-if="dbInbound.isWireguard || dbInbound.isAmneziaWG">
+                            <a-button :style="{ minWidth: '24px' }" @click="FileManager.downloadTextFile(getConfString(item), (item.remark || (dbInbound.isAmneziaWG ? 'amneziawg' : 'wireguard')) + '.conf')" icon="download" size="small"></a-button>
                         </a-tooltip>
                     </tr-info-title>
-                    <template v-if="dbInbound.isWireguard">
+                    <template v-if="dbInbound.isWireguard || dbInbound.isAmneziaWG">
                         <div style="margin-top: 6px;" v-if="item.url">
                             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
                                 <span style="font-size: 12px; color: var(--ui-text-muted); font-weight: 600;">Share URL</span>
@@ -398,8 +414,13 @@
                             <code>[[ item.url ]]</code>
                         </div>
                         <div style="margin-top: 8px;">
-                            <div style="font-size: 12px; color: var(--ui-text-muted); font-weight: 600; margin-bottom: 4px;">Configuration (.conf)</div>
-                            <div class="client-table-odd-row" style="border-radius: 7px; padding: 0.75rem; font-family: monospace; white-space: pre-wrap; word-break: break-all;">[[ getLinkString(item) ]]</div>
+                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                                <span style="font-size: 12px; color: var(--ui-text-muted); font-weight: 600;">Configuration (.conf)</span>
+                                <a-tooltip title='{{ i18n "download" }}'>
+                                    <a-button :style="{ minWidth: '24px' }" @click="FileManager.downloadTextFile(getConfString(item), (item.remark || (dbInbound.isAmneziaWG ? 'amneziawg' : 'wireguard')) + '.conf')" icon="download" size="small"></a-button>
+                                </a-tooltip>
+                            </div>
+                            <div class="client-table-odd-row" style="border-radius: 7px; padding: 0.75rem; font-family: monospace; white-space: pre-wrap; word-break: break-all;">[[ getConfString(item) ]]</div>
                         </div>
                     </template>
                     <template v-else>
@@ -545,11 +566,11 @@
                     this.clientIps = ips;
                 });
             }
-            if (this.inbound.protocol == Protocols.WIREGUARD) {
+            if ([Protocols.WIREGUARD, Protocols.AMNEZIAWG, Protocols.MTPROTO].includes(this.inbound.protocol)) {
                 if (this.clientSettings) {
                     this.links = this.inbound.genAllLinks(this.dbInbound.remark, app.remarkModel, this.clientSettings);
                 } else {
-                    const clients = this.inbound.clients || [];
+                    const clients = (this.inbound.clients && this.inbound.clients.length > 0) ? this.inbound.clients : (this.inbound.settings?.peers || []);
                     this.links = [];
                     clients.forEach((c, index) => {
                         this.inbound.genAllLinks(this.dbInbound.remark, app.remarkModel, c).forEach(l => {
@@ -609,6 +630,29 @@
                 if (!item) return '';
                 if (typeof item === 'string') return item;
                 if (typeof item === 'object' && typeof item.link === 'string') return item.link;
+                return '';
+            },
+            getConfString(item) {
+                if (!item) return '';
+                if (typeof item === 'string') {
+                    if (item.startsWith('vpn://')) {
+                        try {
+                            const raw = item.slice(6).split('#')[0];
+                            return atob(raw.replace(/-/g, '+').replace(/_/g, '/'));
+                        } catch (e) {}
+                    }
+                    return item;
+                }
+                if (item.conf) return item.conf;
+                if (typeof item.link === 'string') {
+                    if (item.link.startsWith('vpn://')) {
+                        try {
+                            const raw = item.link.slice(6).split('#')[0];
+                            return atob(raw.replace(/-/g, '+').replace(/_/g, '/'));
+                        } catch (e) {}
+                    }
+                    return item.link;
+                }
                 return '';
             },
             copyToClipboard(elementId, content) {

@@ -442,13 +442,20 @@ install_x-ui() {
 
     # Check the system's architecture and rename the file accordingly
     if [[ $(arch) == "armv5" || $(arch) == "armv6" || $(arch) == "armv7" ]]; then
-        mv bin/xray-linux-$(arch) bin/xray-linux-arm
-        chmod +x bin/xray-linux-arm
+        mv bin/xray-linux-$(arch) bin/xray-linux-arm 2>/dev/null || true
+        chmod +x bin/xray-linux-arm 2>/dev/null || true
+        mv bin/mtg-linux-$(arch) bin/mtg-linux-arm 2>/dev/null || true
+        chmod +x bin/mtg-linux-arm 2>/dev/null || true
     fi
 
     if [[ -f bin/xray-linux-$(arch) ]]; then
         chmod +x bin/xray-linux-$(arch)
     fi
+
+    if [[ -f bin/mtg-linux-$(arch) ]]; then
+        chmod +x bin/mtg-linux-$(arch)
+    fi
+    chmod +x bin/mtg* 2>/dev/null || true
 
     cp -f x-ui.service /etc/systemd/system/
     wget --no-check-certificate -O /usr/bin/x-ui https://raw.githubusercontent.com/Incognito-Coder/tx-ui/main/x-ui.sh

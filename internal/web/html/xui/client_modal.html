@@ -70,6 +70,10 @@
                     return client.auth;
                 case Protocols.MASQUE:
                     return client.auth || client.password || client.email || client.id;
+                case Protocols.MTPROTO:
+                    return client.secret || client.email || client.password || client.id;
+                case Protocols.AMNEZIAWG:
+                    return client.publicKey || client.email || client.id;
                 default:
                     return client.id;
             }
@@ -107,6 +111,14 @@
                     return newClient;
                 case Protocols.MASQUE:
                     newClient = new Inbound.MasqueSettings.Masque();
+                    clients.push(newClient);
+                    return newClient;
+                case Protocols.MTPROTO:
+                    newClient = new Inbound.MtprotoSettings.Client();
+                    clients.push(newClient);
+                    return newClient;
+                case Protocols.AMNEZIAWG:
+                    newClient = new Inbound.AmneziawgSettings.Client();
                     clients.push(newClient);
                     return newClient;
                 default:

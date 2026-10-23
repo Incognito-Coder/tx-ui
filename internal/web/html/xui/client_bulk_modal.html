@@ -233,6 +233,10 @@
                     return new Inbound.WireguardSettings.Peer();
                 case Protocols.MASQUE:
                     return new Inbound.MasqueSettings.Masque();
+                case Protocols.MTPROTO:
+                    return new Inbound.MtprotoSettings.Client();
+                case Protocols.AMNEZIAWG:
+                    return new Inbound.AmneziawgSettings.Client();
                 default:
                     return null;
             }

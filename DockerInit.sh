@@ -55,4 +55,21 @@ wget -q -O geoip_IR.dat https://github.com/chocolate4u/Iran-v2ray-rules/releases
 wget -q -O geosite_IR.dat https://github.com/chocolate4u/Iran-v2ray-rules/releases/latest/download/geosite.dat
 wget -q -O geoip_RU.dat https://github.com/runetfreedom/russia-v2ray-rules-dat/releases/latest/download/geoip.dat
 wget -q -O geosite_RU.dat https://github.com/runetfreedom/russia-v2ray-rules-dat/releases/latest/download/geosite.dat
+MTG_ARCH="${FNAME}"
+if [ "${FNAME}" = "arm" ]; then
+    MTG_ARCH="armv7"
+fi
+MTG_TAR="mtg-multi-1.16.0-linux-${MTG_ARCH}.tar.gz"
+if wget -q "https://github.com/mhsanaei/mtg-multi/releases/download/v1.16.0/${MTG_TAR}" -O "${MTG_TAR}" 2>/dev/null; then
+    tar -xzf "${MTG_TAR}" 2>/dev/null || true
+    rm -f "${MTG_TAR}"
+    if [ -f "mtg-multi-1.16.0-linux-${MTG_ARCH}/mtg-multi" ]; then
+        mv "mtg-multi-1.16.0-linux-${MTG_ARCH}/mtg-multi" "mtg-linux-${FNAME}"
+        chmod +x "mtg-linux-${FNAME}"
+        rm -rf "mtg-multi-1.16.0-linux-${MTG_ARCH}"
+    elif [ -f mtg ]; then
+        mv mtg "mtg-linux-${FNAME}"
+        chmod +x "mtg-linux-${FNAME}"
+    fi
+fi
 cd ../../

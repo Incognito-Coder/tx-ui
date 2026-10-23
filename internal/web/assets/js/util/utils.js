@@ -264,8 +264,37 @@ class RandomUtil {
         return btoa(binary);
     }
 
-    static randomMasquePassword(len = 16) {
-        return RandomUtil.randomSeq(len);
+    static randomHex(len = 32) {
+        let bytes = new Uint8Array(Math.ceil(len / 2));
+        crypto.getRandomValues(bytes);
+        return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('').slice(0, len);
+    }
+
+    static randomMtprotoSecret(domain = 'google.com') {
+        let bytes = new Uint8Array(16);
+        crypto.getRandomValues(bytes);
+        let hexRandom = Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+        let hexDomain = Array.from(new TextEncoder().encode(domain)).map(b => b.toString(16).padStart(2, '0')).join('');
+        return 'ee' + hexRandom + hexDomain;
+    }
+
+    static isValidMtprotoSecret(secret) {
+        if (!secret || typeof secret !== 'string') return false;
+        secret = secret.trim();
+        if ((secret.startsWith('ee') || secret.startsWith('dd')) && secret.length >= 34) {
+            return /^[0-9a-fA-F]+$/.test(secret);
+        }
+        if (secret.length === 32 && /^[0-9a-fA-F]+$/.test(secret)) {
+            return true;
+        }
+        if (secret.length >= 22) {
+            try {
+                return window.atob(secret).length >= 16;
+            } catch (e) {
+                return false;
+            }
+        }
+        return false;
     }
 }
 
@@ -604,12 +633,24 @@ class Wireguard {
         return bytes;
     }
 
+    static isValidKey(key) {
+        if (!key || typeof key !== 'string') return false;
+        key = key.trim();
+        try {
+            const bytes = this.keyFromBase64(key);
+            return bytes.length === 32;
+        } catch (e) {
+            return false;
+        }
+    }
+
     static generateKeypair(secretKey = '') {
-        var privateKey = secretKey.length > 0 ? this.keyFromBase64(secretKey) : this.generatePrivateKey();
+        const hasValidSecret = this.isValidKey(secretKey);
+        var privateKey = hasValidSecret ? this.keyFromBase64(secretKey.trim()) : this.generatePrivateKey();
         var publicKey = this.generatePublicKey(privateKey);
         return {
             publicKey: this.keyToBase64(publicKey),
-            privateKey: secretKey.length > 0 ? secretKey : this.keyToBase64(privateKey)
+            privateKey: hasValidSecret ? secretKey.trim() : this.keyToBase64(privateKey)
         };
     }
 }

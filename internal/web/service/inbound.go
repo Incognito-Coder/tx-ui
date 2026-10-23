@@ -8,11 +8,14 @@ import (
 	"strings"
 	"time"
 
+	"x-ui/internal/amneziawgnet"
 	"x-ui/internal/database"
 	"x-ui/internal/database/model"
 	"x-ui/internal/logger"
+	"x-ui/internal/mtproto"
 	"x-ui/internal/util/common"
 	"x-ui/internal/util/random"
+	"x-ui/internal/util/wireguard"
 	"x-ui/xray"
 
 	"gorm.io/gorm"
@@ -161,6 +164,21 @@ func (s *InboundService) GetClients(inbound *model.Inbound) ([]model.Client, err
 	return nil, nil
 }
 
+func trafficDisabledEmails(db *gorm.DB, emails []string) (map[string]struct{}, error) {
+	disabled := make(map[string]struct{})
+	if len(emails) == 0 {
+		return disabled, nil
+	}
+	var rows []xray.ClientTraffic
+	if err := db.Model(&xray.ClientTraffic{}).Where("enable = ? AND email IN ?", false, emails).Find(&rows).Error; err != nil {
+		return nil, err
+	}
+	for _, r := range rows {
+		disabled[r.Email] = struct{}{}
+	}
+	return disabled, nil
+}
+
 func (s *InboundService) getAllEmails() ([]string, error) {
 	db := database.GetDB()
 	var emails []string
@@ -263,7 +281,8 @@ func (s *InboundService) AddInbound(inbound *model.Inbound) (*model.Inbound, boo
 	}
 
 	// Secure client ID
-	for _, client := range clients {
+	for i := range clients {
+		client := &clients[i]
 		if inbound.Protocol == "trojan" {
 			if client.Password == "" {
 				return inbound, false, common.NewError("empty client ID")
@@ -277,8 +296,35 @@ func (s *InboundService) AddInbound(inbound *model.Inbound) (*model.Inbound, boo
 				return inbound, false, common.NewError("empty client ID")
 			}
 		} else if inbound.Protocol == "wireguard" {
+			priv, pub, err := wireguard.EnsureWireguardKeypair(client.PrivateKey, client.PublicKey)
+			if err == nil {
+				client.PrivateKey = priv
+				client.PublicKey = pub
+			}
 			if client.PublicKey == "" || client.Email == "" {
 				return inbound, false, common.NewError("empty client ID")
+			}
+		} else if inbound.Protocol == model.AmneziaWG || inbound.Protocol == "amneziawg" {
+			priv, pub, err := wireguard.EnsureWireguardKeypair(client.PrivateKey, client.PublicKey)
+			if err == nil {
+				client.PrivateKey = priv
+				client.PublicKey = pub
+			}
+			if client.PublicKey == "" && client.ID != "" {
+				client.PublicKey = client.ID
+			}
+			if client.ID == "" && client.PublicKey != "" {
+				client.ID = client.PublicKey
+			}
+			if client.PublicKey == "" || client.Email == "" {
+				return inbound, false, common.NewError("empty client ID")
+			}
+		} else if inbound.Protocol == model.MTProto || inbound.Protocol == "mtproto" {
+			client.Secret = model.EnsureMtprotoSecret(client.Secret, "")
+			client.ID = client.Secret
+			client.Password = client.Secret
+			if client.Email == "" {
+				client.Email = random.Seq(8)
 			}
 		} else if inbound.Protocol == "masque" {
 			if client.Password == "" && client.Pass == "" && client.ID == "" {
@@ -336,21 +382,26 @@ func (s *InboundService) AddInbound(inbound *model.Inbound) (*model.Inbound, boo
 
 	needRestart := false
 	if inbound.Enable {
-		s.xrayApi.Init(p.GetAPIPort())
-		inboundJson, err1 := json.MarshalIndent(inbound.GenXrayInboundConfig(), "", "  ")
-		if err1 != nil {
-			logger.Debug("Unable to marshal inbound config:", err1)
-
-		}
-
-		err1 = s.xrayApi.AddInbound(inboundJson)
-		if err1 == nil {
-			logger.Debug("New inbound added by api:", inbound.Tag)
+		if inbound.Protocol == model.MTProto || inbound.Protocol == "mtproto" {
+			s.applyLocalMtproto(inbound.Id)
+		} else if inbound.Protocol == model.AmneziaWG || inbound.Protocol == "amneziawg" {
+			s.applyLocalAmneziaWG(inbound.Id)
 		} else {
-			logger.Debug("Unable to add inbound by api:", err1)
-			needRestart = true
+			s.xrayApi.Init(p.GetAPIPort())
+			inboundJson, err1 := json.MarshalIndent(inbound.GenXrayInboundConfig(), "", "  ")
+			if err1 != nil {
+				logger.Debug("Unable to marshal inbound config:", err1)
+			}
+
+			err1 = s.xrayApi.AddInbound(inboundJson)
+			if err1 == nil {
+				logger.Debug("New inbound added by api:", inbound.Tag)
+			} else {
+				logger.Debug("Unable to add inbound by api:", err1)
+				needRestart = true
+			}
+			s.xrayApi.Close()
 		}
-		s.xrayApi.Close()
 	}
 
 	return inbound, needRestart, err
@@ -395,15 +446,26 @@ func (s *InboundService) DelInbound(id int) (bool, error) {
 		}
 	}
 
-	var tag string
+	inbound, err := s.GetInbound(id)
+	if err != nil {
+		return false, err
+	}
+	clients, err := s.GetClients(inbound)
+	if err != nil {
+		return false, err
+	}
+
 	needRestart := false
-	result := db.Model(model.Inbound{}).Select("tag").Where("id = ? and enable = ?", id, true).First(&tag)
-	if result.Error == nil {
-		if p != nil && p.IsRunning() {
+	if inbound.Enable {
+		if inbound.Protocol == model.MTProto || inbound.Protocol == "mtproto" {
+			mtproto.GetManager().Remove(id)
+		} else if inbound.Protocol == model.AmneziaWG || inbound.Protocol == "amneziawg" {
+			amneziawgnet.GetManager().Remove(id)
+		} else if p != nil && p.IsRunning() {
 			s.xrayApi.Init(p.GetAPIPort())
-			err1 := s.xrayApi.DelInbound(tag)
+			err1 := s.xrayApi.DelInbound(inbound.Tag)
 			if err1 == nil {
-				logger.Debug("Inbound deleted by api:", tag)
+				logger.Debug("Inbound deleted by api:", inbound.Tag)
 			} else {
 				logger.Debug("Unable to delete inbound by api:", err1)
 				needRestart = true
@@ -412,17 +474,6 @@ func (s *InboundService) DelInbound(id int) (bool, error) {
 		} else {
 			needRestart = true
 		}
-	} else {
-		logger.Debug("No enabled inbound founded to removing by api", tag)
-	}
-
-	inbound, err := s.GetInbound(id)
-	if err != nil {
-		return false, err
-	}
-	clients, err := s.GetClients(inbound)
-	if err != nil {
-		return false, err
 	}
 
 	// Fetch all client traffic rows of this inbound before deleting
@@ -520,28 +571,50 @@ func (s *InboundService) UpdateInbound(inbound *model.Inbound) (*model.Inbound, 
 	}
 
 	needRestart := false
-	s.xrayApi.Init(p.GetAPIPort())
-	if s.xrayApi.DelInbound(tag) == nil {
-		logger.Debug("Old inbound deleted by api:", tag)
-	}
-	if inbound.Enable {
-		inboundJson, err2 := json.MarshalIndent(oldInbound.GenXrayInboundConfig(), "", "  ")
-		if err2 != nil {
-			logger.Debug("Unable to marshal updated inbound config:", err2)
-			needRestart = true
+	if oldInbound.Protocol == model.MTProto || oldInbound.Protocol == "mtproto" {
+		if inbound.Enable {
+			s.applyLocalMtproto(oldInbound.Id)
 		} else {
-			err2 = s.xrayApi.AddInbound(inboundJson)
-			if err2 == nil {
-				logger.Debug("Updated inbound added by api:", oldInbound.Tag)
-			} else {
-				logger.Debug("Unable to update inbound by api:", err2)
+			mtproto.GetManager().Remove(oldInbound.Id)
+		}
+	} else if oldInbound.Protocol == model.AmneziaWG || oldInbound.Protocol == "amneziawg" {
+		if inbound.Enable {
+			s.applyLocalAmneziaWG(oldInbound.Id)
+		} else {
+			amneziawgnet.GetManager().Remove(oldInbound.Id)
+		}
+	} else {
+		s.xrayApi.Init(p.GetAPIPort())
+		if s.xrayApi.DelInbound(tag) == nil {
+			logger.Debug("Old inbound deleted by api:", tag)
+		}
+		if inbound.Enable {
+			inboundJson, err2 := json.MarshalIndent(oldInbound.GenXrayInboundConfig(), "", "  ")
+			if err2 != nil {
+				logger.Debug("Unable to marshal updated inbound config:", err2)
 				needRestart = true
+			} else {
+				err2 = s.xrayApi.AddInbound(inboundJson)
+				if err2 == nil {
+					logger.Debug("Updated inbound added by api:", oldInbound.Tag)
+				} else {
+					logger.Debug("Unable to update inbound by api:", err2)
+					needRestart = true
+				}
 			}
 		}
+		s.xrayApi.Close()
 	}
-	s.xrayApi.Close()
 
-	return inbound, needRestart, tx.Save(oldInbound).Error
+	saveErr := tx.Save(oldInbound).Error
+	if saveErr == nil && inbound.Enable {
+		if oldInbound.Protocol == model.MTProto || oldInbound.Protocol == "mtproto" {
+			s.applyLocalMtproto(oldInbound.Id)
+		} else if oldInbound.Protocol == model.AmneziaWG || oldInbound.Protocol == "amneziawg" {
+			s.applyLocalAmneziaWG(oldInbound.Id)
+		}
+	}
+	return inbound, needRestart, saveErr
 }
 
 func (s *InboundService) updateClientTraffics(tx *gorm.DB, oldInbound *model.Inbound, newInbound *model.Inbound) error {
@@ -625,7 +698,8 @@ func (s *InboundService) AddInboundClient(data *model.Inbound) (bool, error) {
 	}
 
 	// Secure client ID
-	for _, client := range clients {
+	for i := range clients {
+		client := &clients[i]
 		if oldInbound.Protocol == "trojan" {
 			if client.Password == "" {
 				return false, common.NewError("empty client ID")
@@ -639,8 +713,35 @@ func (s *InboundService) AddInboundClient(data *model.Inbound) (bool, error) {
 				return false, common.NewError("empty client ID")
 			}
 		} else if oldInbound.Protocol == "wireguard" {
+			priv, pub, err := wireguard.EnsureWireguardKeypair(client.PrivateKey, client.PublicKey)
+			if err == nil {
+				client.PrivateKey = priv
+				client.PublicKey = pub
+			}
 			if client.PublicKey == "" || client.Email == "" {
 				return false, common.NewError("empty client ID")
+			}
+		} else if oldInbound.Protocol == model.AmneziaWG || oldInbound.Protocol == "amneziawg" {
+			priv, pub, err := wireguard.EnsureWireguardKeypair(client.PrivateKey, client.PublicKey)
+			if err == nil {
+				client.PrivateKey = priv
+				client.PublicKey = pub
+			}
+			if client.PublicKey == "" && client.ID != "" {
+				client.PublicKey = client.ID
+			}
+			if client.ID == "" && client.PublicKey != "" {
+				client.ID = client.PublicKey
+			}
+			if client.PublicKey == "" || client.Email == "" {
+				return false, common.NewError("empty client ID")
+			}
+		} else if oldInbound.Protocol == model.MTProto || oldInbound.Protocol == "mtproto" {
+			client.Secret = model.EnsureMtprotoSecret(client.Secret, "")
+			client.ID = client.Secret
+			client.Password = client.Secret
+			if client.Email == "" {
+				client.Email = random.Seq(8)
 			}
 		} else if oldInbound.Protocol == "masque" {
 			if client.Password == "" && client.Pass == "" && client.ID == "" {
@@ -699,7 +800,7 @@ func (s *InboundService) AddInboundClient(data *model.Inbound) (bool, error) {
 	for _, client := range clients {
 		if len(client.Email) > 0 {
 			s.AddClientStat(tx, data.Id, &client)
-			if client.Enable && oldInbound.Protocol != "wireguard" {
+			if client.Enable && oldInbound.Protocol != "wireguard" && oldInbound.Protocol != "amneziawg" && oldInbound.Protocol != "mtproto" && oldInbound.Protocol != model.AmneziaWG && oldInbound.Protocol != model.MTProto {
 				cipher := ""
 				if oldInbound.Protocol == "shadowsocks" {
 					if m, ok := oldSettings["method"].(string); ok {
@@ -723,7 +824,9 @@ func (s *InboundService) AddInboundClient(data *model.Inbound) (bool, error) {
 				}
 			}
 		} else {
-			needRestart = true
+			if oldInbound.Protocol != "amneziawg" && oldInbound.Protocol != "mtproto" && oldInbound.Protocol != model.AmneziaWG && oldInbound.Protocol != model.MTProto {
+				needRestart = true
+			}
 		}
 	}
 	s.xrayApi.Close()
@@ -736,7 +839,15 @@ func (s *InboundService) AddInboundClient(data *model.Inbound) (bool, error) {
 		}
 	}
 
-	return needRestart, tx.Save(oldInbound).Error
+	saveErr := tx.Save(oldInbound).Error
+	if saveErr == nil {
+		if oldInbound.Protocol == model.MTProto || oldInbound.Protocol == "mtproto" {
+			s.applyLocalMtproto(data.Id)
+		} else if oldInbound.Protocol == model.AmneziaWG || oldInbound.Protocol == "amneziawg" {
+			s.applyLocalAmneziaWG(data.Id)
+		}
+	}
+	return needRestart, saveErr
 }
 
 
@@ -749,31 +860,99 @@ func (s *InboundService) ensureNodeClientLinked(tx *gorm.DB, client *model.Clien
 		return nil
 	}
 
+	secret := client.Secret
+	if secret != "" || client.Password != "" {
+		if model.IsValidMtprotoSecret(secret) {
+			secret = strings.TrimSpace(secret)
+		} else if model.IsValidMtprotoSecret(client.Password) {
+			secret = strings.TrimSpace(client.Password)
+		} else if strings.HasPrefix(secret, "ee") || strings.HasPrefix(client.Password, "ee") {
+			secret = model.EnsureMtprotoSecret(secret, "")
+		}
+	}
+	psk := client.PreSharedKey
+	if psk == "" {
+		psk = client.Psk
+	}
+	uuidVal := client.ID
+	if uuidVal == "" && client.PublicKey != "" {
+		uuidVal = client.PublicKey
+	}
+
+	privKey := client.PrivateKey
+	pubKey := client.PublicKey
+	if wireguard.IsValidWireguardKey(privKey) || wireguard.IsValidWireguardKey(pubKey) {
+		priv, pub, err := wireguard.EnsureWireguardKeypair(privKey, pubKey)
+		if err == nil {
+			privKey = priv
+			pubKey = pub
+		}
+	}
+
 	var nc model.NodeClient
 	err := tx.Where("LOWER(email) = LOWER(?)", client.Email).First(&nc).Error
 	if err == gorm.ErrRecordNotFound {
 		// No NodeClient yet — create one from the client data.
 		nc = model.NodeClient{
-			Email:      client.Email,
-			SubID:      client.SubID,
-			UUID:       client.ID,
-			Password:   client.Password,
-			Auth:       client.Auth,
-			Security:   client.Security,
-			Flow:       client.Flow,
-			TotalGB:    client.TotalGB,
-			ExpiryTime: client.ExpiryTime,
-			LimitIP:    client.LimitIP,
-			TgID:       client.TgID,
-			Enable:     client.Enable,
-			Reset:      client.Reset,
-			Comment:    client.Comment,
+			Email:          client.Email,
+			SubID:          client.SubID,
+			UUID:           uuidVal,
+			Password:       client.Password,
+			PublicKey:      pubKey,
+			PrivateKey:     privKey,
+			Auth:           client.Auth,
+			Secret:         secret,
+			AdTag:          client.AdTag,
+			PreSharedKey:   psk,
+			ForwardedPorts: client.ForwardedPorts,
+			Security:       client.Security,
+			Flow:           client.Flow,
+			TotalGB:        client.TotalGB,
+			ExpiryTime:     client.ExpiryTime,
+			LimitIP:        client.LimitIP,
+			TgID:           client.TgID,
+			Enable:         client.Enable,
+			Reset:          client.Reset,
+			Comment:        client.Comment,
 		}
 		if err2 := tx.Create(&nc).Error; err2 != nil {
 			return fmt.Errorf("creating NodeClient: %w", err2)
 		}
 	} else if err != nil {
 		return fmt.Errorf("querying NodeClient: %w", err)
+	} else {
+		updated := false
+		if nc.Secret == "" && secret != "" {
+			nc.Secret = secret
+			updated = true
+		}
+		if client.AdTag != "" && nc.AdTag != client.AdTag {
+			nc.AdTag = client.AdTag
+			updated = true
+		}
+		if nc.PreSharedKey == "" && psk != "" {
+			nc.PreSharedKey = psk
+			updated = true
+		}
+		if nc.ForwardedPorts == "" && client.ForwardedPorts != "" {
+			nc.ForwardedPorts = client.ForwardedPorts
+			updated = true
+		}
+		if nc.UUID == "" && uuidVal != "" {
+			nc.UUID = uuidVal
+			updated = true
+		}
+		if pubKey != "" && wireguard.IsValidWireguardKey(pubKey) && (nc.PublicKey == "" || !wireguard.IsValidWireguardKey(nc.PublicKey)) {
+			nc.PublicKey = pubKey
+			updated = true
+		}
+		if privKey != "" && wireguard.IsValidWireguardKey(privKey) && (nc.PrivateKey == "" || !wireguard.IsValidWireguardKey(nc.PrivateKey)) {
+			nc.PrivateKey = privKey
+			updated = true
+		}
+		if updated {
+			_ = tx.Save(&nc).Error
+		}
 	}
 
 	// Ensure a link between this NodeClient and the inbound exists.
@@ -1100,6 +1279,10 @@ func (s *InboundService) syncNodeClientOnUpdate(tx *gorm.DB, oldEmail string, cl
 		if client.Password != "" {
 			ncUpdates["password"] = client.Password
 		}
+	} else if inboundProtocol == model.MTProto || inboundProtocol == "mtproto" {
+		if client.Secret != "" && model.IsValidMtprotoSecret(client.Secret) {
+			ncUpdates["secret"] = client.Secret
+		}
 	} else {
 		if client.Password != "" {
 			ncUpdates["password"] = client.Password
@@ -1113,6 +1296,26 @@ func (s *InboundService) syncNodeClientOnUpdate(tx *gorm.DB, oldEmail string, cl
 	}
 	if client.Auth != "" {
 		ncUpdates["auth"] = client.Auth
+	}
+	if client.Secret != "" {
+		ncUpdates["secret"] = client.Secret
+	}
+	if client.AdTag != "" {
+		ncUpdates["ad_tag"] = client.AdTag
+	}
+	if client.PublicKey != "" && wireguard.IsValidWireguardKey(client.PublicKey) {
+		ncUpdates["public_key"] = client.PublicKey
+	}
+	if client.PrivateKey != "" && wireguard.IsValidWireguardKey(client.PrivateKey) {
+		ncUpdates["private_key"] = client.PrivateKey
+	}
+	if client.PreSharedKey != "" {
+		ncUpdates["pre_shared_key"] = client.PreSharedKey
+	} else if client.Psk != "" {
+		ncUpdates["pre_shared_key"] = client.Psk
+	}
+	if client.ForwardedPorts != "" {
+		ncUpdates["forwarded_ports"] = client.ForwardedPorts
 	}
 
 	if err := tx.Model(&model.NodeClient{}).Where("id = ?", nc.Id).Updates(ncUpdates).Error; err != nil {
@@ -1266,7 +1469,7 @@ func (s *InboundService) DelInboundClient(inboundId int, clientId string) (bool,
 	switch oldInbound.Protocol {
 	case "trojan":
 		client_key = "password"
-	case "shadowsocks", "wireguard":
+	case "shadowsocks", "wireguard", model.AmneziaWG, model.MTProto:
 		client_key = "email"
 	case "hysteria":
 		client_key = "auth"
@@ -1285,6 +1488,8 @@ func (s *InboundService) DelInboundClient(inboundId int, clientId string) (bool,
 		if v, ok := c[client_key].(string); ok {
 			c_id = v
 		} else if v, ok := c["publicKey"].(string); ok {
+			c_id = v
+		} else if v, ok := c["secret"].(string); ok {
 			c_id = v
 		} else if v, ok := c["id"].(string); ok {
 			c_id = v
@@ -1342,7 +1547,7 @@ func (s *InboundService) DelInboundClient(inboundId int, clientId string) (bool,
 			logger.Error("Get stats error")
 			return false, err
 		}
-		if needApiDel && notDepleted && oldInbound.Protocol != "wireguard" {
+		if needApiDel && notDepleted && oldInbound.Protocol != "wireguard" && oldInbound.Protocol != "amneziawg" && oldInbound.Protocol != "mtproto" && oldInbound.Protocol != model.AmneziaWG && oldInbound.Protocol != model.MTProto {
 			s.xrayApi.Init(p.GetAPIPort())
 			err1 := s.xrayApi.RemoveUser(oldInbound.Tag, email)
 			if err1 == nil {
@@ -1366,6 +1571,13 @@ func (s *InboundService) DelInboundClient(inboundId int, clientId string) (bool,
 	err = database.ExecWithRetry(5, func() error {
 		return db.Save(oldInbound).Error
 	})
+	if err == nil {
+		if oldInbound.Protocol == model.MTProto || oldInbound.Protocol == "mtproto" {
+			s.applyLocalMtproto(inboundId)
+		} else if oldInbound.Protocol == model.AmneziaWG || oldInbound.Protocol == "amneziawg" {
+			s.applyLocalAmneziaWG(inboundId)
+		}
+	}
 	return needRestart, err
 }
 
@@ -1427,6 +1639,42 @@ func (s *InboundService) UpdateInboundClient(data *model.Inbound, clientId strin
 			newClientId = clients[0].Email
 			if newClientId == "" {
 				newClientId = clients[0].PublicKey
+			}
+			if newClientId == "" {
+				newClientId = clients[0].ID
+			}
+		} else if oldInbound.Protocol == "amneziawg" || oldInbound.Protocol == model.AmneziaWG {
+			oldClientId = oldClient.Email
+			if oldClientId == "" {
+				oldClientId = oldClient.PublicKey
+			}
+			if oldClientId == "" {
+				oldClientId = oldClient.ID
+			}
+			newClientId = clients[0].Email
+			if newClientId == "" {
+				newClientId = clients[0].PublicKey
+			}
+			if newClientId == "" {
+				newClientId = clients[0].ID
+			}
+		} else if oldInbound.Protocol == "mtproto" || oldInbound.Protocol == model.MTProto {
+			oldClientId = oldClient.Email
+			if oldClientId == "" {
+				oldClientId = oldClient.Secret
+			}
+			if oldClientId == "" {
+				oldClientId = oldClient.Password
+			}
+			if oldClientId == "" {
+				oldClientId = oldClient.ID
+			}
+			newClientId = clients[0].Email
+			if newClientId == "" {
+				newClientId = clients[0].Secret
+			}
+			if newClientId == "" {
+				newClientId = clients[0].Password
 			}
 			if newClientId == "" {
 				newClientId = clients[0].ID
@@ -1616,7 +1864,7 @@ func (s *InboundService) UpdateInboundClient(data *model.Inbound, clientId strin
 	}
 	needRestart := false
 	if len(oldEmail) > 0 {
-		if p != nil {
+		if p != nil && oldInbound.Protocol != "wireguard" && oldInbound.Protocol != "amneziawg" && oldInbound.Protocol != "mtproto" && oldInbound.Protocol != model.AmneziaWG && oldInbound.Protocol != model.MTProto {
 			s.xrayApi.Init(p.GetAPIPort())
 			if oldClients[clientIndex].Enable {
 				err1 := s.xrayApi.RemoveUser(oldInbound.Tag, oldEmail)
@@ -1660,7 +1908,15 @@ func (s *InboundService) UpdateInboundClient(data *model.Inbound, clientId strin
 		logger.Debug("Client old email not found")
 		needRestart = true
 	}
-	return needRestart, tx.Save(oldInbound).Error
+	saveErr := tx.Save(oldInbound).Error
+	if saveErr == nil {
+		if oldInbound.Protocol == model.MTProto || oldInbound.Protocol == "mtproto" {
+			s.applyLocalMtproto(data.Id)
+		} else if oldInbound.Protocol == model.AmneziaWG || oldInbound.Protocol == "amneziawg" {
+			s.applyLocalAmneziaWG(data.Id)
+		}
+	}
+	return needRestart, saveErr
 }
 
 func (s *InboundService) AddTraffic(inboundTraffics []*xray.Traffic, clientTraffics []*xray.ClientTraffic) (error, bool) {
@@ -2412,6 +2668,12 @@ func (s *InboundService) HotReloadInboundByTag(tag string, txs ...*gorm.DB) erro
 }
 
 func (s *InboundService) BuildInboundConfig(inbound *model.Inbound, txs ...*gorm.DB) (*xray.InboundConfig, error) {
+	if inbound == nil {
+		return nil, common.NewError("nil inbound")
+	}
+	inboundCopy := *inbound
+	inbound = &inboundCopy
+
 	db := database.GetDB()
 	if len(txs) > 0 && txs[0] != nil {
 		db = txs[0]

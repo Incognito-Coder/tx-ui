@@ -1,0 +1,56 @@
+{{define "form/mtproto"}}
+<a-collapse v-if="isEdit && inbound.settings.clients && inbound.settings.clients.length > 0">
+  <a-collapse-panel :header="'{{ i18n "pages.client.clientCount"}} : ' + inbound.settings.clients.length">
+    <table width="100%">
+      <tr class="client-table-header">
+        <th>{{ i18n "pages.inbounds.email" }}</th>
+        <th>Secret</th>
+      </tr>
+      <tr v-for="(client, index) in inbound.settings.clients" :class="index % 2 == 1 ? 'client-table-odd-row' : ''">
+        <td>[[ client.email ]]</td>
+        <td style="font-family: monospace; font-size: 11px;">[[ client.secret ]]</td>
+      </tr>
+    </table>
+  </a-collapse-panel>
+</a-collapse>
+<a-form :colon="false" :label-col="{ md: {span:8} }" :wrapper-col="{ md: {span:14} }">
+    <a-form-item label="Route Through Core">
+        <a-switch v-model="inbound.settings.routeThroughXray"></a-switch>
+    </a-form-item>
+    <a-form-item v-if="inbound.settings.routeThroughXray" label="Route Port">
+        <a-input-number :min="0" :max="65535" placeholder="0 for auto (64100+ID)" v-model.number="inbound.settings.routeXrayPort"></a-input-number>
+    </a-form-item>
+    <a-form-item label="Prefer IP">
+        <a-select :dropdown-class-name="themeSwitcher.currentTheme" v-model="inbound.settings.preferIp">
+            <a-select-option value="prefer-ipv4">Prefer IPv4</a-select-option>
+            <a-select-option value="prefer-ipv6">Prefer IPv6</a-select-option>
+            <a-select-option value="only-ipv4">Only IPv4</a-select-option>
+            <a-select-option value="only-ipv6">Only IPv6</a-select-option>
+        </a-select>
+    </a-form-item>
+    <a-form-item label="Proxy Protocol Listener">
+        <a-switch v-model="inbound.settings.proxyProtocolListener"></a-switch>
+    </a-form-item>
+    <a-form-item label="Throttle Max Connections">
+        <a-input-number :min="0" placeholder="0 for unlimited" v-model.number="inbound.settings.throttleMaxConnections"></a-input-number>
+    </a-form-item>
+    <a-form-item label="Pending Handshakes Max / IP">
+        <a-input-number :min="0" placeholder="0 for default" v-model.number="inbound.settings.pendingHandshakesMaxPerIP"></a-input-number>
+    </a-form-item>
+    <a-form-item label="Fronting IP">
+        <a-input placeholder="Optional Domain Fronting IP" v-model.trim="inbound.settings.domainFronting.ip"></a-input>
+    </a-form-item>
+    <a-form-item label="Fronting Port">
+        <a-input-number :min="0" :max="65535" placeholder="443" v-model.number="inbound.settings.domainFronting.port"></a-input-number>
+    </a-form-item>
+    <a-form-item label="Public IPv4">
+        <a-input placeholder="Optional public IPv4 for Middle Proxy" v-model.trim="inbound.settings.publicIpv4"></a-input>
+    </a-form-item>
+    <a-form-item label="Public IPv6">
+        <a-input placeholder="Optional public IPv6 for Middle Proxy" v-model.trim="inbound.settings.publicIpv6"></a-input>
+    </a-form-item>
+    <a-form-item label="Debug Logging">
+        <a-switch v-model="inbound.settings.debug"></a-switch>
+    </a-form-item>
+</a-form>
+{{end}}

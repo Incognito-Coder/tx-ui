@@ -163,6 +163,15 @@ jobs:
           else
             mv xray xray-${{ matrix.platform }} 2>/dev/null || true
           fi
+
+          MTG_URL="https://github.com/mhsanaei/mtg-multi/releases/download/v1.16.0/"
+          if [ "${{ matrix.platform }}" == "linux-amd64" ] || [ "${{ matrix.platform }}" == "linux-arm64" ] || [ "${{ matrix.platform }}" == "linux-armv7" ] || [ "${{ matrix.platform }}" == "linux-armv6" ] || [ "${{ matrix.platform }}" == "linux-386" ] || [ "${{ matrix.platform }}" == "linux-armv5" ] || [ "${{ matrix.platform }}" == "linux-s390x" ]; then
+            curl -sSL -O "${MTG_URL}mtg-multi-1.16.0-${{ matrix.platform }}.tar.gz" && \
+            tar -xzf "mtg-multi-1.16.0-${{ matrix.platform }}.tar.gz" && \
+            rm -f "mtg-multi-1.16.0-${{ matrix.platform }}.tar.gz" && \
+            mv mtg-multi-1.16.0-${{ matrix.platform }}/mtg-multi "mtg-${{ matrix.platform }}" 2>/dev/null || true
+            rm -rf "mtg-multi-1.16.0-${{ matrix.platform }}"
+          fi
           cd ../..
 
       - name: Build x-ui (Windows)
@@ -212,6 +221,17 @@ jobs:
           Invoke-WebRequest -Uri "https://github.com/runetfreedom/russia-v2ray-rules-dat/releases/latest/download/geoip.dat" -OutFile "geoip_RU.dat"
           Invoke-WebRequest -Uri "https://github.com/runetfreedom/russia-v2ray-rules-dat/releases/latest/download/geosite.dat" -OutFile "geosite_RU.dat"
           Rename-Item xray.exe "xray-windows-${archName}.exe" -ErrorAction SilentlyContinue
+
+          # Download mtg-multi for Windows
+          $MTG_URL = "https://github.com/mhsanaei/mtg-multi/releases/download/v1.16.0/"
+          $mtgZip = "mtg-multi-1.16.0-windows-${archName}.zip"
+          try {
+            Invoke-WebRequest -Uri "${MTG_URL}${mtgZip}" -OutFile "${mtgZip}"
+            Expand-Archive -Path "${mtgZip}" -DestinationPath .
+            Remove-Item "${mtgZip}" -ErrorAction SilentlyContinue
+            Move-Item "mtg-multi-1.16.0-windows-${archName}\mtg-multi.exe" "mtg-windows-${archName}.exe" -Force -ErrorAction SilentlyContinue
+            Remove-Item "mtg-multi-1.16.0-windows-${archName}" -Recurse -Force -ErrorAction SilentlyContinue
+          } catch {}
           cd ../..
 
       - name: Package (Windows)

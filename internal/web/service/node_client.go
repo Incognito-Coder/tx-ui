@@ -11,6 +11,7 @@ import (
 	"x-ui/internal/database/model"
 	"x-ui/internal/logger"
 	"x-ui/internal/util/random"
+	"x-ui/internal/util/wireguard"
 	"x-ui/xray"
 
 	"gorm.io/gorm"
@@ -367,6 +368,18 @@ func (s *NodeClientService) Create(nc *model.NodeClient) error {
 	if err := s.checkSubIDUnique(nc.SubID, 0); err != nil {
 		return err
 	}
+	nc.Secret = model.EnsureMtprotoSecret(nc.Secret, "")
+
+	priv, pub, err := wireguard.EnsureWireguardKeypair(nc.PrivateKey, nc.PublicKey)
+	if err == nil {
+		nc.PrivateKey = priv
+		nc.PublicKey = pub
+	}
+	if !wireguard.IsValidWireguardKey(nc.PreSharedKey) {
+		if psk, err := wireguard.GenerateWireguardPSK(); err == nil {
+			nc.PreSharedKey = psk
+		}
+	}
 
 	db := database.GetDB()
 	return db.Create(nc).Error
@@ -386,6 +399,18 @@ func (s *NodeClientService) Update(nc *model.NodeClient) (bool, error) {
 	}
 	if err := s.checkSubIDUnique(nc.SubID, nc.Id); err != nil {
 		return false, err
+	}
+	nc.Secret = model.EnsureMtprotoSecret(nc.Secret, "")
+
+	priv, pub, err := wireguard.EnsureWireguardKeypair(nc.PrivateKey, nc.PublicKey)
+	if err == nil {
+		nc.PrivateKey = priv
+		nc.PublicKey = pub
+	}
+	if !wireguard.IsValidWireguardKey(nc.PreSharedKey) {
+		if psk, err := wireguard.GenerateWireguardPSK(); err == nil {
+			nc.PreSharedKey = psk
+		}
 	}
 
 	db := database.GetDB()
@@ -446,7 +471,7 @@ func (s *NodeClientService) Update(nc *model.NodeClient) (bool, error) {
 	}
 
 	// Keep settings JSON in sync for linked inbounds if credentials, enable, or metadata (expiry, quota, etc.) changed
-	credsChanged := hasOld && (oldNC.Email != nc.Email || oldNC.UUID != nc.UUID || oldNC.Password != nc.Password || oldNC.SSPassword != nc.SSPassword || oldNC.MasquePass != nc.MasquePass || oldNC.Auth != nc.Auth || oldNC.Flow != nc.Flow)
+	credsChanged := hasOld && (oldNC.Email != nc.Email || oldNC.UUID != nc.UUID || oldNC.Password != nc.Password || oldNC.SSPassword != nc.SSPassword || oldNC.MasquePass != nc.MasquePass || oldNC.Auth != nc.Auth || oldNC.Flow != nc.Flow || oldNC.PublicKey != nc.PublicKey || oldNC.PrivateKey != nc.PrivateKey || oldNC.PreSharedKey != nc.PreSharedKey)
 	enableChanged := hasOld && (oldNC.Enable != nc.Enable)
 	metaChanged := hasOld && (oldNC.ExpiryTime != nc.ExpiryTime || oldNC.TotalGB != nc.TotalGB || oldNC.Reset != nc.Reset || oldNC.SubID != nc.SubID || oldNC.LimitIP != nc.LimitIP || oldNC.TgID != nc.TgID || oldNC.Comment != nc.Comment)
 
@@ -719,8 +744,74 @@ func addClientToInboundSettings(inbound *model.Inbound, nc *model.NodeClient, fl
 		}
 		newClientMap["auth"] = auth
 	case "wireguard":
-		newClientMap["publicKey"] = nc.UUID
-		newClientMap["privateKey"] = nc.Password
+		privKey, pubKey, err := wireguard.EnsureWireguardKeypair(nc.PrivateKey, nc.PublicKey)
+		if err == nil {
+			if nc.PrivateKey != privKey || nc.PublicKey != pubKey {
+				nc.PrivateKey = privKey
+				nc.PublicKey = pubKey
+				_ = database.GetDB().Model(nc).Updates(map[string]interface{}{
+					"private_key": privKey,
+					"public_key":  pubKey,
+				}).Error
+			}
+		}
+		psk := nc.PreSharedKey
+		if !wireguard.IsValidWireguardKey(psk) {
+			if newPsk, err := wireguard.GenerateWireguardPSK(); err == nil {
+				psk = newPsk
+				nc.PreSharedKey = psk
+				_ = database.GetDB().Model(nc).Update("pre_shared_key", psk).Error
+			}
+		}
+		newClientMap["publicKey"] = pubKey
+		newClientMap["id"] = pubKey
+		newClientMap["privateKey"] = privKey
+		if psk != "" {
+			newClientMap["preSharedKey"] = psk
+			newClientMap["psk"] = psk
+		}
+	case "amneziawg":
+		privKey, pubKey, err := wireguard.EnsureWireguardKeypair(nc.PrivateKey, nc.PublicKey)
+		if err == nil {
+			if nc.PrivateKey != privKey || nc.PublicKey != pubKey {
+				nc.PrivateKey = privKey
+				nc.PublicKey = pubKey
+				_ = database.GetDB().Model(nc).Updates(map[string]interface{}{
+					"private_key": privKey,
+					"public_key":  pubKey,
+				}).Error
+			}
+		}
+		psk := nc.PreSharedKey
+		if !wireguard.IsValidWireguardKey(psk) {
+			if newPsk, err := wireguard.GenerateWireguardPSK(); err == nil {
+				psk = newPsk
+				nc.PreSharedKey = psk
+				_ = database.GetDB().Model(nc).Update("pre_shared_key", psk).Error
+			}
+		}
+		newClientMap["id"] = pubKey
+		newClientMap["publicKey"] = pubKey
+		newClientMap["privateKey"] = privKey
+		if psk != "" {
+			newClientMap["preSharedKey"] = psk
+			newClientMap["psk"] = psk
+		}
+		if nc.ForwardedPorts != "" {
+			newClientMap["forwardedPorts"] = nc.ForwardedPorts
+		}
+	case "mtproto":
+		secret := model.EnsureMtprotoSecret(nc.Secret, "")
+		if nc.Secret != secret {
+			nc.Secret = secret
+			_ = database.GetDB().Model(nc).Update("secret", secret).Error
+		}
+		newClientMap["id"] = secret
+		newClientMap["secret"] = secret
+		newClientMap["password"] = secret
+		if nc.AdTag != "" {
+			newClientMap["adTag"] = nc.AdTag
+		}
 	case "masque":
 		pass := nc.MasquePass
 		if pass == "" {
@@ -793,6 +884,9 @@ func updateClientFlowInInboundSettings(inbound *model.Inbound, email, uuid, newF
 func (s *NodeClientService) hotAddUserToInbound(xrayApi *xray.XrayAPI, inbound *model.Inbound, nc *model.NodeClient, flow string) bool {
 	if inbound.Protocol == model.WireGuard {
 		return true
+	}
+	if inbound.Protocol == model.MTProto || inbound.Protocol == model.AmneziaWG || inbound.Protocol == "mtproto" || inbound.Protocol == "amneziawg" {
+		return false
 	}
 	if !inbound.Enable || !nc.Enable {
 		return false
@@ -879,6 +973,9 @@ func (s *NodeClientService) hotAddUserToInbound(xrayApi *xray.XrayAPI, inbound *
 func (s *NodeClientService) hotRemoveUserFromInbound(xrayApi *xray.XrayAPI, inbound *model.Inbound, email string) bool {
 	if inbound.Protocol == model.WireGuard {
 		return true
+	}
+	if inbound.Protocol == model.MTProto || inbound.Protocol == model.AmneziaWG || inbound.Protocol == "mtproto" || inbound.Protocol == "amneziawg" {
+		return false
 	}
 	err := xrayApi.RemoveUser(inbound.Tag, email)
 	if err != nil {
@@ -1753,24 +1850,42 @@ func (s *NodeClientService) synthesiseClient(nc *model.NodeClient, link *model.N
 		pass = nc.Password
 	}
 
+	secret := nc.Secret
+	if secret != "" && !model.IsValidMtprotoSecret(secret) {
+		secret = ""
+	}
+
+	privKey, pubKey, _ := wireguard.EnsureWireguardKeypair(nc.PrivateKey, nc.PublicKey)
+	psk := nc.PreSharedKey
+	if !wireguard.IsValidWireguardKey(psk) {
+		psk = ""
+	}
+
 	return model.Client{
-		ID:         nc.UUID,
-		Password:   nc.Password,
-		SSPassword: nc.SSPassword,
-		MasquePass: pass,
-		Pass:       pass,
-		Auth:       auth,
-		Security:   nc.Security,
-		Flow:       flow,
-		Email:      nc.Email,
-		TotalGB:    nc.TotalGB,
-		ExpiryTime: nc.ExpiryTime,
-		LimitIP:    nc.LimitIP,
-		TgID:       nc.TgID,
-		Enable:     nc.Enable,
-		Reset:      nc.Reset,
-		Comment:    nc.Comment,
-		SubID:      nc.SubID,
+		ID:             nc.UUID,
+		Password:       nc.Password,
+		SSPassword:     nc.SSPassword,
+		MasquePass:     pass,
+		Pass:           pass,
+		Auth:           auth,
+		Secret:         secret,
+		AdTag:          nc.AdTag,
+		PublicKey:      pubKey,
+		PrivateKey:     privKey,
+		PreSharedKey:   psk,
+		Psk:            psk,
+		ForwardedPorts: nc.ForwardedPorts,
+		Security:       nc.Security,
+		Flow:           flow,
+		Email:          nc.Email,
+		TotalGB:        nc.TotalGB,
+		ExpiryTime:     nc.ExpiryTime,
+		LimitIP:        nc.LimitIP,
+		TgID:           nc.TgID,
+		Enable:         nc.Enable,
+		Reset:          nc.Reset,
+		Comment:        nc.Comment,
+		SubID:          nc.SubID,
 	}
 }
 
@@ -1801,15 +1916,19 @@ func (s *NodeClientService) MergeIntoInboundConfig(inboundId int, existingClient
 		SSPassword string `gorm:"column:ss_password"`
 		MasquePass string `gorm:"column:masque_pass"`
 		Auth       string
-		Security   string
-		ClientFlow string `gorm:"column:client_flow"`
-		TotalGB    int64
-		ExpiryTime int64
-		LimitIP    int
-		TgID       int64
-		Enable     bool
-		Reset      int
-		Comment    string
+		Security       string
+		ClientFlow     string `gorm:"column:client_flow"`
+		Secret         string `gorm:"column:secret"`
+		AdTag          string `gorm:"column:ad_tag"`
+		PreSharedKey   string `gorm:"column:pre_shared_key"`
+		ForwardedPorts string `gorm:"column:forwarded_ports"`
+		TotalGB        int64
+		ExpiryTime     int64
+		LimitIP        int
+		TgID           int64
+		Enable         bool
+		Reset          int
+		Comment        string
 	}
 	if db == nil {
 		return existingClients, nil
@@ -1828,6 +1947,10 @@ func (s *NodeClientService) MergeIntoInboundConfig(inboundId int, existingClient
 			node_clients.auth,
 			node_clients.security,
 			node_clients.flow AS client_flow,
+			node_clients.secret,
+			node_clients.ad_tag,
+			node_clients.pre_shared_key,
+			node_clients.forwarded_ports,
 			node_clients.total_gb,
 			node_clients.expiry_time,
 			node_clients.limit_ip,
@@ -1872,23 +1995,27 @@ func (s *NodeClientService) MergeIntoInboundConfig(inboundId int, existingClient
 		}
 
 		nc := model.NodeClient{
-			Id:         row.ClientID,
-			Email:      row.Email,
-			SubID:      row.SubID,
-			UUID:       row.UUID,
-			Password:   row.Password,
-			SSPassword: row.SSPassword,
-			MasquePass: row.MasquePass,
-			Auth:       row.Auth,
-			Security:   row.Security,
-			Flow:       row.ClientFlow,
-			TotalGB:    row.TotalGB,
-			ExpiryTime: row.ExpiryTime,
-			LimitIP:    row.LimitIP,
-			TgID:       row.TgID,
-			Enable:     row.Enable,
-			Reset:      row.Reset,
-			Comment:    row.Comment,
+			Id:             row.ClientID,
+			Email:          row.Email,
+			SubID:          row.SubID,
+			UUID:           row.UUID,
+			Password:       row.Password,
+			SSPassword:     row.SSPassword,
+			MasquePass:     row.MasquePass,
+			Auth:           row.Auth,
+			Security:       row.Security,
+			Flow:           row.ClientFlow,
+			Secret:         row.Secret,
+			AdTag:          row.AdTag,
+			PreSharedKey:   row.PreSharedKey,
+			ForwardedPorts: row.ForwardedPorts,
+			TotalGB:        row.TotalGB,
+			ExpiryTime:     row.ExpiryTime,
+			LimitIP:        row.LimitIP,
+			TgID:           row.TgID,
+			Enable:         row.Enable,
+			Reset:          row.Reset,
+			Comment:        row.Comment,
 		}
 		link := model.NodeClientLink{Flow: row.LinkFlow}
 		client := s.synthesiseClient(&nc, &link)
@@ -2452,6 +2579,17 @@ func (s *NodeClientService) BulkCreate(clients []model.NodeClient, inboundIds []
 
 	for i := range clients {
 		nc := &clients[i]
+		nc.Secret = model.EnsureMtprotoSecret(nc.Secret, "")
+		priv, pub, err := wireguard.EnsureWireguardKeypair(nc.PrivateKey, nc.PublicKey)
+		if err == nil {
+			nc.PrivateKey = priv
+			nc.PublicKey = pub
+		}
+		if !wireguard.IsValidWireguardKey(nc.PreSharedKey) {
+			if psk, err := wireguard.GenerateWireguardPSK(); err == nil {
+				nc.PreSharedKey = psk
+			}
+		}
 		if err := tx.Create(nc).Error; err != nil {
 			tx.Rollback()
 			return false, err

@@ -3,10 +3,14 @@ package service
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"runtime"
 	"sync"
 	"time"
 
+	"x-ui/internal/amneziawg"
+	"x-ui/internal/amneziawgnet"
+	"x-ui/internal/database/model"
 	"x-ui/internal/logger"
 	"x-ui/internal/util/common"
 	"x-ui/internal/util/json_util"
@@ -115,6 +119,9 @@ func (s *XrayService) GetXrayConfig() (*xray.Config, error) {
 		if !inbound.Enable {
 			continue
 		}
+		if inbound.Protocol == model.MTProto || inbound.Protocol == model.AmneziaWG {
+			continue
+		}
 		inboundConfig, err := s.inboundService.BuildInboundConfig(inbound)
 		if err != nil {
 			logger.Warningf("GetXrayConfig: BuildInboundConfig failed for inbound %d: %v", inbound.Id, err)
@@ -122,7 +129,91 @@ func (s *XrayService) GetXrayConfig() (*xray.Config, error) {
 		}
 		xrayConfig.InboundConfigs = append(xrayConfig.InboundConfigs, *inboundConfig)
 	}
+
+	if err := injectAmneziawgnetSocks(xrayConfig, inbounds); err != nil {
+		logger.Warningf("GetXrayConfig: injectAmneziawgnetSocks failed: %v", err)
+	}
+	if err := injectMtprotoEgress(xrayConfig, inbounds); err != nil {
+		logger.Warningf("GetXrayConfig: injectMtprotoEgress failed: %v", err)
+	}
+	if err := transformAmneziaWGOutbounds(xrayConfig); err != nil {
+		logger.Warningf("GetXrayConfig: transformAmneziaWGOutbounds failed: %v", err)
+	}
 	return xrayConfig, nil
+}
+
+func injectAmneziawgnetSocks(cfg *xray.Config, inbounds []*model.Inbound) error {
+	for _, ib := range inbounds {
+		if !ib.Enable || ib.Protocol != model.AmneziaWG {
+			continue
+		}
+		var parsed amneziawg.InboundSettings
+		if err := json.Unmarshal([]byte(ib.Settings), &parsed); err != nil {
+			logger.Warningf("injectAmneziawgnetSocks: parse settings for inbound %d: %v", ib.Id, err)
+			continue
+		}
+		emails := make([]string, 0, len(parsed.Clients))
+		for _, c := range parsed.Clients {
+			if c.Enable && c.Email != "" {
+				emails = append(emails, c.Email)
+			}
+		}
+		if len(emails) == 0 {
+			emails = append(emails, fmt.Sprintf("inbound-%d", ib.Id))
+		}
+		settingsJSON, err := amneziawgnet.SocksInboundSettings(emails, amneziawgnet.SocksPassword())
+		if err != nil {
+			return err
+		}
+		port := amneziawgnet.SOCKSPortForInbound(ib.Id)
+		inboundCfg := xray.InboundConfig{
+			Listen:   json_util.RawMessage(`"127.0.0.1"`),
+			Port:     port,
+			Protocol: "socks",
+			Settings: json_util.RawMessage(settingsJSON),
+			Tag:      ib.Tag,
+		}
+		if ib.Sniffing != "" {
+			inboundCfg.Sniffing = json_util.RawMessage(ib.Sniffing)
+		}
+		cfg.InboundConfigs = append(cfg.InboundConfigs, inboundCfg)
+	}
+	return nil
+}
+
+func injectMtprotoEgress(cfg *xray.Config, inbounds []*model.Inbound) error {
+	for _, ib := range inbounds {
+		if !ib.Enable || ib.Protocol != model.MTProto {
+			continue
+		}
+		var parsed struct {
+			RouteThroughXray bool `json:"routeThroughXray"`
+			RouteXrayPort    int  `json:"routeXrayPort"`
+		}
+		if err := json.Unmarshal([]byte(ib.Settings), &parsed); err != nil {
+			continue
+		}
+		if !parsed.RouteThroughXray {
+			continue
+		}
+		port := parsed.RouteXrayPort
+		if port <= 0 {
+			port = 64100 + (ib.Id % 500)
+		}
+		settingsJSON := `{"auth":"noauth","udp":true}`
+		inboundCfg := xray.InboundConfig{
+			Listen:   json_util.RawMessage(`"127.0.0.1"`),
+			Port:     port,
+			Protocol: "socks",
+			Settings: json_util.RawMessage(settingsJSON),
+			Tag:      ib.Tag,
+		}
+		if ib.Sniffing != "" {
+			inboundCfg.Sniffing = json_util.RawMessage(ib.Sniffing)
+		}
+		cfg.InboundConfigs = append(cfg.InboundConfigs, inboundCfg)
+	}
+	return nil
 }
 
 func normalizeLegacyVMessUser(user map[string]interface{}) {

@@ -818,7 +818,7 @@
                     const to_inbound = dbInbound.toInbound();
                     this.inbounds.push(to_inbound);
                     this.dbInbounds.push(dbInbound);
-                    if ([Protocols.VMESS, Protocols.VLESS, Protocols.TROJAN, Protocols.SHADOWSOCKS, Protocols.HYSTERIA, Protocols.WIREGUARD, Protocols.MASQUE].includes(inbound.protocol)) {
+                    if ([Protocols.VMESS, Protocols.VLESS, Protocols.TROJAN, Protocols.SHADOWSOCKS, Protocols.HYSTERIA, Protocols.WIREGUARD, Protocols.MASQUE, Protocols.MTPROTO, Protocols.AMNEZIAWG].includes(inbound.protocol)) {
                         if (dbInbound.isSS && (!to_inbound.isSSMultiUser)) {
                             continue;
                         }
@@ -1094,10 +1094,10 @@
                     protocol: inbound.protocol,
                     settings: inbound.settings.toString(),
                 };
-                if (inbound.canEnableStream()) {
+                if (inbound.canEnableStream() || inbound.stream?.sockopt || (inbound.canEnableExternalProxy() && inbound.stream?.externalProxy?.length > 0)) {
                     data.streamSettings = inbound.stream.toString();
-                } else if (inbound.stream?.sockopt) {
-                    data.streamSettings = JSON.stringify({sockopt: inbound.stream.sockopt.toJson()}, null, 2);
+                } else {
+                    data.streamSettings = '';
                 }
                 data.sniffing = inbound.sniffing.toString();
 
@@ -1117,10 +1117,10 @@
                     protocol: inbound.protocol,
                     settings: inbound.settings.toString(),
                 };
-                if (inbound.canEnableStream()) {
+                if (inbound.canEnableStream() || inbound.stream?.sockopt || (inbound.canEnableExternalProxy() && inbound.stream?.externalProxy?.length > 0)) {
                     data.streamSettings = inbound.stream.toString();
-                } else if (inbound.stream?.sockopt) {
-                    data.streamSettings = JSON.stringify({sockopt: inbound.stream.sockopt.toJson()}, null, 2);
+                } else {
+                    data.streamSettings = '';
                 }
                 data.sniffing = inbound.sniffing.toString();
 
@@ -1269,9 +1269,11 @@
                         return client.password;
                     case Protocols.SHADOWSOCKS:
                     case Protocols.WIREGUARD:
+                    case Protocols.AMNEZIAWG:
                         return client.email || client.publicKey || client.id;
                     case Protocols.HYSTERIA: return client.auth;
                     case Protocols.MASQUE: return client.password || client.pass || client.id || client.email;
+                    case Protocols.MTPROTO: return client.secret || client.email;
                     default:
                         return client.id;
                 }

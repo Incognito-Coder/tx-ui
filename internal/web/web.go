@@ -18,7 +18,9 @@ import (
 	"time"
 
 	"x-ui/config"
+	"x-ui/internal/amneziawgnet"
 	"x-ui/internal/logger"
+	"x-ui/internal/mtproto"
 	"x-ui/internal/util/common"
 	"x-ui/internal/web/controller"
 	"x-ui/internal/web/job"
@@ -404,6 +406,22 @@ func (s *Server) startTask() {
 		job.NewUpdateCheckerJob().Run()
 	})
 
+	// Reconcile and collect traffic for MTProto sidecars every 10s
+	mtprotoJob := cron.SkipIfStillRunning(cron.DefaultLogger)(job.NewMtprotoJob())
+	if _, err := s.cron.AddJob("@every 10s", mtprotoJob); err != nil {
+		logger.Warning("Failed to schedule MTProto job:", err)
+	} else {
+		go job.NewMtprotoJob().Run()
+	}
+
+	// Reconcile AmneziaWG userspace interfaces every 10s
+	amneziaJob := cron.SkipIfStillRunning(cron.DefaultLogger)(job.NewAmneziaWGJob())
+	if _, err := s.cron.AddJob("@every 10s", amneziaJob); err != nil {
+		logger.Warning("Failed to schedule AmneziaWG job:", err)
+	} else {
+		go job.NewAmneziaWGJob().Run()
+	}
+
 	// Make a traffic condition every day, 8:30
 	var entry cron.EntryID
 	isTgbotenabled, err := s.settingService.GetTgbotEnabled()
@@ -514,6 +532,9 @@ func (s *Server) Start() (err error) {
 func (s *Server) Stop() error {
 	s.cancel()
 	s.xrayService.StopXray()
+	mtproto.GetManager().StopAll()
+	amneziawgnet.GetManager().StopAll()
+	amneziawgnet.GetOutboundManager().StopAll()
 	if s.cron != nil {
 		s.cron.Stop()
 	}

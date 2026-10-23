@@ -1473,6 +1473,30 @@
                                 <a-input v-model.trim="clientModal.client.auth"></a-input>
                             </a-form-item>
 
+                            <!-- MTProto Secret -->
+                            <a-form-item>
+                                <template slot="label">
+                                    <a-tooltip title='{{ i18n "pages.node_clients.forMtprotoProtocol" }}'>
+                                        Secret (MTProto)
+                                        <a-icon @click="genClientModalMtprotoSecret()"
+                                            type="sync"></a-icon>
+                                    </a-tooltip>
+                                </template>
+                                <a-input v-model.trim="clientModal.client.secret"
+                                    placeholder="FakeTLS Secret (ee...)"></a-input>
+                            </a-form-item>
+
+                            <!-- MTProto Ad Tag -->
+                            <a-form-item>
+                                <template slot="label">
+                                    <a-tooltip title="16-byte hex channel/ad tag (optional)">
+                                        Ad Tag (MTProto)
+                                    </a-tooltip>
+                                </template>
+                                <a-input v-model.trim="clientModal.client.adTag"
+                                    placeholder="16-byte hex channel/ad tag (optional)"></a-input>
+                            </a-form-item>
+
                             <a-form-item label='Global Flow'>
                                 <a-select :dropdown-class-name="themeSwitcher.currentTheme" v-model="clientModal.client.flow">
                                     <a-select-option value="">{{ i18n "none" }}</a-select-option>
@@ -1897,6 +1921,13 @@
                             <a-icon @click="copyText(detailModal.client.password)" style="cursor: pointer; margin-left: 5px; color: var(--ui-primary); font-size: 12px;" type="copy"></a-icon>
                         </td>
                     </tr>
+                    <tr v-if="detailModal.client.secret">
+                        <td>Secret (MTProto)</td>
+                        <td>
+                            <code class="compact-code">[[ detailModal.client.secret ]]</code>
+                            <a-icon @click="copyText(detailModal.client.secret)" style="cursor: pointer; margin-left: 5px; color: var(--ui-primary); font-size: 12px;" type="copy"></a-icon>
+                        </td>
+                    </tr>
                     <tr v-if="detailModal.client.auth">
                         <td>Auth</td>
                         <td>
@@ -2120,6 +2151,11 @@
                                 </a-tag>
                                 <strong style="font-size: 11px;">[[ l.remark || l.title ]]</strong>
                             </div>
+                            <a-button v-if="l.protocol === 'amneziawg' || l.protocol === 'wireguard'"
+                                      @click="downloadClientConf(l)" icon="download" size="small" type="link"
+                                      style="padding: 0 4px; flex-shrink: 0; font-size: 11px; height: 20px;">
+                                {{ i18n "download" }}
+                            </a-button>
                             <a-button @click="copyText(l.link)" icon="copy" size="small" type="link" style="padding: 0 2px; flex-shrink: 0; font-size: 11px; height: 20px;">
                                 {{ i18n "copy" }}
                             </a-button>
@@ -2351,14 +2387,25 @@
                                 ssMethod = s.method || '';
                             } catch (e) {}
                         }
+                        let kp = (typeof Wireguard !== 'undefined' && typeof Wireguard.generateKeypair === 'function')
+                            ? Wireguard.generateKeypair()
+                            : { publicKey: '', privateKey: '' };
+                        let psk = (typeof Wireguard !== 'undefined' && typeof Wireguard.generatePresharedKey === 'function')
+                            ? Wireguard.keyToBase64(Wireguard.generatePresharedKey())
+                            : '';
                         this.client = {
                             email: RandomUtil.randomLowerAndNum(9),
                             subId: RandomUtil.randomLowerAndNum(16),
                             uuid: RandomUtil.randomUUID(),
                             password: (typeof RandomUtil.randomTrojanPassword === 'function' ? RandomUtil.randomTrojanPassword() : RandomUtil.randomSeq(10)),
+                            secret: (typeof RandomUtil.randomMtprotoSecret === 'function' ? RandomUtil.randomMtprotoSecret() : 'ee' + Array.from(crypto.getRandomValues(new Uint8Array(16))).map(b => b.toString(16).padStart(2,'0')).join('') + '676f6f676c652e636f6d'),
+                            publicKey: kp.publicKey,
+                            privateKey: kp.privateKey,
+                            preSharedKey: psk,
                             ssPassword: (typeof RandomUtil.randomShadowsocksPassword === 'function' ? RandomUtil.randomShadowsocksPassword(ssMethod) : RandomUtil.randomSeq(16)),
                             masquePass: (typeof RandomUtil.randomMasquePassword === 'function' ? RandomUtil.randomMasquePassword() : RandomUtil.randomSeq(16)),
                             auth: RandomUtil.randomSeq(10),
+                            adTag: '',
                             flow: '',
                             totalGB: 0,
                             _totalGB: 0,
@@ -2380,9 +2427,37 @@
                         this.title = '{{ i18n "pages.client.edit" }}: ' + c.email;
                         this.okText = '{{ i18n "sure" }}';
                         const clientTotalGB = Number(c.totalGB) || 0;
+                        const isValidMtproto = (s) => {
+                            if (typeof RandomUtil !== 'undefined' && typeof RandomUtil.isValidMtprotoSecret === 'function') {
+                                return RandomUtil.isValidMtprotoSecret(s);
+                            }
+                            return !!(s && typeof s === 'string' && (s.startsWith('ee') || s.startsWith('dd') || s.length >= 32));
+                        };
+                        const isValidWg = (k) => typeof Wireguard !== 'undefined' && typeof Wireguard.isValidKey === 'function' ? Wireguard.isValidKey(k) : (k && typeof k === 'string' && k.length === 44 && k.endsWith('='));
+                        let privKey = isValidWg(c.privateKey) ? c.privateKey : (isValidWg(c.password) ? c.password : '');
+                        let pubKey = isValidWg(c.publicKey) ? c.publicKey : (isValidWg(c.id) ? c.id : '');
+                        if (!privKey || !pubKey) {
+                            if (typeof Wireguard !== 'undefined' && typeof Wireguard.generateKeypair === 'function') {
+                                let kp = Wireguard.generateKeypair(privKey);
+                                privKey = kp.privateKey;
+                                pubKey = kp.publicKey;
+                            }
+                        }
+                        let psk = isValidWg(c.preSharedKey || c.psk) ? (c.preSharedKey || c.psk) : '';
+                        if (!psk && typeof Wireguard !== 'undefined' && typeof Wireguard.generatePresharedKey === 'function') {
+                            psk = Wireguard.keyToBase64(Wireguard.generatePresharedKey());
+                        }
+
                         this.client = Object.assign({}, c, {
                             _totalGB: clientTotalGB > 0 ? Number(toFixed(clientTotalGB / ONE_GB, 2)) : 0,
                             password: c.password || (typeof RandomUtil.randomTrojanPassword === 'function' ? RandomUtil.randomTrojanPassword() : RandomUtil.randomSeq(10)),
+                            secret: isValidMtproto(c.secret)
+                                ? c.secret
+                                : (typeof RandomUtil.randomMtprotoSecret === 'function' ? RandomUtil.randomMtprotoSecret() : 'ee' + Array.from(crypto.getRandomValues(new Uint8Array(16))).map(b => b.toString(16).padStart(2,'0')).join('') + '676f6f676c652e636f6d'),
+                            publicKey: pubKey,
+                            privateKey: privKey,
+                            preSharedKey: psk,
+                            adTag: c.adTag || '',
                             ssPassword: c.ssPassword || (typeof RandomUtil.randomShadowsocksPassword === 'function' ? RandomUtil.randomShadowsocksPassword() : ''),
                             masquePass: c.masquePass || (typeof RandomUtil.randomMasquePassword === 'function' ? RandomUtil.randomMasquePassword() : RandomUtil.randomSeq(16)),
                         });
@@ -2761,6 +2836,37 @@
                         }
                     }
                 },
+                downloadClientConf(l) {
+                    if (!l) return;
+                    let conf = l.conf || '';
+                    if (!conf && l.link) {
+                        if (l.link.startsWith('vpn://')) {
+                            try {
+                                const raw = l.link.slice(6).split('#')[0];
+                                conf = atob(raw.replace(/-/g, '+').replace(/_/g, '/'));
+                            } catch (e) {}
+                        } else if (l.link.includes('[Interface]')) {
+                            conf = l.link;
+                        }
+                    }
+                    if (!conf && (l.protocol === 'amneziawg' || l.protocol === 'wireguard')) {
+                        const ib = this.inboundMap[l.inboundId];
+                        if (ib) {
+                            const inbound = new DBInbound(ib).toInbound();
+                            const dest = l.dest || l.address || inbound.listen || location.hostname;
+                            const port = l.port || inbound.port;
+                            if (l.protocol === 'amneziawg') {
+                                conf = inbound.genAmneziawgClientConf(dest, port, l.remark, this.detailModal.client);
+                            } else {
+                                conf = inbound.genWireguardClientLink(dest, port, l.remark, this.detailModal.client);
+                            }
+                        }
+                    }
+                    if (conf) {
+                        const fname = (l.remark || l.title || l.protocol || 'config').replace(/[\/\\?%*:|"<>]/g, '_') + '.conf';
+                        FileManager.downloadTextFile(conf, fname);
+                    }
+                },
                 generateClientLinks(c) {
                     const links = this.clientLinksMap[c.id] || c.links || [];
                     const res = [];
@@ -2770,16 +2876,51 @@
                         if (!ib) return;
                         const dbInbound = new DBInbound(ib);
                         const inbound = dbInbound.toInbound();
-                        const clientObj = Object.assign({}, c, { id: c.uuid || c.id });
+                        const isValidMtproto = (s) => {
+                            if (typeof RandomUtil !== 'undefined' && typeof RandomUtil.isValidMtprotoSecret === 'function') {
+                                return RandomUtil.isValidMtprotoSecret(s);
+                            }
+                            return !!(s && typeof s === 'string' && (s.startsWith('ee') || s.startsWith('dd') || s.length >= 32));
+                        };
+                        const isValidWg = (k) => typeof Wireguard !== 'undefined' && typeof Wireguard.isValidKey === 'function' ? Wireguard.isValidKey(k) : (k && typeof k === 'string' && k.length === 44 && k.endsWith('='));
+                        let clientPriv = isValidWg(c.privateKey) ? c.privateKey : (isValidWg(c.password) ? c.password : '');
+                        let clientPub = isValidWg(c.publicKey) ? c.publicKey : (isValidWg(c.id) ? c.id : '');
+                        if (!clientPriv || !clientPub) {
+                            if (typeof Wireguard !== 'undefined' && typeof Wireguard.generateKeypair === 'function') {
+                                let kp = Wireguard.generateKeypair(clientPriv);
+                                clientPriv = kp.privateKey;
+                                clientPub = kp.publicKey;
+                            }
+                        }
+                        let clientPsk = isValidWg(c.preSharedKey || c.psk) ? (c.preSharedKey || c.psk) : '';
+                        if (!clientPsk && typeof Wireguard !== 'undefined' && typeof Wireguard.generatePresharedKey === 'function') {
+                            clientPsk = Wireguard.keyToBase64(Wireguard.generatePresharedKey());
+                        }
+                        const clientObj = Object.assign({}, c, {
+                            id: c.uuid || c.id,
+                            secret: isValidMtproto(c.secret)
+                                ? c.secret
+                                : (isValidMtproto(c.password)
+                                    ? c.password
+                                    : ((typeof RandomUtil !== 'undefined' && typeof RandomUtil.randomMtprotoSecret === 'function') ? RandomUtil.randomMtprotoSecret() : '')),
+                            password: c.password || c.uuid || c.id,
+                            publicKey: clientPub,
+                            privateKey: clientPriv,
+                            preSharedKey: clientPsk,
+                            adTag: c.adTag,
+                        });
                         inbound.genAllLinks(dbInbound.remark, this.remarkModel, clientObj).forEach(item => {
-                            const linkVal = (inbound.protocol === Protocols.WIREGUARD && item.url) ? item.url : item.link;
+                            const linkVal = ([Protocols.WIREGUARD, Protocols.AMNEZIAWG, Protocols.MTPROTO].includes(inbound.protocol) && item.url) ? item.url : item.link;
                             res.push({
                                 inboundId: ib.id,
                                 protocol: ib.protocol,
-                                port: ib.port,
-                                remark: dbInbound.remark,
-                                title: item.remark || `[${(ib.protocol || '').toUpperCase()}:${ib.port}] ${dbInbound.remark || ''}`,
+                                port: item.port || ib.port,
+                                address: item.dest || inbound.listen || location.hostname,
+                                dest: item.dest || inbound.listen || location.hostname,
+                                remark: item.remark || dbInbound.remark,
+                                title: item.remark || `[${(ib.protocol || '').toUpperCase()}:${item.port || ib.port}] ${dbInbound.remark || ''}`,
                                 link: linkVal,
+                                conf: item.conf || (item.link && item.link.includes('[Interface]') ? item.link : ''),
                             });
                         });
                     });
@@ -2902,6 +3043,15 @@
                         this.clientModal.client.masquePass = Math.random().toString(36).substring(2, 18);
                     }
                 },
+                genClientModalMtprotoSecret() {
+                    if (typeof RandomUtil !== 'undefined' && typeof RandomUtil.randomMtprotoSecret === 'function') {
+                        this.clientModal.client.secret = RandomUtil.randomMtprotoSecret();
+                    } else {
+                        let bytes = new Uint8Array(16);
+                        window.crypto.getRandomValues(bytes);
+                        this.clientModal.client.secret = 'ee' + Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('') + '676f6f676c652e636f6d';
+                    }
+                },
                 genClientModalSSPassword() {
                     let method = '';
                     const selectedIds = (this.clientModal && this.clientModal.selectedInboundIds) ? this.clientModal.selectedInboundIds.map(Number) : [];
@@ -2963,6 +3113,30 @@
                     const gbVal = Number(cm.client._totalGB);
                     cm.client.totalGB = (!isNaN(gbVal) && gbVal > 0) ? Math.round(gbVal * ONE_GB) : 0;
 
+                    const isValidMtproto = (s) => {
+                        if (typeof RandomUtil !== 'undefined' && typeof RandomUtil.isValidMtprotoSecret === 'function') {
+                            return RandomUtil.isValidMtprotoSecret(s);
+                        }
+                        return !!(s && typeof s === 'string' && (s.startsWith('ee') || s.startsWith('dd') || s.length >= 32));
+                    };
+                    if (!isValidMtproto(cm.client.secret)) {
+                        cm.client.secret = (typeof RandomUtil !== 'undefined' && typeof RandomUtil.randomMtprotoSecret === 'function')
+                            ? RandomUtil.randomMtprotoSecret()
+                            : 'ee' + Array.from(crypto.getRandomValues(new Uint8Array(16))).map(b => b.toString(16).padStart(2, '0')).join('') + '676f6f676c652e636f6d';
+                    }
+
+                    const isValidWg = (k) => typeof Wireguard !== 'undefined' && typeof Wireguard.isValidKey === 'function' ? Wireguard.isValidKey(k) : (k && typeof k === 'string' && k.length === 44 && k.endsWith('='));
+                    if (!isValidWg(cm.client.privateKey) || !isValidWg(cm.client.publicKey)) {
+                        if (typeof Wireguard !== 'undefined' && typeof Wireguard.generateKeypair === 'function') {
+                            const kp = Wireguard.generateKeypair(isValidWg(cm.client.privateKey) ? cm.client.privateKey : '');
+                            cm.client.privateKey = kp.privateKey;
+                            cm.client.publicKey = kp.publicKey;
+                        }
+                    }
+                    if (!isValidWg(cm.client.preSharedKey) && typeof Wireguard !== 'undefined' && typeof Wireguard.generatePresharedKey === 'function') {
+                        cm.client.preSharedKey = Wireguard.keyToBase64(Wireguard.generatePresharedKey());
+                    }
+
                     cm.confirmLoading = true;
                     try {
                         const inbIds = (cm.selectedInboundIds || []).map(Number);
@@ -3021,12 +3195,23 @@
                         else if (bm.emailMethod === 2) email = bm.emailPrefix + i.toString();
                         else if (bm.emailMethod === 3) email = bm.emailPrefix + i.toString() + bm.emailPostfix;
 
+                        let kp = (typeof Wireguard !== 'undefined' && typeof Wireguard.generateKeypair === 'function')
+                            ? Wireguard.generateKeypair()
+                            : { publicKey: '', privateKey: '' };
+                        let psk = (typeof Wireguard !== 'undefined' && typeof Wireguard.generatePresharedKey === 'function')
+                            ? Wireguard.keyToBase64(Wireguard.generatePresharedKey())
+                            : '';
+
                         const bulkGb = Number(bm.totalGB);
                         clients.push({
                             email: email,
                             subId: RandomUtil.randomLowerAndNum(16),
                             uuid: RandomUtil.randomUUID(),
                             password: (typeof RandomUtil.randomTrojanPassword === 'function' ? RandomUtil.randomTrojanPassword() : RandomUtil.randomSeq(10)),
+                            secret: (typeof RandomUtil.randomMtprotoSecret === 'function' ? RandomUtil.randomMtprotoSecret() : 'ee' + Array.from(crypto.getRandomValues(new Uint8Array(16))).map(b => b.toString(16).padStart(2,'0')).join('') + '676f6f676c652e636f6d'),
+                            publicKey: kp.publicKey,
+                            privateKey: kp.privateKey,
+                            preSharedKey: psk,
                             ssPassword: (typeof RandomUtil.randomShadowsocksPassword === 'function' ? RandomUtil.randomShadowsocksPassword(ssMethod) : RandomUtil.randomSeq(16)),
                             masquePass: (typeof RandomUtil.randomMasquePassword === 'function' ? RandomUtil.randomMasquePassword() : RandomUtil.randomSeq(16)),
                             auth: RandomUtil.randomSeq(10),
@@ -3098,11 +3283,43 @@
                         if (!ib) return;
                         const dbInbound = new DBInbound(ib);
                         const inbound = dbInbound.toInbound();
-                        const clientObj = Object.assign({}, c, { id: c.uuid || c.id });
+                        const isValidMtproto = (s) => {
+                            if (typeof RandomUtil !== 'undefined' && typeof RandomUtil.isValidMtprotoSecret === 'function') {
+                                return RandomUtil.isValidMtprotoSecret(s);
+                            }
+                            return !!(s && typeof s === 'string' && (s.startsWith('ee') || s.startsWith('dd') || s.length >= 32));
+                        };
+                        const isValidWg = (k) => typeof Wireguard !== 'undefined' && typeof Wireguard.isValidKey === 'function' ? Wireguard.isValidKey(k) : (k && typeof k === 'string' && k.length === 44 && k.endsWith('='));
+                        let privKey = isValidWg(c.privateKey) ? c.privateKey : (isValidWg(c.password) ? c.password : '');
+                        let pubKey = isValidWg(c.publicKey) ? c.publicKey : (isValidWg(c.id) ? c.id : '');
+                        if (!privKey || !pubKey) {
+                            if (typeof Wireguard !== 'undefined' && typeof Wireguard.generateKeypair === 'function') {
+                                let kp = Wireguard.generateKeypair(privKey);
+                                privKey = kp.privateKey;
+                                pubKey = kp.publicKey;
+                            }
+                        }
+                        let psk = isValidWg(c.preSharedKey || c.psk) ? (c.preSharedKey || c.psk) : '';
+                        if (!psk && typeof Wireguard !== 'undefined' && typeof Wireguard.generatePresharedKey === 'function') {
+                            psk = Wireguard.keyToBase64(Wireguard.generatePresharedKey());
+                        }
+                        const clientObj = Object.assign({}, c, {
+                            id: c.uuid || c.id,
+                            secret: isValidMtproto(c.secret)
+                                ? c.secret
+                                : (isValidMtproto(c.password)
+                                    ? c.password
+                                    : ((typeof RandomUtil !== 'undefined' && typeof RandomUtil.randomMtprotoSecret === 'function') ? RandomUtil.randomMtprotoSecret() : '')),
+                            password: c.password || c.uuid || c.id,
+                            publicKey: pubKey,
+                            privateKey: privKey,
+                            preSharedKey: psk,
+                            adTag: c.adTag,
+                        });
                         inbound.genAllLinks(dbInbound.remark, this.remarkModel, clientObj).forEach(item => {
-                            const linkVal = (inbound.protocol === Protocols.WIREGUARD && item.url) ? item.url : item.link;
+                            const linkVal = ([Protocols.WIREGUARD, Protocols.AMNEZIAWG, Protocols.MTPROTO].includes(inbound.protocol) && item.url) ? item.url : item.link;
                             this.qrModal.qrcodes.push({
-                                title: `[${(ib.protocol || '').toUpperCase()}:${ib.port}] ${dbInbound.remark || ''} - ${item.remark || ''}`,
+                                title: `[${(ib.protocol || '').toUpperCase()}:${item.port || ib.port}] ${dbInbound.remark || ''} - ${item.remark || ''}`,
                                 link: linkVal,
                             });
                         });

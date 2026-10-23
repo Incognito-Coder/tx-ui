@@ -64,6 +64,18 @@ class DBInbound {
         return this.protocol === Protocols.MASQUE;
     }
 
+    get isMtproto() {
+        return this.protocol === Protocols.MTPROTO;
+    }
+
+    get isAmneziaWG() {
+        return this.protocol === Protocols.AMNEZIAWG;
+    }
+
+    get isAmneziawg() {
+        return this.protocol === Protocols.AMNEZIAWG;
+    }
+
     get address() {
         let address = location.hostname;
         if (!ObjectUtil.isEmpty(this.listen) && this.listen !== "0.0.0.0") {
@@ -128,6 +140,8 @@ class DBInbound {
             case Protocols.HYSTERIA:
             case Protocols.WIREGUARD:
             case Protocols.MASQUE:
+            case Protocols.MTPROTO:
+            case Protocols.AMNEZIAWG:
                 return true;
             case Protocols.SHADOWSOCKS:
                 return this.toInbound().isSSMultiUser;
@@ -145,6 +159,8 @@ class DBInbound {
             case Protocols.SHADOWSOCKS:
             case Protocols.WIREGUARD:
             case Protocols.MASQUE:
+            case Protocols.MTPROTO:
+            case Protocols.AMNEZIAWG:
                 return true;
             default:
                 return false;

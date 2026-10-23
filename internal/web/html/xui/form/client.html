@@ -124,6 +124,68 @@
                       v-model="client.allowedIPs"></a-select>
         </a-form-item>
     </template>
+    <template v-if="inbound.protocol === Protocols.MTPROTO">
+        <a-form-item>
+            <template slot="label">
+                <a-tooltip>
+                    <template slot="title">
+                        <span>{{ i18n "reset" }}</span>
+                    </template>
+                    Secret
+                    <a-icon @click="client.secret = (typeof RandomUtil !== 'undefined' && typeof RandomUtil.randomMtprotoSecret === 'function') ? RandomUtil.randomMtprotoSecret() : 'ee' + Array.from(crypto.getRandomValues(new Uint8Array(16))).map(b => b.toString(16).padStart(2,'0')).join('') + '676f6f676c652e636f6d'" type="sync"></a-icon>
+                </a-tooltip>
+            </template>
+            <a-input v-model.trim="client.secret" placeholder="ee..."></a-input>
+        </a-form-item>
+        <a-form-item label="Ad Tag">
+            <template slot="label">
+                <a-tooltip>
+                    <template slot="title">
+                        <span>Telegram 16-byte hex channel/ad tag (optional)</span>
+                    </template>
+                    Ad Tag
+                    <a-icon @click="client.adTag = Array.from(crypto.getRandomValues(new Uint8Array(16))).map(b => b.toString(16).padStart(2,'0')).join('')" type="sync"></a-icon>
+                </a-tooltip>
+            </template>
+            <a-input v-model.trim="client.adTag" placeholder="16-byte hex (optional)"></a-input>
+        </a-form-item>
+    </template>
+    <template v-if="inbound.protocol === Protocols.AMNEZIAWG">
+        <a-form-item>
+            <template slot="label">
+                <a-tooltip>
+                    <template slot="title">
+                        <span>{{ i18n "reset" }}</span>
+                    </template>
+                    {{ i18n "pages.xray.wireguard.secretKey" }}
+                    <a-icon @click="[client.publicKey, client.privateKey] = Object.values(Wireguard.generateKeypair())"
+                            type="sync"></a-icon>
+                </a-tooltip>
+            </template>
+            <a-input v-model.trim="client.privateKey"></a-input>
+        </a-form-item>
+        <a-form-item label='{{ i18n "pages.xray.wireguard.publicKey" }}'>
+            <a-input v-model.trim="client.publicKey"></a-input>
+        </a-form-item>
+        <a-form-item>
+            <template slot="label">
+                <a-tooltip>
+                    <template slot="title">
+                        <span>{{ i18n "reset" }}</span>
+                    </template>
+                    {{ i18n "pages.xray.wireguard.psk" }}
+                    <a-icon @click="client.preSharedKey = Wireguard.keyToBase64(Wireguard.generatePresharedKey())"
+                            type="sync"></a-icon>
+                </a-tooltip>
+            </template>
+            <a-input v-model.trim="client.preSharedKey"></a-input>
+        </a-form-item>
+        <a-form-item label='{{ i18n "pages.xray.wireguard.allowedIPs" }}'>
+            <a-select :dropdown-class-name="themeSwitcher.currentTheme" :token-separators="[',']"
+                      mode="tags" placeholder="10.8.1.2/32"
+                      v-model="client.allowedIPs"></a-select>
+        </a-form-item>
+    </template>
     <a-form-item v-if="client.email && app.subSettings?.enable">
         <template slot="label">
             <a-tooltip>

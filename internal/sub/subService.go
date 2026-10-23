@@ -12,11 +12,13 @@ import (
 	"strings"
 	"time"
 
+	"x-ui/internal/amneziawg"
 	"x-ui/internal/database"
 	"x-ui/internal/database/model"
 	"x-ui/internal/logger"
 	"x-ui/internal/util/common"
 	"x-ui/internal/util/random"
+	"x-ui/internal/util/wireguard"
 	"x-ui/internal/web/service"
 	"x-ui/xray"
 
@@ -188,7 +190,7 @@ func (s *SubService) getInboundsBySubId(subId string) ([]*model.Inbound, error) 
 		FROM inbounds,
 			JSON_EACH(COALESCE(JSON_EXTRACT(inbounds.settings, '$.clients'), JSON_EXTRACT(inbounds.settings, '$.users'))) AS client
 		WHERE
-			protocol in ('vmess','vless','trojan','shadowsocks','hysteria','wireguard','masque')
+			protocol in ('vmess','vless','trojan','shadowsocks','hysteria','wireguard','masque','mtproto','amneziawg')
 			AND JSON_EXTRACT(client.value, '$.subId') = ? AND enable = ?
 		UNION
 		SELECT DISTINCT node_client_links.inbound_id
@@ -196,7 +198,7 @@ func (s *SubService) getInboundsBySubId(subId string) ([]*model.Inbound, error) 
 			JOIN node_clients ON node_clients.id = node_client_links.node_client_id
 			JOIN inbounds ON inbounds.id = node_client_links.inbound_id
 		WHERE node_clients.sub_id = ?
-			AND inbounds.protocol in ('vmess','vless','trojan','shadowsocks','hysteria','wireguard','masque')
+			AND inbounds.protocol in ('vmess','vless','trojan','shadowsocks','hysteria','wireguard','masque','mtproto','amneziawg')
 			AND inbounds.enable = ?
 	)`, subId, true, subId, true).Find(&inbounds).Error
 	if err != nil {
@@ -213,7 +215,7 @@ func (s *SubService) getInboundsByEmail(email string) ([]*model.Inbound, error) 
 		FROM inbounds,
 			JSON_EACH(COALESCE(JSON_EXTRACT(inbounds.settings, '$.clients'), JSON_EXTRACT(inbounds.settings, '$.users'))) AS client
 		WHERE
-			protocol in ('vmess','vless','trojan','shadowsocks','hysteria','wireguard','masque')
+			protocol in ('vmess','vless','trojan','shadowsocks','hysteria','wireguard','masque','mtproto','amneziawg')
 			AND LOWER(JSON_EXTRACT(client.value, '$.email')) = LOWER(?) AND enable = ?
 		UNION
 		SELECT DISTINCT node_client_links.inbound_id
@@ -221,7 +223,7 @@ func (s *SubService) getInboundsByEmail(email string) ([]*model.Inbound, error) 
 			JOIN node_clients ON node_clients.id = node_client_links.node_client_id
 			JOIN inbounds ON inbounds.id = node_client_links.inbound_id
 		WHERE LOWER(node_clients.email) = LOWER(?)
-			AND inbounds.protocol in ('vmess','vless','trojan','shadowsocks','hysteria','wireguard','masque')
+			AND inbounds.protocol in ('vmess','vless','trojan','shadowsocks','hysteria','wireguard','masque','mtproto','amneziawg')
 			AND inbounds.enable = ?
 	)`, email, true, email, true).Find(&inbounds).Error
 	if err != nil {
@@ -233,7 +235,7 @@ func (s *SubService) getInboundsByEmail(email string) ([]*model.Inbound, error) 
 			FROM inbounds,
 				JSON_EACH(COALESCE(JSON_EXTRACT(inbounds.settings, '$.clients'), JSON_EXTRACT(inbounds.settings, '$.users'))) AS client
 			WHERE
-				protocol in ('vmess','vless','trojan','shadowsocks','hysteria','wireguard','masque')
+				protocol in ('vmess','vless','trojan','shadowsocks','hysteria','wireguard','masque','mtproto','amneziawg')
 				AND LOWER(JSON_EXTRACT(client.value, '$.email')) = LOWER(?)
 			UNION
 			SELECT DISTINCT node_client_links.inbound_id
@@ -241,7 +243,7 @@ func (s *SubService) getInboundsByEmail(email string) ([]*model.Inbound, error) 
 				JOIN node_clients ON node_clients.id = node_client_links.node_client_id
 				JOIN inbounds ON inbounds.id = node_client_links.inbound_id
 			WHERE LOWER(node_clients.email) = LOWER(?)
-				AND inbounds.protocol in ('vmess','vless','trojan','shadowsocks','hysteria','wireguard','masque')
+				AND inbounds.protocol in ('vmess','vless','trojan','shadowsocks','hysteria','wireguard','masque','mtproto','amneziawg')
 		)`, email, email).Find(&inbounds).Error
 	}
 	return inbounds, nil
@@ -446,6 +448,10 @@ func (s *SubService) getLink(inbound *model.Inbound, email string) string {
 		return s.genWireguardLink(inbound, email)
 	case "masque":
 		return s.genMasqueLink(inbound, email)
+	case "mtproto":
+		return s.genMtprotoLink(inbound, email)
+	case "amneziawg":
+		return s.genAmneziaWGLink(inbound, email)
 	}
 	return ""
 }
@@ -656,8 +662,15 @@ func (s *SubService) genWireguardLink(inbound *model.Inbound, email string) stri
 	}
 
 	privKey := targetClient.PrivateKey
-	if privKey == "" {
-		privKey = targetClient.Password
+	if !wireguard.IsValidWireguardKey(privKey) {
+		if wireguard.IsValidWireguardKey(targetClient.Password) {
+			privKey = targetClient.Password
+		} else {
+			kpPriv, _, err := wireguard.EnsureWireguardKeypair(privKey, targetClient.PublicKey)
+			if err == nil {
+				privKey = kpPriv
+			}
+		}
 	}
 	allowedIp := "10.0.0.2/32"
 	if len(targetClient.AllowedIPs) > 0 {
@@ -683,8 +696,12 @@ func (s *SubService) genWireguardLink(inbound *model.Inbound, email string) stri
 		params.Set("mtu", strconv.Itoa(mtu))
 	}
 	params.Set("allowed_ips", "0.0.0.0/0,::/0")
-	if targetClient.Psk != "" {
-		params.Set("pre_shared_key", targetClient.Psk)
+	psk := targetClient.Psk
+	if psk == "" {
+		psk = targetClient.PreSharedKey
+	}
+	if psk != "" && wireguard.IsValidWireguardKey(psk) {
+		params.Set("pre_shared_key", psk)
 	}
 	if targetClient.KeepAlive > 0 {
 		params.Set("keepalive", strconv.Itoa(targetClient.KeepAlive))
@@ -720,10 +737,13 @@ func (s *SubService) genWireguardLink(inbound *model.Inbound, email string) stri
 				continue
 			}
 			dest, _ := ep["dest"].(string)
-			port := 0
-			if p, ok := ep["port"].(float64); ok {
+			if dest == "" {
+				dest = address
+			}
+			port := inbound.Port
+			if p, ok := ep["port"].(float64); ok && p > 0 {
 				port = int(p)
-			} else if p, ok := ep["port"].(int); ok {
+			} else if p, ok := ep["port"].(int); ok && p > 0 {
 				port = p
 			}
 			remark, _ := ep["remark"].(string)
@@ -750,6 +770,243 @@ func (s *SubService) genWireguardLink(inbound *model.Inbound, email string) stri
 		Fragment: s.genRemark(inbound, email, ""),
 	}
 	return u.String()
+}
+
+func (s *SubService) genMtprotoLink(inbound *model.Inbound, email string) string {
+	if inbound.Protocol != model.MTProto {
+		return ""
+	}
+	clients, _ := s.getClients(inbound)
+	var targetClient *model.Client
+	for _, client := range clients {
+		if strings.EqualFold(client.Email, email) {
+			c := client
+			targetClient = &c
+			break
+		}
+	}
+	if targetClient == nil {
+		return ""
+	}
+
+	secret := targetClient.Secret
+	if !model.IsValidMtprotoSecret(secret) {
+		if model.IsValidMtprotoSecret(targetClient.Password) {
+			secret = targetClient.Password
+		} else {
+			secret = model.GenerateFakeTLSSecret("google.com")
+		}
+	}
+
+	address := s.address
+	if inbound.Listen != "" && inbound.Listen != "0.0.0.0" {
+		address = inbound.Listen
+	}
+
+	var stream map[string]interface{}
+	json.Unmarshal([]byte(inbound.StreamSettings), &stream)
+	if externalProxies, ok := stream["externalProxy"].([]interface{}); ok && len(externalProxies) > 0 {
+		var links []string
+		for _, externalProxy := range externalProxies {
+			ep, ok := externalProxy.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			dest, _ := ep["dest"].(string)
+			if dest == "" {
+				dest = address
+			}
+			port := inbound.Port
+			if p, ok := ep["port"].(float64); ok && p > 0 {
+				port = int(p)
+			} else if p, ok := ep["port"].(int); ok && p > 0 {
+				port = p
+			}
+			epRemark, _ := ep["remark"].(string)
+			fullRemark := s.genRemark(inbound, email, epRemark)
+			link := fmt.Sprintf("tg://proxy?server=%s&port=%d&secret=%s", dest, port, url.QueryEscape(secret))
+			if fullRemark != "" {
+				link += "#" + url.QueryEscape(fullRemark)
+			}
+			links = append(links, link)
+		}
+		if len(links) > 0 {
+			return strings.Join(links, "\n")
+		}
+	}
+
+	remark := s.genRemark(inbound, email, "")
+	link := fmt.Sprintf("tg://proxy?server=%s&port=%d&secret=%s", address, inbound.Port, url.QueryEscape(secret))
+	if remark != "" {
+		link += "#" + url.QueryEscape(remark)
+	}
+	return link
+}
+
+func (s *SubService) buildAmneziaWGConf(server *amneziawg.ServerSettings, targetClient *model.Client, endpointAddr string, endpointPort int, remark string) string {
+	allowedIP := "10.8.1.2/32"
+	if len(targetClient.AllowedIPs) > 0 {
+		allowedIP = strings.Join(targetClient.AllowedIPs, ", ")
+	}
+
+	dns := "1.1.1.1, 1.0.0.1"
+	if server.PrimaryDNS != "" {
+		dns = server.PrimaryDNS
+		if server.SecondaryDNS != "" {
+			dns += ", " + server.SecondaryDNS
+		}
+	}
+
+	mtu := 1420
+	if server.MTU > 0 {
+		mtu = server.MTU
+	}
+
+	privKey := targetClient.PrivateKey
+	if !wireguard.IsValidWireguardKey(privKey) {
+		if wireguard.IsValidWireguardKey(targetClient.Password) {
+			privKey = targetClient.Password
+		} else {
+			kpPriv, _, err := wireguard.EnsureWireguardKeypair(privKey, targetClient.PublicKey)
+			if err == nil {
+				privKey = kpPriv
+			}
+		}
+	}
+
+	var b strings.Builder
+	b.WriteString("[Interface]\n")
+	fmt.Fprintf(&b, "Address = %s\n", allowedIP)
+	fmt.Fprintf(&b, "PrivateKey = %s\n", privKey)
+	fmt.Fprintf(&b, "DNS = %s\n", dns)
+	fmt.Fprintf(&b, "MTU = %d\n", mtu)
+	if server.Jc > 0 {
+		fmt.Fprintf(&b, "Jc = %d\n", server.Jc)
+	}
+	if server.Jmin > 0 {
+		fmt.Fprintf(&b, "Jmin = %d\n", server.Jmin)
+	}
+	if server.Jmax > 0 {
+		fmt.Fprintf(&b, "Jmax = %d\n", server.Jmax)
+	}
+	if server.S1 > 0 {
+		fmt.Fprintf(&b, "S1 = %d\n", server.S1)
+	}
+	if server.S2 > 0 {
+		fmt.Fprintf(&b, "S2 = %d\n", server.S2)
+	}
+	if server.S3 > 0 {
+		fmt.Fprintf(&b, "S3 = %d\n", server.S3)
+	}
+	if server.S4 > 0 {
+		fmt.Fprintf(&b, "S4 = %d\n", server.S4)
+	}
+	if server.H1 != "" {
+		fmt.Fprintf(&b, "H1 = %s\n", server.H1)
+	}
+	if server.H2 != "" {
+		fmt.Fprintf(&b, "H2 = %s\n", server.H2)
+	}
+	if server.H3 != "" {
+		fmt.Fprintf(&b, "H3 = %s\n", server.H3)
+	}
+	if server.H4 != "" {
+		fmt.Fprintf(&b, "H4 = %s\n", server.H4)
+	}
+
+	if remark != "" {
+		fmt.Fprintf(&b, "\n# %s\n", remark)
+	} else {
+		b.WriteString("\n")
+	}
+	b.WriteString("[Peer]\n")
+	fmt.Fprintf(&b, "PublicKey = %s\n", server.PublicKey)
+	psk := targetClient.Psk
+	if psk == "" {
+		psk = targetClient.PreSharedKey
+	}
+	if psk != "" && wireguard.IsValidWireguardKey(psk) {
+		fmt.Fprintf(&b, "PresharedKey = %s\n", psk)
+	}
+	fmt.Fprintf(&b, "Endpoint = %s:%d\n", endpointAddr, endpointPort)
+	b.WriteString("AllowedIPs = 0.0.0.0/0, ::/0\n")
+	keepalive := 25
+	if targetClient.KeepAlive > 0 {
+		keepalive = targetClient.KeepAlive
+	}
+	fmt.Fprintf(&b, "PersistentKeepalive = %d\n", keepalive)
+
+	return b.String()
+}
+
+func (s *SubService) genAmneziaWGLink(inbound *model.Inbound, email string) string {
+	if inbound.Protocol != model.AmneziaWG {
+		return ""
+	}
+	clients, _ := s.getClients(inbound)
+	var targetClient *model.Client
+	for _, client := range clients {
+		if strings.EqualFold(client.Email, email) {
+			c := client
+			targetClient = &c
+			break
+		}
+	}
+	if targetClient == nil {
+		return ""
+	}
+
+	var parsed amneziawg.InboundSettings
+	if err := json.Unmarshal([]byte(inbound.Settings), &parsed); err != nil || parsed.Server == nil {
+		return ""
+	}
+	server := parsed.Server
+
+	address := s.address
+	if inbound.Listen != "" && inbound.Listen != "0.0.0.0" {
+		address = inbound.Listen
+	}
+
+	var stream map[string]interface{}
+	json.Unmarshal([]byte(inbound.StreamSettings), &stream)
+	if externalProxies, ok := stream["externalProxy"].([]interface{}); ok && len(externalProxies) > 0 {
+		var links []string
+		for _, externalProxy := range externalProxies {
+			ep, ok := externalProxy.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			dest, _ := ep["dest"].(string)
+			if dest == "" {
+				dest = address
+			}
+			epPort := inbound.Port
+			if p, ok := ep["port"].(float64); ok && p > 0 {
+				epPort = int(p)
+			} else if p, ok := ep["port"].(int); ok && p > 0 {
+				epPort = p
+			}
+			epRemark, _ := ep["remark"].(string)
+			fullRemark := s.genRemark(inbound, email, epRemark)
+			conf := s.buildAmneziaWGConf(server, targetClient, dest, epPort, fullRemark)
+			link := "vpn://" + base64.RawURLEncoding.EncodeToString([]byte(conf))
+			if fullRemark != "" {
+				link += "#" + url.QueryEscape(fullRemark)
+			}
+			links = append(links, link)
+		}
+		if len(links) > 0 {
+			return strings.Join(links, "\n")
+		}
+	}
+
+	fullRemark := s.genRemark(inbound, email, "")
+	conf := s.buildAmneziaWGConf(server, targetClient, address, inbound.Port, fullRemark)
+	link := "vpn://" + base64.RawURLEncoding.EncodeToString([]byte(conf))
+	if fullRemark != "" {
+		link += "#" + url.QueryEscape(fullRemark)
+	}
+	return link
 }
 
 func (s *SubService) genHysteriaLink(inbound *model.Inbound, email string) string {

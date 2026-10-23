@@ -10,6 +10,8 @@ const Protocols = {
     TUN: 'tun',
     HYSTERIA: 'hysteria',
     MASQUE: 'masque',
+    MTPROTO: 'mtproto',
+    AMNEZIAWG: 'amneziawg',
 };
 Object.defineProperty(Protocols, 'Wireguard', {
     value: 'wireguard',
@@ -1879,6 +1881,8 @@ class Inbound extends XrayCommonClass {
             case Protocols.HYSTERIA: return this.settings.hysterias;
             case Protocols.WIREGUARD: return this.settings.peers;
             case Protocols.MASQUE: return this.settings.clients;
+            case Protocols.MTPROTO: return this.settings.clients;
+            case Protocols.AMNEZIAWG: return this.settings.clients;
             default:
                 return null;
         }
@@ -2058,6 +2062,10 @@ class Inbound extends XrayCommonClass {
 
     canEnableStream() {
         return [Protocols.VMESS, Protocols.VLESS, Protocols.TROJAN, Protocols.SHADOWSOCKS, Protocols.HYSTERIA, Protocols.MASQUE].includes(this.protocol);
+    }
+
+    canEnableExternalProxy() {
+        return this.canEnableStream() || [Protocols.WIREGUARD, Protocols.AMNEZIAWG, Protocols.MTPROTO].includes(this.protocol);
     }
 
     reset() {
@@ -2603,10 +2611,14 @@ class Inbound extends XrayCommonClass {
 
     genWireguardClientLink(address, port, remark, client) {
         if (!client) return '';
-        let privKey = client.privateKey || client.password || '';
+        const isValid = (k) => typeof Wireguard !== 'undefined' && typeof Wireguard.isValidKey === 'function' ? Wireguard.isValidKey(k) : (k && typeof k === 'string' && k.length === 44 && k.endsWith('='));
+        let privKey = isValid(client.privateKey) ? client.privateKey : (isValid(client.password) ? client.password : '');
+        if (!privKey && typeof Wireguard !== 'undefined' && typeof Wireguard.generateKeypair === 'function') {
+            privKey = Wireguard.generateKeypair().privateKey;
+        }
         let allowedIp = (client.allowedIPs && client.allowedIPs.length > 0) ? client.allowedIPs.join(', ') : '10.0.0.2/32';
         let pubKey = this.settings ? (this.settings.pubKey || '') : '';
-        if (!pubKey && this.settings && this.settings.secretKey) {
+        if (!isValid(pubKey) && this.settings && this.settings.secretKey) {
             try {
                 pubKey = Wireguard.generateKeypair(this.settings.secretKey).publicKey;
             } catch (e) {}
@@ -2623,7 +2635,7 @@ class Inbound extends XrayCommonClass {
         txt += `PublicKey = ${pubKey}\n`;
         txt += `AllowedIPs = 0.0.0.0/0, ::/0\n`;
         txt += `Endpoint = ${address}:${port}`;
-        if (client.psk) {
+        if (client.psk && isValid(client.psk)) {
             txt += `\nPresharedKey = ${client.psk}`;
         }
         if (client.keepAlive) {
@@ -2637,10 +2649,14 @@ class Inbound extends XrayCommonClass {
 
     genWireguardUrl(address = '', port = this.port, remark = '', client) {
         if (!client) return '';
-        let privKey = client.privateKey || client.password || '';
+        const isValid = (k) => typeof Wireguard !== 'undefined' && typeof Wireguard.isValidKey === 'function' ? Wireguard.isValidKey(k) : (k && typeof k === 'string' && k.length === 44 && k.endsWith('='));
+        let privKey = isValid(client.privateKey) ? client.privateKey : (isValid(client.password) ? client.password : '');
+        if (!privKey && typeof Wireguard !== 'undefined' && typeof Wireguard.generateKeypair === 'function') {
+            privKey = Wireguard.generateKeypair().privateKey;
+        }
         let allowedIp = (client.allowedIPs && client.allowedIPs.length > 0) ? client.allowedIPs.join(',') : '10.0.0.2/32';
         let pubKey = this.settings ? (this.settings.pubKey || '') : '';
-        if (!pubKey && this.settings && this.settings.secretKey) {
+        if (!isValid(pubKey) && this.settings && this.settings.secretKey) {
             try {
                 pubKey = Wireguard.generateKeypair(this.settings.secretKey).publicKey;
             } catch (e) {}
@@ -2659,7 +2675,7 @@ class Inbound extends XrayCommonClass {
         params.set('dns', '1.1.1.1,1.0.0.1');
         params.set('mtu', mtu.toString());
         params.set('allowed_ips', '0.0.0.0/0,::/0');
-        if (client.psk) {
+        if (client.psk && isValid(client.psk)) {
             params.set('pre_shared_key', client.psk);
         }
         if (client.keepAlive) {
@@ -2702,9 +2718,91 @@ class Inbound extends XrayCommonClass {
                 return this.genWireguardClientLink(address, port, remark, client);
             case Protocols.MASQUE:
                 return this.genMasqueLink(address, port, remark, client.password || client.pass || client.id, ep);
+            case Protocols.MTPROTO:
+                return this.genMtprotoClientLink(address, port, remark, client);
+            case Protocols.AMNEZIAWG:
+                return this.genAmneziawgClientLink(address, port, remark, client);
             default:
                 return '';
         }
+    }
+
+    genMtprotoClientLink(address = '', port = this.port, remark = '', client) {
+        const isValid = (s) => {
+            if (typeof RandomUtil !== 'undefined' && typeof RandomUtil.isValidMtprotoSecret === 'function') {
+                return RandomUtil.isValidMtprotoSecret(s);
+            }
+            return !!(s && typeof s === 'string' && (s.startsWith('ee') || s.startsWith('dd') || s.length >= 32));
+        };
+        let secret = client ? (client.secret || '') : '';
+        if (!isValid(secret)) {
+            if (client && isValid(client.password)) {
+                secret = client.password;
+            } else if (client && isValid(client.id)) {
+                secret = client.id;
+            } else if (typeof RandomUtil !== 'undefined' && typeof RandomUtil.randomMtprotoSecret === 'function') {
+                secret = RandomUtil.randomMtprotoSecret();
+            } else {
+                return '';
+            }
+        }
+        let link = `tg://proxy?server=${address}&port=${port}&secret=${encodeURIComponent(secret)}`;
+        if (remark) link += `#${encodeURIComponent(remark)}`;
+        return link;
+    }
+
+    genAmneziawgClientConf(address = '', port = this.port, remark = '', client) {
+        if (!client) return '';
+        const s = this.settings?.server || {};
+        const allowedIP = (client.allowedIPs && client.allowedIPs.length > 0) ? client.allowedIPs.join(', ') : '10.8.1.2/32';
+        const dns = s.primaryDns ? (s.secondaryDns ? `${s.primaryDns}, ${s.secondaryDns}` : s.primaryDns) : '1.1.1.1, 1.0.0.1';
+        const mtu = s.mtu || 1420;
+        const isValid = (k) => typeof Wireguard !== 'undefined' && typeof Wireguard.isValidKey === 'function' ? Wireguard.isValidKey(k) : (k && typeof k === 'string' && k.length === 44 && k.endsWith('='));
+        let privKey = isValid(client.privateKey) ? client.privateKey : (isValid(client.password) ? client.password : '');
+        if (!privKey && typeof Wireguard !== 'undefined' && typeof Wireguard.generateKeypair === 'function') {
+            privKey = Wireguard.generateKeypair().privateKey;
+        }
+
+        let conf = `[Interface]\nAddress = ${allowedIP}\nPrivateKey = ${privKey}\nDNS = ${dns}\nMTU = ${mtu}\n`;
+        if (s.jc) conf += `Jc = ${s.jc}\n`;
+        if (s.jmin) conf += `Jmin = ${s.jmin}\n`;
+        if (s.jmax) conf += `Jmax = ${s.jmax}\n`;
+        if (s.s1) conf += `S1 = ${s.s1}\n`;
+        if (s.s2) conf += `S2 = ${s.s2}\n`;
+        if (s.s3) conf += `S3 = ${s.s3}\n`;
+        if (s.s4) conf += `S4 = ${s.s4}\n`;
+        if (s.h1) conf += `H1 = ${s.h1}\n`;
+        if (s.h2) conf += `H2 = ${s.h2}\n`;
+        if (s.h3) conf += `H3 = ${s.h3}\n`;
+        if (s.h4) conf += `H4 = ${s.h4}\n`;
+
+        if (remark) {
+            conf += `\n# ${remark}\n`;
+        } else {
+            conf += `\n`;
+        }
+        let serverPub = s.publicKey || '';
+        if (!isValid(serverPub) && s.privateKey && typeof Wireguard !== 'undefined' && typeof Wireguard.generateKeypair === 'function') {
+            try {
+                serverPub = Wireguard.generateKeypair(s.privateKey).publicKey;
+            } catch (e) {}
+        }
+        conf += `[Peer]\nPublicKey = ${serverPub}\n`;
+        let psk = client.preSharedKey || client.psk;
+        if (psk && isValid(psk)) conf += `PresharedKey = ${psk}\n`;
+        conf += `Endpoint = ${address}:${port}\nAllowedIPs = 0.0.0.0/0, ::/0\nPersistentKeepalive = 25\n`;
+        return conf;
+    }
+
+    genAmneziawgClientLink(address = '', port = this.port, remark = '', client) {
+        const conf = this.genAmneziawgClientConf(address, port, remark, client);
+        if (!conf) return '';
+        const b64 = safeBase64(conf);
+        let link = `vpn://${b64}`;
+        if (remark) {
+            link += `#${encodeURIComponent(remark)}`;
+        }
+        return link;
     }
 
     genMasqueLink(address = '', port = this.port, remark = '', clientPass, ep = null) {
@@ -2761,19 +2859,43 @@ class Inbound extends XrayCommonClass {
         };
         if (ObjectUtil.isArrEmpty(this.stream.externalProxy)) {
             let r = orderChars.split('').map(char => orders[char]).filter(x => x.length > 0).join(separationChar);
+            let linkVal = this.genLink(addr, port, 'same', r, client);
+            let urlVal = linkVal;
+            if (this.protocol === Protocols.WIREGUARD) {
+                urlVal = this.genWireguardUrl(addr, port, r, client);
+            } else if (this.protocol === Protocols.AMNEZIAWG) {
+                urlVal = this.genAmneziawgClientLink(addr, port, r, client);
+                linkVal = this.genAmneziawgClientConf(addr, port, r, client);
+            }
             result.push({
                 remark: r,
-                link: this.genLink(addr, port, 'same', r, client),
-                url: this.protocol === Protocols.WIREGUARD ? this.genWireguardUrl(addr, port, r, client) : this.genLink(addr, port, 'same', r, client)
+                link: linkVal,
+                url: urlVal,
+                conf: (this.protocol === Protocols.AMNEZIAWG) ? this.genAmneziawgClientConf(addr, port, r, client) : (this.protocol === Protocols.WIREGUARD ? this.genWireguardClientLink(addr, port, r, client) : undefined),
+                dest: addr,
+                port: port,
             });
         } else {
             this.stream.externalProxy.forEach((ep) => {
                 orders['o'] = ep.remark;
                 let r = orderChars.split('').map(char => orders[char]).filter(x => x.length > 0).join(separationChar);
+                let epDest = ep.dest || addr;
+                let epPort = ep.port || port;
+                let linkVal = this.genLink(epDest, epPort, ep.forceTls, r, client, ep);
+                let urlVal = linkVal;
+                if (this.protocol === Protocols.WIREGUARD) {
+                    urlVal = this.genWireguardUrl(epDest, epPort, r, client);
+                } else if (this.protocol === Protocols.AMNEZIAWG) {
+                    urlVal = this.genAmneziawgClientLink(epDest, epPort, r, client);
+                    linkVal = this.genAmneziawgClientConf(epDest, epPort, r, client);
+                }
                 result.push({
                     remark: r,
-                    link: this.genLink(ep.dest, ep.port, ep.forceTls, r, client, ep),
-                    url: this.protocol === Protocols.WIREGUARD ? this.genWireguardUrl(ep.dest, ep.port, r, client) : this.genLink(ep.dest, ep.port, ep.forceTls, r, client, ep)
+                    link: linkVal,
+                    url: urlVal,
+                    conf: (this.protocol === Protocols.AMNEZIAWG) ? this.genAmneziawgClientConf(epDest, epPort, r, client) : (this.protocol === Protocols.WIREGUARD ? this.genWireguardClientLink(epDest, epPort, r, client) : undefined),
+                    dest: epDest,
+                    port: epPort,
                 });
             });
         }
@@ -2782,20 +2904,33 @@ class Inbound extends XrayCommonClass {
 
     genInboundLinks(remark = '', remarkModel = '-ieo') {
         let addr = !ObjectUtil.isEmpty(this.listen) && this.listen !== "0.0.0.0" ? this.listen : location.hostname;
-        if (this.clients) {
+        if (this.clients && this.clients.length > 0) {
             let links = [];
             this.clients.forEach((client) => {
                 this.genAllLinks(remark, remarkModel, client).forEach(l => {
-                    links.push(l.link);
-                })
+                    const linkVal = ([Protocols.WIREGUARD, Protocols.AMNEZIAWG, Protocols.MTPROTO].includes(this.protocol) && l.url) ? l.url : l.link;
+                    links.push(linkVal);
+                });
             });
             return links.join('\r\n');
         } else {
             if (this.protocol == Protocols.SHADOWSOCKS && !this.isSSMultiUser) return this.genSSLink(addr, this.port, 'same', remark);
-            if (this.protocol == Protocols.WIREGUARD) {
+            if (this.protocol == Protocols.WIREGUARD && this.settings && Array.isArray(this.settings.peers)) {
                 let links = [];
+                let endpoints = [{ dest: addr, port: this.port, remark: '' }];
+                if (!ObjectUtil.isArrEmpty(this.stream?.externalProxy)) {
+                    endpoints = this.stream.externalProxy.map(ep => ({
+                        dest: ep.dest || addr,
+                        port: ep.port || this.port,
+                        remark: ep.remark || '',
+                    }));
+                }
                 this.settings.peers.forEach((p, index) => {
-                    links.push(this.getWireguardLink(addr, this.port, remark + remarkModel.charAt(0) + (index + 1), index));
+                    endpoints.forEach(ep => {
+                        let r = remark + remarkModel.charAt(0) + (index + 1);
+                        if (ep.remark) r += '-' + ep.remark;
+                        links.push(this.getWireguardLink(ep.dest, ep.port, r, index));
+                    });
                 });
                 return links.join('\r\n');
             }
@@ -2805,7 +2940,7 @@ class Inbound extends XrayCommonClass {
 
     toJson() {
         let streamSettings;
-        if (this.canEnableStream() || this.stream?.sockopt) {
+        if (this.canEnableStream() || this.stream?.sockopt || (this.canEnableExternalProxy() && this.stream?.externalProxy?.length > 0)) {
             streamSettings = this.stream.toJson();
         }
         return {
@@ -2849,6 +2984,8 @@ Inbound.Settings = class extends XrayCommonClass {
                 return new Inbound.TunSettings(protocol);
             case Protocols.HYSTERIA: return new Inbound.HysteriaSettings(protocol);
             case Protocols.MASQUE: return new Inbound.MasqueSettings(protocol);
+            case Protocols.MTPROTO: return new Inbound.MtprotoSettings(protocol);
+            case Protocols.AMNEZIAWG: return new Inbound.AmneziawgSettings(protocol);
             default:
                 return null;
         }
@@ -2876,6 +3013,8 @@ Inbound.Settings = class extends XrayCommonClass {
                 return Inbound.TunSettings.fromJson(json);
             case Protocols.HYSTERIA: return Inbound.HysteriaSettings.fromJson(json);
             case Protocols.MASQUE: return Inbound.MasqueSettings.fromJson(json);
+            case Protocols.MTPROTO: return Inbound.MtprotoSettings.fromJson(json);
+            case Protocols.AMNEZIAWG: return Inbound.AmneziawgSettings.fromJson(json);
             default:
                 return null;
         }
@@ -2939,7 +3078,7 @@ Inbound.ClientBase = class extends XrayCommonClass {
 
     static commonArgsFromJson(json = {}) {
         return [
-            json.email,
+            json.email || ((typeof RandomUtil !== 'undefined' && typeof RandomUtil.randomLowerAndNum === 'function') ? RandomUtil.randomLowerAndNum(8) : ''),
             json.limitIp,
             json.totalGB,
             json.expiryTime,
@@ -3544,15 +3683,20 @@ Inbound.WireguardSettings.Peer = class extends Inbound.ClientBase {
         if (!subId) {
             subId = RandomUtil.randomLowerAndNum(16);
         }
-        if (!psk) {
-            psk = Wireguard.keyToBase64(Wireguard.generatePresharedKey());
+        const isValid = (k) => typeof Wireguard !== 'undefined' && typeof Wireguard.isValidKey === 'function' ? Wireguard.isValidKey(k) : (k && typeof k === 'string' && k.length === 44 && k.endsWith('='));
+        if (!isValid(psk)) {
+            psk = (typeof Wireguard !== 'undefined' && typeof Wireguard.generatePresharedKey === 'function') ? Wireguard.keyToBase64(Wireguard.generatePresharedKey()) : '';
         }
         super(email, limitIp, totalGB, expiryTime, enable, tgId, subId, comment, reset);
+        if (!isValid(privateKey) || !isValid(publicKey)) {
+            if (typeof Wireguard !== 'undefined' && typeof Wireguard.generateKeypair === 'function') {
+                let kp = Wireguard.generateKeypair(isValid(privateKey) ? privateKey : '');
+                publicKey = kp.publicKey;
+                privateKey = kp.privateKey;
+            }
+        }
         this.privateKey = privateKey;
         this.publicKey = publicKey;
-        if (!this.publicKey) {
-            [this.publicKey, this.privateKey] = Object.values(Wireguard.generateKeypair());
-        }
         this.id = this.publicKey;
         this.password = this.privateKey;
         this.psk = psk;
@@ -3565,10 +3709,35 @@ Inbound.WireguardSettings.Peer = class extends Inbound.ClientBase {
         this.level = level;
     }
 
+    get id() {
+        return this.publicKey;
+    }
+
+    set id(v) {
+        const isValid = (k) => typeof Wireguard !== 'undefined' && typeof Wireguard.isValidKey === 'function' ? Wireguard.isValidKey(k) : (k && typeof k === 'string' && k.length === 44 && k.endsWith('='));
+        if (isValid(v)) {
+            this.publicKey = v;
+        }
+    }
+
+    get password() {
+        return this.privateKey;
+    }
+
+    set password(v) {
+        const isValid = (k) => typeof Wireguard !== 'undefined' && typeof Wireguard.isValidKey === 'function' ? Wireguard.isValidKey(k) : (k && typeof k === 'string' && k.length === 44 && k.endsWith('='));
+        if (isValid(v)) {
+            this.privateKey = v;
+        }
+    }
+
     static fromJson(json = {}) {
+        const isValid = (k) => typeof Wireguard !== 'undefined' && typeof Wireguard.isValidKey === 'function' ? Wireguard.isValidKey(k) : (k && typeof k === 'string' && k.length === 44 && k.endsWith('='));
+        let priv = isValid(json.privateKey) ? json.privateKey : (isValid(json.password) ? json.password : '');
+        let pub = isValid(json.publicKey) ? json.publicKey : (isValid(json.id) ? json.id : '');
         return new Inbound.WireguardSettings.Peer(
-            json.privateKey || json.password,
-            json.publicKey || json.id,
+            priv,
+            pub,
             json.psk || json.preSharedKey || '',
             json.allowedIPs || ['10.0.0.2/32'],
             json.keepAlive || 0,
@@ -3803,6 +3972,325 @@ Inbound.MasqueSettings.Masque = class extends Inbound.ClientBase {
         return new Inbound.MasqueSettings.Masque(
             json.pass || json.password || json.id || RandomUtil.randomMasquePassword(),
             ...Inbound.ClientBase.commonArgsFromJson(json),
+        );
+    }
+};
+
+Inbound.MtprotoSettings = class extends XrayCommonClass {
+    constructor(
+        protocol = Protocols.MTPROTO,
+        routeThroughXray = false,
+        routeXrayPort = 0,
+        preferIp = 'prefer-ipv4',
+        proxyProtocolListener = false,
+        throttleMaxConnections = 0,
+        pendingHandshakesMaxPerIP = 0,
+        domainFronting = { ip: '', port: 443, proxyProtocol: false },
+        publicIpv4 = '',
+        publicIpv6 = '',
+        debug = false,
+        clients = [new Inbound.MtprotoSettings.Client()]
+    ) {
+        super();
+        this.protocol = protocol;
+        this.routeThroughXray = routeThroughXray;
+        this.routeXrayPort = routeXrayPort;
+        this.preferIp = preferIp;
+        this.proxyProtocolListener = proxyProtocolListener;
+        this.throttleMaxConnections = throttleMaxConnections;
+        this.pendingHandshakesMaxPerIP = pendingHandshakesMaxPerIP;
+        this.domainFronting = domainFronting || { ip: '', port: 443, proxyProtocol: false };
+        this.publicIpv4 = publicIpv4;
+        this.publicIpv6 = publicIpv6;
+        this.debug = debug;
+        this.clients = clients;
+    }
+
+    addClient(client) {
+        this.clients.push(client);
+    }
+
+    delClient(index) {
+        this.clients.splice(index, 1);
+    }
+
+    static fromJson(json = {}) {
+        const clientList = json.clients || [];
+        return new Inbound.MtprotoSettings(
+            Protocols.MTPROTO,
+            json.routeThroughXray ?? false,
+            json.routeXrayPort ?? 0,
+            json.preferIp ?? 'prefer-ipv4',
+            json.proxyProtocolListener ?? false,
+            json.throttleMaxConnections ?? 0,
+            json.pendingHandshakesMaxPerIP ?? 0,
+            json.domainFronting || { ip: '', port: 443, proxyProtocol: false },
+            json.publicIpv4 ?? '',
+            json.publicIpv6 ?? '',
+            json.debug ?? false,
+            clientList.map(c => Inbound.MtprotoSettings.Client.fromJson(c))
+        );
+    }
+
+    toJson() {
+        return {
+            routeThroughXray: this.routeThroughXray,
+            routeXrayPort: this.routeXrayPort ? parseInt(this.routeXrayPort) : 0,
+            preferIp: this.preferIp || 'prefer-ipv4',
+            proxyProtocolListener: this.proxyProtocolListener,
+            throttleMaxConnections: this.throttleMaxConnections ? parseInt(this.throttleMaxConnections) : 0,
+            pendingHandshakesMaxPerIP: this.pendingHandshakesMaxPerIP ? parseInt(this.pendingHandshakesMaxPerIP) : 0,
+            domainFronting: this.domainFronting,
+            publicIpv4: this.publicIpv4,
+            publicIpv6: this.publicIpv6,
+            debug: this.debug,
+            clients: (this.clients || []).map(c => c.toJson()),
+        };
+    }
+};
+
+Inbound.MtprotoSettings.Client = class extends Inbound.ClientBase {
+    constructor(
+        secret,
+        adTag = '',
+        email, limitIp, totalGB, expiryTime, enable, tgId, subId, comment, reset
+    ) {
+        const isValid = (s) => {
+            if (typeof RandomUtil !== 'undefined' && typeof RandomUtil.isValidMtprotoSecret === 'function') {
+                return RandomUtil.isValidMtprotoSecret(s);
+            }
+            return !!(s && typeof s === 'string' && (s.startsWith('ee') || s.startsWith('dd') || s.length >= 32));
+        };
+        const genSecret = () => {
+            return (typeof RandomUtil !== 'undefined' && typeof RandomUtil.randomMtprotoSecret === 'function')
+                ? RandomUtil.randomMtprotoSecret()
+                : 'ee' + Array.from(crypto.getRandomValues(new Uint8Array(16))).map(b => b.toString(16).padStart(2,'0')).join('') + '676f6f676c652e636f6d';
+        };
+        if (!isValid(secret)) {
+            secret = genSecret();
+        }
+        if (!email && typeof RandomUtil !== 'undefined' && typeof RandomUtil.randomLowerAndNum === 'function') {
+            email = RandomUtil.randomLowerAndNum(8);
+        }
+        super(email, limitIp, totalGB, expiryTime, enable, tgId, subId, comment, reset);
+        this.secret = secret;
+        this.adTag = adTag;
+    }
+
+    get id() {
+        return this.secret;
+    }
+
+    set id(v) {
+        if (typeof RandomUtil !== 'undefined' && typeof RandomUtil.isValidMtprotoSecret === 'function') {
+            if (RandomUtil.isValidMtprotoSecret(v)) {
+                this.secret = v;
+            }
+        } else if (v && (v.startsWith('ee') || v.startsWith('dd') || v.length >= 32)) {
+            this.secret = v;
+        }
+    }
+
+    get password() {
+        return this.secret;
+    }
+
+    set password(v) {
+        if (typeof RandomUtil !== 'undefined' && typeof RandomUtil.isValidMtprotoSecret === 'function') {
+            if (RandomUtil.isValidMtprotoSecret(v)) {
+                this.secret = v;
+            }
+        } else if (v && (v.startsWith('ee') || v.startsWith('dd') || v.length >= 32)) {
+            this.secret = v;
+        }
+    }
+
+    toJson() {
+        return {
+            id: this.secret,
+            secret: this.secret,
+            password: this.secret,
+            adTag: this.adTag,
+            ...this._clientBaseToJson(),
+        };
+    }
+
+    static fromJson(json = {}) {
+        const isValid = (s) => {
+            if (typeof RandomUtil !== 'undefined' && typeof RandomUtil.isValidMtprotoSecret === 'function') {
+                return RandomUtil.isValidMtprotoSecret(s);
+            }
+            return !!(s && typeof s === 'string' && (s.startsWith('ee') || s.startsWith('dd') || s.length >= 32));
+        };
+        let secret = json.secret;
+        if (!isValid(secret)) {
+            if (isValid(json.password)) {
+                secret = json.password;
+            } else if (isValid(json.id)) {
+                secret = json.id;
+            } else {
+                secret = (typeof RandomUtil !== 'undefined' && typeof RandomUtil.randomMtprotoSecret === 'function')
+                    ? RandomUtil.randomMtprotoSecret()
+                    : 'ee' + Array.from(crypto.getRandomValues(new Uint8Array(16))).map(b => b.toString(16).padStart(2,'0')).join('') + '676f6f676c652e636f6d';
+            }
+        }
+        return new Inbound.MtprotoSettings.Client(
+            secret,
+            json.adTag || '',
+            ...Inbound.ClientBase.commonArgsFromJson(json)
+        );
+    }
+};
+
+Inbound.AmneziawgSettings = class extends XrayCommonClass {
+    constructor(
+        protocol = Protocols.AMNEZIAWG,
+        server = null,
+        clients = []
+    ) {
+        super();
+        this.protocol = protocol;
+        if (!server) {
+            let keypair = (typeof Wireguard !== 'undefined' && Wireguard.generateKeypair) ? Wireguard.generateKeypair() : { publicKey: '', privateKey: '' };
+            server = {
+                privateKey: keypair.privateKey || '',
+                publicKey: keypair.publicKey || '',
+                subnetIp: '10.8.1.1',
+                subnetCidr: 24,
+                mtu: 1420,
+                primaryDns: '1.1.1.1',
+                secondaryDns: '1.0.0.1',
+                jc: 4,
+                jmin: 40,
+                jmax: 70,
+                s1: 15,
+                s2: 30,
+                s3: 15,
+                s4: 30,
+                h1: '1',
+                h2: '2',
+                h3: '3',
+                h4: '4',
+            };
+        }
+        this.server = server;
+        if (!clients || clients.length === 0) {
+            clients = [new Inbound.AmneziawgSettings.Client()];
+        }
+        this.clients = clients;
+    }
+
+    addClient(client) {
+        this.clients.push(client);
+    }
+
+    delClient(index) {
+        this.clients.splice(index, 1);
+    }
+
+    static fromJson(json = {}) {
+        const clientList = json.clients || [];
+        return new Inbound.AmneziawgSettings(
+            Protocols.AMNEZIAWG,
+            json.server,
+            clientList.map(c => Inbound.AmneziawgSettings.Client.fromJson(c))
+        );
+    }
+
+    toJson() {
+        return {
+            server: this.server,
+            clients: (this.clients || []).map(c => c.toJson()),
+        };
+    }
+};
+
+Inbound.AmneziawgSettings.Client = class extends Inbound.ClientBase {
+    constructor(
+        publicKey = '',
+        privateKey = '',
+        preSharedKey = '',
+        allowedIPs = ['10.8.1.2/32'],
+        forwardedPorts = '',
+        email, limitIp, totalGB, expiryTime, enable, tgId, subId, comment, reset
+    ) {
+        if (!email && typeof RandomUtil !== 'undefined' && typeof RandomUtil.randomLowerAndNum === 'function') {
+            email = RandomUtil.randomLowerAndNum(8);
+        }
+        super(email, limitIp, totalGB, expiryTime, enable, tgId, subId, comment, reset);
+        const isValid = (k) => typeof Wireguard !== 'undefined' && typeof Wireguard.isValidKey === 'function' ? Wireguard.isValidKey(k) : (k && typeof k === 'string' && k.length === 44 && k.endsWith('='));
+        if (!isValid(privateKey) || !isValid(publicKey)) {
+            if (typeof Wireguard !== 'undefined' && Wireguard.generateKeypair) {
+                let kp = Wireguard.generateKeypair(isValid(privateKey) ? privateKey : '');
+                publicKey = kp.publicKey;
+                privateKey = kp.privateKey;
+            }
+        }
+        if (!isValid(preSharedKey) && typeof Wireguard !== 'undefined' && Wireguard.generatePresharedKey) {
+            preSharedKey = Wireguard.keyToBase64(Wireguard.generatePresharedKey());
+        }
+        this.publicKey = publicKey;
+        this.privateKey = privateKey;
+        this.preSharedKey = preSharedKey;
+        this.allowedIPs = allowedIPs;
+        this.forwardedPorts = forwardedPorts;
+    }
+
+    get id() {
+        return this.publicKey;
+    }
+
+    set id(v) {
+        const isValid = (k) => typeof Wireguard !== 'undefined' && typeof Wireguard.isValidKey === 'function' ? Wireguard.isValidKey(k) : (k && typeof k === 'string' && k.length === 44 && k.endsWith('='));
+        if (isValid(v)) {
+            this.publicKey = v;
+        }
+    }
+
+    get password() {
+        return this.privateKey;
+    }
+
+    set password(v) {
+        const isValid = (k) => typeof Wireguard !== 'undefined' && typeof Wireguard.isValidKey === 'function' ? Wireguard.isValidKey(k) : (k && typeof k === 'string' && k.length === 44 && k.endsWith('='));
+        if (isValid(v)) {
+            this.privateKey = v;
+        }
+    }
+
+    get psk() {
+        return this.preSharedKey;
+    }
+
+    set psk(v) {
+        this.preSharedKey = v;
+    }
+
+    toJson() {
+        return {
+            id: this.publicKey,
+            publicKey: this.publicKey,
+            privateKey: this.privateKey,
+            password: this.privateKey,
+            preSharedKey: this.preSharedKey,
+            psk: this.preSharedKey,
+            allowedIPs: this.allowedIPs,
+            forwardedPorts: this.forwardedPorts,
+            ...this._clientBaseToJson(),
+        };
+    }
+
+    static fromJson(json = {}) {
+        const isValid = (k) => typeof Wireguard !== 'undefined' && typeof Wireguard.isValidKey === 'function' ? Wireguard.isValidKey(k) : (k && typeof k === 'string' && k.length === 44 && k.endsWith('='));
+        let priv = isValid(json.privateKey) ? json.privateKey : (isValid(json.password) ? json.password : '');
+        let pub = isValid(json.publicKey) ? json.publicKey : (isValid(json.id) ? json.id : '');
+        return new Inbound.AmneziawgSettings.Client(
+            pub,
+            priv,
+            json.preSharedKey || json.psk || '',
+            json.allowedIPs || ['10.8.1.2/32'],
+            json.forwardedPorts || '',
+            ...Inbound.ClientBase.commonArgsFromJson(json)
         );
     }
 };

@@ -1,0 +1,117 @@
+{{define "form/amneziawg"}}
+<a-collapse v-if="isEdit && inbound.settings.clients && inbound.settings.clients.length > 0">
+  <a-collapse-panel :header="'{{ i18n "pages.client.clientCount"}} : ' + inbound.settings.clients.length">
+    <table width="100%">
+      <tr class="client-table-header">
+        <th>{{ i18n "pages.inbounds.email" }}</th>
+        <th>Public Key</th>
+        <th>Allowed IPs</th>
+      </tr>
+      <tr v-for="(client, index) in inbound.settings.clients" :class="index % 2 == 1 ? 'client-table-odd-row' : ''">
+        <td>[[ client.email ]]</td>
+        <td style="font-family: monospace; font-size: 11px;">[[ client.publicKey ]]</td>
+        <td>[[ (client.allowedIPs || []).join(', ') ]]</td>
+      </tr>
+    </table>
+  </a-collapse-panel>
+</a-collapse>
+<a-form :colon="false" :label-col="{ md: {span:8} }" :wrapper-col="{ md: {span:14} }">
+    <a-form-item>
+        <template slot="label">
+            <a-tooltip>
+                <template slot="title">
+                    <span>{{ i18n "reset" }}</span>
+                </template>
+                {{ i18n "pages.xray.wireguard.secretKey" }}
+                <a-icon type="sync"
+                        @click="[inbound.settings.server.publicKey, inbound.settings.server.privateKey] = Object.values(Wireguard.generateKeypair())"></a-icon>
+            </a-tooltip>
+        </template>
+        <a-input v-model.trim="inbound.settings.server.privateKey"></a-input>
+    </a-form-item>
+    <a-form-item label='{{ i18n "pages.xray.wireguard.publicKey" }}'>
+        <a-input disabled v-model="inbound.settings.server.publicKey"></a-input>
+    </a-form-item>
+    <a-form-item label="Subnet IP">
+        <a-input placeholder="10.8.1.1" v-model.trim="inbound.settings.server.subnetIp"></a-input>
+    </a-form-item>
+    <a-form-item label="Subnet CIDR">
+        <a-input-number :min="8" :max="30" v-model.number="inbound.settings.server.subnetCidr"></a-input-number>
+    </a-form-item>
+    <a-form-item label="Primary DNS">
+        <a-input placeholder="1.1.1.1" v-model.trim="inbound.settings.server.primaryDns"></a-input>
+    </a-form-item>
+    <a-form-item label="Secondary DNS">
+        <a-input placeholder="1.0.0.1" v-model.trim="inbound.settings.server.secondaryDns"></a-input>
+    </a-form-item>
+    <a-form-item label="MTU">
+        <a-input-number :min="576" :max="9000" v-model.number="inbound.settings.server.mtu"></a-input-number>
+    </a-form-item>
+
+    <a-collapse>
+        <a-collapse-panel header="AmneziaWG Obfuscation (AWG 3.1)">
+            <a-row :gutter="8">
+                <a-col :span="8">
+                    <a-form-item label="Jc" :label-col="{ span: 10 }" :wrapper-col="{ span: 14 }">
+                        <a-input-number :min="0" v-model.number="inbound.settings.server.jc"></a-input-number>
+                    </a-form-item>
+                </a-col>
+                <a-col :span="8">
+                    <a-form-item label="Jmin" :label-col="{ span: 10 }" :wrapper-col="{ span: 14 }">
+                        <a-input-number :min="0" v-model.number="inbound.settings.server.jmin"></a-input-number>
+                    </a-form-item>
+                </a-col>
+                <a-col :span="8">
+                    <a-form-item label="Jmax" :label-col="{ span: 10 }" :wrapper-col="{ span: 14 }">
+                        <a-input-number :min="0" v-model.number="inbound.settings.server.jmax"></a-input-number>
+                    </a-form-item>
+                </a-col>
+            </a-row>
+            <a-row :gutter="8">
+                <a-col :span="6">
+                    <a-form-item label="S1" :label-col="{ span: 10 }" :wrapper-col="{ span: 14 }">
+                        <a-input-number :min="0" v-model.number="inbound.settings.server.s1"></a-input-number>
+                    </a-form-item>
+                </a-col>
+                <a-col :span="6">
+                    <a-form-item label="S2" :label-col="{ span: 10 }" :wrapper-col="{ span: 14 }">
+                        <a-input-number :min="0" v-model.number="inbound.settings.server.s2"></a-input-number>
+                    </a-form-item>
+                </a-col>
+                <a-col :span="6">
+                    <a-form-item label="S3" :label-col="{ span: 10 }" :wrapper-col="{ span: 14 }">
+                        <a-input-number :min="0" v-model.number="inbound.settings.server.s3"></a-input-number>
+                    </a-form-item>
+                </a-col>
+                <a-col :span="6">
+                    <a-form-item label="S4" :label-col="{ span: 10 }" :wrapper-col="{ span: 14 }">
+                        <a-input-number :min="0" v-model.number="inbound.settings.server.s4"></a-input-number>
+                    </a-form-item>
+                </a-col>
+            </a-row>
+            <a-row :gutter="8">
+                <a-col :span="6">
+                    <a-form-item label="H1" :label-col="{ span: 10 }" :wrapper-col="{ span: 14 }">
+                        <a-input v-model.trim="inbound.settings.server.h1"></a-input>
+                    </a-form-item>
+                </a-col>
+                <a-col :span="6">
+                    <a-form-item label="H2" :label-col="{ span: 10 }" :wrapper-col="{ span: 14 }">
+                        <a-input v-model.trim="inbound.settings.server.h2"></a-input>
+                    </a-form-item>
+                </a-col>
+                <a-col :span="6">
+                    <a-form-item label="H3" :label-col="{ span: 10 }" :wrapper-col="{ span: 14 }">
+                        <a-input v-model.trim="inbound.settings.server.h3"></a-input>
+                    </a-form-item>
+                </a-col>
+                <a-col :span="6">
+                    <a-form-item label="H4" :label-col="{ span: 10 }" :wrapper-col="{ span: 14 }">
+                        <a-input v-model.trim="inbound.settings.server.h4"></a-input>
+                    </a-form-item>
+                </a-col>
+            </a-row>
+        </a-collapse-panel>
+    </a-collapse>
+</a-form>
+{{end}}

@@ -318,6 +318,8 @@ subscriptionUrlJson = "آدرس جیسون اشتراک"
 forTrojanProtocol = "برای پروتکل تروجان"
 forShadowsocksProtocol = "برای پروتکل شدوساکس"
 forMasqueProtocol = "برای پروتکل ماسک (MASQUE)"
+forMtprotoProtocol = "برای پروتکل ام‌تی‌پروتو (MTProto)"
+forAmneziawgProtocol = "برای پروتکل امنزیا وایرگارد (AmneziaWG)"
 [pages.clients]
 showLinks = "نمایش لینک\u200cها"
 noLinks = "هیچ لینکی موجود نیست"

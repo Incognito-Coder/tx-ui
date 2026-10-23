@@ -110,7 +110,7 @@
             if (qrModalApp) qrModalApp.statusFetched = false;
             if (client) {
                 this.inbound.genAllLinks(this.dbInbound.remark, app.remarkModel, client).forEach(l => {
-                    const linkVal = (this.inbound.protocol === Protocols.WIREGUARD && l.url) ? l.url : l.link;
+                    const linkVal = ([Protocols.WIREGUARD, Protocols.AMNEZIAWG, Protocols.MTPROTO].includes(this.inbound.protocol) && l.url) ? l.url : l.link;
                     this.qrcodes.push({
                         remark: l.remark,
                         link: linkVal,
@@ -118,13 +118,13 @@
                         originalLink: linkVal
                     });
                 });
-            } else if (this.inbound.protocol == Protocols.WIREGUARD) {
+            } else if ([Protocols.WIREGUARD, Protocols.AMNEZIAWG, Protocols.MTPROTO].includes(this.inbound.protocol)) {
                 const clients = (this.inbound.clients && this.inbound.clients.length > 0) ? this.inbound.clients : (this.inbound.settings?.peers || []);
                 clients.forEach((c, index) => {
                     this.inbound.genAllLinks(this.dbInbound.remark, app.remarkModel, c).forEach(l => {
                         const linkVal = l.url || l.link;
                         this.qrcodes.push({
-                            remark: l.remark || ("Peer " + (index + 1)),
+                            remark: l.remark || ("Client " + (index + 1)),
                             link: linkVal,
                             useIPv4: false,
                             originalLink: linkVal
@@ -183,14 +183,36 @@
                     const ipv4 = this.serverStatus.publicIP.ipv4;
 
                     if (qrModal.inbound.protocol == Protocols.WIREGUARD) {
-                        // Special handling for WireGuard config
-                        const endpointRegex = /Endpoint = ([^:]+):(\d+)/;
-                        const match = originalLink.match(endpointRegex);
-                        if (match) {
-                            row.link = originalLink.replace(
-                                `Endpoint = ${match[1]}:${match[2]}`,
-                                `Endpoint = ${ipv4}:${match[2]}`
-                            );
+                        if (originalLink.startsWith('wireguard://')) {
+                            try {
+                                const url = new URL(originalLink);
+                                url.hostname = ipv4;
+                                row.link = url.toString();
+                            } catch (e) {}
+                        } else {
+                            // Special handling for WireGuard config text
+                            const endpointRegex = /Endpoint = ([^:]+):(\d+)/;
+                            const match = originalLink.match(endpointRegex);
+                            if (match) {
+                                row.link = originalLink.replace(
+                                    `Endpoint = ${match[1]}:${match[2]}`,
+                                    `Endpoint = ${ipv4}:${match[2]}`
+                                );
+                            }
+                        }
+                    } else if (qrModal.inbound.protocol == Protocols.AMNEZIAWG) {
+                        if (originalLink.startsWith('vpn://')) {
+                            try {
+                                const parts = originalLink.slice(6).split('#');
+                                const decoded = atob(parts[0].replace(/-/g, '+').replace(/_/g, '/'));
+                                const endpointRegex = /Endpoint = ([^:]+):(\d+)/;
+                                const match = decoded.match(endpointRegex);
+                                if (match) {
+                                    const updated = decoded.replace(`Endpoint = ${match[1]}:${match[2]}`, `Endpoint = ${ipv4}:${match[2]}`);
+                                    const b64 = (typeof safeBase64 === 'function') ? safeBase64(updated) : btoa(updated);
+                                    row.link = `vpn://${b64}` + (parts[1] ? `#${parts[1]}` : '');
+                                }
+                            } catch (e) {}
                         }
                     } else if (qrModal.inbound.protocol == Protocols.VMESS) {
                         // Decode VMESS link from Base64
@@ -203,6 +225,12 @@
                         // Re-encode the updated VMESS config to Base64
                         const updatedBase64 = btoa(JSON.stringify(vmessConfig));
                         row.link = `vmess://${updatedBase64}`;
+                    } else if (qrModal.inbound.protocol == Protocols.MTPROTO) {
+                        try {
+                            const url = new URL(originalLink);
+                            url.searchParams.set('server', ipv4);
+                            row.link = url.toString();
+                        } catch (e) {}
                     } else {
                         // For other protocols using URL format
                         const url = new URL(originalLink);

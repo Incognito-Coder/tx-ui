@@ -1,0 +1,422 @@
+package service
+
+import (
+	"encoding/json"
+	"fmt"
+	"strings"
+
+	"gorm.io/gorm"
+
+	"x-ui/internal/amneziawg"
+	"x-ui/internal/amneziawgnet"
+	"x-ui/internal/database"
+	"x-ui/internal/database/model"
+	wgutil "x-ui/internal/util/wireguard"
+)
+
+// DesiredAmneziaWGInstances derives the AmneziaWG interfaces this panel
+// should be running: one instance per enabled local AmneziaWG inbound,
+// serving only the peers of clients that are both enabled in the inbound
+// settings and not depletion-disabled in client_traffics. That is the same
+// effective peer set buildInboundForLocalRuntime pushes on interactive edits,
+// so the reconcile job and the push path agree on one fingerprint — see
+// DesiredMtprotoInstances, which this mirrors exactly.
+func (s *InboundService) DesiredAmneziaWGInstances() ([]amneziawg.Instance, error) {
+	db := database.GetDB()
+	var inbounds []*model.Inbound
+	err := db.Model(model.Inbound{}).
+		Where("protocol = ? AND enable = ?", model.AmneziaWG, true).
+		Find(&inbounds).Error
+	if err != nil {
+		return nil, err
+	}
+	if len(inbounds) == 0 {
+		return nil, nil
+	}
+
+	instances := make([]amneziawg.Instance, 0, len(inbounds))
+	for _, ib := range inbounds {
+		inst, ok := amneziawg.InstanceFromInbound(ib)
+		if !ok {
+			continue
+		}
+		instances = append(instances, inst)
+	}
+	emails := make([]string, 0)
+	for _, inst := range instances {
+		for _, e := range inst.Peers {
+			emails = append(emails, e.Email)
+		}
+	}
+	disabled, err := trafficDisabledEmails(db, emails)
+	if err != nil {
+		return nil, err
+	}
+	served := instances[:0]
+	for _, inst := range instances {
+		kept := make([]amneziawg.Peer, 0, len(inst.Peers))
+		for _, e := range inst.Peers {
+			if _, off := disabled[e.Email]; !off {
+				kept = append(kept, e)
+			}
+		}
+		inst.Peers = kept
+		if len(kept) > 0 {
+			served = append(served, inst)
+		}
+	}
+	return served, nil
+}
+
+// applyLocalAmneziaWG pushes a single local AmneziaWG inbound's current peer
+// set to its interface right after a client edit commits, so an add,
+// removal, re-key or enable-toggle takes effect immediately instead of
+// waiting up to 10s for the reconcile job. It re-reads the inbound so it sees
+// the committed settings, filters depleted clients exactly like the
+// reconcile job, and is a no-op for node-owned or non-AmneziaWG inbounds.
+// Failures are logged and swallowed: the reconcile job is the backstop.
+// Mirrors applyLocalMtproto.
+func (s *InboundService) applyLocalAmneziaWG(inboundId int) {
+	desired, err := s.DesiredAmneziaWGInstances()
+	if err != nil {
+		return
+	}
+	wanted := make([]amneziawgnet.Desired, 0, len(desired))
+	for _, inst := range desired {
+		wanted = append(wanted, amneziawgnet.Desired{
+			Instance: inst,
+			Options: amneziawgnet.DeviceOptions{
+				HeaderProtectionKey:    inst.Obfuscation.HeaderProtectionKey,
+				ContentPaddingAddition: inst.Obfuscation.ContentPaddingAddition,
+				RekeyAfterTime:         inst.Obfuscation.RekeyAfterTime,
+				RekeyTimeout:           inst.Obfuscation.RekeyTimeout,
+				RejectAfterTime:        inst.Obfuscation.RejectAfterTime,
+				KeepaliveTimeout:       inst.Obfuscation.KeepaliveTimeout,
+				MaxHandshakeAttempts:   inst.Obfuscation.MaxHandshakeAttempts,
+				RandomTrailers:         inst.Obfuscation.RandomTrailers,
+				DisableCookies:         inst.Obfuscation.DisableCookies,
+			},
+		})
+	}
+	amneziawgnet.GetManager().Reconcile(wanted)
+}
+
+// defaultAmneziaWGServer builds a fresh server block: a random AmneziaWG 3.1
+// obfuscation set, the default tunnel subnet/DNS, and a freshly generated
+// keypair.
+func defaultAmneziaWGServer() (*amneziawg.ServerSettings, error) {
+	obf := amneziawg.GenerateObfuscation31()
+	server := &amneziawg.ServerSettings{
+		SubnetIP:     "10.8.1.0",
+		SubnetCIDR:   24,
+		PrimaryDNS:   "8.8.8.8",
+		SecondaryDNS: "8.8.4.4",
+		Jc:           obf.Jc,
+		Jmin:         obf.Jmin,
+		Jmax:         obf.Jmax,
+		S1:           obf.S1,
+		S2:           obf.S2,
+		S3:           obf.S3,
+		S4:           obf.S4,
+		H1:           obf.H1,
+		H2:           obf.H2,
+		H3:           obf.H3,
+		H4:           obf.H4,
+		I1:           obf.I1,
+
+		HeaderProtectionKey:    obf.HeaderProtectionKey,
+		ContentPaddingAddition: obf.ContentPaddingAddition,
+		RekeyAfterTime:         obf.RekeyAfterTime,
+		RekeyTimeout:           obf.RekeyTimeout,
+		RejectAfterTime:        obf.RejectAfterTime,
+		KeepaliveTimeout:       obf.KeepaliveTimeout,
+		MaxHandshakeAttempts:   obf.MaxHandshakeAttempts,
+		RandomTrailers:         obf.RandomTrailers,
+		DisableCookies:         obf.DisableCookies,
+	}
+	if err := fillAmneziaWGServerKeys(server); err != nil {
+		return nil, err
+	}
+	return server, nil
+}
+
+// fillAmneziaWGServerKeys generates a real WireGuard-compatible keypair for
+// the server block when one is missing.
+func fillAmneziaWGServerKeys(server *amneziawg.ServerSettings) error {
+	priv, pub, err := wgutil.GenerateWireguardKeypair()
+	if err != nil {
+		return fmt.Errorf("amneziawg: generate server keypair: %w", err)
+	}
+	server.PrivateKey = priv
+	server.PublicKey = pub
+	return nil
+}
+
+// resolveAmneziaWGServerKeys settles the server keypair for a save. An omitted
+// key means "unchanged", never "mint a new one": rotating it silently
+// invalidates every client config already handed out.
+func resolveAmneziaWGServerKeys(server *amneziawg.ServerSettings, oldSettings string) error {
+	if server.PrivateKey == "" {
+		storedPriv, storedPub := storedAmneziaWGServerKeys(oldSettings)
+		if storedPriv == "" {
+			return fillAmneziaWGServerKeys(server)
+		}
+		server.PrivateKey, server.PublicKey = storedPriv, storedPub
+	}
+	if server.PublicKey == "" {
+		pub, err := wgutil.PublicKeyFromPrivate(server.PrivateKey)
+		if err != nil {
+			return fmt.Errorf("amneziawg: derive server public key: %w", err)
+		}
+		server.PublicKey = pub
+	}
+	return nil
+}
+
+// storedAmneziaWGServerKeys returns the keypair already saved for this inbound.
+// oldSettings is empty on a first save, and need not be valid AmneziaWG JSON.
+func storedAmneziaWGServerKeys(oldSettings string) (priv, pub string) {
+	if strings.TrimSpace(oldSettings) == "" {
+		return "", ""
+	}
+	var prev amneziawg.InboundSettings
+	if err := json.Unmarshal([]byte(oldSettings), &prev); err != nil || prev.Server == nil {
+		return "", ""
+	}
+	return prev.Server.PrivateKey, prev.Server.PublicKey
+}
+
+// normalizeAmneziaWGSettings ensures an AmneziaWG inbound's settings have a
+// valid server block, generating one (fresh obfuscation params + keypair) on
+// first save and validating a manually-edited one so a bad entry can't bring
+// the interface down on the next apply. A no-op for every other protocol.
+func (s *InboundService) normalizeAmneziaWGSettings(inbound *model.Inbound, oldSettings string) error {
+	if inbound.Protocol != model.AmneziaWG {
+		return nil
+	}
+
+	trimmed := strings.TrimSpace(inbound.Settings)
+	if trimmed == "" || trimmed == "null" || trimmed == "{}" {
+		server, err := defaultAmneziaWGServer()
+		if err != nil {
+			return err
+		}
+		settings := amneziawg.InboundSettings{Server: server, Clients: []model.Client{}}
+		bs, err := json.MarshalIndent(settings, "", "  ")
+		if err != nil {
+			return err
+		}
+		inbound.Settings = string(bs)
+		return nil
+	}
+
+	var parsed amneziawg.InboundSettings
+	if err := json.Unmarshal([]byte(inbound.Settings), &parsed); err != nil {
+		return fmt.Errorf("amneziawg: invalid settings: %w", err)
+	}
+	if parsed.Server == nil {
+		server, err := defaultAmneziaWGServer()
+		if err != nil {
+			return err
+		}
+		parsed.Server = server
+	} else if err := resolveAmneziaWGServerKeys(parsed.Server, oldSettings); err != nil {
+		return err
+	}
+	parsed.Server.HeaderProtectionKey = strings.TrimSpace(parsed.Server.HeaderProtectionKey)
+	for _, f := range []*string{
+		&parsed.Server.ContentPaddingAddition, &parsed.Server.RekeyAfterTime,
+		&parsed.Server.RekeyTimeout, &parsed.Server.RejectAfterTime,
+		&parsed.Server.KeepaliveTimeout, &parsed.Server.MaxHandshakeAttempts,
+	} {
+		*f = amneziawg.CanonicalizeUintRange(*f)
+	}
+	if err := amneziawg.ValidateServerObfuscation(parsed.Server.Obfuscation()); err != nil {
+		return fmt.Errorf("amneziawg: %w", err)
+	}
+	if err := amneziawg.ValidateIPv6Subnet(parsed.Server.IPv6Enabled, parsed.Server.IPv6Subnet); err != nil {
+		return fmt.Errorf("amneziawg: %w", err)
+	}
+	if err := amneziawg.ValidateSubnetIPv4(parsed.Server.SubnetIP, parsed.Server.SubnetCIDR); err != nil {
+		return fmt.Errorf("amneziawg: %w", err)
+	}
+	if err := amneziawg.ValidateInterfaceName(parsed.Server.ExternalInterface); err != nil {
+		return fmt.Errorf("amneziawg: externalInterface: %w", err)
+	}
+	if err := amneziawg.ValidateInterfaceName(parsed.Server.IPv6ExternalInterface); err != nil {
+		return fmt.Errorf("amneziawg: ipv6ExternalInterface: %w", err)
+	}
+	if err := amneziawg.ValidateConfigValue("privateKey", parsed.Server.PrivateKey); err != nil {
+		return fmt.Errorf("amneziawg: %w", err)
+	}
+	if err := amneziawg.ValidateConfigValue("publicKey", parsed.Server.PublicKey); err != nil {
+		return fmt.Errorf("amneziawg: %w", err)
+	}
+	signaturePackets := []struct{ field, v string }{
+		{"i1", parsed.Server.I1},
+		{"i2", parsed.Server.I2},
+		{"i3", parsed.Server.I3},
+		{"i4", parsed.Server.I4},
+		{"i5", parsed.Server.I5},
+	}
+	for _, sp := range signaturePackets {
+		if err := amneziawg.ValidateConfigValue(sp.field, sp.v); err != nil {
+			return fmt.Errorf("amneziawg: %w", err)
+		}
+	}
+
+	portCtx, err := s.loadPortConflictContext(database.GetDB())
+	if err != nil {
+		return err
+	}
+	for i := range parsed.Clients {
+		c := &parsed.Clients[i]
+		if err := s.amneziaWGForwardedPortsConflict(portCtx, c); err != nil {
+			return err
+		}
+		if err := amneziawg.ValidateConfigValue("email", c.Email); err != nil {
+			return fmt.Errorf("amneziawg: %w", err)
+		}
+		if err := amneziawg.ValidateConfigValue("publicKey", c.PublicKey); err != nil {
+			return fmt.Errorf("amneziawg: client %q: %w", c.Email, err)
+		}
+		if err := amneziawg.ValidateConfigValue("preSharedKey", c.PreSharedKey); err != nil {
+			return fmt.Errorf("amneziawg: client %q: %w", c.Email, err)
+		}
+		// AllowedIPs lands verbatim in a rendered [Peer] block, so a newline here
+		// re-opens an [Interface] section whose PostUp runs as root once the
+		// downloaded config is applied (client app, or awg-quick directly).
+		normalized, err := normalizeWireguardAllowedIPs(c.AllowedIPs)
+		if err != nil {
+			return fmt.Errorf("amneziawg: client %q: %w", c.Email, err)
+		}
+		// An enabled peer with no address is skipped by InstanceFromInbound, and
+		// if it was the only one the whole inbound never starts, silently.
+		if c.Enable && len(normalized) == 0 {
+			return fmt.Errorf("amneziawg: client %q: allowedIPs is required", c.Email)
+		}
+		c.AllowedIPs = normalized
+	}
+
+	bs, err := json.MarshalIndent(parsed, "", "  ")
+	if err != nil {
+		return err
+	}
+	inbound.Settings = string(bs)
+	return nil
+}
+
+// portConflictContext caches what checkForwardedPortsConflict needs about the
+// host a forward listener binds on, so one save costs one query, not N.
+type portConflictContext struct {
+	webPort  int
+	inbounds []*model.Inbound
+	// onNode: the host is a node, whose web port and relay ports (derived from
+	// its own inbound ids) this panel does not know; the node re-checks both.
+	onNode bool
+}
+
+// loadPortConflictContext loads every enabled inbound hosted where nodeID's rows
+// run -- this panel for nil, else that node -- plus this panel's own port.
+func (s *InboundService) loadPortConflictContext(db *gorm.DB) (portConflictContext, error) {
+	var ctx portConflictContext
+	if webPort, err := (&SettingService{}).GetPort(); err == nil {
+		ctx.webPort = webPort
+	}
+	err := db.Model(model.Inbound{}).Where("enable = ?", true).Find(&ctx.inbounds).Error
+	return ctx, err
+}
+
+// amneziaWGForwardedPortsConflict renders one client's ForwardedPorts collision,
+// or nil: the single copy both the pre-Save pass and the post-Save re-run use.
+func (s *InboundService) amneziaWGForwardedPortsConflict(ctx portConflictContext, c *model.Client) error {
+	hit := s.checkForwardedPortsConflict(ctx, c.ForwardedPorts)
+	if hit == "" {
+		return nil
+	}
+	return fmt.Errorf("amneziawg: client %q forwardedPorts collides with %s", c.Email, hit)
+}
+
+// checkAmneziaWGForwardedPorts re-runs the guard over one row's stored clients:
+// on create it ran before Save, when the row's own ports were not in the context.
+func (s *InboundService) checkAmneziaWGForwardedPorts(db *gorm.DB, settings string) error {
+	var parsed amneziawg.InboundSettings
+	if err := json.Unmarshal([]byte(settings), &parsed); err != nil {
+		return nil
+	}
+	ctx, err := s.loadPortConflictContext(db)
+	if err != nil {
+		return err
+	}
+	for i := range parsed.Clients {
+		if err := s.amneziaWGForwardedPortsConflict(ctx, &parsed.Clients[i]); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// checkForwardedPortsConflict names the panel, inbound or AmneziaWG relay port a
+// client's ForwardedPorts spec would collide with: a lost bind race kills the relay.
+func (s *InboundService) checkForwardedPortsConflict(ctx portConflictContext, forwardedPorts string) string {
+	if forwardedPorts == "" {
+		return ""
+	}
+	if amneziawg.ExceedsForwardedPortsCap(forwardedPorts) {
+		return fmt.Sprintf("more than %d forwarded ports", amneziawg.MaxForwardedPorts)
+	}
+	if ctx.webPort > 0 && amneziawg.ForwardedPortsInclude(forwardedPorts, ctx.webPort) {
+		return fmt.Sprintf("the panel's own port (%d)", ctx.webPort)
+	}
+	for _, ib := range ctx.inbounds {
+		if amneziawg.ForwardedPortsInclude(forwardedPorts, ib.Port) {
+			name := ib.Remark
+			if name == "" {
+				name = ib.Tag
+			}
+			return fmt.Sprintf("inbound '%s' (#%d, port %d)", name, ib.Id, ib.Port)
+		}
+		if ctx.onNode {
+			continue
+		}
+		var socksPort int
+		switch ib.Protocol {
+		case model.AmneziaWG:
+			socksPort = amneziawgnet.SOCKSPortForInbound(ib.Id)
+		default:
+			continue
+		}
+		if amneziawg.ForwardedPortsInclude(forwardedPorts, socksPort) {
+			name := ib.Remark
+			if name == "" {
+				name = ib.Tag
+			}
+			return fmt.Sprintf("inbound '%s' (#%d)'s own SOCKS5 relay port (%d)", name, ib.Id, socksPort)
+		}
+	}
+	return ""
+}
+
+// GetAmneziaWGDiagnostics returns a live diagnostics snapshot for inbound
+// id: interface up/down, listen port, and per-client handshake/traffic
+// state, read entirely from data amneziawgnet.Manager already tracks --
+// gathering it can never itself change anything. Returns an error only
+// when id doesn't name an AmneziaWG inbound at all; an inbound that simply
+// isn't running right now (disabled, no enabled clients, or reconcile
+// hasn't caught up yet) comes back as amneziawgnet.Diagnostics{}
+// (Running=false), not an error, since that's a normal state an admin
+// might specifically be checking for.
+func (s *InboundService) GetAmneziaWGDiagnostics(id int) (amneziawgnet.Diagnostics, error) {
+	inbound, err := s.GetInbound(id)
+	if err != nil {
+		return amneziawgnet.Diagnostics{}, err
+	}
+	if inbound.Protocol != model.AmneziaWG {
+		return amneziawgnet.Diagnostics{}, fmt.Errorf("inbound %d is not an AmneziaWG inbound", id)
+	}
+	inst, ok := amneziawg.InstanceFromInbound(inbound)
+	if !ok {
+		return amneziawgnet.Diagnostics{}, nil
+	}
+	return amneziawgnet.Diagnose(inst.Id, inst.Peers), nil
+}
