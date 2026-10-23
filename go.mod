@@ -5,7 +5,7 @@ go 1.27
 require (
 	github.com/amnezia-vpn/amneziawg-go/v3 v3.1.20260828
 	github.com/gin-contrib/gzip v1.2.8
-	github.com/gin-contrib/sessions v1.1.1
+	github.com/gin-contrib/sessions v1.1.2
 	github.com/gin-gonic/gin v1.12.0
 	github.com/goccy/go-json v0.11.1
 	github.com/google/uuid v1.6.0
