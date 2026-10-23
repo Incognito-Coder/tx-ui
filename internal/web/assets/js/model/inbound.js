@@ -2775,6 +2775,20 @@ class Inbound extends XrayCommonClass {
         if (s.h2) conf += `H2 = ${s.h2}\n`;
         if (s.h3) conf += `H3 = ${s.h3}\n`;
         if (s.h4) conf += `H4 = ${s.h4}\n`;
+        if (s.i1) conf += `I1 = ${s.i1}\n`;
+        if (s.i2) conf += `I2 = ${s.i2}\n`;
+        if (s.i3) conf += `I3 = ${s.i3}\n`;
+        if (s.i4) conf += `I4 = ${s.i4}\n`;
+        if (s.i5) conf += `I5 = ${s.i5}\n`;
+        if (s.headerProtectionKey) conf += `HeaderProtectionKey = ${s.headerProtectionKey}\n`;
+        if (s.contentPaddingAddition) conf += `ContentPaddingAddition = ${s.contentPaddingAddition}\n`;
+        if (s.rekeyAfterTime) conf += `RekeyAfterTime = ${s.rekeyAfterTime}\n`;
+        if (s.rekeyTimeout) conf += `RekeyTimeout = ${s.rekeyTimeout}\n`;
+        if (s.rejectAfterTime) conf += `RejectAfterTime = ${s.rejectAfterTime}\n`;
+        if (s.keepaliveTimeout) conf += `KeepaliveTimeout = ${s.keepaliveTimeout}\n`;
+        if (s.maxHandshakeAttempts) conf += `MaxHandshakeAttempts = ${s.maxHandshakeAttempts}\n`;
+        if (s.randomTrailers === true || s.randomTrailers === 'true' || s.randomTrailers === 'on') conf += `RandomTrailers = on\n`;
+        if (s.disableCookies === true || s.disableCookies === 'true' || s.disableCookies === 'on') conf += `DisableCookies = on\n`;
 
         if (remark) {
             conf += `\n# ${remark}\n`;
@@ -4160,6 +4174,8 @@ Inbound.AmneziawgSettings = class extends XrayCommonClass {
                 mtu: 1420,
                 primaryDns: '1.1.1.1',
                 secondaryDns: '1.0.0.1',
+                ipv6Enabled: false,
+                ipv6Subnet: '',
                 jc: 4,
                 jmin: 40,
                 jmax: 70,
@@ -4171,7 +4187,25 @@ Inbound.AmneziawgSettings = class extends XrayCommonClass {
                 h2: '2',
                 h3: '3',
                 h4: '4',
+                i1: '',
+                i2: '',
+                i3: '',
+                i4: '',
+                i5: '',
+                headerProtectionKey: '',
+                contentPaddingAddition: '',
+                rekeyAfterTime: '',
+                rekeyTimeout: '',
+                rejectAfterTime: '',
+                keepaliveTimeout: '',
+                maxHandshakeAttempts: '',
+                randomTrailers: false,
+                disableCookies: false,
             };
+        } else {
+            if (server.randomTrailers === undefined) server.randomTrailers = false;
+            if (server.disableCookies === undefined) server.disableCookies = false;
+            if (server.ipv6Enabled === undefined) server.ipv6Enabled = false;
         }
         this.server = server;
         if (!clients || clients.length === 0) {
@@ -4202,6 +4236,73 @@ Inbound.AmneziawgSettings = class extends XrayCommonClass {
             server: this.server,
             clients: (this.clients || []).map(c => c.toJson()),
         };
+    }
+
+    static generateHeaderProtectionKey() {
+        if (typeof Wireguard !== 'undefined' && typeof Wireguard.generatePresharedKey === 'function' && typeof Wireguard.keyToBase64 === 'function') {
+            return Wireguard.keyToBase64(Wireguard.generatePresharedKey());
+        }
+        const bytes = new Uint8Array(32);
+        if (typeof window !== 'undefined' && window.crypto && window.crypto.getRandomValues) {
+            window.crypto.getRandomValues(bytes);
+        }
+        let binary = '';
+        for (let i = 0; i < bytes.length; i++) {
+            binary += String.fromCharCode(bytes[i]);
+        }
+        return btoa(binary);
+    }
+
+    static randomizeObfuscation(server) {
+        if (!server) return;
+        const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+        server.jc = randInt(3, 6);
+        server.jmin = randInt(40, 89);
+        server.jmax = server.jmin + randInt(50, 250);
+        server.s1 = randInt(15, 150);
+        server.s2 = randInt(15, 150);
+        while (server.s1 + 56 === server.s2) {
+            server.s2 = randInt(15, 150);
+        }
+        server.s3 = randInt(12, 55);
+        server.s4 = randInt(12, 27);
+
+        const lo = 5;
+        const awgHMax = 2147483647;
+        const bandSize = Math.floor((awgHMax - lo + 1) / 4);
+        server.h1 = String(randInt(lo, lo + bandSize - 1));
+        server.h2 = String(randInt(lo + bandSize, lo + 2 * bandSize - 1));
+        server.h3 = String(randInt(lo + 2 * bandSize, lo + 3 * bandSize - 1));
+        server.h4 = String(randInt(lo + 3 * bandSize, lo + 4 * bandSize - 1));
+
+        server.i1 = `<r ${randInt(32, 256)}>`;
+        server.i2 = '';
+        server.i3 = '';
+        server.i4 = '';
+        server.i5 = '';
+
+        server.headerProtectionKey = Inbound.AmneziawgSettings.generateHeaderProtectionKey();
+        const cpLo = randInt(8, 24);
+        server.contentPaddingAddition = `${cpLo}-${cpLo + randInt(8, 40)}`;
+
+        const rkLo = randInt(100, 120);
+        const rkHi = rkLo + randInt(10, 40);
+        server.rekeyAfterTime = `${rkLo}-${rkHi}`;
+
+        const rjLo = rkHi + randInt(30, 60);
+        server.rejectAfterTime = `${rjLo}-${rjLo + randInt(30, 90)}`;
+
+        const rtLo = randInt(3, 6);
+        server.rekeyTimeout = `${rtLo}-${rtLo + randInt(1, 4)}`;
+
+        const kaLo = randInt(8, 12);
+        server.keepaliveTimeout = `${kaLo}-${kaLo + randInt(2, 8)}`;
+
+        const haLo = randInt(15, 25);
+        server.maxHandshakeAttempts = `${haLo}-${haLo + randInt(5, 25)}`;
+
+        server.randomTrailers = true;
+        server.disableCookies = true;
     }
 };
 

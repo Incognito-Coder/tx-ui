@@ -913,6 +913,48 @@ func (s *SubService) buildAmneziaWGConf(server *amneziawg.ServerSettings, target
 	if server.H4 != "" {
 		fmt.Fprintf(&b, "H4 = %s\n", server.H4)
 	}
+	if server.I1 != "" {
+		fmt.Fprintf(&b, "I1 = %s\n", server.I1)
+	}
+	if server.I2 != "" {
+		fmt.Fprintf(&b, "I2 = %s\n", server.I2)
+	}
+	if server.I3 != "" {
+		fmt.Fprintf(&b, "I3 = %s\n", server.I3)
+	}
+	if server.I4 != "" {
+		fmt.Fprintf(&b, "I4 = %s\n", server.I4)
+	}
+	if server.I5 != "" {
+		fmt.Fprintf(&b, "I5 = %s\n", server.I5)
+	}
+	if server.HeaderProtectionKey != "" {
+		fmt.Fprintf(&b, "HeaderProtectionKey = %s\n", server.HeaderProtectionKey)
+	}
+	if server.ContentPaddingAddition != "" {
+		fmt.Fprintf(&b, "ContentPaddingAddition = %s\n", server.ContentPaddingAddition)
+	}
+	if server.RekeyAfterTime != "" {
+		fmt.Fprintf(&b, "RekeyAfterTime = %s\n", server.RekeyAfterTime)
+	}
+	if server.RekeyTimeout != "" {
+		fmt.Fprintf(&b, "RekeyTimeout = %s\n", server.RekeyTimeout)
+	}
+	if server.RejectAfterTime != "" {
+		fmt.Fprintf(&b, "RejectAfterTime = %s\n", server.RejectAfterTime)
+	}
+	if server.KeepaliveTimeout != "" {
+		fmt.Fprintf(&b, "KeepaliveTimeout = %s\n", server.KeepaliveTimeout)
+	}
+	if server.MaxHandshakeAttempts != "" {
+		fmt.Fprintf(&b, "MaxHandshakeAttempts = %s\n", server.MaxHandshakeAttempts)
+	}
+	if server.RandomTrailers {
+		fmt.Fprintf(&b, "RandomTrailers = on\n")
+	}
+	if server.DisableCookies {
+		fmt.Fprintf(&b, "DisableCookies = on\n")
+	}
 
 	if remark != "" {
 		fmt.Fprintf(&b, "\n# %s\n", remark)

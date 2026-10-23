@@ -47,9 +47,21 @@
     <a-form-item label="MTU">
         <a-input-number :min="576" :max="9000" v-model.number="inbound.settings.server.mtu"></a-input-number>
     </a-form-item>
+    <a-form-item label='{{ i18n "pages.xray.amneziawg.ipv6Enabled" }}'>
+        <a-switch v-model="inbound.settings.server.ipv6Enabled"></a-switch>
+    </a-form-item>
+    <a-form-item v-if="inbound.settings.server.ipv6Enabled" label='{{ i18n "pages.xray.amneziawg.ipv6Subnet" }}'>
+        <a-input placeholder="fd00::/64" v-model.trim="inbound.settings.server.ipv6Subnet"></a-input>
+    </a-form-item>
 
     <a-collapse>
-        <a-collapse-panel header="AmneziaWG Obfuscation (AWG 3.1)">
+        <a-collapse-panel header='{{ i18n "pages.xray.amneziawg.obfuscation" }}'>
+            <div style="display: flex; justify-content: flex-end; margin-bottom: 12px;">
+                <a-button size="small" type="primary" icon="sync" @click="Inbound.AmneziawgSettings.randomizeObfuscation(inbound.settings.server)">
+                    {{ i18n "pages.xray.amneziawg.randomizeObfuscation" }}
+                </a-button>
+            </div>
+            <a-divider orientation="left">Junk Packets (Jc / Jmin / Jmax)</a-divider>
             <a-row :gutter="8">
                 <a-col :span="8">
                     <a-form-item label="Jc" :label-col="{ span: 10 }" :wrapper-col="{ span: 14 }">
@@ -67,6 +79,7 @@
                     </a-form-item>
                 </a-col>
             </a-row>
+            <a-divider orientation="left">Prefix Lengths (S1 - S4)</a-divider>
             <a-row :gutter="8">
                 <a-col :span="6">
                     <a-form-item label="S1" :label-col="{ span: 10 }" :wrapper-col="{ span: 14 }">
@@ -89,28 +102,109 @@
                     </a-form-item>
                 </a-col>
             </a-row>
+            <a-divider orientation="left">Header Magic (H1 - H4)</a-divider>
             <a-row :gutter="8">
                 <a-col :span="6">
                     <a-form-item label="H1" :label-col="{ span: 10 }" :wrapper-col="{ span: 14 }">
-                        <a-input v-model.trim="inbound.settings.server.h1"></a-input>
+                        <a-input placeholder="1" v-model.trim="inbound.settings.server.h1"></a-input>
                     </a-form-item>
                 </a-col>
                 <a-col :span="6">
                     <a-form-item label="H2" :label-col="{ span: 10 }" :wrapper-col="{ span: 14 }">
-                        <a-input v-model.trim="inbound.settings.server.h2"></a-input>
+                        <a-input placeholder="2" v-model.trim="inbound.settings.server.h2"></a-input>
                     </a-form-item>
                 </a-col>
                 <a-col :span="6">
                     <a-form-item label="H3" :label-col="{ span: 10 }" :wrapper-col="{ span: 14 }">
-                        <a-input v-model.trim="inbound.settings.server.h3"></a-input>
+                        <a-input placeholder="3" v-model.trim="inbound.settings.server.h3"></a-input>
                     </a-form-item>
                 </a-col>
                 <a-col :span="6">
                     <a-form-item label="H4" :label-col="{ span: 10 }" :wrapper-col="{ span: 14 }">
-                        <a-input v-model.trim="inbound.settings.server.h4"></a-input>
+                        <a-input placeholder="4" v-model.trim="inbound.settings.server.h4"></a-input>
                     </a-form-item>
                 </a-col>
             </a-row>
+            <a-divider orientation="left">Signature Chain (CPS I1 - I5)</a-divider>
+            <a-row :gutter="8">
+                <a-col :span="12">
+                    <a-form-item label="I1" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
+                        <a-input placeholder="<r 50>" v-model.trim="inbound.settings.server.i1"></a-input>
+                    </a-form-item>
+                </a-col>
+                <a-col :span="12">
+                    <a-form-item label="I2" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
+                        <a-input placeholder="<b 0x...>" v-model.trim="inbound.settings.server.i2"></a-input>
+                    </a-form-item>
+                </a-col>
+                <a-col :span="8">
+                    <a-form-item label="I3" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
+                        <a-input v-model.trim="inbound.settings.server.i3"></a-input>
+                    </a-form-item>
+                </a-col>
+                <a-col :span="8">
+                    <a-form-item label="I4" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
+                        <a-input v-model.trim="inbound.settings.server.i4"></a-input>
+                    </a-form-item>
+                </a-col>
+                <a-col :span="8">
+                    <a-form-item label="I5" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
+                        <a-input v-model.trim="inbound.settings.server.i5"></a-input>
+                    </a-form-item>
+                </a-col>
+            </a-row>
+            <a-divider orientation="left">Header Protection & Padding</a-divider>
+            <a-form-item>
+                <template slot="label">
+                    <a-tooltip>
+                        <template slot="title">
+                            <span>{{ i18n "reset" }}</span>
+                        </template>
+                        {{ i18n "pages.xray.amneziawg.headerProtectionKey" }}
+                        <a-icon type="sync"
+                                @click="inbound.settings.server.headerProtectionKey = Inbound.AmneziawgSettings.generateHeaderProtectionKey()"></a-icon>
+                    </a-tooltip>
+                </template>
+                <a-input placeholder="Base64 32-byte key" v-model.trim="inbound.settings.server.headerProtectionKey"></a-input>
+            </a-form-item>
+            <a-form-item label='{{ i18n "pages.xray.amneziawg.contentPaddingAddition" }}'>
+                <a-input placeholder="8-48" v-model.trim="inbound.settings.server.contentPaddingAddition"></a-input>
+            </a-form-item>
+            <a-divider orientation="left">Custom Timings (Seconds / Ranges)</a-divider>
+            <a-row :gutter="8">
+                <a-col :span="12">
+                    <a-form-item label='{{ i18n "pages.xray.amneziawg.rekeyAfterTime" }}' :label-col="{ span: 12 }" :wrapper-col="{ span: 12 }">
+                        <a-input placeholder="100-120" v-model.trim="inbound.settings.server.rekeyAfterTime"></a-input>
+                    </a-form-item>
+                </a-col>
+                <a-col :span="12">
+                    <a-form-item label='{{ i18n "pages.xray.amneziawg.rekeyTimeout" }}' :label-col="{ span: 12 }" :wrapper-col="{ span: 12 }">
+                        <a-input placeholder="3-6" v-model.trim="inbound.settings.server.rekeyTimeout"></a-input>
+                    </a-form-item>
+                </a-col>
+                <a-col :span="12">
+                    <a-form-item label='{{ i18n "pages.xray.amneziawg.rejectAfterTime" }}' :label-col="{ span: 12 }" :wrapper-col="{ span: 12 }">
+                        <a-input placeholder="150-180" v-model.trim="inbound.settings.server.rejectAfterTime"></a-input>
+                    </a-form-item>
+                </a-col>
+                <a-col :span="12">
+                    <a-form-item label='{{ i18n "pages.xray.amneziawg.keepaliveTimeout" }}' :label-col="{ span: 12 }" :wrapper-col="{ span: 12 }">
+                        <a-input placeholder="8-12" v-model.trim="inbound.settings.server.keepaliveTimeout"></a-input>
+                    </a-form-item>
+                </a-col>
+                <a-col :span="12">
+                    <a-form-item label='{{ i18n "pages.xray.amneziawg.maxHandshakeAttempts" }}' :label-col="{ span: 12 }" :wrapper-col="{ span: 12 }">
+                        <a-input placeholder="15-25" v-model.trim="inbound.settings.server.maxHandshakeAttempts"></a-input>
+                    </a-form-item>
+                </a-col>
+            </a-row>
+            <a-divider orientation="left">Protocol Options</a-divider>
+            <a-form-item label='{{ i18n "pages.xray.amneziawg.randomTrailers" }}'>
+                <a-switch v-model="inbound.settings.server.randomTrailers"></a-switch>
+            </a-form-item>
+            <a-form-item label='{{ i18n "pages.xray.amneziawg.disableCookies" }}'>
+                <a-switch v-model="inbound.settings.server.disableCookies"></a-switch>
+            </a-form-item>
         </a-collapse-panel>
     </a-collapse>
 </a-form>

@@ -194,6 +194,128 @@ func TestGenAmneziaWGLinkWithExternalProxy(t *testing.T) {
 	}
 }
 
+func TestAmneziaWG31ConfAndLinkFeatures(t *testing.T) {
+	sub := NewSubService(false, "-ieo")
+	sub.address = "vpn.example.com"
+
+	priv, pub, err := wireguard.GenerateWireguardKeypair()
+	if err != nil {
+		t.Fatalf("failed to generate keypair: %v", err)
+	}
+	_, serverPub, err := wireguard.GenerateWireguardKeypair()
+	if err != nil {
+		t.Fatalf("failed to generate server keypair: %v", err)
+	}
+
+	settingsMap := map[string]interface{}{
+		"server": map[string]interface{}{
+			"publicKey":              serverPub,
+			"mtu":                    1360,
+			"primaryDns":             "1.1.1.1",
+			"secondaryDns":           "8.8.8.8",
+			"jc":                     5,
+			"jmin":                   40,
+			"jmax":                   120,
+			"s1":                     32,
+			"s2":                     64,
+			"s3":                     24,
+			"s4":                     18,
+			"h1":                     "1000",
+			"h2":                     "2000",
+			"h3":                     "3000",
+			"h4":                     "4000",
+			"i1":                     "<r 50>",
+			"i2":                     "<b 0x01020304>",
+			"i3":                     "<t>",
+			"i4":                     "<rc 8>",
+			"i5":                     "<rd 4>",
+			"headerProtectionKey":    "QU1ORVpJQVdHMzFQUk9URUNUSU9OS0VZWkFCQ0RFRg==",
+			"contentPaddingAddition": "8-48",
+			"rekeyAfterTime":         "105-125",
+			"rekeyTimeout":           "4-8",
+			"rejectAfterTime":        "160-200",
+			"keepaliveTimeout":       "10-15",
+			"maxHandshakeAttempts":   "20-30",
+			"randomTrailers":         true,
+			"disableCookies":         true,
+		},
+		"clients": []map[string]interface{}{
+			{
+				"email":      "awg31@test.com",
+				"privateKey": priv,
+				"publicKey":  pub,
+				"allowedIPs": []string{"10.8.1.2/32", "fd00::2/128"},
+			},
+		},
+	}
+	settingsBytes, _ := json.Marshal(settingsMap)
+
+	inbound := &model.Inbound{
+		Id:       99,
+		Port:     51820,
+		Protocol: model.AmneziaWG,
+		Settings: string(settingsBytes),
+		Remark:   "AWG-31-Full",
+	}
+
+	linkStr := sub.genAmneziaWGLink(inbound, "awg31@test.com")
+	if linkStr == "" {
+		t.Fatalf("expected non-empty amneziawg link, got empty")
+	}
+	if !strings.HasPrefix(linkStr, "vpn://") {
+		t.Fatalf("expected link starting with vpn://, got %s", linkStr)
+	}
+
+	rawPart := strings.TrimPrefix(linkStr, "vpn://")
+	parts := strings.Split(rawPart, "#")
+	decodedBytes, err := base64.RawURLEncoding.DecodeString(parts[0])
+	if err != nil {
+		decodedBytes, err = base64.URLEncoding.DecodeString(parts[0])
+		if err != nil {
+			t.Fatalf("failed to decode vpn:// base64 payload: %v", err)
+		}
+	}
+	conf := string(decodedBytes)
+
+	requiredSnippets := []string{
+		"Address = 10.8.1.2/32, fd00::2/128",
+		"DNS = 1.1.1.1, 8.8.8.8",
+		"MTU = 1360",
+		"Jc = 5",
+		"Jmin = 40",
+		"Jmax = 120",
+		"S1 = 32",
+		"S2 = 64",
+		"S3 = 24",
+		"S4 = 18",
+		"H1 = 1000",
+		"H2 = 2000",
+		"H3 = 3000",
+		"H4 = 4000",
+		"I1 = <r 50>",
+		"I2 = <b 0x01020304>",
+		"I3 = <t>",
+		"I4 = <rc 8>",
+		"I5 = <rd 4>",
+		"HeaderProtectionKey = QU1ORVpJQVdHMzFQUk9URUNUSU9OS0VZWkFCQ0RFRg==",
+		"ContentPaddingAddition = 8-48",
+		"RekeyAfterTime = 105-125",
+		"RekeyTimeout = 4-8",
+		"RejectAfterTime = 160-200",
+		"KeepaliveTimeout = 10-15",
+		"MaxHandshakeAttempts = 20-30",
+		"RandomTrailers = on",
+		"DisableCookies = on",
+		"Endpoint = vpn.example.com:51820",
+	}
+
+	for _, snippet := range requiredSnippets {
+		if !strings.Contains(conf, snippet) {
+			t.Errorf("rendered AWG 3.1 client conf missing expected snippet: %q\nFull conf:\n%s", snippet, conf)
+		}
+	}
+}
+
 func TestSubJsonWireguardWithExternalProxy(t *testing.T) {
 	sub := NewSubService(false, "-ieo")
 	sub.address = "default.server.com"

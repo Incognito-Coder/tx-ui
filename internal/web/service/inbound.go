@@ -275,6 +275,12 @@ func (s *InboundService) AddInbound(inbound *model.Inbound) (*model.Inbound, boo
 		return inbound, false, err
 	}
 
+	if inbound.Protocol == model.AmneziaWG || inbound.Protocol == "amneziawg" {
+		if err = s.normalizeAmneziaWGSettings(inbound, ""); err != nil {
+			return inbound, false, err
+		}
+	}
+
 	clients, err := s.GetClients(inbound)
 	if err != nil {
 		return inbound, false, err
@@ -368,6 +374,12 @@ func (s *InboundService) AddInbound(inbound *model.Inbound) (*model.Inbound, boo
 			tx.Rollback()
 		}
 	}()
+
+	if inbound.Protocol == model.AmneziaWG || inbound.Protocol == "amneziawg" {
+		if err = s.checkAmneziaWGForwardedPorts(tx, inbound.Settings); err != nil {
+			return inbound, false, err
+		}
+	}
 
 	err = tx.Save(inbound).Error
 	if err == nil {
@@ -534,6 +546,12 @@ func (s *InboundService) UpdateInbound(inbound *model.Inbound) (*model.Inbound, 
 		return inbound, false, err
 	}
 
+	if inbound.Protocol == model.AmneziaWG || inbound.Protocol == "amneziawg" {
+		if err = s.normalizeAmneziaWGSettings(inbound, oldInbound.Settings); err != nil {
+			return inbound, false, err
+		}
+	}
+
 	tag := oldInbound.Tag
 
 	db := database.GetDB()
@@ -546,6 +564,12 @@ func (s *InboundService) UpdateInbound(inbound *model.Inbound) (*model.Inbound, 
 			tx.Commit()
 		}
 	}()
+
+	if inbound.Protocol == model.AmneziaWG || inbound.Protocol == "amneziawg" {
+		if err = s.checkAmneziaWGForwardedPorts(tx, inbound.Settings); err != nil {
+			return inbound, false, err
+		}
+	}
 
 	err = s.updateClientTraffics(tx, oldInbound, inbound)
 	if err != nil {
