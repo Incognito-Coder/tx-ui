@@ -33,7 +33,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Reverse Proxy Section**: Added `reverse` section (`bridges` & `portals`) to top-level `xray.Config` model and equality comparator.
   - **Shadowsocks Single-User Omission Fix**: Omitted empty `clients: []` array on single-user Shadowsocks inbounds to prevent Xray-core from discarding the primary password.
   - **Outbound TLS Peer Verification**: Added array parsing support for `verifyPeerCertInNames` matching Xray v25.2.21+ MITM and domain fronting configurations.
-  - **Protocol-Level Client Restriction**: Strictly prevented adding clients to inbound types that do not accept clients (e.g. `tunnel`, `http`, `mixed`/`socks`, `tun`, and single-user `shadowsocks`) across backend APIs (`InboundService`, `NodeClientService`), Telegram bot, inbound tables, client modal, bulk generator, and link management drawer.
+- **Core Lifecycle Synchronization & API Port Readiness**:
+  - **Eliminated Transient Connection Refusals**: Resolved `transport: Error while dialing: dial tcp 127.0.0.1:62789: connect: connection refused` debug errors during Xray restarts by verifying that the gRPC API port is actively accepting TCP connections before `Process.Start()` returns.
+  - **Graceful Termination Wait in `Process.Stop()`**: Added process exit tracking via `doneChan` and `isStopping` flag, ensuring the terminated Xray core fully exits and releases all network ports/sockets before a new instance is spawned.
+  - **Atomic Restart Lifecycle Tracking**: Added `isRestarting` state tracking in `XrayService` to prevent concurrent `XrayTrafficJob` executions from dialing unready endpoints and guard `CheckXrayRunningJob` from diagnosing normal restarts as process crashes.
+  - **Duplicate Log Suppression**: Removed redundant `Failed to fetch Xray traffic` debug logging in `GetXrayTraffic` to eliminate identical duplicate error logs alongside `xrayAPI.GetTraffic`.
+
+- **Auto-Delete Depleted Clients Setting Enforcement**:
+  - **Immediate Exit on Disabled State**: Updated `AutoDeleteDepletedClientsJob` to check `autoDeleteDay <= 0` at the very entry point before emitting debug start/finish logs or executing database queries, ensuring the job does not run or log when disabled (`autoDeleteDay = 0`) in the panel.
 
 ## [v0.9.4] - 2026-10-23
 

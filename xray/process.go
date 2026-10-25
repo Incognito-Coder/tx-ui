@@ -6,16 +6,20 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"net"
 	"os"
 	"os/exec"
 	"runtime"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
 	"x-ui/config"
 	"x-ui/internal/logger"
 	"x-ui/internal/util/common"
+
+	"go.uber.org/atomic"
 )
 
 func GetBinaryName() string {
@@ -193,15 +197,22 @@ type process struct {
 	logWriter  *LogWriter
 	exitErr    error
 	startTime  time.Time
+
+	isStopping atomic.Bool
+	doneChan   chan struct{}
+	doneOnce   sync.Once
 }
 
 func newProcess(config *Config) *process {
-	return &process{
+	p := &process{
 		version:   "Unknown",
 		config:    config,
 		logWriter: NewLogWriter(),
 		startTime: time.Now(),
+		doneChan:  make(chan struct{}),
 	}
+	p.refreshAPIPort()
+	return p
 }
 
 // newTestProcess creates a process that writes and runs with a specific config path.
@@ -212,6 +223,9 @@ func newTestProcess(config *Config, configPath string) *process {
 }
 
 func (p *process) IsRunning() bool {
+	if p.isStopping.Load() {
+		return false
+	}
 	if p.cmd == nil || p.cmd.Process == nil {
 		return false
 	}
@@ -364,6 +378,8 @@ func (p *process) Start() (err error) {
 		}
 	}
 
+	p.refreshAPIPort()
+
 	cmd := exec.Command(GetBinaryPath(), "-c", configPath)
 	p.cmd = cmd
 
@@ -387,28 +403,76 @@ func (p *process) Start() (err error) {
 				p.exitErr = waitErr
 			}
 		}
+		p.doneOnce.Do(func() {
+			close(p.doneChan)
+		})
 		exitChan <- waitErr
 	}()
 
-	// Brief health-check window (400ms) to detect immediate core exit on bad config
-	select {
-	case waitErr := <-exitChan:
-		if waitErr != nil && !(runtime.GOOS == "windows" && strings.Contains(strings.ToLower(waitErr.Error()), "exit status 1")) {
-			if isMainInstance {
-				_ = SaveLastFailedConfig(data)
+	// Health-check window: wait until API port is actively accepting connections, or detect premature exit
+	if p.apiPort > 0 {
+		ready := false
+		deadline := time.Now().Add(3 * time.Second)
+		for time.Now().Before(deadline) {
+			select {
+			case waitErr := <-exitChan:
+				if waitErr != nil && !(runtime.GOOS == "windows" && strings.Contains(strings.ToLower(waitErr.Error()), "exit status 1")) {
+					if isMainInstance {
+						_ = SaveLastFailedConfig(data)
+					}
+					lastLog := p.GetResult()
+					return common.NewErrorf("Xray core exited with error: %v (last log: %s)", waitErr, lastLog)
+				}
+				return common.NewErrorf("Xray core exited prematurely with code 0")
+			default:
 			}
-			lastLog := p.GetResult()
-			return common.NewErrorf("Xray core exited with error: %v (last log: %s)", waitErr, lastLog)
+
+			conn, dialErr := net.DialTimeout("tcp", fmt.Sprintf("127.0.0.1:%d", p.apiPort), 50*time.Millisecond)
+			if dialErr == nil {
+				conn.Close()
+				ready = true
+				break
+			}
+			time.Sleep(40 * time.Millisecond)
 		}
-	case <-time.After(400 * time.Millisecond):
-		// Core is still running; backup this working state
-		if isMainInstance {
-			_ = BackupLastWorkingConfig()
+
+		if !ready {
+			select {
+			case waitErr := <-exitChan:
+				if waitErr != nil && !(runtime.GOOS == "windows" && strings.Contains(strings.ToLower(waitErr.Error()), "exit status 1")) {
+					if isMainInstance {
+						_ = SaveLastFailedConfig(data)
+					}
+					lastLog := p.GetResult()
+					return common.NewErrorf("Xray core exited with error: %v (last log: %s)", waitErr, lastLog)
+				}
+			default:
+				logger.Warningf("Xray core started, but API port %d did not respond within 3 seconds", p.apiPort)
+			}
+		} else {
+			if isMainInstance {
+				_ = BackupLastWorkingConfig()
+			}
+		}
+	} else {
+		// Fallback for instances without an API port: brief 400ms health check
+		select {
+		case waitErr := <-exitChan:
+			if waitErr != nil && !(runtime.GOOS == "windows" && strings.Contains(strings.ToLower(waitErr.Error()), "exit status 1")) {
+				if isMainInstance {
+					_ = SaveLastFailedConfig(data)
+				}
+				lastLog := p.GetResult()
+				return common.NewErrorf("Xray core exited with error: %v (last log: %s)", waitErr, lastLog)
+			}
+		case <-time.After(400 * time.Millisecond):
+			if isMainInstance {
+				_ = BackupLastWorkingConfig()
+			}
 		}
 	}
 
 	p.refreshVersion()
-	p.refreshAPIPort()
 
 	return nil
 }
@@ -417,6 +481,8 @@ func (p *process) Stop() error {
 	if !p.IsRunning() {
 		return errors.New("xray is not running")
 	}
+	p.isStopping.Store(true)
+
 	if p.configPath != "" {
 		if p.configPath != GetConfigPath() {
 			// Check if file exists before removing
@@ -425,11 +491,28 @@ func (p *process) Stop() error {
 			}
 		}
 	}
+	var err error
 	if runtime.GOOS == "windows" {
-		return p.cmd.Process.Kill()
+		err = p.cmd.Process.Kill()
 	} else {
-		return p.cmd.Process.Signal(syscall.SIGTERM)
+		err = p.cmd.Process.Signal(syscall.SIGTERM)
 	}
+
+	// Wait for process to exit to ensure sockets and ports are fully released
+	if p.doneChan != nil {
+		select {
+		case <-p.doneChan:
+		case <-time.After(3 * time.Second):
+			logger.Warning("Xray core did not terminate within 3 seconds; sending SIGKILL")
+			_ = p.cmd.Process.Kill()
+			select {
+			case <-p.doneChan:
+			case <-time.After(1 * time.Second):
+			}
+		}
+	}
+
+	return err
 }
 
 func writeCrashReport(m []byte) error {

@@ -16,7 +16,7 @@ func NewXrayTrafficJob() *XrayTrafficJob {
 }
 
 func (j *XrayTrafficJob) Run() {
-	if !j.xrayService.IsXrayRunning() {
+	if !j.xrayService.IsXrayRunning() || j.xrayService.IsXrayRestarting() {
 		return
 	}
 	traffics, clientTraffics, err := j.xrayService.GetXrayTraffic()

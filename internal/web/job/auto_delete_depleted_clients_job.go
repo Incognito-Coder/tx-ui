@@ -25,17 +25,17 @@ func NewAutoDeleteDepletedClientsJob() *AutoDeleteDepletedClientsJob {
 }
 
 func (j *AutoDeleteDepletedClientsJob) Run() {
-	logger.Debug("AutoDeleteDepletedClientsJob started")
-	defer logger.Debug("AutoDeleteDepletedClientsJob finished")
-
 	autoDeleteDay, err := j.settingService.GetAutoDeleteDay()
 	if err != nil {
 		logger.Warning("failed to get auto delete day setting:", err)
 		return
 	}
-	if autoDeleteDay == 0 {
+	if autoDeleteDay <= 0 {
 		return
 	}
+
+	logger.Debug("AutoDeleteDepletedClientsJob started")
+	defer logger.Debug("AutoDeleteDepletedClientsJob finished")
 
 	db := database.GetDB()
 	traffics := make([]*xray.ClientTraffic, 0)

@@ -22,6 +22,7 @@ import (
 var (
 	p                  *xray.Process
 	lock               sync.Mutex
+	isRestarting       atomic.Bool
 	isNeedXrayRestart  atomic.Bool
 	isManuallyStopped  atomic.Bool
 	result             string
@@ -38,7 +39,14 @@ type XrayService struct {
 }
 
 func (s *XrayService) IsXrayRunning() bool {
+	if isRestarting.Load() {
+		return false
+	}
 	return p != nil && p.IsRunning()
+}
+
+func (s *XrayService) IsXrayRestarting() bool {
+	return isRestarting.Load()
 }
 
 func (s *XrayService) GetXrayErr() error {
@@ -358,18 +366,21 @@ func normalizeLegacyOutbounds(raw json_util.RawMessage) (json_util.RawMessage, e
 }
 
 func (s *XrayService) GetXrayTraffic() ([]*xray.Traffic, []*xray.ClientTraffic, error) {
-	if !s.IsXrayRunning() {
-		err := errors.New("xray is not running")
-		logger.Debug("Attempted to fetch Xray traffic, but Xray is not running:", err)
-		return nil, nil, err
+	if isRestarting.Load() || !s.IsXrayRunning() {
+		return nil, nil, errors.New("xray is not running")
+	}
+	if p == nil {
+		return nil, nil, errors.New("xray process is nil")
 	}
 	apiPort := p.GetAPIPort()
+	if apiPort <= 0 {
+		return nil, nil, errors.New("invalid xray api port")
+	}
 	s.xrayAPI.Init(apiPort)
 	defer s.xrayAPI.Close()
 
 	traffic, clientTraffic, err := s.xrayAPI.GetTraffic(true)
 	if err != nil {
-		logger.Debug("Failed to fetch Xray traffic:", err)
 		return nil, nil, err
 	}
 	return traffic, clientTraffic, nil
@@ -378,6 +389,9 @@ func (s *XrayService) GetXrayTraffic() ([]*xray.Traffic, []*xray.ClientTraffic, 
 func (s *XrayService) RestartXray(isForce bool) error {
 	lock.Lock()
 	defer lock.Unlock()
+	isRestarting.Store(true)
+	defer isRestarting.Store(false)
+
 	logger.Debug("restart xray, force:", isForce)
 	isManuallyStopped.Store(false)
 
@@ -386,7 +400,7 @@ func (s *XrayService) RestartXray(isForce bool) error {
 		return err
 	}
 
-	if s.IsXrayRunning() {
+	if p != nil && p.IsRunning() {
 		if !isForce && p.GetConfig().Equals(xrayConfig) && !isNeedXrayRestart.Load() {
 			logger.Debug("It does not need to restart Xray")
 			return nil
@@ -436,12 +450,14 @@ func (s *XrayService) RestartXray(isForce bool) error {
 func (s *XrayService) RollbackToLastWorkingConfig() error {
 	lock.Lock()
 	defer lock.Unlock()
+	isRestarting.Store(true)
+	defer isRestarting.Store(false)
 
 	if !xray.HasLastWorkingConfig() {
 		return errors.New("no last working config.json backup exists")
 	}
 
-	if s.IsXrayRunning() {
+	if p != nil && p.IsRunning() {
 		p.Stop()
 	}
 
@@ -504,7 +520,7 @@ func (s *XrayService) StopXray() error {
 	defer lock.Unlock()
 	isManuallyStopped.Store(true)
 	logger.Debug("Attempting to stop Xray...")
-	if s.IsXrayRunning() {
+	if p != nil && p.IsRunning() {
 		return p.Stop()
 	}
 	return errors.New("xray is not running")
@@ -519,5 +535,8 @@ func (s *XrayService) IsNeedRestartAndSetFalse() bool {
 }
 
 func (s *XrayService) DidXrayCrash() bool {
+	if isRestarting.Load() {
+		return false
+	}
 	return !s.IsXrayRunning() && !isManuallyStopped.Load()
 }
