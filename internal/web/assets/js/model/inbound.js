@@ -4,7 +4,6 @@ const Protocols = {
     TROJAN: 'trojan',
     SHADOWSOCKS: 'shadowsocks',
     TUNNEL: 'tunnel',
-    DOKODEMO_DOOR: 'dokodemo-door',
     MIXED: 'mixed',
     HTTP: 'http',
     WIREGUARD: 'wireguard',
@@ -2033,11 +2032,15 @@ class Inbound extends XrayCommonClass {
     }
 
     static fromJson(json = {}) {
+        let protocol = json.protocol;
+        if (protocol === 'dokodemo-door') {
+            protocol = Protocols.TUNNEL;
+        }
         return new Inbound(
             json.port,
             json.listen,
-            json.protocol,
-            Inbound.Settings.fromJson(json.protocol, json.settings),
+            protocol,
+            Inbound.Settings.fromJson(protocol, json.settings),
             StreamSettings.fromJson(json.streamSettings),
             json.tag,
             Sniffing.fromJson(json.sniffing),
@@ -3012,7 +3015,6 @@ Inbound.Settings = class extends XrayCommonClass {
             case Protocols.SHADOWSOCKS:
                 return new Inbound.ShadowsocksSettings(protocol);
             case Protocols.TUNNEL:
-            case Protocols.DOKODEMO_DOOR:
                 return new Inbound.TunnelSettings(protocol);
             case Protocols.MIXED:
                 return new Inbound.MixedSettings(protocol);
@@ -3042,7 +3044,7 @@ Inbound.Settings = class extends XrayCommonClass {
             case Protocols.SHADOWSOCKS:
                 return Inbound.ShadowsocksSettings.fromJson(json);
             case Protocols.TUNNEL:
-            case Protocols.DOKODEMO_DOOR:
+            case 'dokodemo-door':
                 return Inbound.TunnelSettings.fromJson(json);
             case Protocols.MIXED:
                 return Inbound.MixedSettings.fromJson(json);

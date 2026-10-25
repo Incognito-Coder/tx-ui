@@ -301,7 +301,7 @@ Enable or disable a client.
 
 Manage listening ports, protocols, and stream configurations.
 - **Base Route:** `/panel/api/inbounds`
-- **Supported Protocols:** `vless`, `vmess`, `trojan`, `shadowsocks`, `dokodemo-door`, `socks`, `http`, `wireguard`, `hysteria`, `masque`, `amneziawg`, `mtproto`.
+- **Supported Protocols:** `vless`, `vmess`, `trojan`, `shadowsocks`, `tunnel`, `socks`, `http`, `wireguard`, `hysteria`, `masque`, `amneziawg`, `mtproto`.
 
 ### 3.1 List Inbounds
 Retrieve all configured inbounds.

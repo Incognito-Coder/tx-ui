@@ -321,7 +321,7 @@ location /sub {
 - **نظارت بر وضعیت سیستم** (بار CPU، حافظه RAM، دیسک، اتصالات TCP/UDP و ترافیک زنده)
 - **جستجو و فیلتر** در میان تمام ورودی‌ها و کاربران
 - **پشتیبانی از تم‌های تیره، اولترا دارک و روشن**
-- **پشتیبانی از چند کاربر و چند پروتکل**: VMess، VLESS، Trojan، Shadowsocks، WireGuard، AmneziaWG (AWG 3.1)، MTProto (FakeTLS)، MASQUE، Hysteria، Dokodemo-door، Socks، HTTP
+- **پشتیبانی از چند کاربر و چند پروتکل**: VMess، VLESS، Trojan، Shadowsocks، WireGuard، AmneziaWG (AWG 3.1)، MTProto (FakeTLS)، MASQUE، Hysteria، Tunnel، Socks، HTTP
 - **پشتیبانی از پروتکل‌های بومی XTLS**: شامل RPRX-Direct، Vision، REALITY
 - **آمار ترافیک، محدودیت ترافیک، محدودیت زمان انقضا**
 - **قالب‌های قابل تنظیم پیکربندی Xray**

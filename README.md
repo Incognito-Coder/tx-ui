@@ -324,7 +324,7 @@ computing environments. The following are key architectures that we support:
 - **System Status Monitoring** (CPU, RAM, swap, disk, TCP/UDP sockets, live traffic)
 - **Search and filter** within all inbounds and clients
 - **Dark, Ultra Dark, and Light themes**
-- **Supports multi-user and multi-protocol**: VMess, VLESS, Trojan, Shadowsocks, WireGuard, AmneziaWG (AWG 3.1), MTProto (FakeTLS), MASQUE, Hysteria, Dokodemo-door, Socks, HTTP
+- **Supports multi-user and multi-protocol**: VMess, VLESS, Trojan, Shadowsocks, WireGuard, AmneziaWG (AWG 3.1), MTProto (FakeTLS), MASQUE, Hysteria, Tunnel, Socks, HTTP
 - **Supports XTLS native protocols**: RPRX-Direct, Vision, REALITY
 - **Traffic statistics, traffic limit, expiration time limit**
 - **Customizable Xray configuration templates**

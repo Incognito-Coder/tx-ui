@@ -319,7 +319,7 @@ location /sub {
 - مراقبة حالة النظام (استخدام المعالج، الذاكرة، القرص، اتصالات TCP/UDP، وحركة المرور المباشرة)
 - البحث والتصفية داخل جميع الاتصالات الواردة والعملاء
 - سمات المظهر: الداكن، والداكن الفائق (Ultra Dark)، والفاتح
-- يدعم تعدد المستخدمين وتعدد البروتوكولات: VMess و VLESS و Trojan و Shadowsocks و WireGuard و AmneziaWG (AWG 3.1) و MTProto (FakeTLS) و MASQUE و Hysteria و Dokodemo-door و Socks و HTTP
+- يدعم تعدد المستخدمين وتعدد البروتوكولات: VMess و VLESS و Trojan و Shadowsocks و WireGuard و AmneziaWG (AWG 3.1) و MTProto (FakeTLS) و MASQUE و Hysteria و Tunnel و Socks و HTTP
 - يدعم بروتوكولات XTLS الأصلية: RPRX-Direct و Vision و REALITY
 - إحصائيات حركة المرور، وحدود حركة المرور، وحدود وقت انتهاء الصلاحية
 - قوالب تكوين Xray قابلة للتخصيص

@@ -320,7 +320,7 @@ location /sub {
 - Мониторинг состояния системы (нагрузка на процессор, память, диск, активные сокеты TCP/UDP)
 - Поиск и фильтрация по всем входящим подключениям и клиентам
 - Тёмная, Ultra Dark и светлая темы оформления
-- Поддержка нескольких пользователей и протоколов: VMess, VLESS, Trojan, Shadowsocks, WireGuard, AmneziaWG (AWG 3.1), MTProto (FakeTLS), MASQUE, Hysteria, Dokodemo-door, Socks, HTTP
+- Поддержка нескольких пользователей и протоколов: VMess, VLESS, Trojan, Shadowsocks, WireGuard, AmneziaWG (AWG 3.1), MTProto (FakeTLS), MASQUE, Hysteria, Tunnel, Socks, HTTP
 - Поддержка протоколов XTLS: RPRX-Direct, Vision, REALITY
 - Статистика трафика, ограничение трафика, ограничение по времени истечения
 - Настраиваемые шаблоны конфигурации Xray

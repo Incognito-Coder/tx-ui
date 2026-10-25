@@ -319,7 +319,7 @@ Nuestra plataforma ofrece compatibilidad con una amplia gama de arquitecturas y 
 - Monitoreo del Estado del Sistema (CPU, memoria, swap, disco, sockets TCP/UDP y tráfico en vivo)
 - Búsqueda y filtrado dentro de todas las reglas de entrada y clientes
 - Tema Oscuro, Ultra Dark y Claro
-- Soporta multiusuario y multiprotocolo: VMess, VLESS, Trojan, Shadowsocks, WireGuard, AmneziaWG (AWG 3.1), MTProto (FakeTLS), MASQUE, Hysteria, Dokodemo-door, Socks, HTTP
+- Soporta multiusuario y multiprotocolo: VMess, VLESS, Trojan, Shadowsocks, WireGuard, AmneziaWG (AWG 3.1), MTProto (FakeTLS), MASQUE, Hysteria, Tunnel, Socks, HTTP
 - Soporta Protocolos nativos XTLS: RPRX-Direct, Vision, REALITY
 - Estadísticas de tráfico, límite de tráfico, límite de tiempo de vencimiento
 - Plantillas de configuración de Xray personalizables

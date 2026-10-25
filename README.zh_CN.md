@@ -313,7 +313,7 @@ location /sub {
 - **系统状态监控**（CPU、内存、Swap、磁盘、网络实时吞吐量与连接数）
 - **在所有入站和客户端中搜索与筛选**
 - **深色、极黑 (Ultra Dark) 与浅色主题**
-- **支持多用户和多协议**：VMess、VLESS、Trojan、Shadowsocks、WireGuard、AmneziaWG (AWG 3.1)、MTProto (FakeTLS)、MASQUE、Hysteria、Dokodemo-door、Socks、HTTP
+- **支持多用户和多协议**：VMess、VLESS、Trojan、Shadowsocks、WireGuard、AmneziaWG (AWG 3.1)、MTProto (FakeTLS)、MASQUE、Hysteria、Tunnel、Socks、HTTP
 - 支持 XTLS 原生协议：RPRX-Direct、Vision、REALITY
 - 流量统计、流量配额限制、过期时间限制
 - 可自定义的 Xray 配置模板
