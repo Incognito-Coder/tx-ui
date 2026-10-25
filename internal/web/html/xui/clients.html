@@ -1133,7 +1133,7 @@
                                     <a-select :dropdown-class-name="themeSwitcher.currentTheme" :size="isMobile ? 'small' : 'default'"
                                         @change="filterClients" class="clients-inbound-select" v-model="filterInboundId">
                                         <a-select-option value="">{{ i18n "all" }} ({{ i18n "inbounds" }})</a-select-option>
-                                        <a-select-option :value="ib.id" v-for="ib in allInbounds">
+                                        <a-select-option :value="ib.id" v-for="ib in clientInbounds">
                                             [[ ib.remark || ('#' + ib.id) ]] ([[ ib.protocol ]]:[[ ib.port ]])
                                         </a-select-option>
                                     </a-select>
@@ -1400,7 +1400,7 @@
                                     <a-button size="small" @click="clearModalInbounds">{{ i18n "none" }}</a-button>
                                 </div>
                                 <div class="inbound-select-grid">
-                                    <a-checkbox v-for="ib in allInbounds" :key="ib.id"
+                                    <a-checkbox v-for="ib in clientInbounds" :key="ib.id"
                                         :checked="clientModal.selectedInboundIds.map(Number).includes(Number(ib.id))"
                                         @change="e => toggleModalInbound(ib.id, e.target.checked)">
                                         [[ ib.remark || ('#' + ib.id) ]]
@@ -1634,11 +1634,11 @@
                             <a-divider>{{ i18n "pages.node_clients.manageLinks" }} (Inbounds)</a-divider>
                             <a-form-item label='{{ i18n "inbounds" }}'>
                                 <div style="margin-bottom: 8px;">
-                                    <a-button size="small" @click="bulkModal.selectedInboundIds = allInbounds.map(i => Number(i.id))" style="margin-right: 6px;">{{ i18n "all" }}</a-button>
+                                    <a-button size="small" @click="bulkModal.selectedInboundIds = clientInbounds.map(i => Number(i.id))" style="margin-right: 6px;">{{ i18n "all" }}</a-button>
                                     <a-button size="small" @click="bulkModal.selectedInboundIds = []">{{ i18n "none" }}</a-button>
                                 </div>
                                 <div class="inbound-select-grid">
-                                    <a-checkbox v-for="ib in allInbounds" :key="ib.id"
+                                    <a-checkbox v-for="ib in clientInbounds" :key="ib.id"
                                         :checked="bulkModal.selectedInboundIds.map(Number).includes(Number(ib.id))"
                                         @change="e => toggleBulkInbound(ib.id, e.target.checked)">
                                         [[ ib.remark || ('#' + ib.id) ]]
@@ -1717,7 +1717,7 @@
                 <a-form-item label='{{ i18n "inbounds" }}'>
                     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
                         <div>
-                            <a-button size="small" @click="bulkLinksModal.selectAll(allInbounds)" style="margin-right: 6px;">
+                            <a-button size="small" @click="bulkLinksModal.selectAll(clientInbounds)" style="margin-right: 6px;">
                                 {{ i18n "all" }}
                             </a-button>
                             <a-button size="small" @click="bulkLinksModal.clearAll()">
@@ -1725,11 +1725,11 @@
                             </a-button>
                         </div>
                         <span style="font-size: 12px; color: var(--ui-text-muted);">
-                            [[ bulkLinksModal.selectedInboundIds.length ]] / [[ allInbounds.length ]] {{ i18n "inbounds" }}
+                            [[ bulkLinksModal.selectedInboundIds.length ]] / [[ clientInbounds.length ]] {{ i18n "inbounds" }}
                         </span>
                     </div>
                     <div class="inbound-select-grid" style="max-height: 260px; overflow-y: auto; padding: 4px;">
-                        <a-checkbox v-for="ib in allInbounds" :key="ib.id"
+                        <a-checkbox v-for="ib in clientInbounds" :key="ib.id"
                             :checked="bulkLinksModal.selectedInboundIds.includes(Number(ib.id))"
                             @change="e => bulkLinksModal.toggleInbound(ib.id, e.target.checked)">
                             [[ ib.remark || ('#' + ib.id) ]]
@@ -2378,7 +2378,7 @@
                         this.isEdit = false;
                         this.title = '{{ i18n "pages.client.add" }}';
                         this.okText = '{{ i18n "sure" }}';
-                        const selectedInboundIds = defaultInboundId ? [Number(defaultInboundId)] : app.allInbounds.map(i => Number(i.id));
+                        const selectedInboundIds = defaultInboundId ? [Number(defaultInboundId)] : (app.clientInbounds || []).map(i => Number(i.id));
                         let ssMethod = '';
                         const ssInb = app.allInbounds.find(i => selectedInboundIds.includes(Number(i.id)) && i.protocol === 'shadowsocks');
                         if (ssInb) {
@@ -2489,7 +2489,7 @@
                     selectedInboundIds: [],
                     show() {
                         this.visible = true;
-                        this.selectedInboundIds = app.allInbounds.map(i => Number(i.id));
+                        this.selectedInboundIds = (app.clientInbounds || []).map(i => Number(i.id));
                     },
                 },
                 linkDrawer: {
@@ -2500,7 +2500,7 @@
                     selectedLinks: [],
                     async show(c) {
                         this.client = c;
-                        this.allInbounds = app.allInbounds;
+                        this.allInbounds = app.clientInbounds || [];
                         this.visible = true;
                         this.loading = true;
                         try {
@@ -2589,6 +2589,9 @@
                 },
             },
             computed: {
+                clientInbounds() {
+                    return (this.allInbounds || []).filter(ib => this.isInboundClientEligible(ib));
+                },
                 filteredClients() {
                     let list = this.clients.slice();
                     if (this.searchKey && this.searchKey.trim()) {
@@ -2654,6 +2657,21 @@
                 },
             },
             methods: {
+                isInboundClientEligible(ib) {
+                    if (!ib) return false;
+                    const proto = ib.protocol;
+                    if (['vmess', 'vless', 'trojan', 'wireguard', 'hysteria', 'masque', 'mtproto', 'amneziawg'].includes(proto)) {
+                        return true;
+                    }
+                    if (proto === 'shadowsocks') {
+                        try {
+                            const s = (typeof ib.settings === 'string') ? JSON.parse(ib.settings) : ib.settings;
+                            if (s && s.method && s.method.startsWith('2022-blake3-')) return true;
+                            if (s && Array.isArray(s.clients) && s.clients.length > 0) return true;
+                        } catch (e) {}
+                    }
+                    return false;
+                },
                 loading(spin = true) {
                     this.spinning = spin;
                 },
@@ -3000,7 +3018,7 @@
                     }
                 },
                 selectAllModalInbounds() {
-                    this.clientModal.selectedInboundIds = this.allInbounds.map(i => Number(i.id));
+                    this.clientModal.selectedInboundIds = (this.clientInbounds || []).map(i => Number(i.id));
                 },
                 clearModalInbounds() {
                     this.clientModal.selectedInboundIds = [];

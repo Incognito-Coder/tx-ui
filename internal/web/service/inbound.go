@@ -424,6 +424,9 @@ func (s *InboundService) AddClient(inboundId int, client *model.Client) (bool, e
 	if err != nil {
 		return false, err
 	}
+	if !inbound.CanAddClient() {
+		return false, fmt.Errorf("inbound %s (protocol: %s) does not support adding clients", inbound.Tag, inbound.Protocol)
+	}
 	clients, err := s.GetClients(inbound)
 	if err != nil {
 		return false, err
@@ -750,6 +753,9 @@ func (s *InboundService) AddInboundClient(data *model.Inbound) (bool, error) {
 	oldInbound, err := s.GetInbound(data.Id)
 	if err != nil {
 		return false, err
+	}
+	if !oldInbound.CanAddClient() {
+		return false, fmt.Errorf("inbound %s (protocol: %s) does not support adding clients", oldInbound.Tag, oldInbound.Protocol)
 	}
 
 	// Secure client ID
@@ -1662,6 +1668,9 @@ func (s *InboundService) UpdateInboundClient(data *model.Inbound, clientId strin
 	oldInbound, err := s.GetInbound(data.Id)
 	if err != nil {
 		return false, err
+	}
+	if !oldInbound.CanAddClient() {
+		return false, fmt.Errorf("inbound %s (protocol: %s) does not support clients", oldInbound.Tag, oldInbound.Protocol)
 	}
 
 	oldClients, err := s.GetClients(oldInbound)

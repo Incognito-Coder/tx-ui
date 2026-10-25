@@ -39,11 +39,14 @@
                  title = '', okText = '{{ i18n "sure" }}', client = null, dbInbound = null, confirm = () => {
             }, isEdit = false
              }) {
+            this.dbInbound = new DBInbound(dbInbound);
+            if (!this.dbInbound.isMultiUser()) {
+                return;
+            }
             this.visible = true;
             this.title = title;
             this.okText = okText;
             this.isEdit = isEdit;
-            this.dbInbound = new DBInbound(dbInbound);
             this.inbound = dbInbound.toInbound();
             this.clients = this.inbound.clients;
             this.client = client;

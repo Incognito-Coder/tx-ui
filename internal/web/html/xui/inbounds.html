@@ -343,15 +343,15 @@
                                             <a-icon type="edit"></a-icon>
                                             {{ i18n "edit" }}
                                         </a-menu-item>
-                                        <a-menu-item key="addClient">
+                                        <a-menu-item key="addClient" v-if="dbInbound.isMultiUser()">
                                             <a-icon type="user-add"></a-icon>
                                             {{ i18n "pages.client.add" }}
                                         </a-menu-item>
-                                        <a-menu-item key="addBulkClient">
+                                        <a-menu-item key="addBulkClient" v-if="dbInbound.isMultiUser()">
                                             <a-icon type="usergroup-add"></a-icon>
                                             {{ i18n "pages.client.bulk" }}
                                         </a-menu-item>
-                                        <a-menu-item key="viewClients">
+                                        <a-menu-item key="viewClients" v-if="dbInbound.isMultiUser()">
                                             <a-icon type="team"></a-icon>
                                             {{ i18n "clients"}}
                                         </a-menu-item>
@@ -405,11 +405,12 @@
                                 </template>
                             </template>
                             <template slot="clients" slot-scope="text, dbInbound">
-                                <span @click.stop="goToClients(dbInbound.id)" style="cursor: pointer; display: inline-block;">
+                                <span v-if="dbInbound.isMultiUser()" @click.stop="goToClients(dbInbound.id)" style="cursor: pointer; display: inline-block;">
                                     <a-tag :color="getInboundClientCount(dbInbound.id) > 0 ? 'blue' : 'orange'" style="margin:0; cursor:pointer;" @click.native.stop="goToClients(dbInbound.id)" @click.stop="goToClients(dbInbound.id)">
                                         <a-icon :type="getInboundClientCount(dbInbound.id) > 0 ? 'team' : 'user-add'"></a-icon> [[ getInboundClientCount(dbInbound.id) ]] {{ i18n "clients" }}
                                     </a-tag>
                                 </span>
+                                <span v-else style="color: var(--ui-text-muted); font-size: 13px;">-</span>
                             </template>
                             <template slot="traffic" slot-scope="text, dbInbound">
                                 <a-popover :overlay-class-name="themeSwitcher.currentTheme">
@@ -501,7 +502,7 @@
                                                     <a-tag>[[ dbInbound.port ]]</a-tag>
                                                 </td>
                                             </tr>
-                                            <tr>
+                                            <tr v-if="dbInbound.isMultiUser()">
                                                 <td>{{ i18n "clients" }}</td>
                                                 <td>
                                                     <span @click.stop="goToClients(dbInbound.id)" style="cursor: pointer; display: inline-block;">
@@ -1127,7 +1128,10 @@
                 await this.submit(`/panel/api/inbounds/update/${dbInbound.id}`, data, inModal);
             },
             openAddClient(dbInboundId) {
-                dbInbound = this.dbInbounds.find(row => row.id === dbInboundId);
+                const dbInbound = this.dbInbounds.find(row => row.id === dbInboundId);
+                if (!dbInbound || !dbInbound.isMultiUser()) {
+                    return;
+                }
                 clientModal.show({
                     title: '{{ i18n "pages.client.add"}}',
                     okText: '{{ i18n "pages.client.submitAdd"}}',
@@ -1139,7 +1143,10 @@
                 });
             },
             openAddBulkClient(dbInboundId) {
-                dbInbound = this.dbInbounds.find(row => row.id === dbInboundId);
+                const dbInbound = this.dbInbounds.find(row => row.id === dbInboundId);
+                if (!dbInbound || !dbInbound.isMultiUser()) {
+                    return;
+                }
                 clientsBulkModal.show({
                     title: '{{ i18n "pages.client.bulk"}} ' + dbInbound.remark,
                     okText: '{{ i18n "pages.client.bulk"}}',

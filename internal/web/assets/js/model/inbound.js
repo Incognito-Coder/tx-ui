@@ -2069,6 +2069,24 @@ class Inbound extends XrayCommonClass {
         return exp > 0 ? exp < new Date().getTime() : false;
     }
 
+    get canAddClient() {
+        switch (this.protocol) {
+            case Protocols.VMESS:
+            case Protocols.VLESS:
+            case Protocols.TROJAN:
+            case Protocols.HYSTERIA:
+            case Protocols.WIREGUARD:
+            case Protocols.MASQUE:
+            case Protocols.MTPROTO:
+            case Protocols.AMNEZIAWG:
+                return true;
+            case Protocols.SHADOWSOCKS:
+                return this.isSSMultiUser;
+            default:
+                return false;
+        }
+    }
+
     canEnableTls() {
         if (this.protocol === Protocols.HYSTERIA || this.protocol === Protocols.MASQUE) return true;
         if (![Protocols.VMESS, Protocols.VLESS, Protocols.TROJAN, Protocols.SHADOWSOCKS].includes(this.protocol)) return false;

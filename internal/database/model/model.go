@@ -117,6 +117,36 @@ func (i *Inbound) GenXrayInboundConfig() *xray.InboundConfig {
 	}
 }
 
+// CanAddClient returns true if the inbound protocol supports adding individual multi-user clients.
+// Protocols like tunnel, http, mixed (socks), tun, or single-user shadowsocks do not accept clients.
+func (i *Inbound) CanAddClient() bool {
+	switch i.Protocol {
+	case VMESS, VLESS, Trojan, WireGuard, Hysteria, Masque, MTProto, AmneziaWG:
+		return true
+	case Shadowsocks:
+		if i.Settings == "" {
+			return false
+		}
+		var settings map[string]interface{}
+		if err := json.Unmarshal([]byte(i.Settings), &settings); err != nil {
+			return false
+		}
+		if method, ok := settings["method"].(string); ok {
+			if xray.Shadowsocks2022KeyLength(method) > 0 {
+				return true
+			}
+		}
+		if rawClients, ok := settings["clients"]; ok && rawClients != nil {
+			if list, ok := rawClients.([]interface{}); ok && len(list) > 0 {
+				return true
+			}
+		}
+		return false
+	default:
+		return false
+	}
+}
+
 func wireguardClientsAsPeers(settings string) string {
 	var raw map[string]any
 	if err := json.Unmarshal([]byte(settings), &raw); err != nil {

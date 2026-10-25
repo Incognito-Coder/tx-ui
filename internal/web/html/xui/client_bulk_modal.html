@@ -191,6 +191,10 @@
                  confirm = (inbound, dbInbound) => {
                  }
              }) {
+            const dbIb = new DBInbound(dbInbound);
+            if (!dbIb.isMultiUser()) {
+                return;
+            }
             this.visible = true;
             this.title = title;
             this.okText = okText;
@@ -208,7 +212,7 @@
             this.tgId = '';
             this.security = "auto";
             this.flow = "";
-            this.dbInbound = new DBInbound(dbInbound);
+            this.dbInbound = dbIb;
             this.inbound = dbInbound.toInbound();
             this.delayedStart = false;
             this.reset = 0;

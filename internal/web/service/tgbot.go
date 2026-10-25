@@ -294,8 +294,9 @@ func (t *Tgbot) OnReceive() {
 			limitGb, _ := strconv.Atoi(parts[2])
 
 			inbound, err := t.inboundService.GetInbound(inboundId)
-			if err != nil {
+			if err != nil || !inbound.CanAddClient() {
 				t.SendMsgToTgbot(chatId, t.I18nBot("tgbot.answers.addClientFailed"))
+				delete(pendingAddClient, chatId)
 				return nil
 			}
 
@@ -1079,6 +1080,11 @@ func (t *Tgbot) answerCallback(callbackQuery *telego.CallbackQuery, isAdmin bool
 				t.sendCallbackAnswerTgBot(callbackQuery.ID, "")
 			case "add_client":
 				inboundId, _ := strconv.Atoi(dataArray[1])
+				inbound, err := t.inboundService.GetInbound(inboundId)
+				if err != nil || !inbound.CanAddClient() {
+					t.sendCallbackAnswerTgBot(callbackQuery.ID, "This inbound type does not support adding clients")
+					return
+				}
 				t.sendCallbackAnswerTgBot(callbackQuery.ID, t.I18nBot("tgbot.answers.addClient"))
 				t.SendMsgToTgbot(chatId, t.I18nBot("tgbot.messages.enterClientInfo"))
 				pendingAddClient[chatId] = inboundId
@@ -1539,11 +1545,13 @@ func (t *Tgbot) getInboundClients(id int, page ...int) (*telego.InlineKeyboardMa
 	keyboard := tu.InlineKeyboardGrid(tu.InlineKeyboardCols(cols, buttons...))
 
 	// Add client button
-	keyboard.InlineKeyboard = append(keyboard.InlineKeyboard,
-		[]telego.InlineKeyboardButton{
-			tu.InlineKeyboardButton(t.I18nBot("tgbot.buttons.addClient")).WithCallbackData(t.encodeQuery("add_client " + strconv.Itoa(id))),
-		},
-	)
+	if inbound.CanAddClient() {
+		keyboard.InlineKeyboard = append(keyboard.InlineKeyboard,
+			[]telego.InlineKeyboardButton{
+				tu.InlineKeyboardButton(t.I18nBot("tgbot.buttons.addClient")).WithCallbackData(t.encodeQuery("add_client " + strconv.Itoa(id))),
+			},
+		)
+	}
 
 	// Pagination navigation row (only when needed)
 	if totalClients > pageSize {

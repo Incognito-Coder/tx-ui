@@ -665,7 +665,7 @@ func removeClientFromInboundSettings(inbound *model.Inbound, email, uuid, passwo
 // addClientToInboundSettings adds a client to an inbound's settings JSON ("clients" or "peers") if not present.
 // Returns true if modified.
 func addClientToInboundSettings(inbound *model.Inbound, nc *model.NodeClient, flow string) bool {
-	if inbound.Settings == "" {
+	if inbound == nil || !inbound.CanAddClient() || inbound.Settings == "" {
 		return false
 	}
 	var settings map[string]interface{}
@@ -1145,6 +1145,9 @@ func (s *NodeClientService) AddLink(nodeClientId, inboundId int, flow string) (b
 	var inbound model.Inbound
 	if err := db.First(&inbound, inboundId).Error; err != nil {
 		return false, fmt.Errorf("inbound not found (id=%d): %w", inboundId, err)
+	}
+	if !inbound.CanAddClient() {
+		return false, fmt.Errorf("inbound protocol %s does not support adding clients", inbound.Protocol)
 	}
 
 	// 3. Check for duplicate (nodeClientId, inboundId) pair.
@@ -2140,6 +2143,9 @@ func (s *NodeClientService) SetLinks(nodeClientId int, links []NodeClientLinkInp
 
 	// Add or update links
 	for _, l := range links {
+		if ib, ok := inboundMap[l.InboundId]; !ok || !ib.CanAddClient() {
+			continue
+		}
 		var existing model.NodeClientLink
 		err := tx.Where("node_client_id = ? AND inbound_id = ?", nodeClientId, l.InboundId).First(&existing).Error
 		if err == gorm.ErrRecordNotFound {
@@ -2332,6 +2338,9 @@ func (s *NodeClientService) BulkSetLinks(clientIds []int, inboundIds []int, acti
 				linkMap[l.InboundId] = l.Flow
 			}
 			for _, inId := range inboundIds {
+				if ib, ok := inboundMap[inId]; !ok || !ib.CanAddClient() {
+					continue
+				}
 				if flow != "" {
 					linkMap[inId] = flow
 				} else if _, ok := linkMap[inId]; !ok {
@@ -2364,6 +2373,9 @@ func (s *NodeClientService) BulkSetLinks(clientIds []int, inboundIds []int, acti
 		default: // "set" or "replace"
 			targetLinks = make([]NodeClientLinkInput, 0, len(inboundIds))
 			for _, inId := range inboundIds {
+				if ib, ok := inboundMap[inId]; !ok || !ib.CanAddClient() {
+					continue
+				}
 				targetLinks = append(targetLinks, NodeClientLinkInput{
 					InboundId: inId,
 					Flow:      flow,
@@ -2596,6 +2608,10 @@ func (s *NodeClientService) BulkCreate(clients []model.NodeClient, inboundIds []
 		}
 
 		for _, inId := range inboundIds {
+			ib, ok := inboundMap[inId]
+			if !ok || !ib.CanAddClient() {
+				continue
+			}
 			link := model.NodeClientLink{
 				NodeClientId: nc.Id,
 				InboundId:    inId,

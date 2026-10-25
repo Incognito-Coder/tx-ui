@@ -33,6 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Reverse Proxy Section**: Added `reverse` section (`bridges` & `portals`) to top-level `xray.Config` model and equality comparator.
   - **Shadowsocks Single-User Omission Fix**: Omitted empty `clients: []` array on single-user Shadowsocks inbounds to prevent Xray-core from discarding the primary password.
   - **Outbound TLS Peer Verification**: Added array parsing support for `verifyPeerCertInNames` matching Xray v25.2.21+ MITM and domain fronting configurations.
+  - **Protocol-Level Client Restriction**: Strictly prevented adding clients to inbound types that do not accept clients (e.g. `tunnel`, `http`, `mixed`/`socks`, `tun`, and single-user `shadowsocks`) across backend APIs (`InboundService`, `NodeClientService`), Telegram bot, inbound tables, client modal, bulk generator, and link management drawer.
 
 ## [v0.9.4] - 2026-10-23
 

@@ -150,6 +150,10 @@ class DBInbound {
         }
     }
 
+    canAddClient() {
+        return this.isMultiUser();
+    }
+
     hasLink() {
         switch (this.protocol) {
             case Protocols.VMESS:
