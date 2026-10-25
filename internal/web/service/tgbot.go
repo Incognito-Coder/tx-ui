@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"embed"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -14,6 +15,7 @@ import (
 	"time"
 
 	"x-ui/internal/util/random"
+	wgutil "x-ui/internal/util/wireguard"
 
 	"github.com/google/uuid"
 
@@ -323,7 +325,9 @@ func (t *Tgbot) OnReceive() {
 				}
 				client.Password = key
 				client.SSPassword = key
-			case model.Trojan, model.Hysteria:
+			case model.Trojan:
+				client.Password = random.Seq(10)
+			case model.Hysteria:
 				client.Password = random.Seq(10)
 				client.Auth = client.Password
 			case model.Masque:
@@ -331,7 +335,48 @@ func (t *Tgbot) OnReceive() {
 				client.MasquePass = client.Password
 				client.Pass = client.Password
 			case model.WireGuard:
-				client.ID = uuid.New().String()
+				existing, _ := t.inboundService.GetClients(inbound)
+				newClients := []model.Client{*client}
+				if err := defaultWireguardClients(inbound.Settings, existing, newClients, nil, nil); err == nil {
+					*client = newClients[0]
+				} else {
+					priv, pub, err := wgutil.GenerateWireguardKeypair()
+					if err == nil {
+						client.PrivateKey = priv
+						client.PublicKey = pub
+					}
+				}
+				if client.ID == "" {
+					if client.PublicKey != "" {
+						client.ID = client.PublicKey
+					} else {
+						client.ID = uuid.New().String()
+					}
+				}
+			case model.AmneziaWG:
+				existing, _ := t.inboundService.GetClients(inbound)
+				newClients := []model.Client{*client}
+				if err := defaultAmneziaWGClients(inbound.Settings, existing, newClients, nil, nil); err == nil {
+					*client = newClients[0]
+				} else {
+					priv, pub, err := wgutil.GenerateWireguardKeypair()
+					if err == nil {
+						client.PrivateKey = priv
+						client.PublicKey = pub
+					}
+				}
+				if client.ID == "" {
+					if client.PublicKey != "" {
+						client.ID = client.PublicKey
+					} else {
+						client.ID = uuid.New().String()
+					}
+				}
+			case model.MTProto:
+				secret := model.EnsureMtprotoSecret("", "")
+				client.Secret = secret
+				client.Password = secret
+				client.ID = secret
 			default:
 				client.ID = uuid.New().String()
 			}
@@ -453,22 +498,32 @@ func (t *Tgbot) answerCommand(message *telego.Message, chatId int64, isAdmin boo
 	case "restart":
 		onlyMessage = true
 		if isAdmin {
-			if len(commandArgs) == 0 {
-				msg += t.I18nBot("tgbot.commands.restartUsage")
-			} else if strings.ToLower(commandArgs[0]) == "force" {
-				if t.xrayService.IsXrayRunning() {
-					err := t.xrayService.RestartXray(true)
-					if err != nil {
-						msg += t.I18nBot("tgbot.commands.restartFailed", "Error=="+err.Error())
-					} else {
-						msg += t.I18nBot("tgbot.commands.restartSuccess")
-					}
+			force := len(commandArgs) > 0 && strings.ToLower(commandArgs[0]) == "force"
+			if t.xrayService.IsXrayRunning() {
+				err := t.xrayService.RestartXray(force)
+				if err != nil {
+					msg += t.I18nBot("tgbot.commands.restartFailed", "Error=="+err.Error())
 				} else {
-					msg += t.I18nBot("tgbot.commands.xrayNotRunning")
+					msg += t.I18nBot("tgbot.commands.restartSuccess")
 				}
 			} else {
-				handleUnknownCommand()
-				msg += t.I18nBot("tgbot.commands.restartUsage")
+				msg += t.I18nBot("tgbot.commands.xrayNotRunning")
+			}
+		} else {
+			handleUnknownCommand()
+		}
+	case "rollback":
+		onlyMessage = true
+		if isAdmin {
+			if !t.xrayService.HasLastWorkingConfig() {
+				msg += "❗ " + t.I18nBot("pages.server.rollbackFailed") + ": no backup exists."
+			} else {
+				err := t.xrayService.RollbackToLastWorkingConfig()
+				if err != nil {
+					msg += "❗ " + t.I18nBot("pages.server.rollbackFailed") + ": " + err.Error()
+				} else {
+					msg += "✅ " + t.I18nBot("pages.server.rollbackSuccess")
+				}
 			}
 		} else {
 			handleUnknownCommand()
@@ -1031,7 +1086,7 @@ func (t *Tgbot) answerCallback(callbackQuery *telego.CallbackQuery, isAdmin bool
 			}
 			return
 		} else {
-			switch callbackQuery.Data {
+			switch decodedQuery {
 			case "get_inbounds":
 				inbounds, err := t.getInbounds()
 				if err != nil {
@@ -1041,6 +1096,56 @@ func (t *Tgbot) answerCallback(callbackQuery *telego.CallbackQuery, isAdmin bool
 				}
 				t.sendCallbackAnswerTgBot(callbackQuery.ID, t.I18nBot("tgbot.buttons.allClients"))
 				t.SendMsgToTgbot(chatId, t.I18nBot("tgbot.answers.chooseInbound"), inbounds)
+			case "admin_cancel":
+				t.sendCallbackAnswerTgBot(callbackQuery.ID, t.I18nBot("tgbot.messages.cancel"))
+				t.SendAnswer(chatId, t.I18nBot("tgbot.commands.pleaseChoose"), true)
+			case "restart_xray":
+				inlineKeyboard := tu.InlineKeyboard(
+					tu.InlineKeyboardRow(
+						tu.InlineKeyboardButton(t.I18nBot("tgbot.buttons.cancel")).WithCallbackData(t.encodeQuery("admin_cancel")),
+						tu.InlineKeyboardButton(t.I18nBot("tgbot.buttons.confirmRestart")).WithCallbackData(t.encodeQuery("restart_xray_c")),
+					),
+				)
+				t.editMessageCallbackTgBot(chatId, callbackQuery.Message.GetMessageID(), inlineKeyboard)
+			case "restart_xray_c":
+				if t.xrayService.IsXrayRunning() {
+					err := t.xrayService.RestartXray(true)
+					if err != nil {
+						t.sendCallbackAnswerTgBot(callbackQuery.ID, t.I18nBot("tgbot.commands.restartFailed", "Error=="+err.Error()))
+						t.SendMsgToTgbot(chatId, t.I18nBot("tgbot.commands.restartFailed", "Error=="+err.Error()))
+					} else {
+						t.sendCallbackAnswerTgBot(callbackQuery.ID, t.I18nBot("tgbot.commands.restartSuccess"))
+						t.SendMsgToTgbot(chatId, t.I18nBot("tgbot.commands.restartSuccess"))
+					}
+				} else {
+					t.sendCallbackAnswerTgBot(callbackQuery.ID, t.I18nBot("tgbot.commands.xrayNotRunning"))
+					t.SendMsgToTgbot(chatId, t.I18nBot("tgbot.commands.xrayNotRunning"))
+				}
+			case "rollback_xray":
+				if !t.xrayService.HasLastWorkingConfig() {
+					t.sendCallbackAnswerTgBot(callbackQuery.ID, t.I18nBot("pages.server.rollbackFailed")+": no backup exists.")
+					return
+				}
+				inlineKeyboard := tu.InlineKeyboard(
+					tu.InlineKeyboardRow(
+						tu.InlineKeyboardButton(t.I18nBot("tgbot.buttons.cancel")).WithCallbackData(t.encodeQuery("admin_cancel")),
+						tu.InlineKeyboardButton(t.I18nBot("tgbot.buttons.confirmRollback")).WithCallbackData(t.encodeQuery("rollback_xray_c")),
+					),
+				)
+				t.editMessageCallbackTgBot(chatId, callbackQuery.Message.GetMessageID(), inlineKeyboard)
+			case "rollback_xray_c":
+				if !t.xrayService.HasLastWorkingConfig() {
+					t.sendCallbackAnswerTgBot(callbackQuery.ID, t.I18nBot("pages.server.rollbackFailed")+": no backup exists.")
+					return
+				}
+				err := t.xrayService.RollbackToLastWorkingConfig()
+				if err != nil {
+					t.sendCallbackAnswerTgBot(callbackQuery.ID, t.I18nBot("pages.server.rollbackFailed"))
+					t.SendMsgToTgbot(chatId, t.I18nBot("pages.server.rollbackFailed")+": "+err.Error())
+				} else {
+					t.sendCallbackAnswerTgBot(callbackQuery.ID, t.I18nBot("pages.server.rollbackSuccess"))
+					t.SendMsgToTgbot(chatId, t.I18nBot("pages.server.rollbackSuccess"))
+				}
 			}
 
 		}
@@ -1111,7 +1216,10 @@ func (t *Tgbot) SendAnswer(chatId int64, msg string, isAdmin bool) {
 			tu.InlineKeyboardButton(t.I18nBot("tgbot.buttons.onlines")).WithCallbackData(t.encodeQuery("onlines")),
 			tu.InlineKeyboardButton(t.I18nBot("tgbot.buttons.allClients")).WithCallbackData(t.encodeQuery("get_inbounds")),
 		),
-		// TODOOOOOOOOOOOOOO: Add restart button here.
+		tu.InlineKeyboardRow(
+			tu.InlineKeyboardButton(t.I18nBot("tgbot.buttons.restartXray")).WithCallbackData(t.encodeQuery("restart_xray")),
+			tu.InlineKeyboardButton(t.I18nBot("tgbot.buttons.rollbackConfig")).WithCallbackData(t.encodeQuery("rollback_xray")),
+		),
 	)
 	numericKeyboardClient := tu.InlineKeyboard(
 		tu.InlineKeyboardRow(
@@ -1260,7 +1368,10 @@ func (t *Tgbot) prepareServerUsageInfo() string {
 
 	// get latest status of server
 	t.lastStatus = t.serverService.GetStatus(t.lastStatus)
-	onlines := p.GetOnlineClients()
+	var onlines []string
+	if p != nil && p.IsRunning() {
+		onlines = p.GetOnlineClients()
+	}
 
 	info += t.I18nBot("tgbot.messages.hostname", "Hostname=="+hostname)
 	info += t.I18nBot("tgbot.messages.version", "Version=="+config.GetVersion())
@@ -1519,7 +1630,7 @@ func (t *Tgbot) clientInfoMsg(
 	}
 
 	status := t.I18nBot("tgbot.offline")
-	if p.IsRunning() {
+	if p != nil && p.IsRunning() {
 		for _, online := range p.GetOnlineClients() {
 			if online == traffic.Email {
 				status = t.I18nBot("tgbot.online")
@@ -1942,7 +2053,8 @@ func int64Contains(slice []int64, item int64) bool {
 }
 
 func (t *Tgbot) onlineClients(chatId int64, messageID ...int) {
-	if !p.IsRunning() {
+	if p == nil || !p.IsRunning() {
+		t.SendMsgToTgbot(chatId, t.I18nBot("tgbot.commands.xrayNotRunning"))
 		return
 	}
 
@@ -2123,6 +2235,29 @@ func (t *Tgbot) sendClientConfigs(chatId int64, email string) {
 		output += "<code>" + link + "</code>\r\n"
 	}
 	t.SendMsgToTgbot(chatId, output)
+
+	// If AmneziaWG configuration links (vpn://) are present, also deliver the .conf document
+	for _, link := range links {
+		if strings.HasPrefix(link, "vpn://") {
+			raw := strings.TrimPrefix(link, "vpn://")
+			if idx := strings.Index(raw, "#"); idx != -1 {
+				raw = raw[:idx]
+			}
+			confBytes, err := base64.RawURLEncoding.DecodeString(raw)
+			if err != nil {
+				confBytes, err = base64.StdEncoding.DecodeString(raw)
+			}
+			if err == nil && len(confBytes) > 0 {
+				doc := tu.Document(
+					tu.ID(chatId),
+					tu.FileFromBytes(confBytes, fmt.Sprintf("%s.conf", clientEmail)),
+				).WithCaption(t.I18nBot("tgbot.messages.email", "Email=="+clientEmail))
+				if _, err := bot.SendDocument(context.Background(), doc); err != nil {
+					logger.Warning("Error sending Telegram conf document:", err)
+				}
+			}
+		}
+	}
 }
 
 func (t *Tgbot) sendClientConfigsByTgUser(chatId int64, tgUserID int64, email string) {

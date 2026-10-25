@@ -428,6 +428,36 @@ func (s *InboundService) AddClient(inboundId int, client *model.Client) (bool, e
 	if err != nil {
 		return false, err
 	}
+
+	switch inbound.Protocol {
+	case model.WireGuard:
+		if client.PrivateKey == "" || client.PublicKey == "" || len(client.AllowedIPs) == 0 {
+			newClients := []model.Client{*client}
+			if err := defaultWireguardClients(inbound.Settings, clients, newClients, nil, nil); err == nil {
+				*client = newClients[0]
+			}
+		}
+		if client.ID == "" {
+			client.ID = client.PublicKey
+		}
+	case model.AmneziaWG:
+		if client.PrivateKey == "" || client.PublicKey == "" || len(client.AllowedIPs) == 0 {
+			newClients := []model.Client{*client}
+			if err := defaultAmneziaWGClients(inbound.Settings, clients, newClients, nil, nil); err == nil {
+				*client = newClients[0]
+			}
+		}
+		if client.ID == "" {
+			client.ID = client.PublicKey
+		}
+	case model.MTProto:
+		if client.Secret == "" {
+			client.Secret = model.EnsureMtprotoSecret("", "")
+		}
+		client.Password = client.Secret
+		client.ID = client.Secret
+	}
+
 	clients = append(clients, *client)
 	settings := make(map[string]interface{})
 	err = json.Unmarshal([]byte(inbound.Settings), &settings)
@@ -435,6 +465,7 @@ func (s *InboundService) AddClient(inboundId int, client *model.Client) (bool, e
 		return false, err
 	}
 	settings["clients"] = clients
+	delete(settings, "peers")
 	newSettings, err := json.Marshal(settings)
 	if err != nil {
 		return false, err
@@ -3252,7 +3283,7 @@ func (s *InboundService) GetClientByEmail(clientEmail string) (*xray.ClientTraff
 	}
 
 	for _, client := range clients {
-		if client.Email == clientEmail {
+		if strings.EqualFold(client.Email, clientEmail) {
 			return traffic, &client, nil
 		}
 	}
@@ -3279,12 +3310,34 @@ func (s *InboundService) SetClientTelegramUserID(trafficId int, tgId int64) (boo
 	clientId := ""
 
 	for _, oldClient := range oldClients {
-		if oldClient.Email == clientEmail {
-			if inbound.Protocol == "trojan" {
+		if strings.EqualFold(oldClient.Email, clientEmail) {
+			switch inbound.Protocol {
+			case model.Trojan:
 				clientId = oldClient.Password
-			} else if inbound.Protocol == "shadowsocks" {
+			case model.Shadowsocks:
 				clientId = oldClient.Email
-			} else if inbound.Protocol == "masque" {
+			case model.Hysteria:
+				clientId = oldClient.Auth
+			case model.WireGuard, model.AmneziaWG:
+				clientId = oldClient.Email
+				if clientId == "" {
+					clientId = oldClient.PublicKey
+				}
+				if clientId == "" {
+					clientId = oldClient.ID
+				}
+			case model.MTProto:
+				clientId = oldClient.Email
+				if clientId == "" {
+					clientId = oldClient.Secret
+				}
+				if clientId == "" {
+					clientId = oldClient.Password
+				}
+				if clientId == "" {
+					clientId = oldClient.ID
+				}
+			case model.Masque:
 				clientId = oldClient.Password
 				if clientId == "" {
 					clientId = oldClient.Pass
@@ -3292,7 +3345,7 @@ func (s *InboundService) SetClientTelegramUserID(trafficId int, tgId int64) (boo
 				if clientId == "" {
 					clientId = oldClient.ID
 				}
-			} else {
+			default:
 				clientId = oldClient.ID
 			}
 			break
@@ -3336,6 +3389,12 @@ func (s *InboundService) SetClientTelegramUserID(trafficId int, tgId int64) (boo
 	}
 	inbound.Settings = string(modifiedSettings)
 	needRestart, err := s.UpdateInboundClient(inbound, clientId)
+	if err == nil {
+		if nc, ncErr := s.nodeClientService.GetByEmail(clientEmail); ncErr == nil && nc != nil {
+			nc.TgID = tgId
+			_, _ = s.nodeClientService.Update(nc)
+		}
+	}
 	return needRestart, err
 }
 
@@ -3985,14 +4044,14 @@ func (s *InboundService) GetClientTrafficTgBot(tgId int64) ([]*xray.ClientTraffi
 	db := database.GetDB()
 	var inbounds []*model.Inbound
 
-	// Retrieve inbounds where settings contain the given tgId
-	err := db.Model(model.Inbound{}).Where("settings LIKE ?", fmt.Sprintf(`%%"tgId": %d%%`, tgId)).Find(&inbounds).Error
+	// Retrieve inbounds where settings contain the given tgId (with or without space)
+	err := db.Model(model.Inbound{}).Where("settings LIKE ? OR settings LIKE ?", fmt.Sprintf(`%%"tgId": %d%%`, tgId), fmt.Sprintf(`%%"tgId":%d%%`, tgId)).Find(&inbounds).Error
 	if err != nil && err != gorm.ErrRecordNotFound {
 		logger.Errorf("Error retrieving inbounds with tgId %d: %v", tgId, err)
 		return nil, err
 	}
 
-	var emails []string
+	emailMap := make(map[string]struct{})
 	for _, inbound := range inbounds {
 		clients, err := s.GetClients(inbound)
 		if err != nil {
@@ -4000,10 +4059,28 @@ func (s *InboundService) GetClientTrafficTgBot(tgId int64) ([]*xray.ClientTraffi
 			continue
 		}
 		for _, client := range clients {
-			if client.TgID == tgId {
-				emails = append(emails, client.Email)
+			if client.TgID == tgId && client.Email != "" {
+				emailMap[client.Email] = struct{}{}
 			}
 		}
+	}
+
+	var ncEmails []string
+	if err := db.Model(&model.NodeClient{}).Where("tg_id = ?", tgId).Pluck("email", &ncEmails).Error; err == nil {
+		for _, e := range ncEmails {
+			if e != "" {
+				emailMap[e] = struct{}{}
+			}
+		}
+	}
+
+	var emails []string
+	for e := range emailMap {
+		emails = append(emails, e)
+	}
+
+	if len(emails) == 0 {
+		return nil, nil
 	}
 
 	var traffics []*xray.ClientTraffic
@@ -4362,6 +4439,9 @@ func (s *InboundService) MigrateDB() {
 }
 
 func (s *InboundService) GetOnlineClients() []string {
+	if p == nil {
+		return nil
+	}
 	return p.GetOnlineClients()
 }
 

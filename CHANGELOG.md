@@ -5,6 +5,24 @@ All notable changes to **TX-UI** will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.9.5] - 2026-10-25
+
+### 🚀 Features & Enhancements
+- **Telegram Bot Multi-Protocol & Core Management Overhaul**:
+  - **Full Protocol Credential Support**: Upgraded Telegram Bot client addition in `internal/web/service/tgbot.go` and `inbound.go` to support automated Curve25519 keypair generation and subnet IP allocation for AmneziaWG (AWG 3.1) and WireGuard, FakeTLS secret generation for MTProto (`mtg`), cipher-compliant Shadowsocks 2022 key generation, Trojan passwords, Hysteria auth credentials (`Auth`), and Masque passwords (`MasquePass`).
+  - **Direct `.conf` Profile Delivery**: Automatically decodes AmneziaWG `vpn://` configuration share links and delivers native `.conf` profile files directly to Telegram users as document attachments.
+  - **Interactive Core Control & Rollback**: Added `/rollback` administrative command with status checks and confirmation handling, added quick-action buttons for `Restart Xray` and `Rollback Config` in the Telegram bot admin keyboard, and relaxed `/restart` to support both `/restart` and `/restart force`.
+  - **Multi-Protocol Telegram ID Linking**: Upgraded `SetClientTelegramUserID` to resolve `clientId` across all protocols (Trojan, Shadowsocks, Hysteria, WireGuard, AmneziaWG, MTProto, Masque) and synchronize `tgId` between inbounds and the `node_clients` database.
+  - **Resilient Traffic Queries**: Enhanced `GetClientTrafficTgBot` to parse both JSON spacing variants (`"tgId": %d` and `"tgId":%d`) as well as `node_clients` database records.
+  - **Nil-Safety & Process Stability**: Added safeguards against nil-pointer dereferences in server usage reporting, online client statistics, and client status lookups when Xray core is restarting, uninitialized, or stopped.
+
+- **Comprehensive Internationalization & Translation Synchronization**:
+  - **Full 13-Locale Key Parity**: Completed all missing translation keys across all 13 supported languages (`en_US`, `fa_IR`, `ar_EG`, `es_ES`, `id_ID`, `ja_JP`, `pt_BR`, `ru_RU`, `tr_TR`, `uk_UA`, `vi_VN`, `zh_CN`, `zh_TW`), achieving 100% key parity with 1,156 keys per language.
+  - **MTProto Proxy Localization**: Translated `[pages.xray.mtproto]` parameters (`secret`, `adTag`, `routeThroughXray`, `routeXrayPort`, `preferIp`, `proxyProtocolListener`, `throttleMaxConnections`, `pendingHandshakesMaxPerIP`) across all 13 locales.
+  - **AmneziaWG Obfuscation Localization**: Added complete AWG 3.1 obfuscation parameter translations for Traditional Chinese (`zh_TW`).
+  - **Telegram Bot Control Localization**: Added localized labels for quick-action buttons (`restartXray`, `rollbackConfig`, `confirmRestart`, `confirmRollback`) and updated administrative command documentation.
+  - **Client Protocol Badges**: Added `forMtprotoProtocol` and `forAmneziawgProtocol` across all language translation files.
+
 ## [v0.9.4] - 2026-10-23
 
 ### 🚀 Features & Enhancements
@@ -39,10 +57,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Safe Client Distribution**: Implemented `getClientFinalMaskString` and deep-cloning in subscription services to strip server-side `filter` IP ACLs and prevent leaking internal filters to client links.
   - **Expanded Share Links**: Added `fm` query/JSON export to VMess and Masque share links and link parsers.
   - **Unit Test Coverage**: Created `xray/finalmask_test.go` verifying `TakeUDPHop`, `MoveUDPHopToMask`, `UpgradeXDNSMasks`, and `StripFilterMasks`.
-
-- **Telegram Bot Multi-Protocol Credential Architecture**:
-  - Upgraded client addition handler in `internal/web/service/tgbot.go` to support Shadowsocks 2022 (correct key length calculation and generation), traditional Shadowsocks AEAD, Trojan, Hysteria (`Auth`), and Masque (`MasquePass`).
-  - Synced client credential fields with database models and node client services.
 
 - **Bash Management Scripts & Aliases**:
   - **Command Alias**: Added `/usr/bin/tx-ui` symlink in `install.sh` and `x-ui.sh`, allowing users to manage the panel using either `tx-ui` or `x-ui`.
