@@ -50,9 +50,67 @@
         }
     }
 
+    @media (max-width: 768px) {
+        .usage-metrics-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            gap: 10px;
+        }
+
+        #content-layout .overview-usage-card .ant-card-body {
+            padding: 12px 10px !important;
+        }
+
+        .usage-tile {
+            padding: 12px 8px 10px 8px;
+        }
+    }
+
     @media (max-width: 480px) {
         .usage-metrics-grid {
-            grid-template-columns: 1fr;
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            gap: 8px;
+        }
+
+        #content-layout .overview-usage-card .ant-card-body {
+            padding: 10px 8px !important;
+        }
+
+        .usage-tile {
+            padding: 10px 6px 8px 6px;
+        }
+
+        .usage-tile-header {
+            margin-bottom: 6px;
+            padding: 0 1px;
+        }
+
+        .usage-tile-title {
+            font-size: 11.5px;
+            gap: 4px;
+        }
+
+        .usage-tile-title span {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .usage-tile-badge {
+            font-size: 10px;
+            padding: 1px 5px;
+        }
+
+        .usage-tile-chart {
+            margin: 2px 0 6px 0;
+        }
+
+        .usage-tile-chart .ant-progress-circle {
+            max-width: 100%;
+        }
+
+        .usage-tile-footer {
+            font-size: 10px;
+            letter-spacing: -0.3px;
         }
     }
 
@@ -305,7 +363,7 @@
                                     </div>
                                     <div class="usage-tile-chart">
                                         <a-progress :percent="status.cpu.percent" :stroke-color="status.cpu.color"
-                                                    :width="106"
+                                                    :width="isMobile ? 90 : 106"
                                                     status="normal"
                                                     type="dashboard"></a-progress>
                                     </div>
@@ -332,7 +390,7 @@
                                     </div>
                                     <div class="usage-tile-chart">
                                         <a-progress :percent="status.mem.percent" :stroke-color="status.mem.color"
-                                                    :width="106"
+                                                    :width="isMobile ? 90 : 106"
                                                     status="normal"
                                                     type="dashboard"></a-progress>
                                     </div>
@@ -352,7 +410,7 @@
                                     </div>
                                     <div class="usage-tile-chart">
                                         <a-progress :percent="status.swap.percent" :stroke-color="status.swap.color"
-                                                    :width="106"
+                                                    :width="isMobile ? 90 : 106"
                                                     status="normal"
                                                     type="dashboard"></a-progress>
                                     </div>
@@ -372,7 +430,7 @@
                                     </div>
                                     <div class="usage-tile-chart">
                                         <a-progress :percent="status.disk.percent" :stroke-color="status.disk.color"
-                                                    :width="106"
+                                                    :width="isMobile ? 90 : 106"
                                                     status="normal"
                                                     type="dashboard"></a-progress>
                                     </div>
