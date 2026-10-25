@@ -438,6 +438,13 @@ func (s *SubJsonService) streamData(stream string) map[string]interface{} {
 		streamSettings["wsSettings"] = s.removeAcceptProxy(streamSettings["wsSettings"])
 	case "httpupgrade":
 		streamSettings["httpupgradeSettings"] = s.removeAcceptProxy(streamSettings["httpupgradeSettings"])
+	case "xhttp", "splithttp":
+		if xh := s.removeAcceptProxy(streamSettings["xhttpSettings"]); xh != nil {
+			streamSettings["xhttpSettings"] = xh
+		}
+		if sh := s.removeAcceptProxy(streamSettings["splithttpSettings"]); sh != nil {
+			streamSettings["splithttpSettings"] = sh
+		}
 	}
 	return streamSettings
 }
@@ -508,8 +515,12 @@ func (s *SubJsonService) realityData(rData map[string]interface{}) map[string]in
 		rltyData["mldsa65Verify"] = rltyClientSettings["mldsa65Verify"]
 	}
 
-	// Set random data
-	rltyData["spiderX"] = "/" + random.Seq(15)
+	// Set spiderX (custom or random)
+	if spx, ok := rltyClientSettings["spiderX"].(string); ok && spx != "" {
+		rltyData["spiderX"] = spx
+	} else {
+		rltyData["spiderX"] = "/" + random.Seq(15)
+	}
 	if shortIds, ok := rData["shortIds"].([]interface{}); ok && len(shortIds) > 0 {
 		idx := random.Num(len(shortIds))
 		if str, ok := shortIds[idx].(string); ok {

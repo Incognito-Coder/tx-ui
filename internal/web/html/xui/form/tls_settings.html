@@ -105,6 +105,9 @@
             <a-form-item label="One Time Loading">
                 <a-switch v-model="cert.oneTimeLoading"></a-switch>
             </a-form-item>
+            <a-form-item label="OCSP Stapling (Seconds)" v-if="cert.useFile">
+                <a-input-number :min="0" placeholder="0 (disabled) or 3600" v-model.number="cert.ocspStapling"></a-input-number>
+            </a-form-item>
             <a-form-item label='Usage Option'>
                 <a-select :dropdown-class-name="themeSwitcher.currentTheme" style="width: 50%" v-model="cert.usage">
                     <a-select-option :value="key" v-for="key in USAGE_OPTION">[[ key ]]</a-select-option>

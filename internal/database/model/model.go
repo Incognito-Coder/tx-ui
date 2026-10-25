@@ -27,6 +27,7 @@ const (
 	Masque      Protocol = "masque"
 	MTProto     Protocol = "mtproto"
 	AmneziaWG   Protocol = "amneziawg"
+	DokodemoDoor Protocol = "dokodemo-door"
 )
 
 type User struct {
@@ -102,10 +103,14 @@ func (i *Inbound) GenXrayInboundConfig() *xray.InboundConfig {
 			}
 		}
 	}
+	proto := string(i.Protocol)
+	if i.Protocol == Tunnel || i.Protocol == DokodemoDoor {
+		proto = "dokodemo-door"
+	}
 	return &xray.InboundConfig{
 		Listen:         json_util.RawMessage(listen),
 		Port:           i.Port,
-		Protocol:       string(i.Protocol),
+		Protocol:       proto,
 		Settings:       json_util.RawMessage(settings),
 		StreamSettings: json_util.RawMessage(streamSettings),
 		Tag:            i.Tag,

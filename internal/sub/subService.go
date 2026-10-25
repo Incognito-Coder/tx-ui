@@ -1308,8 +1308,12 @@ func (s *SubService) genVmessLink(inbound *model.Inbound, email string) string {
 				obj["host"] = searchHost(headers)
 			}
 		}
-	case "xhttp":
-		if xhttp, ok := stream["xhttpSettings"].(map[string]interface{}); ok {
+	case "xhttp", "splithttp":
+		xhttp, ok := stream["xhttpSettings"].(map[string]interface{})
+		if !ok {
+			xhttp, ok = stream["splithttpSettings"].(map[string]interface{})
+		}
+		if ok && xhttp != nil {
 			if path, ok := xhttp["path"].(string); ok {
 				obj["path"] = path
 			}
@@ -1581,8 +1585,12 @@ func (s *SubService) genVlessLink(inbound *model.Inbound, email string) string {
 				params["host"] = searchHost(headers)
 			}
 		}
-	case "xhttp":
-		if xhttp, ok := stream["xhttpSettings"].(map[string]interface{}); ok {
+	case "xhttp", "splithttp":
+		xhttp, ok := stream["xhttpSettings"].(map[string]interface{})
+		if !ok {
+			xhttp, ok = stream["splithttpSettings"].(map[string]interface{})
+		}
+		if ok && xhttp != nil {
 			if path, ok := xhttp["path"].(string); ok {
 				params["path"] = path
 			}
@@ -1673,7 +1681,15 @@ func (s *SubService) genVlessLink(inbound *model.Inbound, email string) string {
 					params["pqv"] = pqv
 				}
 			}
-			params["spx"] = "/" + random.Seq(15)
+			if spxValue, ok := searchKey(realitySettings, "spiderX"); ok {
+				if spx, ok := spxValue.(string); ok && len(spx) > 0 {
+					params["spx"] = spx
+				} else {
+					params["spx"] = "/" + random.Seq(15)
+				}
+			} else {
+				params["spx"] = "/" + random.Seq(15)
+			}
 		}
 
 		if streamNetwork == "tcp" && len(clients[clientIndex].Flow) > 0 {
@@ -1834,8 +1850,12 @@ func (s *SubService) genTrojanLink(inbound *model.Inbound, email string) string 
 				params["host"] = searchHost(headers)
 			}
 		}
-	case "xhttp":
-		if xhttp, ok := stream["xhttpSettings"].(map[string]interface{}); ok {
+	case "xhttp", "splithttp":
+		xhttp, ok := stream["xhttpSettings"].(map[string]interface{})
+		if !ok {
+			xhttp, ok = stream["splithttpSettings"].(map[string]interface{})
+		}
+		if ok && xhttp != nil {
 			if path, ok := xhttp["path"].(string); ok {
 				params["path"] = path
 			}
@@ -1922,7 +1942,15 @@ func (s *SubService) genTrojanLink(inbound *model.Inbound, email string) string 
 					params["pqv"] = pqv
 				}
 			}
-			params["spx"] = "/" + random.Seq(15)
+			if spxValue, ok := searchKey(realitySettings, "spiderX"); ok {
+				if spx, ok := spxValue.(string); ok && len(spx) > 0 {
+					params["spx"] = spx
+				} else {
+					params["spx"] = "/" + random.Seq(15)
+				}
+			} else {
+				params["spx"] = "/" + random.Seq(15)
+			}
 		}
 
 		if streamNetwork == "tcp" && len(clients[clientIndex].Flow) > 0 {
@@ -2087,8 +2115,12 @@ func (s *SubService) genShadowsocksLink(inbound *model.Inbound, email string) st
 				params["host"] = searchHost(headers)
 			}
 		}
-	case "xhttp":
-		if xhttp, ok := stream["xhttpSettings"].(map[string]interface{}); ok {
+	case "xhttp", "splithttp":
+		xhttp, ok := stream["xhttpSettings"].(map[string]interface{})
+		if !ok {
+			xhttp, ok = stream["splithttpSettings"].(map[string]interface{})
+		}
+		if ok && xhttp != nil {
 			if path, ok := xhttp["path"].(string); ok {
 				params["path"] = path
 			}

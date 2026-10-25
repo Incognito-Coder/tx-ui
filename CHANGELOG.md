@@ -23,6 +23,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Telegram Bot Control Localization**: Added localized labels for quick-action buttons (`restartXray`, `rollbackConfig`, `confirmRestart`, `confirmRollback`) and updated administrative command documentation.
   - **Client Protocol Badges**: Added `forMtprotoProtocol` and `forAmneziawgProtocol` across all language translation files.
 
+- **XTLS/Xray-Examples Parity & Core Configuration Fixes**:
+  - **SplitHTTP (`splithttp`) Alias Parity**: Full bidirectional compatibility for `splithttp` and `xhttp` transport identifiers and settings across JSON import/export, subscription generators (`subService.go`), and JSON subscription services (`subJsonService.go`).
+  - **xHTTP Transport Advanced Features**: Added UI and model support for `noGRPCHeader` (disabling gRPC headers in `stream-up` and `stream-one` modes) and `scMinPostsIntervalMs` (configurable minimum interval for POST uploads in `packet-up` mode), as well as `downloadSettings` parsing in outbound configurations.
+  - **Dokodemo-Door Inbound Mapping Fix**: Corrected protocol identifier mapping from internal `"tunnel"` to standard Xray-core `"dokodemo-door"`, ensuring valid core generation, and prevented emission of empty `address: ""` during transparent proxy / `followRedirect` mode.
+  - **REALITY `target` & `dest` Compatibility**: Dual-key synchronization for `target` (Xray >= 24.10.31) and `dest` (backwards compatibility), and preserved user-configured custom `spiderX` paths across subscription and client link generators.
+  - **TLS OCSP Stapling**: Added configurable `ocspStapling` duration support for certificate file configurations in `TlsStreamSettings` and UI.
+  - **Sniffing & ALPN Options**: Added `fakedns+others` to `destOverride` sniffing options and `fromMitm` to ALPN options for domain fronting and MITM forwarding configurations.
+  - **Reverse Proxy Section**: Added `reverse` section (`bridges` & `portals`) to top-level `xray.Config` model and equality comparator.
+  - **Shadowsocks Single-User Omission Fix**: Omitted empty `clients: []` array on single-user Shadowsocks inbounds to prevent Xray-core from discarding the primary password.
+  - **Outbound TLS Peer Verification**: Added array parsing support for `verifyPeerCertInNames` matching Xray v25.2.21+ MITM and domain fronting configurations.
+
 ## [v0.9.4] - 2026-10-23
 
 ### 🚀 Features & Enhancements

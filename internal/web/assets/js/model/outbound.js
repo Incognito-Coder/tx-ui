@@ -89,6 +89,7 @@ const ALPN_OPTION = {
     H3: "h3",
     H2: "h2",
     HTTP1: "http/1.1",
+    FROM_MITM: "fromMitm",
 };
 
 const SNIFFING_OPTION = {
@@ -97,6 +98,7 @@ const SNIFFING_OPTION = {
     QUIC: "quic",
     FAKEDNS: "fakedns",
     FAKEDNS_OTHER: "fakedns+other",
+    FAKEDNS_OTHERS: "fakedns+others",
     RDNS: "rdns"
 };
 
@@ -439,6 +441,7 @@ class xHTTPStreamSettings extends CommonClass {
             hMaxReusableSecs: "1800-3000",
             hKeepAlivePeriod: 0,
         },
+        downloadSettings = undefined,
     ) {
         super();
         this.path = path;
@@ -447,6 +450,7 @@ class xHTTPStreamSettings extends CommonClass {
         this.noGRPCHeader = noGRPCHeader;
         this.scMinPostsIntervalMs = scMinPostsIntervalMs;
         this.xmux = xmux;
+        this.downloadSettings = downloadSettings;
     }
 
     static fromJson(json = {}) {
@@ -456,7 +460,8 @@ class xHTTPStreamSettings extends CommonClass {
             json.mode,
             json.noGRPCHeader,
             json.scMinPostsIntervalMs,
-            json.xmux
+            json.xmux,
+            json.downloadSettings,
         );
     }
 
@@ -475,6 +480,7 @@ class xHTTPStreamSettings extends CommonClass {
                 hMaxReusableSecs: this.xmux.hMaxReusableSecs,
                 hKeepAlivePeriod: this.xmux.hKeepAlivePeriod,
             },
+            downloadSettings: this.downloadSettings ? this.downloadSettings : undefined,
         };
     }
 }
@@ -500,12 +506,16 @@ class TlsStreamSettings extends CommonClass {
     }
 
     static fromJson(json = {}) {
+        let verifyPeerCertByName = json.verifyPeerCertByName || '';
+        if (!verifyPeerCertByName && Array.isArray(json.verifyPeerCertInNames)) {
+            verifyPeerCertByName = json.verifyPeerCertInNames.join(',');
+        }
         return new TlsStreamSettings(
             json.serverName,
             json.alpn,
             json.fingerprint,
             json.echConfigList,
-            json.verifyPeerCertByName,
+            verifyPeerCertByName,
             json.pinnedPeerCertSha256,
             json.useSystemCA ?? false,
         );
@@ -1324,8 +1334,9 @@ class StreamSettings extends CommonClass {
     }
 
     static fromJson(json = {}) {
+        let network = json.network === 'splithttp' ? 'xhttp' : json.network;
         return new StreamSettings(
-            json.network,
+            network,
             json.security,
             TlsStreamSettings.fromJson(json.tlsSettings),
             RealityStreamSettings.fromJson(json.realitySettings),
@@ -1334,7 +1345,7 @@ class StreamSettings extends CommonClass {
             WsStreamSettings.fromJson(json.wsSettings),
             GrpcStreamSettings.fromJson(json.grpcSettings),
             HttpUpgradeStreamSettings.fromJson(json.httpupgradeSettings),
-            xHTTPStreamSettings.fromJson(json.xhttpSettings),
+            xHTTPStreamSettings.fromJson(json.xhttpSettings || json.splithttpSettings),
             HysteriaStreamSettings.fromJson(json.hysteriaSettings),
             MasqueStreamSettings.fromJson(json.masqueSettings),
             XDriveStreamSettings.fromJson(json.xdriveSettings),
@@ -1389,7 +1400,7 @@ class StreamSettings extends CommonClass {
             wsSettings: network === 'ws' ? this.ws.toJson() : undefined,
             grpcSettings: network === 'grpc' ? this.grpc.toJson() : undefined,
             httpupgradeSettings: network === 'httpupgrade' ? this.httpupgrade.toJson() : undefined,
-            xhttpSettings: network === 'xhttp' ? this.xhttp.toJson() : undefined,
+            xhttpSettings: (network === 'xhttp' || network === 'splithttp') ? this.xhttp.toJson() : undefined,
             hysteriaSettings: network === 'hysteria' ? this.hysteria.toJson() : undefined,
             masqueSettings: network === 'masque' ? this.masque.toJson() : undefined,
             xdriveSettings: network === 'xdrive' ? this.xdrive.toJson() : undefined,

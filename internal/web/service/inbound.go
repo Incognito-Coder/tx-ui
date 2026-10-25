@@ -3157,6 +3157,15 @@ func (s *InboundService) BuildInboundConfig(inbound *model.Inbound, txs ...*gorm
 		}
 		if realitySettings, ok := stream["realitySettings"].(map[string]interface{}); ok {
 			delete(realitySettings, "settings")
+			if target, ok := realitySettings["target"].(string); ok && target != "" {
+				if _, hasDest := realitySettings["dest"]; !hasDest {
+					realitySettings["dest"] = target
+				}
+			} else if dest, ok := realitySettings["dest"].(string); ok && dest != "" {
+				if _, hasTarget := realitySettings["target"]; !hasTarget {
+					realitySettings["target"] = dest
+				}
+			}
 		}
 		delete(stream, "externalProxy")
 		xray.TakeUDPHop(stream)
