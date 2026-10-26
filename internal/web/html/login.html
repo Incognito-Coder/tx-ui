@@ -9,7 +9,6 @@
 
     h1 {
         text-align: center;
-        /*    margin: 20px 0 50px 0;*/
         height: 110px;
     }
 
@@ -478,6 +477,7 @@
         constructor() {
             this.username = "";
             this.password = "";
+            this.loginSecret = "";
         }
     }
 
@@ -505,13 +505,12 @@
                 }
             },
             async getSecretStatus() {
-                this.loading = true;
                 const msg = await HttpUtil.post('/getSecretStatus');
-                this.loading = false;
-                if (msg.success) {
-                    this.secretEnable = msg.obj;
-                    return msg.obj;
+                if (msg && msg.success) {
+                    this.secretEnable = !!msg.obj;
+                    return this.secretEnable;
                 }
+                return false;
             },
         },
     });

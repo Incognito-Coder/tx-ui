@@ -42,6 +42,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Auto-Delete Depleted Clients Setting Enforcement**:
   - **Immediate Exit on Disabled State**: Updated `AutoDeleteDepletedClientsJob` to check `autoDeleteDay <= 0` at the very entry point before emitting debug start/finish logs or executing database queries, ensuring the job does not run or log when disabled (`autoDeleteDay = 0`) in the panel.
 
+- **UI, Typo & Inbound API Robustness Fixes**:
+  - **Login Secret Reactivity & Clean Page Load**: Initialized `loginSecret` in the `User` class constructor (`login.html`) to guarantee Vue reactivity, and removed button loading state toggling during background `/getSecretStatus` requests to eliminate button spinner flickering on page load.
+  - **Comprehensive Xray Process Nil-Guards**: Added nil-safe checks to `*xray.Process` methods (`IsRunning()`, `GetAPIPort()`, `GetConfig()`, `GetOnlineClients()`, `GetUptime()`) and guarded all live Xray API invocations across `InboundService` (`AddInbound`, `UpdateInbound`, `AddInboundClient`, `DelInboundClient`, `UpdateInboundClient`, `DelInboundClientByEmail`, `autoRenewClients`, `disableInvalidInbounds`) with `p != nil && p.IsRunning()` to prevent nil pointer dereferences and connection errors when Xray core is not running.
+  - **Xray API Timeout Contexts & Typo Fix**: Added 5-second timeout contexts to `AddInbound`, `DelInbound`, and `AddUser` gRPC calls in `XrayAPI`, and fixed typo `Detur` -> `Detour` in debug logs.
+  - **Translation & Constant Typo Fixes**: Corrected Turkish strings erroneously placed in Brazilian Portuguese (`translate.pt_BR.toml`) for `autoDeleteDay` and `autoDeleteDayDesc`, added correctly spelled `UTLS_RANDOMIZEDNOALPN` to `UTLS_FINGERPRINT` in `inbound.js` and `outbound.js`, and removed obsolete commented-out code blocks in `setting.html` and `login.html`.
+
 ## [v0.9.4] - 2026-10-23
 
 ### 🚀 Features & Enhancements

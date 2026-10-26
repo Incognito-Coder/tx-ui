@@ -250,23 +250,45 @@ func (p *process) GetVersion() string {
 	return p.version
 }
 
+func (p *Process) IsRunning() bool {
+	if p == nil || p.process == nil {
+		return false
+	}
+	return p.process.IsRunning()
+}
+
 func (p *Process) GetAPIPort() int {
+	if p == nil || p.process == nil {
+		return 0
+	}
 	return p.apiPort
 }
 
 func (p *Process) GetConfig() *Config {
+	if p == nil || p.process == nil {
+		return nil
+	}
 	return p.config
 }
 
 func (p *Process) GetOnlineClients() []string {
+	if p == nil || p.process == nil {
+		return nil
+	}
 	return p.onlineClients
 }
 
 func (p *Process) SetOnlineClients(users []string) {
+	if p == nil || p.process == nil {
+		return
+	}
 	p.onlineClients = users
 }
 
 func (p *Process) GetUptime() uint64 {
+	if p == nil || p.process == nil {
+		return 0
+	}
 	return uint64(time.Since(p.startTime).Seconds())
 }
 

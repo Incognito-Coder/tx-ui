@@ -5,7 +5,6 @@
             <a-list-item-meta :description="desc" :title="title"/>
             <a-textarea :auto-size="{ minRows: 10 }" :value="value" @input="$emit('input', $event.target.value)"
                         class="ant-setting-textarea"></a-textarea>
-            <!--a-textarea :value="value" @input="$emit('input', $event.target.value)" :auto-size="{ minRows: 10, maxRows: 30 }"></a-textarea-->
         </a-col>
     </a-row>
     <a-row v-else>

@@ -398,7 +398,7 @@ func (s *InboundService) AddInbound(inbound *model.Inbound) (*model.Inbound, boo
 			s.applyLocalMtproto(inbound.Id)
 		} else if inbound.Protocol == model.AmneziaWG || inbound.Protocol == "amneziawg" {
 			s.applyLocalAmneziaWG(inbound.Id)
-		} else {
+		} else if p != nil && p.IsRunning() {
 			s.xrayApi.Init(p.GetAPIPort())
 			inboundJson, err1 := json.MarshalIndent(inbound.GenXrayInboundConfig(), "", "  ")
 			if err1 != nil {
@@ -413,6 +413,8 @@ func (s *InboundService) AddInbound(inbound *model.Inbound) (*model.Inbound, boo
 				needRestart = true
 			}
 			s.xrayApi.Close()
+		} else {
+			needRestart = true
 		}
 	}
 
@@ -641,7 +643,7 @@ func (s *InboundService) UpdateInbound(inbound *model.Inbound) (*model.Inbound, 
 		} else {
 			amneziawgnet.GetManager().Remove(oldInbound.Id)
 		}
-	} else {
+	} else if p != nil && p.IsRunning() {
 		s.xrayApi.Init(p.GetAPIPort())
 		if s.xrayApi.DelInbound(tag) == nil {
 			logger.Debug("Old inbound deleted by api:", tag)
@@ -662,6 +664,8 @@ func (s *InboundService) UpdateInbound(inbound *model.Inbound) (*model.Inbound, 
 			}
 		}
 		s.xrayApi.Close()
+	} else {
+		needRestart = true
 	}
 
 	saveErr := tx.Save(oldInbound).Error
@@ -857,30 +861,37 @@ func (s *InboundService) AddInboundClient(data *model.Inbound) (bool, error) {
 	if oldInbound.Protocol == "wireguard" {
 		needRestart = true
 	}
-	s.xrayApi.Init(p.GetAPIPort())
+	canUseApi := p != nil && p.IsRunning()
+	if canUseApi {
+		s.xrayApi.Init(p.GetAPIPort())
+	}
 	for _, client := range clients {
 		if len(client.Email) > 0 {
 			s.AddClientStat(tx, data.Id, &client)
 			if client.Enable && oldInbound.Protocol != "wireguard" && oldInbound.Protocol != "amneziawg" && oldInbound.Protocol != "mtproto" && oldInbound.Protocol != model.AmneziaWG && oldInbound.Protocol != model.MTProto {
-				cipher := ""
-				if oldInbound.Protocol == "shadowsocks" {
-					if m, ok := oldSettings["method"].(string); ok {
-						cipher = m
+				if canUseApi {
+					cipher := ""
+					if oldInbound.Protocol == "shadowsocks" {
+						if m, ok := oldSettings["method"].(string); ok {
+							cipher = m
+						}
 					}
-				}
-				err1 := s.xrayApi.AddUser(string(oldInbound.Protocol), oldInbound.Tag, map[string]interface{}{
-					"email":    client.Email,
-					"id":       client.ID,
-					"auth":     client.Auth,
-					"security": client.Security,
-					"flow":     client.Flow,
-					"password": client.Password,
-					"cipher":   cipher,
-				})
-				if err1 == nil {
-					logger.Debug("Client added by api:", client.Email)
+					err1 := s.xrayApi.AddUser(string(oldInbound.Protocol), oldInbound.Tag, map[string]interface{}{
+						"email":    client.Email,
+						"id":       client.ID,
+						"auth":     client.Auth,
+						"security": client.Security,
+						"flow":     client.Flow,
+						"password": client.Password,
+						"cipher":   cipher,
+					})
+					if err1 == nil {
+						logger.Debug("Client added by api:", client.Email)
+					} else {
+						logger.Debug("Error in adding client by api:", err1)
+						needRestart = true
+					}
 				} else {
-					logger.Debug("Error in adding client by api:", err1)
 					needRestart = true
 				}
 			}
@@ -890,7 +901,9 @@ func (s *InboundService) AddInboundClient(data *model.Inbound) (bool, error) {
 			}
 		}
 	}
-	s.xrayApi.Close()
+	if canUseApi {
+		s.xrayApi.Close()
+	}
 
 	// Ensure every client added here is also present in node_clients + node_client_links
 	// so that GetXrayConfig (which builds the Xray user list from node_clients) picks them up.
@@ -1609,20 +1622,24 @@ func (s *InboundService) DelInboundClient(inboundId int, clientId string) (bool,
 			return false, err
 		}
 		if needApiDel && notDepleted && oldInbound.Protocol != "wireguard" && oldInbound.Protocol != "amneziawg" && oldInbound.Protocol != "mtproto" && oldInbound.Protocol != model.AmneziaWG && oldInbound.Protocol != model.MTProto {
-			s.xrayApi.Init(p.GetAPIPort())
-			err1 := s.xrayApi.RemoveUser(oldInbound.Tag, email)
-			if err1 == nil {
-				logger.Debug("Client deleted by api:", email)
-				needRestart = false
-			} else {
-				if strings.Contains(err1.Error(), fmt.Sprintf("User %s not found.", email)) {
-					logger.Debug("User is already deleted. Nothing to do more...")
+			if p != nil && p.IsRunning() {
+				s.xrayApi.Init(p.GetAPIPort())
+				err1 := s.xrayApi.RemoveUser(oldInbound.Tag, email)
+				if err1 == nil {
+					logger.Debug("Client deleted by api:", email)
+					needRestart = false
 				} else {
-					logger.Debug("Error in deleting client by api:", err1)
-					needRestart = true
+					if strings.Contains(err1.Error(), fmt.Sprintf("User %s not found.", email)) {
+						logger.Debug("User is already deleted. Nothing to do more...")
+					} else {
+						logger.Debug("Error in deleting client by api:", err1)
+						needRestart = true
+					}
 				}
+				s.xrayApi.Close()
+			} else {
+				needRestart = true
 			}
-			s.xrayApi.Close()
 		}
 
 		// Remove NodeClient / NodeClientLink so the client disappears from the panel.
@@ -1928,7 +1945,7 @@ func (s *InboundService) UpdateInboundClient(data *model.Inbound, clientId strin
 	}
 	needRestart := false
 	if len(oldEmail) > 0 {
-		if p != nil && oldInbound.Protocol != "wireguard" && oldInbound.Protocol != "amneziawg" && oldInbound.Protocol != "mtproto" && oldInbound.Protocol != model.AmneziaWG && oldInbound.Protocol != model.MTProto {
+		if p != nil && p.IsRunning() && oldInbound.Protocol != "wireguard" && oldInbound.Protocol != "amneziawg" && oldInbound.Protocol != "mtproto" && oldInbound.Protocol != model.AmneziaWG && oldInbound.Protocol != model.MTProto {
 			s.xrayApi.Init(p.GetAPIPort())
 			if oldClients[clientIndex].Enable {
 				err1 := s.xrayApi.RemoveUser(oldInbound.Tag, oldEmail)
@@ -2569,7 +2586,7 @@ func (s *InboundService) autoRenewClients(tx *gorm.DB) (bool, int64, error) {
 	if err != nil {
 		return false, 0, err
 	}
-	if p != nil {
+	if p != nil && p.IsRunning() {
 		err1 = s.xrayApi.Init(p.GetAPIPort())
 		if err1 != nil {
 			return true, int64(len(traffics)), nil
@@ -2595,7 +2612,7 @@ func (s *InboundService) disableInvalidInbounds(tx *gorm.DB) (bool, int64, error
 	now := time.Now().Unix() * 1000
 	needRestart := false
 
-	if p != nil {
+	if p != nil && p.IsRunning() {
 		var tags []string
 		err := tx.Table("inbounds").
 			Select("inbounds.tag").
@@ -4540,19 +4557,23 @@ func (s *InboundService) DelInboundClientByEmail(inboundId int, email string) (b
 	// remove stats too
 	if len(email) > 0 {
 		if needApiDel {
-			s.xrayApi.Init(p.GetAPIPort())
-			if err1 := s.xrayApi.RemoveUser(oldInbound.Tag, email); err1 == nil {
-				logger.Debug("Client deleted by api:", email)
-				needRestart = false
-			} else {
-				if strings.Contains(err1.Error(), fmt.Sprintf("User %s not found.", email)) {
-					logger.Debug("User is already deleted. Nothing to do more...")
+			if p != nil && p.IsRunning() {
+				s.xrayApi.Init(p.GetAPIPort())
+				if err1 := s.xrayApi.RemoveUser(oldInbound.Tag, email); err1 == nil {
+					logger.Debug("Client deleted by api:", email)
+					needRestart = false
 				} else {
-					logger.Debug("Error in deleting client by api:", err1)
-					needRestart = true
+					if strings.Contains(err1.Error(), fmt.Sprintf("User %s not found.", email)) {
+						logger.Debug("User is already deleted. Nothing to do more...")
+					} else {
+						logger.Debug("Error in deleting client by api:", err1)
+						needRestart = true
+					}
 				}
+				s.xrayApi.Close()
+			} else {
+				needRestart = true
 			}
-			s.xrayApi.Close()
 		}
 
 		// Remove NodeClient / NodeClientLink so the client disappears from the panel.
