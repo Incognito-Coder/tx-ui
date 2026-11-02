@@ -2681,15 +2681,16 @@ class Inbound extends XrayCommonClass {
         txt += `[Peer]\n`
         txt += `PublicKey = ${pubKey}\n`
         txt += `AllowedIPs = 0.0.0.0/0, ::/0\n`
-        txt += `Endpoint = ${address}:${port}`
-        if (peer.psk) {
-            txt += `\nPresharedKey = ${peer.psk}`
+        txt += `Endpoint = ${address}:${port}\n`;
+        let psk = peer.preSharedKey || peer.psk || '';
+        if (psk) {
+            txt += `PresharedKey = ${psk}\n`;
         }
         if (peer.keepAlive) {
-            txt += `\nPersistentKeepalive = ${peer.keepAlive}\n`
+            txt += `PersistentKeepalive = ${peer.keepAlive}\n`;
         }
         if (Array.isArray(this.settings.reserved) && this.settings.reserved.length > 0) {
-            txt += `\nReserved = ${this.settings.reserved.join(', ')}\n`
+            txt += `Reserved = ${this.settings.reserved.join(', ')}\n`;
         }
         return txt;
     }
@@ -2719,15 +2720,16 @@ class Inbound extends XrayCommonClass {
         txt += `[Peer]\n`;
         txt += `PublicKey = ${pubKey}\n`;
         txt += `AllowedIPs = 0.0.0.0/0, ::/0\n`;
-        txt += `Endpoint = ${address}:${port}`;
-        if (client.psk && isValid(client.psk)) {
-            txt += `\nPresharedKey = ${client.psk}`;
+        txt += `Endpoint = ${address}:${port}\n`;
+        let psk = client.preSharedKey || client.psk || '';
+        if (psk && isValid(psk)) {
+            txt += `PresharedKey = ${psk}\n`;
         }
         if (client.keepAlive) {
-            txt += `\nPersistentKeepalive = ${client.keepAlive}\n`;
+            txt += `PersistentKeepalive = ${client.keepAlive}\n`;
         }
         if (this.settings && Array.isArray(this.settings.reserved) && this.settings.reserved.length > 0) {
-            txt += `\nReserved = ${this.settings.reserved.join(', ')}\n`;
+            txt += `Reserved = ${this.settings.reserved.join(', ')}\n`;
         }
         return txt;
     }
@@ -2760,8 +2762,11 @@ class Inbound extends XrayCommonClass {
         params.set('dns', '1.1.1.1,1.0.0.1');
         params.set('mtu', mtu.toString());
         params.set('allowed_ips', '0.0.0.0/0,::/0');
-        if (client.psk && isValid(client.psk)) {
-            params.set('pre_shared_key', client.psk);
+        let psk = client.preSharedKey || client.psk || '';
+        if (psk && isValid(psk)) {
+            params.set('pre_shared_key', psk);
+            params.set('preshared_key', psk);
+            params.set('psk', psk);
         }
         if (client.keepAlive) {
             params.set('keepalive', client.keepAlive.toString());
@@ -3765,7 +3770,7 @@ Inbound.WireguardSettings = class extends XrayCommonClass {
     }
 
     addPeer() {
-        this.peers.push(new Inbound.WireguardSettings.Peer(null, null, '', ['10.0.0.' + (this.peers.length + 2)]));
+        this.peers.push(new Inbound.WireguardSettings.Peer(null, null, '', ['10.0.0.' + (this.peers.length + 2) + '/32']));
     }
 
     delPeer(index) {
@@ -3811,6 +3816,7 @@ Inbound.WireguardSettings.Peer = class extends Inbound.ClientBase {
         this.id = this.publicKey;
         this.password = this.privateKey;
         this.psk = psk;
+        this.preSharedKey = psk;
         allowedIPs = Array.isArray(allowedIPs) ? allowedIPs : [];
         allowedIPs.forEach((a, index) => {
             if (a.length > 0 && !a.includes('/')) allowedIPs[index] += '/32';
@@ -3840,6 +3846,14 @@ Inbound.WireguardSettings.Peer = class extends Inbound.ClientBase {
         if (isValid(v)) {
             this.privateKey = v;
         }
+    }
+
+    get preSharedKey() {
+        return this.psk;
+    }
+
+    set preSharedKey(v) {
+        this.psk = v;
     }
 
     static fromJson(json = {}) {

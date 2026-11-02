@@ -152,9 +152,55 @@ func wireguardClientsAsPeers(settings string) string {
 	if err := json.Unmarshal([]byte(settings), &raw); err != nil {
 		return settings
 	}
+
+	// Normalize server address as []string
+	if addr, ok := raw["address"]; ok && addr != nil {
+		switch a := addr.(type) {
+		case []string:
+			if len(a) > 0 {
+				raw["address"] = a
+			} else {
+				raw["address"] = []string{"10.0.0.1/24"}
+			}
+		case []any:
+			arr := make([]string, 0, len(a))
+			for _, item := range a {
+				if s, ok := item.(string); ok && s != "" {
+					arr = append(arr, s)
+				}
+			}
+			if len(arr) > 0 {
+				raw["address"] = arr
+			} else {
+				raw["address"] = []string{"10.0.0.1/24"}
+			}
+		case string:
+			if a != "" {
+				raw["address"] = []string{a}
+			} else {
+				raw["address"] = []string{"10.0.0.1/24"}
+			}
+		default:
+			raw["address"] = []string{"10.0.0.1/24"}
+		}
+	} else {
+		raw["address"] = []string{"10.0.0.1/24"}
+	}
+
+	if sec, ok := raw["privateKey"].(string); ok && sec != "" {
+		if rawSec, ok2 := raw["secretKey"].(string); !ok2 || rawSec == "" {
+			raw["secretKey"] = sec
+		}
+	}
+
 	clients, ok := raw["clients"]
-	if !ok {
-		return settings
+	if !ok || clients == nil {
+		clients = raw["peers"]
+	}
+	if clientList, isList := clients.([]any); isList && len(clientList) == 0 {
+		if peers, ok := raw["peers"].([]any); ok && len(peers) > 0 {
+			clients = peers
+		}
 	}
 	if clientList, isList := clients.([]any); isList {
 		var peers []any
@@ -163,51 +209,71 @@ func wireguardClientsAsPeers(settings string) string {
 			if !isMap {
 				continue
 			}
+			if enable, ok := c["enable"].(bool); ok && !enable {
+				continue
+			}
 			peer := map[string]any{}
 			for k, v := range c {
 				peer[k] = v
 			}
 			if psk, ok := c["psk"].(string); ok && psk != "" {
 				peer["preSharedKey"] = psk
+				peer["psk"] = psk
+			} else if psk, ok := c["preSharedKey"].(string); ok && psk != "" {
+				peer["preSharedKey"] = psk
+				peer["psk"] = psk
 			}
 			if pubKey, ok := c["publicKey"].(string); ok && pubKey != "" {
 				peer["publicKey"] = pubKey
 			} else if id, ok := c["id"].(string); ok && id != "" {
 				peer["publicKey"] = id
 			}
+
+			// Normalize AllowedIPs to always include CIDR prefix (/32 or /128)
+			var rawIPs []string
 			if v, ok := c["allowedIPs"]; ok && v != nil {
 				switch a := v.(type) {
 				case []string:
-					peer["allowedIPs"] = a
+					rawIPs = a
 				case []any:
-					arr := make([]string, 0, len(a))
 					for _, item := range a {
 						if s, ok := item.(string); ok && s != "" {
-							arr = append(arr, s)
+							rawIPs = append(rawIPs, s)
 						}
-					}
-					if len(arr) > 0 {
-						peer["allowedIPs"] = arr
-					} else {
-						peer["allowedIPs"] = []string{"10.0.0.2/32"}
 					}
 				case string:
 					if a != "" {
-						peer["allowedIPs"] = []string{a}
-					} else {
-						peer["allowedIPs"] = []string{"10.0.0.2/32"}
+						for _, part := range strings.Split(a, ",") {
+							if trimmed := strings.TrimSpace(part); trimmed != "" {
+								rawIPs = append(rawIPs, trimmed)
+							}
+						}
 					}
-				default:
-					peer["allowedIPs"] = []string{"10.0.0.2/32"}
 				}
+			}
+			var normalizedIPs []string
+			for _, ip := range rawIPs {
+				ip = strings.TrimSpace(ip)
+				if ip == "" {
+					continue
+				}
+				if !strings.Contains(ip, "/") {
+					if strings.Contains(ip, ":") {
+						ip += "/128"
+					} else {
+						ip += "/32"
+					}
+				}
+				normalizedIPs = append(normalizedIPs, ip)
+			}
+			if len(normalizedIPs) > 0 {
+				peer["allowedIPs"] = normalizedIPs
 			} else {
-				peer["allowedIPs"] = []string{"10.0.0.2/32"}
+				peer["allowedIPs"] = []string{fmt.Sprintf("10.0.0.%d/32", len(peers)+2)}
 			}
 			peers = append(peers, peer)
 		}
 		raw["peers"] = peers
-	} else {
-		raw["peers"] = clients
 	}
 	delete(raw, "clients")
 	converted, err := json.Marshal(raw)
@@ -366,6 +432,7 @@ type NodeClient struct {
 	Secret         string `json:"secret"         form:"secret"`                            // for mtproto
 	AdTag          string `json:"adTag"          form:"adTag"`                             // for mtproto
 	PreSharedKey   string `json:"preSharedKey"   form:"preSharedKey"`                      // for wireguard/amneziawg
+	Psk            string `json:"psk,omitempty"  form:"psk"            gorm:"-"`           // alias for PreSharedKey
 	PublicKey      string `json:"publicKey"      form:"publicKey"`                         // for wireguard/amneziawg
 	PrivateKey     string `json:"privateKey"     form:"privateKey"`                        // for wireguard/amneziawg
 	ForwardedPorts string `json:"forwardedPorts" form:"forwardedPorts"`                   // for amneziawg

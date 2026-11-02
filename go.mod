@@ -7,12 +7,12 @@ require (
 	github.com/gin-contrib/gzip v1.2.8
 	github.com/gin-contrib/sessions v1.1.2
 	github.com/gin-gonic/gin v1.12.0
-	github.com/goccy/go-json v0.11.2
+	github.com/goccy/go-json v0.12.0
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-version v1.9.0
 	github.com/joho/godotenv v1.5.1
 	github.com/mymmrac/telego v1.12.1
-	github.com/nicksnyder/go-i18n/v2 v2.6.1
+	github.com/nicksnyder/go-i18n/v2 v2.7.0
 	github.com/op/go-logging v0.0.0-20160315200505-970db520ece7
 	github.com/pelletier/go-toml/v2 v2.4.3
 	github.com/robfig/cron/v3 v3.0.1
@@ -20,14 +20,14 @@ require (
 	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e
 	github.com/spf13/cobra v1.10.2
 	github.com/tcnksm/go-latest v0.0.0-20170313132115-e3007ae9052e
-	github.com/valyala/fasthttp v1.76.0
+	github.com/valyala/fasthttp v1.77.0
 	github.com/xtls/xray-core v1.260327.1-0.20261031132019-a4a3dff5b20c
 	go.uber.org/atomic v1.12.0
 	golang.org/x/crypto v0.58.0
 	golang.org/x/net v0.61.0
 	golang.org/x/sys v0.49.0
 	golang.org/x/text v0.43.0
-	google.golang.org/grpc v1.84.0
+	google.golang.org/grpc v1.85.0
 	gorm.io/driver/sqlite v1.6.0
 	gorm.io/gorm v1.31.2
 	gvisor.dev/gvisor v0.0.0-20260122175437-89a5d21be8f0

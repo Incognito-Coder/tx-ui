@@ -142,7 +142,9 @@ func (s *InboundService) GetClients(inbound *model.Inbound) ([]model.Client, err
 		var clients []model.Client
 		clientsBytes, _ := json.Marshal(rawClients)
 		json.Unmarshal(clientsBytes, &clients)
-		return clients, nil
+		if len(clients) > 0 || inbound.Protocol != model.WireGuard {
+			return clients, nil
+		}
 	}
 
 	if inbound.Protocol == model.WireGuard {
@@ -668,15 +670,15 @@ func (s *InboundService) UpdateInbound(inbound *model.Inbound) (*model.Inbound, 
 		needRestart = true
 	}
 
-	saveErr := tx.Save(oldInbound).Error
-	if saveErr == nil && inbound.Enable {
+	err = tx.Save(oldInbound).Error
+	if err == nil && inbound.Enable {
 		if oldInbound.Protocol == model.MTProto || oldInbound.Protocol == "mtproto" {
 			s.applyLocalMtproto(oldInbound.Id)
 		} else if oldInbound.Protocol == model.AmneziaWG || oldInbound.Protocol == "amneziawg" {
 			s.applyLocalAmneziaWG(oldInbound.Id)
 		}
 	}
-	return inbound, needRestart, saveErr
+	return inbound, needRestart, err
 }
 
 func (s *InboundService) updateClientTraffics(tx *gorm.DB, oldInbound *model.Inbound, newInbound *model.Inbound) error {
@@ -692,26 +694,41 @@ func (s *InboundService) updateClientTraffics(tx *gorm.DB, oldInbound *model.Inb
 	var emailExists bool
 
 	for _, oldClient := range oldClients {
+		oldEmail := strings.TrimSpace(oldClient.Email)
+		if oldEmail == "" {
+			continue
+		}
 		emailExists = false
 		for _, newClient := range newClients {
-			if oldClient.Email == newClient.Email {
+			if oldEmail == strings.TrimSpace(newClient.Email) {
 				emailExists = true
 				break
 			}
 		}
 		if !emailExists {
-			err = s.DelClientStat(tx, oldClient.Email, oldInbound.Id)
+			err = s.DelClientStat(tx, oldEmail, oldInbound.Id)
 			if err != nil {
 				return err
 			}
-			_ = s.DelClientIPs(tx, oldClient.Email)
-			s.removeNodeClientForInbound(tx, oldClient.Email, oldInbound.Id)
+			_ = s.DelClientIPs(tx, oldEmail)
+			s.removeNodeClientForInbound(tx, oldEmail, oldInbound.Id)
 		}
 	}
+
+	processedEmails := make(map[string]struct{})
 	for _, newClient := range newClients {
+		email := strings.TrimSpace(newClient.Email)
+		if email == "" {
+			continue
+		}
+		if _, alreadyProcessed := processedEmails[email]; alreadyProcessed {
+			continue
+		}
+		processedEmails[email] = struct{}{}
+
 		emailExists = false
 		for _, oldClient := range oldClients {
-			if newClient.Email == oldClient.Email {
+			if email == strings.TrimSpace(oldClient.Email) {
 				emailExists = true
 				break
 			}
@@ -722,6 +739,8 @@ func (s *InboundService) updateClientTraffics(tx *gorm.DB, oldInbound *model.Inb
 				return err
 			}
 			_ = s.ensureNodeClientLinked(tx, &newClient, oldInbound.Id)
+		} else {
+			_ = s.UpdateClientStat(tx, email, &newClient)
 		}
 	}
 	return nil
@@ -740,7 +759,7 @@ func (s *InboundService) AddInboundClient(data *model.Inbound) (bool, error) {
 	}
 
 	var interfaceClients []interface{}
-	if raw, ok := settings["clients"].([]interface{}); ok {
+	if raw, ok := settings["clients"].([]interface{}); ok && len(raw) > 0 {
 		interfaceClients = raw
 	} else if rawPeers, ok := settings["peers"].([]interface{}); ok {
 		interfaceClients = rawPeers
@@ -778,13 +797,14 @@ func (s *InboundService) AddInboundClient(data *model.Inbound) (bool, error) {
 				return false, common.NewError("empty client ID")
 			}
 		} else if oldInbound.Protocol == "wireguard" {
-			priv, pub, err := wireguard.EnsureWireguardKeypair(client.PrivateKey, client.PublicKey)
-			if err == nil {
-				client.PrivateKey = priv
-				client.PublicKey = pub
+			existingClients, _ := s.GetClients(oldInbound)
+			if err := defaultWireguardClients(oldInbound.Settings, existingClients, clients, interfaceClients, nil); err != nil {
+				return false, err
 			}
-			if client.PublicKey == "" || client.Email == "" {
-				return false, common.NewError("empty client ID")
+			for i := range clients {
+				if clients[i].ID == "" {
+					clients[i].ID = clients[i].PublicKey
+				}
 			}
 		} else if oldInbound.Protocol == model.AmneziaWG || oldInbound.Protocol == "amneziawg" {
 			priv, pub, err := wireguard.EnsureWireguardKeypair(client.PrivateKey, client.PublicKey)
@@ -826,7 +846,7 @@ func (s *InboundService) AddInboundClient(data *model.Inbound) (bool, error) {
 	}
 
 	var oldClients []interface{}
-	if raw, ok := oldSettings["clients"].([]interface{}); ok {
+	if raw, ok := oldSettings["clients"].([]interface{}); ok && len(raw) > 0 {
 		oldClients = raw
 	} else if rawPeers, ok := oldSettings["peers"].([]interface{}); ok {
 		oldClients = rawPeers
@@ -834,7 +854,11 @@ func (s *InboundService) AddInboundClient(data *model.Inbound) (bool, error) {
 	oldClients = append(oldClients, interfaceClients...)
 
 	oldSettings["clients"] = oldClients
-	delete(oldSettings, "peers")
+	if oldInbound.Protocol == "wireguard" {
+		oldSettings["peers"] = oldClients
+	} else {
+		delete(oldSettings, "peers")
+	}
 
 	newSettings, err := json.MarshalIndent(oldSettings, "", "  ")
 	if err != nil {
@@ -858,9 +882,6 @@ func (s *InboundService) AddInboundClient(data *model.Inbound) (bool, error) {
 	}()
 
 	needRestart := false
-	if oldInbound.Protocol == "wireguard" {
-		needRestart = true
-	}
 	canUseApi := p != nil && p.IsRunning()
 	if canUseApi {
 		s.xrayApi.Init(p.GetAPIPort())
@@ -868,7 +889,7 @@ func (s *InboundService) AddInboundClient(data *model.Inbound) (bool, error) {
 	for _, client := range clients {
 		if len(client.Email) > 0 {
 			s.AddClientStat(tx, data.Id, &client)
-			if client.Enable && oldInbound.Protocol != "wireguard" && oldInbound.Protocol != "amneziawg" && oldInbound.Protocol != "mtproto" && oldInbound.Protocol != model.AmneziaWG && oldInbound.Protocol != model.MTProto {
+			if client.Enable && oldInbound.Protocol != "amneziawg" && oldInbound.Protocol != "mtproto" && oldInbound.Protocol != model.AmneziaWG && oldInbound.Protocol != model.MTProto {
 				if canUseApi {
 					cipher := ""
 					if oldInbound.Protocol == "shadowsocks" {
@@ -877,13 +898,19 @@ func (s *InboundService) AddInboundClient(data *model.Inbound) (bool, error) {
 						}
 					}
 					err1 := s.xrayApi.AddUser(string(oldInbound.Protocol), oldInbound.Tag, map[string]interface{}{
-						"email":    client.Email,
-						"id":       client.ID,
-						"auth":     client.Auth,
-						"security": client.Security,
-						"flow":     client.Flow,
-						"password": client.Password,
-						"cipher":   cipher,
+						"email":        client.Email,
+						"id":           client.ID,
+						"publicKey":    client.PublicKey,
+						"privateKey":   client.PrivateKey,
+						"allowedIPs":   client.AllowedIPs,
+						"psk":          client.Psk,
+						"preSharedKey": client.PreSharedKey,
+						"keepAlive":    strconv.Itoa(client.KeepAlive),
+						"auth":         client.Auth,
+						"security":     client.Security,
+						"flow":         client.Flow,
+						"password":     client.Password,
+						"cipher":       cipher,
 					})
 					if err1 == nil {
 						logger.Debug("Client added by api:", client.Email)
@@ -1610,9 +1637,6 @@ func (s *InboundService) DelInboundClient(inboundId int, clientId string) (bool,
 		return false, err
 	}
 	needRestart := false
-	if oldInbound.Protocol == "wireguard" {
-		needRestart = true
-	}
 
 	if len(email) > 0 {
 		notDepleted := true
@@ -1621,7 +1645,7 @@ func (s *InboundService) DelInboundClient(inboundId int, clientId string) (bool,
 			logger.Error("Get stats error")
 			return false, err
 		}
-		if needApiDel && notDepleted && oldInbound.Protocol != "wireguard" && oldInbound.Protocol != "amneziawg" && oldInbound.Protocol != "mtproto" && oldInbound.Protocol != model.AmneziaWG && oldInbound.Protocol != model.MTProto {
+		if needApiDel && notDepleted && oldInbound.Protocol != "amneziawg" && oldInbound.Protocol != "mtproto" && oldInbound.Protocol != model.AmneziaWG && oldInbound.Protocol != model.MTProto {
 			if p != nil && p.IsRunning() {
 				s.xrayApi.Init(p.GetAPIPort())
 				err1 := s.xrayApi.RemoveUser(oldInbound.Tag, email)
@@ -1945,7 +1969,7 @@ func (s *InboundService) UpdateInboundClient(data *model.Inbound, clientId strin
 	}
 	needRestart := false
 	if len(oldEmail) > 0 {
-		if p != nil && p.IsRunning() && oldInbound.Protocol != "wireguard" && oldInbound.Protocol != "amneziawg" && oldInbound.Protocol != "mtproto" && oldInbound.Protocol != model.AmneziaWG && oldInbound.Protocol != model.MTProto {
+		if p != nil && p.IsRunning() && oldInbound.Protocol != "amneziawg" && oldInbound.Protocol != "mtproto" && oldInbound.Protocol != model.AmneziaWG && oldInbound.Protocol != model.MTProto {
 			s.xrayApi.Init(p.GetAPIPort())
 			if oldClients[clientIndex].Enable {
 				err1 := s.xrayApi.RemoveUser(oldInbound.Tag, oldEmail)
@@ -1968,13 +1992,19 @@ func (s *InboundService) UpdateInboundClient(data *model.Inbound, clientId strin
 					}
 				}
 				err1 := s.xrayApi.AddUser(string(oldInbound.Protocol), oldInbound.Tag, map[string]interface{}{
-					"email":    clients[0].Email,
-					"id":       clients[0].ID,
-					"security": clients[0].Security,
-					"flow":     clients[0].Flow,
-					"auth":     clients[0].Auth,
-					"password": clients[0].Password,
-					"cipher":   cipher,
+					"email":        clients[0].Email,
+					"id":           clients[0].ID,
+					"publicKey":    clients[0].PublicKey,
+					"privateKey":   clients[0].PrivateKey,
+					"allowedIPs":   clients[0].AllowedIPs,
+					"psk":          clients[0].Psk,
+					"preSharedKey": clients[0].PreSharedKey,
+					"keepAlive":    strconv.Itoa(clients[0].KeepAlive),
+					"security":     clients[0].Security,
+					"flow":         clients[0].Flow,
+					"auth":         clients[0].Auth,
+					"password":     clients[0].Password,
+					"cipher":       cipher,
 				})
 				if err1 == nil {
 					logger.Debug("Client edited by api:", clients[0].Email)
@@ -2769,8 +2799,11 @@ func (s *InboundService) BuildInboundConfig(inbound *model.Inbound, txs ...*gorm
 	settings := map[string]interface{}{}
 	json.Unmarshal([]byte(inbound.Settings), &settings)
 	clients, ok := settings["clients"].([]interface{})
-	if !ok && inbound.Protocol == model.WireGuard {
-		clients, ok = settings["peers"].([]interface{})
+	if (!ok || len(clients) == 0) && inbound.Protocol == model.WireGuard {
+		if rawPeers, okPeers := settings["peers"].([]interface{}); okPeers && len(rawPeers) > 0 {
+			clients = rawPeers
+			ok = true
+		}
 	}
 	if ok {
 		disabledEmails := make(map[string]bool)
@@ -2805,34 +2838,26 @@ func (s *InboundService) BuildInboundConfig(inbound *model.Inbound, txs ...*gorm
 				normalizeLegacyVMessUser(c)
 			}
 			mc := model.Client{}
-			if v, ok := c["email"].(string); ok {
-				mc.Email = v
+			if b, mErr := json.Marshal(c); mErr == nil {
+				_ = json.Unmarshal(b, &mc)
 			}
-			if v, ok := c["id"].(string); ok {
-				mc.ID = v
+			if mc.PublicKey == "" {
+				if v, ok := c["id"].(string); ok && v != "" {
+					mc.PublicKey = v
+				}
 			}
-			if v, ok := c["publicKey"].(string); ok {
-				mc.PublicKey = v
+			if mc.PrivateKey == "" {
+				if v, ok := c["password"].(string); ok && v != "" {
+					mc.PrivateKey = v
+				}
 			}
-			if v, ok := c["privateKey"].(string); ok {
-				mc.PrivateKey = v
+			if mc.Psk == "" {
+				if v, ok := c["preSharedKey"].(string); ok && v != "" {
+					mc.Psk = v
+				}
 			}
-			if v, ok := c["security"].(string); ok {
-				mc.Security = v
-			}
-			if v, ok := c["password"].(string); ok {
-				mc.Password = v
-			}
-			if v, ok := c["auth"].(string); ok {
-				mc.Auth = v
-			}
-			if v, ok := c["flow"].(string); ok {
-				mc.Flow = v
-			}
-			if v, ok := c["enable"].(bool); ok {
-				mc.Enable = v
-			} else {
-				mc.Enable = true
+			if mc.PreSharedKey == "" {
+				mc.PreSharedKey = mc.Psk
 			}
 			existingModelClients = append(existingModelClients, mc)
 		}
@@ -2857,18 +2882,19 @@ func (s *InboundService) BuildInboundConfig(inbound *model.Inbound, txs ...*gorm
 				}
 			}
 			entry := map[string]interface{}{
-				"email":      nc.Email,
-				"id":         nc.ID,
-				"publicKey":  nc.PublicKey,
-				"privateKey": nc.PrivateKey,
-				"allowedIPs": nc.AllowedIPs,
-				"psk":        nc.Psk,
-				"security":   nc.Security,
-				"password":   pwd,
-				"pass":       pass,
-				"auth":       nc.Auth,
-				"flow":       nc.Flow,
-				"enable":     nc.Enable,
+				"email":        nc.Email,
+				"id":           nc.ID,
+				"publicKey":    nc.PublicKey,
+				"privateKey":   nc.PrivateKey,
+				"allowedIPs":   nc.AllowedIPs,
+				"psk":          nc.Psk,
+				"preSharedKey": nc.PreSharedKey,
+				"security":     nc.Security,
+				"password":     pwd,
+				"pass":         pass,
+				"auth":         nc.Auth,
+				"flow":         nc.Flow,
+				"enable":       nc.Enable,
 			}
 			if inbound.Protocol == "vmess" {
 				normalizeLegacyVMessUser(entry)
@@ -2935,33 +2961,46 @@ func (s *InboundService) BuildInboundConfig(inbound *model.Inbound, txs ...*gorm
 				} else if v, ok := c["preSharedKey"].(string); ok && v != "" {
 					peer["preSharedKey"] = v
 				}
+				var rawIPs []string
 				if v, ok := c["allowedIPs"]; ok && v != nil {
 					switch a := v.(type) {
 					case []string:
-						peer["allowedIPs"] = a
+						rawIPs = a
 					case []interface{}:
-						arr := make([]string, 0, len(a))
 						for _, item := range a {
 							if s, ok := item.(string); ok && s != "" {
-								arr = append(arr, s)
+								rawIPs = append(rawIPs, s)
 							}
-						}
-						if len(arr) > 0 {
-							peer["allowedIPs"] = arr
-						} else {
-							peer["allowedIPs"] = []string{"10.0.0.2/32"}
 						}
 					case string:
 						if a != "" {
-							peer["allowedIPs"] = []string{a}
-						} else {
-							peer["allowedIPs"] = []string{"10.0.0.2/32"}
+							for _, part := range strings.Split(a, ",") {
+								if trimmed := strings.TrimSpace(part); trimmed != "" {
+									rawIPs = append(rawIPs, trimmed)
+								}
+							}
 						}
-					default:
-						peer["allowedIPs"] = []string{"10.0.0.2/32"}
 					}
+				}
+				var normalizedIPs []string
+				for _, ip := range rawIPs {
+					ip = strings.TrimSpace(ip)
+					if ip == "" {
+						continue
+					}
+					if !strings.Contains(ip, "/") {
+						if strings.Contains(ip, ":") {
+							ip += "/128"
+						} else {
+							ip += "/32"
+						}
+					}
+					normalizedIPs = append(normalizedIPs, ip)
+				}
+				if len(normalizedIPs) > 0 {
+					peer["allowedIPs"] = normalizedIPs
 				} else {
-					peer["allowedIPs"] = []string{"10.0.0.2/32"}
+					peer["allowedIPs"] = []string{fmt.Sprintf("10.0.0.%d/32", len(final_peers)+2)}
 				}
 				if v, ok := c["email"].(string); ok && v != "" {
 					peer["email"] = v
@@ -3229,17 +3268,48 @@ func (s *InboundService) MigrationRemoveOrphanedTraffics() {
 }
 
 func (s *InboundService) AddClientStat(tx *gorm.DB, inboundId int, client *model.Client) error {
-	clientTraffic := xray.ClientTraffic{}
-	clientTraffic.InboundId = inboundId
-	clientTraffic.Email = client.Email
-	clientTraffic.Total = client.TotalGB
-	clientTraffic.ExpiryTime = client.ExpiryTime
-	clientTraffic.Enable = true
-	clientTraffic.Up = 0
-	clientTraffic.Down = 0
-	clientTraffic.Reset = client.Reset
-	result := tx.Create(&clientTraffic)
-	err := result.Error
+	if client == nil || strings.TrimSpace(client.Email) == "" {
+		return nil
+	}
+	email := strings.TrimSpace(client.Email)
+
+	var existing xray.ClientTraffic
+	err := tx.Where("inbound_id = ? AND email = ?", inboundId, email).First(&existing).Error
+	if err == nil {
+		// Existing record found: update limits and configuration without resetting traffic usage (Up/Down)
+		return tx.Model(&existing).Updates(map[string]interface{}{
+			"total":       client.TotalGB,
+			"expiry_time": client.ExpiryTime,
+			"enable":      client.Enable,
+			"reset":       client.Reset,
+		}).Error
+	} else if err == gorm.ErrRecordNotFound {
+		clientTraffic := xray.ClientTraffic{
+			InboundId:  inboundId,
+			Email:      email,
+			Total:      client.TotalGB,
+			ExpiryTime: client.ExpiryTime,
+			Enable:     client.Enable,
+			Up:         0,
+			Down:       0,
+			Reset:      client.Reset,
+		}
+		createErr := tx.Create(&clientTraffic).Error
+		if createErr != nil {
+			if strings.Contains(strings.ToLower(createErr.Error()), "unique constraint") {
+				return tx.Model(&xray.ClientTraffic{}).
+					Where("inbound_id = ? AND email = ?", inboundId, email).
+					Updates(map[string]interface{}{
+						"total":       client.TotalGB,
+						"expiry_time": client.ExpiryTime,
+						"enable":      client.Enable,
+						"reset":       client.Reset,
+					}).Error
+			}
+			return createErr
+		}
+		return nil
+	}
 	return err
 }
 

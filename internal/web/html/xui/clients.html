@@ -1939,6 +1939,27 @@
                         <td>Flow</td>
                         <td><a-tag color="cyan" style="font-size: 10px; height: 18px; line-height: 16px; padding: 0 4px; margin: 0;">[[ detailModal.client.flow ]]</a-tag></td>
                     </tr>
+                    <tr v-if="detailModal.client.publicKey">
+                        <td>Public Key</td>
+                        <td>
+                            <code class="compact-code">[[ detailModal.client.publicKey ]]</code>
+                            <a-icon @click="copyText(detailModal.client.publicKey)" style="cursor: pointer; margin-left: 5px; color: var(--ui-primary); font-size: 12px;" type="copy"></a-icon>
+                        </td>
+                    </tr>
+                    <tr v-if="detailModal.client.privateKey">
+                        <td>Private Key</td>
+                        <td>
+                            <code class="compact-code">[[ detailModal.client.privateKey ]]</code>
+                            <a-icon @click="copyText(detailModal.client.privateKey)" style="cursor: pointer; margin-left: 5px; color: var(--ui-primary); font-size: 12px;" type="copy"></a-icon>
+                        </td>
+                    </tr>
+                    <tr v-if="detailModal.client.preSharedKey || detailModal.client.psk">
+                        <td>Preshared Key</td>
+                        <td>
+                            <code class="compact-code">[[ detailModal.client.preSharedKey || detailModal.client.psk ]]</code>
+                            <a-icon @click="copyText(detailModal.client.preSharedKey || detailModal.client.psk)" style="cursor: pointer; margin-left: 5px; color: var(--ui-primary); font-size: 12px;" type="copy"></a-icon>
+                        </td>
+                    </tr>
                     <tr v-if="subSettings.enable && detailModal.client.subId">
                         <td>{{ i18n "pages.node_clients.subscriptionId" }}</td>
                         <td>
@@ -2402,6 +2423,7 @@
                             publicKey: kp.publicKey,
                             privateKey: kp.privateKey,
                             preSharedKey: psk,
+                            psk: psk,
                             ssPassword: (typeof RandomUtil.randomShadowsocksPassword === 'function' ? RandomUtil.randomShadowsocksPassword(ssMethod) : RandomUtil.randomSeq(16)),
                             masquePass: (typeof RandomUtil.randomMasquePassword === 'function' ? RandomUtil.randomMasquePassword() : RandomUtil.randomSeq(16)),
                             auth: RandomUtil.randomSeq(10),
@@ -2457,6 +2479,7 @@
                             publicKey: pubKey,
                             privateKey: privKey,
                             preSharedKey: psk,
+                            psk: psk,
                             adTag: c.adTag || '',
                             ssPassword: c.ssPassword || (typeof RandomUtil.randomShadowsocksPassword === 'function' ? RandomUtil.randomShadowsocksPassword() : ''),
                             masquePass: c.masquePass || (typeof RandomUtil.randomMasquePassword === 'function' ? RandomUtil.randomMasquePassword() : RandomUtil.randomSeq(16)),
@@ -2873,10 +2896,16 @@
                             const inbound = new DBInbound(ib).toInbound();
                             const dest = l.dest || l.address || inbound.listen || location.hostname;
                             const port = l.port || inbound.port;
+                            const clientObj = Object.assign({}, this.detailModal.client);
+                            const psk = clientObj.preSharedKey || clientObj.psk || '';
+                            if (psk) {
+                                clientObj.preSharedKey = psk;
+                                clientObj.psk = psk;
+                            }
                             if (l.protocol === 'amneziawg') {
-                                conf = inbound.genAmneziawgClientConf(dest, port, l.remark, this.detailModal.client);
+                                conf = inbound.genAmneziawgClientConf(dest, port, l.remark, clientObj);
                             } else {
-                                conf = inbound.genWireguardClientLink(dest, port, l.remark, this.detailModal.client);
+                                conf = inbound.genWireguardClientLink(dest, port, l.remark, clientObj);
                             }
                         }
                     }
@@ -2925,6 +2954,7 @@
                             publicKey: clientPub,
                             privateKey: clientPriv,
                             preSharedKey: clientPsk,
+                            psk: clientPsk,
                             adTag: c.adTag,
                         });
                         inbound.genAllLinks(dbInbound.remark, this.remarkModel, clientObj).forEach(item => {
@@ -3151,9 +3181,12 @@
                             cm.client.publicKey = kp.publicKey;
                         }
                     }
-                    if (!isValidWg(cm.client.preSharedKey) && typeof Wireguard !== 'undefined' && typeof Wireguard.generatePresharedKey === 'function') {
-                        cm.client.preSharedKey = Wireguard.keyToBase64(Wireguard.generatePresharedKey());
+                    let psk = isValidWg(cm.client.psk) ? cm.client.psk : (isValidWg(cm.client.preSharedKey) ? cm.client.preSharedKey : '');
+                    if (!psk && typeof Wireguard !== 'undefined' && typeof Wireguard.generatePresharedKey === 'function') {
+                        psk = Wireguard.keyToBase64(Wireguard.generatePresharedKey());
                     }
+                    cm.client.preSharedKey = psk;
+                    cm.client.psk = psk;
 
                     cm.confirmLoading = true;
                     try {
@@ -3230,6 +3263,7 @@
                             publicKey: kp.publicKey,
                             privateKey: kp.privateKey,
                             preSharedKey: psk,
+                            psk: psk,
                             ssPassword: (typeof RandomUtil.randomShadowsocksPassword === 'function' ? RandomUtil.randomShadowsocksPassword(ssMethod) : RandomUtil.randomSeq(16)),
                             masquePass: (typeof RandomUtil.randomMasquePassword === 'function' ? RandomUtil.randomMasquePassword() : RandomUtil.randomSeq(16)),
                             auth: RandomUtil.randomSeq(10),
@@ -3332,6 +3366,7 @@
                             publicKey: pubKey,
                             privateKey: privKey,
                             preSharedKey: psk,
+                            psk: psk,
                             adTag: c.adTag,
                         });
                         inbound.genAllLinks(dbInbound.remark, this.remarkModel, clientObj).forEach(item => {

@@ -375,11 +375,15 @@ func (s *NodeClientService) Create(nc *model.NodeClient) error {
 		nc.PrivateKey = priv
 		nc.PublicKey = pub
 	}
+	if nc.PreSharedKey == "" && nc.Psk != "" {
+		nc.PreSharedKey = nc.Psk
+	}
 	if !wireguard.IsValidWireguardKey(nc.PreSharedKey) {
 		if psk, err := wireguard.GenerateWireguardPSK(); err == nil {
 			nc.PreSharedKey = psk
 		}
 	}
+	nc.Psk = nc.PreSharedKey
 
 	db := database.GetDB()
 	return db.Create(nc).Error
@@ -407,11 +411,15 @@ func (s *NodeClientService) Update(nc *model.NodeClient) (bool, error) {
 		nc.PrivateKey = priv
 		nc.PublicKey = pub
 	}
+	if nc.PreSharedKey == "" && nc.Psk != "" {
+		nc.PreSharedKey = nc.Psk
+	}
 	if !wireguard.IsValidWireguardKey(nc.PreSharedKey) {
 		if psk, err := wireguard.GenerateWireguardPSK(); err == nil {
 			nc.PreSharedKey = psk
 		}
 	}
+	nc.Psk = nc.PreSharedKey
 
 	db := database.GetDB()
 
@@ -770,6 +778,37 @@ func addClientToInboundSettings(inbound *model.Inbound, nc *model.NodeClient, fl
 			newClientMap["preSharedKey"] = psk
 			newClientMap["psk"] = psk
 		}
+		var existingIPs []string
+		for _, item := range list {
+			if cm, ok := item.(map[string]interface{}); ok {
+				if a, ok := cm["allowedIPs"]; ok && a != nil {
+					switch ips := a.(type) {
+					case []string:
+						existingIPs = append(existingIPs, ips...)
+					case []interface{}:
+						for _, it := range ips {
+							if s, ok := it.(string); ok && s != "" {
+								existingIPs = append(existingIPs, s)
+							}
+						}
+					case string:
+						if ips != "" {
+							existingIPs = append(existingIPs, ips)
+						}
+					}
+				}
+			}
+		}
+		base := explicitWireguardSubnetBase(inbound.Settings)
+		if base == "" {
+			base = wireguardAllocationBase(existingIPs, defaultWireguardBase)
+		}
+		addr, aErr := allocateWireguardAddress(existingIPs, base, true)
+		if aErr == nil {
+			newClientMap["allowedIPs"] = []string{addr}
+		} else {
+			newClientMap["allowedIPs"] = []string{fmt.Sprintf("10.0.0.%d/32", len(list)+2)}
+		}
 	case "amneziawg":
 		privKey, pubKey, err := wireguard.EnsureWireguardKeypair(nc.PrivateKey, nc.PublicKey)
 		if err == nil {
@@ -880,11 +919,8 @@ func updateClientFlowInInboundSettings(inbound *model.Inbound, email, uuid, newF
 }
 
 // hotAddUserToInbound dynamically adds a client to a running inbound using Xray's HandlerService API.
-// Returns true if Xray needs to be restarted (e.g. wireguard or API error).
+// Returns true if Xray needs to be restarted (e.g. API error or non-API protocol).
 func (s *NodeClientService) hotAddUserToInbound(xrayApi *xray.XrayAPI, inbound *model.Inbound, nc *model.NodeClient, flow string) bool {
-	if inbound.Protocol == model.WireGuard {
-		return true
-	}
 	if inbound.Protocol == model.MTProto || inbound.Protocol == model.AmneziaWG || inbound.Protocol == "mtproto" || inbound.Protocol == "amneziawg" {
 		return false
 	}
@@ -915,6 +951,7 @@ func (s *NodeClientService) hotAddUserToInbound(xrayApi *xray.XrayAPI, inbound *
 
 	cipher := ""
 	password := nc.Password
+	var allowedIPs []string
 	if inbound.Protocol == "shadowsocks" {
 		if nc.SSPassword != "" {
 			password = nc.SSPassword
@@ -937,6 +974,36 @@ func (s *NodeClientService) hotAddUserToInbound(xrayApi *xray.XrayAPI, inbound *
 		if nc.MasquePass != "" {
 			password = nc.MasquePass
 		}
+	} else if inbound.Protocol == model.WireGuard || inbound.Protocol == "wireguard" {
+		var settings map[string]interface{}
+		_ = json.Unmarshal([]byte(inbound.Settings), &settings)
+		var cList []interface{}
+		if raw, ok := settings["clients"].([]interface{}); ok {
+			cList = raw
+		} else if rawPeers, ok := settings["peers"].([]interface{}); ok {
+			cList = rawPeers
+		}
+		for _, item := range cList {
+			if cm, ok := item.(map[string]interface{}); ok {
+				if e, ok := cm["email"].(string); ok && strings.EqualFold(e, nc.Email) {
+					if ips, ok := cm["allowedIPs"]; ok && ips != nil {
+						switch a := ips.(type) {
+						case []string:
+							allowedIPs = a
+						case []interface{}:
+							for _, it := range a {
+								if s, ok := it.(string); ok {
+									allowedIPs = append(allowedIPs, s)
+								}
+							}
+						case string:
+							allowedIPs = []string{a}
+						}
+					}
+					break
+				}
+			}
+		}
 	}
 
 	clientFlow := flow
@@ -945,13 +1012,18 @@ func (s *NodeClientService) hotAddUserToInbound(xrayApi *xray.XrayAPI, inbound *
 	}
 
 	err := xrayApi.AddUser(string(inbound.Protocol), inbound.Tag, map[string]interface{}{
-		"email":    nc.Email,
-		"id":       nc.UUID,
-		"auth":     nc.Auth,
-		"security": nc.Security,
-		"flow":     clientFlow,
-		"password": password,
-		"cipher":   cipher,
+		"email":        nc.Email,
+		"id":           nc.UUID,
+		"publicKey":    nc.PublicKey,
+		"privateKey":   nc.PrivateKey,
+		"allowedIPs":   allowedIPs,
+		"preSharedKey": nc.PreSharedKey,
+		"psk":          nc.PreSharedKey,
+		"auth":         nc.Auth,
+		"security":     nc.Security,
+		"flow":         clientFlow,
+		"password":     password,
+		"cipher":       cipher,
 	})
 	if err != nil {
 		if strings.Contains(err.Error(), "already exists") {
@@ -969,11 +1041,8 @@ func (s *NodeClientService) hotAddUserToInbound(xrayApi *xray.XrayAPI, inbound *
 }
 
 // hotRemoveUserFromInbound dynamically removes a client from a running inbound using Xray's HandlerService API.
-// Returns true if Xray needs to be restarted (e.g. wireguard or API error).
+// Returns true if Xray needs to be restarted (e.g. API error or non-API protocol).
 func (s *NodeClientService) hotRemoveUserFromInbound(xrayApi *xray.XrayAPI, inbound *model.Inbound, email string) bool {
-	if inbound.Protocol == model.WireGuard {
-		return true
-	}
 	if inbound.Protocol == model.MTProto || inbound.Protocol == model.AmneziaWG || inbound.Protocol == "mtproto" || inbound.Protocol == "amneziawg" {
 		return false
 	}
@@ -1860,6 +1929,9 @@ func (s *NodeClientService) synthesiseClient(nc *model.NodeClient, link *model.N
 
 	privKey, pubKey, _ := wireguard.EnsureWireguardKeypair(nc.PrivateKey, nc.PublicKey)
 	psk := nc.PreSharedKey
+	if psk == "" {
+		psk = nc.Psk
+	}
 	if !wireguard.IsValidWireguardKey(psk) {
 		psk = ""
 	}
@@ -1910,21 +1982,23 @@ func (s *NodeClientService) MergeIntoInboundConfig(inboundId int, existingClient
 	// Fetch all NodeClientLinks for this inbound that belong to an enabled NodeClient.
 	// We join node_clients to filter on enable = true in one query.
 	type linkWithNC struct {
-		LinkFlow   string `gorm:"column:link_flow"`
-		ClientID   int    `gorm:"column:client_id"`
-		Email      string
-		SubID      string
-		UUID       string
-		Password   string
-		SSPassword string `gorm:"column:ss_password"`
-		MasquePass string `gorm:"column:masque_pass"`
-		Auth       string
+		LinkFlow       string `gorm:"column:link_flow"`
+		ClientID       int    `gorm:"column:client_id"`
+		Email          string
+		SubID          string
+		UUID           string
+		Password       string
+		SSPassword     string `gorm:"column:ss_password"`
+		MasquePass     string `gorm:"column:masque_pass"`
+		Auth           string
 		Security       string
 		ClientFlow     string `gorm:"column:client_flow"`
 		Secret         string `gorm:"column:secret"`
 		AdTag          string `gorm:"column:ad_tag"`
 		PreSharedKey   string `gorm:"column:pre_shared_key"`
 		ForwardedPorts string `gorm:"column:forwarded_ports"`
+		PublicKey      string `gorm:"column:public_key"`
+		PrivateKey     string `gorm:"column:private_key"`
 		TotalGB        int64
 		ExpiryTime     int64
 		LimitIP        int
@@ -1954,6 +2028,8 @@ func (s *NodeClientService) MergeIntoInboundConfig(inboundId int, existingClient
 			node_clients.ad_tag,
 			node_clients.pre_shared_key,
 			node_clients.forwarded_ports,
+			node_clients.public_key,
+			node_clients.private_key,
 			node_clients.total_gb,
 			node_clients.expiry_time,
 			node_clients.limit_ip,
@@ -1968,6 +2044,13 @@ func (s *NodeClientService) MergeIntoInboundConfig(inboundId int, existingClient
 		Scan(&rows).Error
 	if err != nil {
 		return nil, fmt.Errorf("fetching node client links for inbound %d: %w", inboundId, err)
+	}
+
+	existingByEmail := make(map[string]model.Client, len(existingClients))
+	for _, c := range existingClients {
+		if c.Email != "" {
+			existingByEmail[strings.ToLower(strings.TrimSpace(c.Email))] = c
+		}
 	}
 
 	merged := make([]model.Client, 0, len(existingClients)+len(rows))
@@ -2012,6 +2095,8 @@ func (s *NodeClientService) MergeIntoInboundConfig(inboundId int, existingClient
 			AdTag:          row.AdTag,
 			PreSharedKey:   row.PreSharedKey,
 			ForwardedPorts: row.ForwardedPorts,
+			PublicKey:      row.PublicKey,
+			PrivateKey:     row.PrivateKey,
 			TotalGB:        row.TotalGB,
 			ExpiryTime:     row.ExpiryTime,
 			LimitIP:        row.LimitIP,
@@ -2022,6 +2107,25 @@ func (s *NodeClientService) MergeIntoInboundConfig(inboundId int, existingClient
 		}
 		link := model.NodeClientLink{Flow: row.LinkFlow}
 		client := s.synthesiseClient(&nc, &link)
+		if ec, found := existingByEmail[strings.ToLower(strings.TrimSpace(client.Email))]; found {
+			if len(client.AllowedIPs) == 0 && len(ec.AllowedIPs) > 0 {
+				client.AllowedIPs = ec.AllowedIPs
+			}
+			if client.PublicKey == "" && ec.PublicKey != "" {
+				client.PublicKey = ec.PublicKey
+			}
+			if client.PrivateKey == "" && ec.PrivateKey != "" {
+				client.PrivateKey = ec.PrivateKey
+			}
+			if (client.Psk == "" || client.PreSharedKey == "") && (ec.Psk != "" || ec.PreSharedKey != "") {
+				psk := ec.Psk
+				if psk == "" {
+					psk = ec.PreSharedKey
+				}
+				client.Psk = psk
+				client.PreSharedKey = psk
+			}
+		}
 
 		emailKey := strings.ToLower(strings.TrimSpace(client.Email))
 		idKey := strings.ToLower(strings.TrimSpace(client.ID))
@@ -2597,11 +2701,15 @@ func (s *NodeClientService) BulkCreate(clients []model.NodeClient, inboundIds []
 			nc.PrivateKey = priv
 			nc.PublicKey = pub
 		}
+		if nc.PreSharedKey == "" && nc.Psk != "" {
+			nc.PreSharedKey = nc.Psk
+		}
 		if !wireguard.IsValidWireguardKey(nc.PreSharedKey) {
 			if psk, err := wireguard.GenerateWireguardPSK(); err == nil {
 				nc.PreSharedKey = psk
 			}
 		}
+		nc.Psk = nc.PreSharedKey
 		if err := tx.Create(nc).Error; err != nil {
 			tx.Rollback()
 			return false, err

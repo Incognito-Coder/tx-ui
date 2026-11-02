@@ -1,4 +1,4 @@
-﻿package service
+package service
 
 import (
 	"encoding/json"
@@ -291,8 +291,13 @@ func defaultWireguardClients(settingsJSON string, existing, clients []model.Clie
 				m["privateKey"] = c.PrivateKey
 				m["publicKey"] = c.PublicKey
 				m["allowedIPs"] = c.AllowedIPs
-				if c.PreSharedKey != "" {
-					m["preSharedKey"] = c.PreSharedKey
+				psk := c.PreSharedKey
+				if psk == "" {
+					psk = c.Psk
+				}
+				if psk != "" {
+					m["preSharedKey"] = psk
+					m["psk"] = psk
 				}
 				if ka := c.KeepAliveSeconds(); ka > 0 {
 					m["keepAlive"] = ka

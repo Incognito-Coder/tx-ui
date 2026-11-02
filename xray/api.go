@@ -24,6 +24,8 @@ import (
 	"github.com/xtls/xray-core/proxy/trojan"
 	"github.com/xtls/xray-core/proxy/vless"
 	"github.com/xtls/xray-core/proxy/vmess"
+	wireguardProxy "github.com/xtls/xray-core/proxy/wireguard"
+	wgutil "x-ui/internal/util/wireguard"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -77,6 +79,39 @@ func safeGetString(m map[string]interface{}, key string) string {
 		}
 	}
 	return ""
+}
+
+func safeGetStringSlice(m map[string]interface{}, key string) []string {
+	if m == nil {
+		return nil
+	}
+	v, ok := m[key]
+	if !ok || v == nil {
+		return nil
+	}
+	switch a := v.(type) {
+	case []string:
+		return a
+	case []interface{}:
+		var res []string
+		for _, item := range a {
+			if s, ok := item.(string); ok && s != "" {
+				res = append(res, s)
+			}
+		}
+		return res
+	case string:
+		if a != "" {
+			var res []string
+			for _, part := range strings.Split(a, ",") {
+				if trimmed := strings.TrimSpace(part); trimmed != "" {
+					res = append(res, trimmed)
+				}
+			}
+			return res
+		}
+	}
+	return nil
 }
 
 func (x *XrayAPI) AddInbound(inbound []byte) error {
@@ -184,6 +219,41 @@ func (x *XrayAPI) AddUser(Protocol string, inboundTag string, user map[string]in
 		}
 		account = serial.ToTypedMessage(&masque.Account{
 			Password: pass,
+		})
+	case "wireguard":
+		pub := safeGetString(user, "publicKey")
+		if pub == "" {
+			pub = safeGetString(user, "id")
+		}
+		pubHex, err := wgutil.KeyToHex(pub)
+		if err != nil || pubHex == "" {
+			return common.NewError("wireguard: invalid public key: ", pub)
+		}
+		psk := safeGetString(user, "preSharedKey")
+		if psk == "" {
+			psk = safeGetString(user, "psk")
+		}
+		pskHex, _ := wgutil.KeyToHex(psk)
+		allowedIPs := safeGetStringSlice(user, "allowedIPs")
+		for i, aip := range allowedIPs {
+			aip = strings.TrimSpace(aip)
+			if aip != "" && !strings.Contains(aip, "/") {
+				if strings.Contains(aip, ":") {
+					allowedIPs[i] = aip + "/128"
+				} else {
+					allowedIPs[i] = aip + "/32"
+				}
+			}
+		}
+		if len(allowedIPs) == 0 {
+			allowedIPs = []string{"10.0.0.2/32"}
+		}
+		keepAlive := safeGetString(user, "keepAlive")
+		account = serial.ToTypedMessage(&wireguardProxy.PeerConfig{
+			PublicKey:    pubHex,
+			PreSharedKey: pskHex,
+			AllowedIps:   allowedIPs,
+			KeepAlive:    keepAlive,
 		})
 	default:
 		return nil

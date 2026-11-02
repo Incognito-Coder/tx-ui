@@ -112,11 +112,11 @@
                         <span>{{ i18n "reset" }}</span>
                     </template>
                     {{ i18n "pages.xray.wireguard.psk" }}
-                    <a-icon @click="client.psk = Wireguard.keyToBase64(Wireguard.generatePresharedKey())"
+                    <a-icon @click="client.psk = Wireguard.keyToBase64(Wireguard.generatePresharedKey()); client.preSharedKey = client.psk"
                             type="sync"></a-icon>
                 </a-tooltip>
             </template>
-            <a-input v-model.trim="client.psk"></a-input>
+            <a-input v-model.trim="client.psk" @change="client.preSharedKey = client.psk"></a-input>
         </a-form-item>
         <a-form-item label='{{ i18n "pages.xray.wireguard.allowedIPs" }}'>
             <a-select :dropdown-class-name="themeSwitcher.currentTheme" :token-separators="[',']"
@@ -174,11 +174,11 @@
                         <span>{{ i18n "reset" }}</span>
                     </template>
                     {{ i18n "pages.xray.wireguard.psk" }}
-                    <a-icon @click="client.preSharedKey = Wireguard.keyToBase64(Wireguard.generatePresharedKey())"
+                    <a-icon @click="client.preSharedKey = Wireguard.keyToBase64(Wireguard.generatePresharedKey()); client.psk = client.preSharedKey"
                             type="sync"></a-icon>
                 </a-tooltip>
             </template>
-            <a-input v-model.trim="client.preSharedKey"></a-input>
+            <a-input v-model.trim="client.preSharedKey" @change="client.psk = client.preSharedKey"></a-input>
         </a-form-item>
         <a-form-item label='{{ i18n "pages.xray.wireguard.allowedIPs" }}'>
             <a-select :dropdown-class-name="themeSwitcher.currentTheme" :token-separators="[',']"

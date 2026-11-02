@@ -702,6 +702,8 @@ func (s *SubService) genWireguardLink(inbound *model.Inbound, email string) stri
 	}
 	if psk != "" && wireguard.IsValidWireguardKey(psk) {
 		params.Set("pre_shared_key", psk)
+		params.Set("preshared_key", psk)
+		params.Set("psk", psk)
 	}
 	if targetClient.KeepAlive > 0 {
 		params.Set("keepalive", strconv.Itoa(targetClient.KeepAlive))
