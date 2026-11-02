@@ -5,23 +5,17 @@ All notable changes to **TX-UI** will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [v0.9.5] - 2026-10-26
+## [v0.9.6] - 2026-11-02
 
 ### 🚀 Features & Enhancements
-- **Telegram Bot Multi-Protocol & Core Management Overhaul**:
-  - **Full Protocol Credential Support**: Upgraded Telegram Bot client addition in `internal/web/service/tgbot.go` and `inbound.go` to support automated Curve25519 keypair generation and subnet IP allocation for AmneziaWG (AWG 3.1) and WireGuard, FakeTLS secret generation for MTProto (`mtg`), cipher-compliant Shadowsocks 2022 key generation, Trojan passwords, Hysteria auth credentials (`Auth`), and Masque passwords (`MasquePass`).
-  - **Direct `.conf` Profile Delivery**: Automatically decodes AmneziaWG `vpn://` configuration share links and delivers native `.conf` profile files directly to Telegram users as document attachments.
-  - **Interactive Core Control & Rollback**: Added `/rollback` administrative command with status checks and confirmation handling, added quick-action buttons for `Restart Xray` and `Rollback Config` in the Telegram bot admin keyboard, and relaxed `/restart` to support both `/restart` and `/restart force`.
-  - **Multi-Protocol Telegram ID Linking**: Upgraded `SetClientTelegramUserID` to resolve `clientId` across all protocols (Trojan, Shadowsocks, Hysteria, WireGuard, AmneziaWG, MTProto, Masque) and synchronize `tgId` between inbounds and the `node_clients` database.
-  - **Resilient Traffic Queries**: Enhanced `GetClientTrafficTgBot` to parse both JSON spacing variants (`"tgId": %d` and `"tgId":%d`) as well as `node_clients` database records.
-  - **Nil-Safety & Process Stability**: Added safeguards against nil-pointer dereferences in server usage reporting, online client statistics, and client status lookups when Xray core is restarting, uninitialized, or stopped.
+- **WireGuard Client Configuration & QR Code Preshared Keys**:
+  - **Interoperable PSK Delivery**: Standardized preshared key handling (`preSharedKey` and `psk`) across client configuration file downloads (`.conf`) and share link URLs.
+  - **Complete URL Query Parameters**: Added `pre_shared_key`, `preshared_key`, and `psk` URL parameters to `wireguard://` links and QR codes, ensuring compatibility across diverse client apps (v2rayN, NekoBox, Shadowrocket, Streisand, etc.).
+  - **Client Modal & Bulk Sync**: Synchronized `preSharedKey` and `psk` across client creation/edit forms, bulk client generation, and detail modal downloads.
+  - **Key Transparency**: Added Public Key, Private Key, and Preshared Key fields directly into the Client Details modal table.
+  - **Subscription Service Parity**: Ensured preshared keys are preserved in both standard URI (`subService.go`) and JSON (`subJsonService.go`) subscription outputs.
 
-- **Comprehensive Internationalization & Translation Synchronization**:
-  - **Full 13-Locale Key Parity**: Completed all missing translation keys across all 13 supported languages (`en_US`, `fa_IR`, `ar_EG`, `es_ES`, `id_ID`, `ja_JP`, `pt_BR`, `ru_RU`, `tr_TR`, `uk_UA`, `vi_VN`, `zh_CN`, `zh_TW`), achieving 100% key parity with 1,156 keys per language.
-  - **MTProto Proxy Localization**: Translated `[pages.xray.mtproto]` parameters (`secret`, `adTag`, `routeThroughXray`, `routeXrayPort`, `preferIp`, `proxyProtocolListener`, `throttleMaxConnections`, `pendingHandshakesMaxPerIP`) across all 13 locales.
-  - **AmneziaWG Obfuscation Localization**: Added complete AWG 3.1 obfuscation parameter translations for Traditional Chinese (`zh_TW`).
-  - **Telegram Bot Control Localization**: Added localized labels for quick-action buttons (`restartXray`, `rollbackConfig`, `confirmRestart`, `confirmRollback`) and updated administrative command documentation.
-- **Xray-core Update to v26.10.31 (26.10.21 -> 26.10.31)**:
+- **Xray-core v26.10.31 Integration (26.10.21 -> 26.10.31)**:
   - **Dependency Upgrade**: Upgraded `github.com/xtls/xray-core` from commit `1b1647cd9ddf` (`v26.10.21`) to commit `a4a3dff5b20c` (`v26.10.31`).
   - **XHTTP Transport Enhancements**:
     - Added support for `OPTIONS` as `uplinkHTTPMethod` in `stream_xhttp.html` (matching Xray-core #7290).
@@ -46,6 +40,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Updated mock Xray version in interactive documentation (`docs.html`) to `v26.10.31`.
     - Updated feature lists in all language `README` files to reflect v26.10.31 features.
 
+### 🐛 Bug Fixes
+- **WireGuard Inbound Client Management & Stability**:
+  - **Idempotent Client Traffic Creation**: Resolved `UNIQUE constraint failed: client_traffics.inbound_id, client_traffics.email` on inbound updates by making `AddClientStat` update existing records without wiping traffic usage counters.
+  - **Dynamic Inbound Client Addition (Zero Restart)**: Implemented `AddUser` support for the `wireguard` protocol in `xray/api.go` via Xray's `HandlerService` gRPC API, eliminating forced Xray restarts when adding WireGuard clients.
+  - **AllowedIPs CIDR Normalization**: Guaranteed valid subnet prefixes (`/32` for IPv4, `/128` for IPv6) in WireGuard peer configurations, fixing client ping/connectivity issues caused by unadorned IP addresses.
+  - **Schema Fallback Resiliency**: Added fallback between `peers` and `clients` setting keys in `GetClients`, `BuildInboundConfig`, `AddInboundClient`, and `wireguardClientsAsPeers` to prevent empty peer arrays.
+- **Core Lifecycle & API Port Readiness**:
+  - **Eliminated Transient Connection Refusals**: Resolved `connection refused` debug errors during Xray restarts by verifying that the gRPC API port is actively accepting TCP connections before `Process.Start()` returns.
+  - **Graceful Termination Wait in `Process.Stop()`**: Added process exit tracking via `doneChan` and `isStopping` flag, ensuring the terminated Xray core fully exits and releases all network ports/sockets before a new instance is spawned.
+  - **Atomic Restart Lifecycle Tracking**: Added `isRestarting` state tracking in `XrayService` to prevent concurrent traffic jobs from dialing unready endpoints.
+  - **Duplicate Log Suppression**: Removed redundant `Failed to fetch Xray traffic` debug logging in `GetXrayTraffic`.
+- **Auto-Delete Depleted Clients Enforcement**:
+  - Updated `AutoDeleteDepletedClientsJob` to check `autoDeleteDay <= 0` at the very entry point, ensuring the job does not run or log when disabled (`autoDeleteDay = 0`).
+- **UI & Inbound API Robustness**:
+  - **Login Secret Reactivity**: Initialized `loginSecret` in the `User` class constructor (`login.html`) to guarantee Vue reactivity and eliminated button spinner flickering on page load.
+  - **Comprehensive Xray Process Nil-Guards**: Added nil-safe checks to `*xray.Process` methods and guarded live Xray API invocations across `InboundService` with `p != nil && p.IsRunning()`.
+  - **API Timeout Contexts**: Added 5-second timeout contexts to `AddInbound`, `DelInbound`, and `AddUser` gRPC calls in `XrayAPI`.
+
+## [v0.9.5] - 2026-10-26
+
+### 🚀 Features & Enhancements
+- **Telegram Bot Multi-Protocol & Core Management Overhaul**:
+  - **Full Protocol Credential Support**: Upgraded Telegram Bot client addition in `internal/web/service/tgbot.go` and `inbound.go` to support automated Curve25519 keypair generation and subnet IP allocation for AmneziaWG (AWG 3.1) and WireGuard, FakeTLS secret generation for MTProto (`mtg`), cipher-compliant Shadowsocks 2022 key generation, Trojan passwords, Hysteria auth credentials (`Auth`), and Masque passwords (`MasquePass`).
+  - **Direct `.conf` Profile Delivery**: Automatically decodes AmneziaWG `vpn://` configuration share links and delivers native `.conf` profile files directly to Telegram users as document attachments.
+  - **Interactive Core Control & Rollback**: Added `/rollback` administrative command with status checks and confirmation handling, added quick-action buttons for `Restart Xray` and `Rollback Config` in the Telegram bot admin keyboard, and relaxed `/restart` to support both `/restart` and `/restart force`.
+  - **Multi-Protocol Telegram ID Linking**: Upgraded `SetClientTelegramUserID` to resolve `clientId` across all protocols (Trojan, Shadowsocks, Hysteria, WireGuard, AmneziaWG, MTProto, Masque) and synchronize `tgId` between inbounds and the `node_clients` database.
+  - **Resilient Traffic Queries**: Enhanced `GetClientTrafficTgBot` to parse both JSON spacing variants (`"tgId": %d` and `"tgId":%d`) as well as `node_clients` database records.
+  - **Nil-Safety & Process Stability**: Added safeguards against nil-pointer dereferences in server usage reporting, online client statistics, and client status lookups when Xray core is restarting, uninitialized, or stopped.
+
+- **Comprehensive Internationalization & Translation Synchronization**:
+  - **Full 13-Locale Key Parity**: Completed all missing translation keys across all 13 supported languages (`en_US`, `fa_IR`, `ar_EG`, `es_ES`, `id_ID`, `ja_JP`, `pt_BR`, `ru_RU`, `tr_TR`, `uk_UA`, `vi_VN`, `zh_CN`, `zh_TW`), achieving 100% key parity with 1,156 keys per language.
+  - **MTProto Proxy Localization**: Translated `[pages.xray.mtproto]` parameters (`secret`, `adTag`, `routeThroughXray`, `routeXrayPort`, `preferIp`, `proxyProtocolListener`, `throttleMaxConnections`, `pendingHandshakesMaxPerIP`) across all 13 locales.
+  - **AmneziaWG Obfuscation Localization**: Added complete AWG 3.1 obfuscation parameter translations for Traditional Chinese (`zh_TW`).
+  - **Telegram Bot Control Localization**: Added localized labels for quick-action buttons (`restartXray`, `rollbackConfig`, `confirmRestart`, `confirmRollback`) and updated administrative command documentation.
 - **XTLS/Xray-Examples Parity & Core Configuration Fixes**:
   - **SplitHTTP (`splithttp`) Alias Parity**: Full bidirectional compatibility for `splithttp` and `xhttp` transport identifiers and settings across JSON import/export, subscription generators (`subService.go`), and JSON subscription services (`subJsonService.go`).
   - **xHTTP Transport Advanced Features**: Added UI and model support for `noGRPCHeader` (disabling gRPC headers in `stream-up` and `stream-one` modes) and `scMinPostsIntervalMs` (configurable minimum interval for POST uploads in `packet-up` mode), as well as `downloadSettings` parsing in outbound configurations.
@@ -56,20 +84,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Reverse Proxy Section**: Added `reverse` section (`bridges` & `portals`) to top-level `xray.Config` model and equality comparator.
   - **Shadowsocks Single-User Omission Fix**: Omitted empty `clients: []` array on single-user Shadowsocks inbounds to prevent Xray-core from discarding the primary password.
   - **Outbound TLS Peer Verification**: Added array parsing support for `verifyPeerCertInNames` matching Xray v25.2.21+ MITM and domain fronting configurations.
-- **Core Lifecycle Synchronization & API Port Readiness**:
-  - **Eliminated Transient Connection Refusals**: Resolved `transport: Error while dialing: dial tcp 127.0.0.1:62789: connect: connection refused` debug errors during Xray restarts by verifying that the gRPC API port is actively accepting TCP connections before `Process.Start()` returns.
-  - **Graceful Termination Wait in `Process.Stop()`**: Added process exit tracking via `doneChan` and `isStopping` flag, ensuring the terminated Xray core fully exits and releases all network ports/sockets before a new instance is spawned.
-  - **Atomic Restart Lifecycle Tracking**: Added `isRestarting` state tracking in `XrayService` to prevent concurrent `XrayTrafficJob` executions from dialing unready endpoints and guard `CheckXrayRunningJob` from diagnosing normal restarts as process crashes.
-  - **Duplicate Log Suppression**: Removed redundant `Failed to fetch Xray traffic` debug logging in `GetXrayTraffic` to eliminate identical duplicate error logs alongside `xrayAPI.GetTraffic`.
 
 - **Auto-Delete Depleted Clients Setting Enforcement**:
   - **Immediate Exit on Disabled State**: Updated `AutoDeleteDepletedClientsJob` to check `autoDeleteDay <= 0` at the very entry point before emitting debug start/finish logs or executing database queries, ensuring the job does not run or log when disabled (`autoDeleteDay = 0`) in the panel.
-
-- **UI, Typo & Inbound API Robustness Fixes**:
-  - **Login Secret Reactivity & Clean Page Load**: Initialized `loginSecret` in the `User` class constructor (`login.html`) to guarantee Vue reactivity, and removed button loading state toggling during background `/getSecretStatus` requests to eliminate button spinner flickering on page load.
-  - **Comprehensive Xray Process Nil-Guards**: Added nil-safe checks to `*xray.Process` methods (`IsRunning()`, `GetAPIPort()`, `GetConfig()`, `GetOnlineClients()`, `GetUptime()`) and guarded all live Xray API invocations across `InboundService` (`AddInbound`, `UpdateInbound`, `AddInboundClient`, `DelInboundClient`, `UpdateInboundClient`, `DelInboundClientByEmail`, `autoRenewClients`, `disableInvalidInbounds`) with `p != nil && p.IsRunning()` to prevent nil pointer dereferences and connection errors when Xray core is not running.
-  - **Xray API Timeout Contexts & Typo Fix**: Added 5-second timeout contexts to `AddInbound`, `DelInbound`, and `AddUser` gRPC calls in `XrayAPI`, and fixed typo `Detur` -> `Detour` in debug logs.
-  - **Translation & Constant Typo Fixes**: Corrected Turkish strings erroneously placed in Brazilian Portuguese (`translate.pt_BR.toml`) for `autoDeleteDay` and `autoDeleteDayDesc`, added correctly spelled `UTLS_RANDOMIZEDNOALPN` to `UTLS_FINGERPRINT` in `inbound.js` and `outbound.js`, and removed obsolete commented-out code blocks in `setting.html` and `login.html`.
 
 ## [v0.9.4] - 2026-10-23
 
