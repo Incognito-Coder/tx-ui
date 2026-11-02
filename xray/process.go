@@ -293,6 +293,9 @@ func (p *Process) GetUptime() uint64 {
 }
 
 func (p *process) refreshAPIPort() {
+	if p == nil || p.config == nil {
+		return
+	}
 	for _, inbound := range p.config.InboundConfigs {
 		if inbound.Tag == "api" {
 			p.apiPort = inbound.Port
@@ -349,8 +352,9 @@ func (p *process) Start() (err error) {
 
 	isMainInstance := (p.configPath == "" || p.configPath == GetConfigPath())
 
+	fromFile := p.config == nil
 	var data []byte
-	if p.config != nil {
+	if !fromFile {
 		data, err = json.MarshalIndent(p.config, "", "  ")
 		if err != nil {
 			return common.NewErrorf("Failed to generate XRAY configuration files: %v", err)
@@ -385,7 +389,7 @@ func (p *process) Start() (err error) {
 	}
 
 	// If main instance and a valid working config already exists on disk, backup before overwriting
-	if isMainInstance {
+	if isMainInstance && !fromFile {
 		if curData, readErr := os.ReadFile(configPath); readErr == nil && len(curData) > 0 {
 			if !HasLastWorkingConfig() {
 				_ = BackupLastWorkingConfig()
@@ -393,7 +397,7 @@ func (p *process) Start() (err error) {
 		}
 	}
 
-	if p.config != nil {
+	if !fromFile {
 		err = os.WriteFile(configPath, data, fs.ModePerm)
 		if err != nil {
 			return common.NewErrorf("Failed to write configuration file: %v", err)

@@ -401,7 +401,7 @@ func (s *XrayService) RestartXray(isForce bool) error {
 	}
 
 	if p != nil && p.IsRunning() {
-		if !isForce && p.GetConfig().Equals(xrayConfig) && !isNeedXrayRestart.Load() {
+		if !isForce && p.GetConfig() != nil && p.GetConfig().Equals(xrayConfig) && !isNeedXrayRestart.Load() {
 			logger.Debug("It does not need to restart Xray")
 			return nil
 		}
@@ -429,6 +429,8 @@ func (s *XrayService) RestartXray(isForce bool) error {
 			lastWorkingProcess := xray.NewProcessFromConfigFile(xray.GetConfigPath())
 			if startErr := lastWorkingProcess.Start(); startErr == nil {
 				p = lastWorkingProcess
+				isNeedXrayRestart.Store(false)
+				isManuallyStopped.Store(false)
 				logger.Info("Successfully rolled back to last working state of config.json and restarted Xray")
 				return common.NewErrorf("Xray core exited with error in config.json (%v); automatically rolled back to last working state", err)
 			} else {

@@ -57,6 +57,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Login Secret Reactivity**: Initialized `loginSecret` in the `User` class constructor (`login.html`) to guarantee Vue reactivity and eliminated button spinner flickering on page load.
   - **Comprehensive Xray Process Nil-Guards**: Added nil-safe checks to `*xray.Process` methods and guarded live Xray API invocations across `InboundService` with `p != nil && p.IsRunning()`.
   - **API Timeout Contexts**: Added 5-second timeout contexts to `AddInbound`, `DelInbound`, and `AddUser` gRPC calls in `XrayAPI`.
+- **Config Rollback & Database Restore Nil-Safety**:
+  - Guarded `refreshAPIPort` against nil `p.config`, eliminating fatal panics (`addr=0x60`) when Xray starts directly from a configuration file on disk via `NewProcessFromConfigFile` (e.g., during automatic rollback after restoring a database backup).
+  - Ensured `p.GetConfig()` is non-nil before performing equality checks in `RestartXray`, and reset restart flags when recovering with the last working configuration.
 
 ## [v0.9.5] - 2026-10-26
 
