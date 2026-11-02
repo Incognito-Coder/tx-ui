@@ -1083,6 +1083,11 @@ template = "Şablon"
 
 eagerWindowMs = "Eager Penceresi (ms)"
 holeTimeoutMs = "Hole Zaman Aşımı (ms)"
+s3Endpoint = "S3 Uç Noktası (Endpoint)"
+s3Region = "S3 Bölgesi (Region)"
+s3Bucket = "S3 Paketi (Bucket)"
+s3PathStyle = "Yol Tarzı Adresleme (Path-Style)"
+s3SecretsDesc = "Satır 1: AccessKeyID\nSatır 2: SecretAccessKey\nSatır 3 (isteğe bağlı): SessionToken"
 [pages.inbounds.stream.general]
 request = "İstek"
 response = "Yanıt"

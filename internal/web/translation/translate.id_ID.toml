@@ -1083,6 +1083,11 @@ template = "Templat"
 
 eagerWindowMs = "Jendela Eager (ms)"
 holeTimeoutMs = "Batas Waktu Hole (ms)"
+s3Endpoint = "Titik Akhir S3 (Endpoint)"
+s3Region = "Wilayah S3 (Region)"
+s3Bucket = "Bucket S3"
+s3PathStyle = "Pengalamatan Gaya Jalur (Path-Style)"
+s3SecretsDesc = "Baris 1: AccessKeyID\nBaris 2: SecretAccessKey\nBaris 3 (opsional): SessionToken"
 [pages.inbounds.stream.general]
 request = "Permintaan"
 response = "Respons"

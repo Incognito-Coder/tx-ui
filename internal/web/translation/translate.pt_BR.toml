@@ -1083,6 +1083,11 @@ template = "Modelo"
 
 eagerWindowMs = "Janela Eager (ms)"
 holeTimeoutMs = "Tempo Limite Hole (ms)"
+s3Endpoint = "Endpoint S3"
+s3Region = "Região S3"
+s3Bucket = "Bucket S3"
+s3PathStyle = "Endereçamento no Estilo de Caminho (Path-Style)"
+s3SecretsDesc = "Linha 1: AccessKeyID\nLinha 2: SecretAccessKey\nLinha 3 (opcional): SessionToken"
 [pages.inbounds.stream.general]
 request = "Requisição"
 response = "Resposta"

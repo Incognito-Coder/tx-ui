@@ -311,7 +311,7 @@ location /sub {
 - **تطبيق نقاط النهاية External Proxy**: تطبيق نطاق ومنفذ البروكسي الخارجي مباشرة في ملفات `.conf` لـ WireGuard و AmneziaWG (`Endpoint = dest:port`) وروابط `vpn://` / `wireguard://` وروابط تلغرام `tg://proxy`.
 - **توثيق REST API تفاعلي داخل اللوحة (`/panel/docs`)**: تصفح المسارات، والبحث، ونسخ نقاط النهاية مع نماذج أكواد حية (cURL، وبايثون، ونود) مباشرة داخل واجهة الويب.
 - **استعادة تلقائية ويدوية لحالة التكوين**: فحص أولي للتحقق من صحة التكوين، واكتشاف فوري لانهيار النواة مع استعادة تلقائية إلى `config.json.last_working` لتفادي انقطاع الخدمة.
-- **تحديث نواة Xray إلى v26.10.21**: دعم كامل لتصفية IP المصدر عبر Finalmask (`allowedSourceIPs`/`blockedSourceIPs`)، وحذف تلقائي للتصفية من روابط اشتراك العملاء، وتحسينات نقل XDRIVE وتوسيع شفرات TLS.
+- **تحديث نواة Xray إلى v26.10.31**: دعم كامل لتصفية IP المصدر عبر Finalmask (`allowedSourceIPs`/`blockedSourceIPs`)، وحذف تلقائي للتصفية من روابط اشتراك العملاء، ودعم تخزين S3 في نقل XDRIVE، ومعلمات h2Params وطريقة OPTIONS في XHTTP، وتوسيع شفرات TLS.
 - **توليد وحفظ بيانات اعتماد معزولة لكل بروتوكول**: حقول ومولدات مخصصة لـ Trojan، وShadowsocks 2022 (توليد مفاتيح Base64 قياسية 16/32 بايت مع تصحيح تلقائي)، وMASQUE، وHysteria، وMTProto، وWireGuard/AmneziaWG.
 - **إدارة الأجهزة المتصلة**: تتبع الأجهزة المتصلة لكل عميل (IP، نظام التشغيل، تطبيق العميل، وآخر ظهور) مع إمكانية مسح السجل.
 - **صحة وصيانة قاعدة بيانات SQLite**: فحص سلامة مباشر في اللوحة، واقتطاع سجل WAL، وتحسين PRAGMA، وضغط المساحة عبر VACUUM، وتنظيف السجلات المعزولة.
@@ -570,8 +570,6 @@ location /sub {
 | `POST` | `"/testOutbound"` | اختبار اتصال وزمن استجابة المسارات الصادرة |
 | `GET` | `"/getOutboundsTraffic"` | إجمالي حركة المرور لكل مسار صادر |
 | `POST` | `"/resetOutboundsTraffic"` | إعادة تعيين عدادات حركة المرور الصادرة |
-
-[<img src="https://run.pstmn.io/button.svg" alt="Run In Postman" style="width: 128px; height: 32px;">](https://app.getpostman.com/run-collection/5146551-dda3cab3-0e33-485f-96f9-d4262f437ac5?action=collection%2Ffork&source=rip_markdown&collection-url=entityId%3D5146551-dda3cab3-0e33-485f-96f9-d4262f437ac5%26entityType%3Dcollection%26workspaceId%3Dd64f609f-485a-4951-9b8f-876b3f917124)
 
 </details>
 

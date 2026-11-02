@@ -969,6 +969,11 @@ sessionTtlSeconds = "Session TTL (seconds)"
 concurrency = "Concurrency"
 eagerWindowMs = "Eager Window (ms)"
 holeTimeoutMs = "Hole Timeout (ms)"
+s3Endpoint = "S3 Endpoint"
+s3Region = "S3 Region"
+s3Bucket = "S3 Bucket"
+s3PathStyle = "Path-Style Addressing"
+s3SecretsDesc = "Line 1: AccessKeyID\nLine 2: SecretAccessKey\nLine 3 (optional): SessionToken"
 
 [pages.xray.finalmask]
 tcpMasks = "TCP Masks"

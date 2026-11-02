@@ -86,6 +86,7 @@
             <a-select-option value="POST">POST</a-select-option>
             <a-select-option value="PUT">PUT</a-select-option>
             <a-select-option value="GET">GET (packet-up only)</a-select-option>
+            <a-select-option value="OPTIONS">OPTIONS</a-select-option>
         </a-select>
     </a-form-item>
     <a-form-item label="Session Placement">
@@ -138,6 +139,10 @@
                  v-if="inbound.stream.xhttp.mode === 'packet-up' && inbound.stream.xhttp.uplinkDataPlacement && inbound.stream.xhttp.uplinkDataPlacement !== 'body'">
         <a-input-number :min="0"
                         placeholder="0 (unlimited)" v-model.number="inbound.stream.xhttp.uplinkChunkSize"></a-input-number>
+    </a-form-item>
+    <a-form-item label="HTTP/2 Parameters (h2Params)">
+        <a-textarea :rows="3" placeholder='{ "MaxConcurrentStreams": 250 }'
+                    v-model="inbound.stream.xhttp.h2Params"></a-textarea>
     </a-form-item>
     <a-form-item label="No SSE Header">
         <a-switch v-model="inbound.stream.xhttp.noSSEHeader"></a-switch>

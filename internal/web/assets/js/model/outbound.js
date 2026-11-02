@@ -761,6 +761,10 @@ class XDriveStreamSettings extends CommonClass {
         eagerWindowMs = 0,
         holeTimeoutMs = 0,
         template = '',
+        s3Endpoint = '',
+        s3Region = '',
+        s3Bucket = '',
+        s3PathStyle = true,
     ) {
         super();
         this.remoteFolder = remoteFolder;
@@ -775,6 +779,10 @@ class XDriveStreamSettings extends CommonClass {
         this.eagerWindowMs = eagerWindowMs;
         this.holeTimeoutMs = holeTimeoutMs;
         this.template = template;
+        this.s3Endpoint = s3Endpoint;
+        this.s3Region = s3Region;
+        this.s3Bucket = s3Bucket;
+        this.s3PathStyle = s3PathStyle;
     }
 
     static fromJson(json = {}) {
@@ -801,6 +809,10 @@ class XDriveStreamSettings extends CommonClass {
             json.eagerWindowMs ?? 0,
             json.holeTimeoutMs ?? 0,
             template,
+            json.s3?.endpoint ?? '',
+            json.s3?.region ?? '',
+            json.s3?.bucket ?? '',
+            json.s3?.pathStyle ?? true,
         );
     }
 
@@ -820,6 +832,15 @@ class XDriveStreamSettings extends CommonClass {
                 template = this.template;
             }
         }
+        let s3 = undefined;
+        if (this.service === 's3') {
+            s3 = {
+                endpoint: this.s3Endpoint || undefined,
+                region: this.s3Region || undefined,
+                bucket: this.s3Bucket || undefined,
+                pathStyle: this.s3PathStyle ?? true,
+            };
+        }
         return {
             remoteFolder: this.remoteFolder || undefined,
             service: this.service,
@@ -833,6 +854,7 @@ class XDriveStreamSettings extends CommonClass {
             eagerWindowMs: this.eagerWindowMs ? parseInt(this.eagerWindowMs) : undefined,
             holeTimeoutMs: this.holeTimeoutMs ? parseInt(this.holeTimeoutMs) : undefined,
             template: template,
+            s3: s3,
         };
     }
 }

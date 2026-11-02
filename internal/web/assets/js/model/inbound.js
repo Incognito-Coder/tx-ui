@@ -525,6 +525,7 @@ class xHTTPStreamSettings extends XrayCommonClass {
         uplinkChunkSize = 0,
         noGRPCHeader = false,
         scMinPostsIntervalMs = "30",
+        h2Params = '',
     ) {
         super();
         this.path = path;
@@ -551,9 +552,14 @@ class xHTTPStreamSettings extends XrayCommonClass {
         this.uplinkChunkSize = uplinkChunkSize;
         this.noGRPCHeader = noGRPCHeader;
         this.scMinPostsIntervalMs = scMinPostsIntervalMs;
+        this.h2Params = h2Params;
     }
 
     static fromJson(json = {}) {
+        let h2Params = '';
+        if (json.h2Params) {
+            h2Params = typeof json.h2Params === 'string' ? json.h2Params : JSON.stringify(json.h2Params, null, 2);
+        }
         return new xHTTPStreamSettings(
             json.path,
             json.host,
@@ -579,6 +585,7 @@ class xHTTPStreamSettings extends XrayCommonClass {
             json.uplinkChunkSize,
             json.noGRPCHeader ?? false,
             json.scMinPostsIntervalMs ?? "30",
+            h2Params,
         );
     }
 
@@ -591,6 +598,14 @@ class xHTTPStreamSettings extends XrayCommonClass {
     }
 
     toJson() {
+        let h2Params = undefined;
+        if (this.h2Params) {
+            try {
+                h2Params = JSON.parse(this.h2Params);
+            } catch (e) {
+                h2Params = this.h2Params;
+            }
+        }
         return {
             path: this.path,
             host: this.host,
@@ -616,6 +631,7 @@ class xHTTPStreamSettings extends XrayCommonClass {
             uplinkChunkSize: this.uplinkChunkSize,
             noGRPCHeader: this.noGRPCHeader,
             scMinPostsIntervalMs: this.scMinPostsIntervalMs,
+            h2Params: h2Params,
         };
     }
 }
@@ -724,6 +740,10 @@ class XDriveStreamSettings extends XrayCommonClass {
         eagerWindowMs = 0,
         holeTimeoutMs = 0,
         template = '',
+        s3Endpoint = '',
+        s3Region = '',
+        s3Bucket = '',
+        s3PathStyle = true,
     ) {
         super();
         this.remoteFolder = remoteFolder;
@@ -738,6 +758,10 @@ class XDriveStreamSettings extends XrayCommonClass {
         this.eagerWindowMs = eagerWindowMs;
         this.holeTimeoutMs = holeTimeoutMs;
         this.template = template;
+        this.s3Endpoint = s3Endpoint;
+        this.s3Region = s3Region;
+        this.s3Bucket = s3Bucket;
+        this.s3PathStyle = s3PathStyle;
     }
 
     static fromJson(json = {}) {
@@ -764,6 +788,10 @@ class XDriveStreamSettings extends XrayCommonClass {
             json.eagerWindowMs ?? 0,
             json.holeTimeoutMs ?? 0,
             template,
+            json.s3?.endpoint ?? '',
+            json.s3?.region ?? '',
+            json.s3?.bucket ?? '',
+            json.s3?.pathStyle ?? true,
         );
     }
 
@@ -783,6 +811,15 @@ class XDriveStreamSettings extends XrayCommonClass {
                 template = this.template;
             }
         }
+        let s3 = undefined;
+        if (this.service === 's3') {
+            s3 = {
+                endpoint: this.s3Endpoint || undefined,
+                region: this.s3Region || undefined,
+                bucket: this.s3Bucket || undefined,
+                pathStyle: this.s3PathStyle ?? true,
+            };
+        }
         return {
             remoteFolder: this.remoteFolder || undefined,
             service: this.service,
@@ -796,6 +833,7 @@ class XDriveStreamSettings extends XrayCommonClass {
             eagerWindowMs: this.eagerWindowMs ? parseInt(this.eagerWindowMs) : undefined,
             holeTimeoutMs: this.holeTimeoutMs ? parseInt(this.holeTimeoutMs) : undefined,
             template: template,
+            s3: s3,
         };
     }
 }

@@ -311,7 +311,7 @@ Nuestra plataforma ofrece compatibilidad con una amplia gama de arquitecturas y 
 - **Soporte de External Proxy para Configuración y Enlaces**: Aplicación directa del host y puerto de proxy externo en archivos `.conf` de WireGuard/AmneziaWG (`Endpoint = dest:port`), enlaces `vpn://` / `wireguard://` y enlaces de Telegram `tg://proxy`.
 - **Documentación REST API Interactiva en el Panel (`/panel/docs`)**: Explora, busca, copia rutas y consulta fragmentos de código interactivos en cURL, Python y Node.js directamente dentro del panel web.
 - **Reversión Automática y Manual del Estado de Configuración**: Verificación previa de configuración, detección instantánea de caídas del núcleo y recuperación automática a `config.json.last_working` para evitar interrupciones del servicio.
-- **Núcleo Xray Actualizado (v26.10.21)**: Soporte completo para filtrado de IP de origen Finalmask (`allowedSourceIPs`/`blockedSourceIPs`), eliminación automática de filtros en enlaces de suscripción, mejoras de transporte XDRIVE y suites de cifrado TLS ampliadas.
+- **Núcleo Xray Actualizado (v26.10.31)**: Soporte completo para filtrado de IP de origen Finalmask (`allowedSourceIPs`/`blockedSourceIPs`), eliminación automática de filtros en enlaces de suscripción, soporte para almacenamiento S3 en transporte XDRIVE, parámetros h2Params y método OPTIONS en XHTTP, y suites de cifrado TLS ampliadas.
 - **Generación y Persistencia Aislada de Credenciales por Protocolo**: Contraseñas dedicadas y claves para Trojan, Shadowsocks 2022 (generación estricta de claves Base64 de 16/32 bytes y autocorrección), MASQUE, Hysteria, MTProto y WireGuard/AmneziaWG.
 - **Gestión de Dispositivos Conectados**: Rastreo y administración de dispositivos conectados por cliente (IP, aplicación, SO, última conexión) con limpieza de historial.
 - **Salud y Mantenimiento de Base de Datos SQLite**: Diagnóstico en panel, truncado de WAL, optimización PRAGMA, desfragmentación VACUUM y limpieza de registros huérfanos.
@@ -579,8 +579,6 @@ administradores del bot. (Puedes ingresar más de uno, solo sepáralos con ,)
 | `POST` | `"/testOutbound"` | Probar conectividad y latencia de salidas |
 | `GET`  | `"/getOutboundsTraffic"` | Tráfico acumulado por etiqueta de salida |
 | `POST` | `"/resetOutboundsTraffic"` | Restablecer contadores de tráfico de salida |
-
-[<img src="https://run.pstmn.io/button.svg" alt="Run In Postman" style="width: 128px; height: 32px;">](https://app.getpostman.com/run-collection/5146551-dda3cab3-0e33-485f-96f9-d4262f437ac5?action=collection%2Ffork&source=rip_markdown&collection-url=entityId%3D5146551-dda3cab3-0e33-485f-96f9-d4262f437ac5%26entityType%3Dcollection%26workspaceId%3Dd64f609f-485a-4951-9b8f-876b3f917124)
 
 </details>
 

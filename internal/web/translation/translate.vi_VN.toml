@@ -1083,6 +1083,11 @@ template = "Mẫu"
 
 eagerWindowMs = "Cửa sổ Eager (ms)"
 holeTimeoutMs = "Thời gian chờ Hole (ms)"
+s3Endpoint = "Điểm cuối S3 (Endpoint)"
+s3Region = "Vùng S3 (Region)"
+s3Bucket = "Bucket S3"
+s3PathStyle = "Định địa chỉ kiểu đường dẫn (Path-Style)"
+s3SecretsDesc = "Dòng 1: AccessKeyID\nDòng 2: SecretAccessKey\nDòng 3 (tùy chọn): SessionToken"
 [pages.inbounds.stream.general]
 request = "Lời yêu cầu"
 response = "Phản ứng"

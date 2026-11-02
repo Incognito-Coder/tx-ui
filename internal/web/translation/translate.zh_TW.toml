@@ -1083,6 +1083,11 @@ template = "範本"
 
 eagerWindowMs = "預加載窗口 (ms)"
 holeTimeoutMs = "打洞超時 (ms)"
+s3Endpoint = "S3 節點端點 (Endpoint)"
+s3Region = "S3 區域 (Region)"
+s3Bucket = "S3 儲存貯體 (Bucket)"
+s3PathStyle = "路徑樣式定址 (Path-Style)"
+s3SecretsDesc = "第一行：AccessKeyID\n第二行：SecretAccessKey\n第三行（選填）：SessionToken"
 [pages.inbounds.stream.general]
 request = "請求"
 response = "響應"

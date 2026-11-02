@@ -1083,6 +1083,11 @@ template = "テンプレート"
 
 eagerWindowMs = "Eager ウィンドウ (ms)"
 holeTimeoutMs = "Hole タイムアウト (ms)"
+s3Endpoint = "S3エンドポイント"
+s3Region = "S3リージョン"
+s3Bucket = "S3バケット"
+s3PathStyle = "パス形式アドレッシング (Path-Style)"
+s3SecretsDesc = "1行目: AccessKeyID\n2行目: SecretAccessKey\n3行目（任意）: SessionToken"
 [pages.inbounds.stream.general]
 request = "リクエスト"
 response = "レスポンス"

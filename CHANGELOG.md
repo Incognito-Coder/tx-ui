@@ -21,7 +21,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **MTProto Proxy Localization**: Translated `[pages.xray.mtproto]` parameters (`secret`, `adTag`, `routeThroughXray`, `routeXrayPort`, `preferIp`, `proxyProtocolListener`, `throttleMaxConnections`, `pendingHandshakesMaxPerIP`) across all 13 locales.
   - **AmneziaWG Obfuscation Localization**: Added complete AWG 3.1 obfuscation parameter translations for Traditional Chinese (`zh_TW`).
   - **Telegram Bot Control Localization**: Added localized labels for quick-action buttons (`restartXray`, `rollbackConfig`, `confirmRestart`, `confirmRollback`) and updated administrative command documentation.
-  - **Client Protocol Badges**: Added `forMtprotoProtocol` and `forAmneziawgProtocol` across all language translation files.
+- **Xray-core Update to v26.10.31 (26.10.21 -> 26.10.31)**:
+  - **Dependency Upgrade**: Upgraded `github.com/xtls/xray-core` from commit `1b1647cd9ddf` (`v26.10.21`) to commit `a4a3dff5b20c` (`v26.10.31`).
+  - **XHTTP Transport Enhancements**:
+    - Added support for `OPTIONS` as `uplinkHTTPMethod` in `stream_xhttp.html` (matching Xray-core #7290).
+    - Added configurable HTTP/2 server parameters (`h2Params`) in `xHTTPStreamSettings` model (`inbound.js`) and UI (`stream_xhttp.html`) for fine-grained tuning of Go's `http.HTTP2Config` on SplitHTTP servers (Xray-core #7295).
+  - **XDRIVE Transport S3 Storage Backend**:
+    - Integrated native `"s3"` service backend in `XDriveStreamSettings` (`inbound.js`, `outbound.js`), inbounds (`stream_xdrive.html`), and outbounds (`outbound.html`).
+    - Added support for S3 endpoint, region, bucket, path-style addressing, and S3 credentials (AccessKeyID, SecretAccessKey, session token) (Xray-core #7231).
+    - Integrated multi-slot ring buffering session management for Google Drive backend (Xray-core #7217).
+  - **TUN Inbound WFP Leak Protection**:
+    - Enhanced `autoSystemWfpBlockLeak` in `tun.html` with tag mode to support custom `tcp/<port>` and `udp/<port>` leak-blocking rules (e.g. `tcp/853`, `udp/853`), alongside `windnsclient`, `dns`, and `misconfigtun` (Xray-core #7288).
+  - **Security & Network Core Fixes**:
+    - Disabled MPTCP by default on listeners to mitigate Linux CVE-2026-98432 while preserving explicit `sockopt.tcpMptcp` opt-in (Xray-core #7291).
+    - Geodata streaming gzip decompression for asset downloads, download size limit (256 MiB), and mandatory `.dat` file extensions with >= 1 minute interval guards (Xray-core #7267, #7294).
+    - Freedom outbound deprecation warnings guiding migration of legacy `fragment` and `noises` to Finalmask (Xray-core #7242).
+    - WebSocket transport EOF handling on normal close frames (Xray-core #7236).
+    - API commands fix for `xray api bi balancer1 balancer2` (Xray-core #7299) and `xray api adrules` (Xray-core #7276).
+    - QUIC sniffer gap rejection in CRYPTO data (Xray-core #7292).
+  - **Internationalization (i18n)**:
+    - Added localized S3 parameters (`s3Endpoint`, `s3Region`, `s3Bucket`, `s3PathStyle`, `s3SecretsDesc`) across all 13 supported languages.
+  - **Docker & Documentation Alignment**:
+    - Updated `DockerInit.sh` binary download URL to `v26.10.31`.
+    - Updated mock Xray version in interactive documentation (`docs.html`) to `v26.10.31`.
+    - Updated feature lists in all language `README` files to reflect v26.10.31 features.
 
 - **XTLS/Xray-Examples Parity & Core Configuration Fixes**:
   - **SplitHTTP (`splithttp`) Alias Parity**: Full bidirectional compatibility for `splithttp` and `xhttp` transport identifiers and settings across JSON import/export, subscription generators (`subService.go`), and JSON subscription services (`subJsonService.go`).

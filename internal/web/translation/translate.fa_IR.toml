@@ -969,6 +969,11 @@ concurrency = "همزمانی (Concurrency)"
 
 eagerWindowMs = "پنجره Eager (میلی\u200cثانیه)"
 holeTimeoutMs = "مهلت زمانی Hole (میلی\u200cثانیه)"
+s3Endpoint = "اندپوینت S3"
+s3Region = "منطقه (Region) S3"
+s3Bucket = "باکت (Bucket) S3"
+s3PathStyle = "آدرس‌دهی Path-Style"
+s3SecretsDesc = "خط ۱: AccessKeyID\nخط ۲: SecretAccessKey\nخط ۳ (اختیاری): SessionToken"
 [pages.xray.finalmask]
 tcpMasks = "ماسک\u200cهای TCP"
 tcpMask = "ماسک TCP"

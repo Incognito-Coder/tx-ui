@@ -968,6 +968,11 @@ sessionTtlSeconds = "会话超时时间 (秒)"
 concurrency = "并发数"
 eagerWindowMs = "急切窗口 (毫秒)"
 holeTimeoutMs = "打洞超时 (毫秒)"
+s3Endpoint = "S3 节点端点 (Endpoint)"
+s3Region = "S3 区域 (Region)"
+s3Bucket = "S3 存储桶 (Bucket)"
+s3PathStyle = "路径样式寻址 (Path-Style)"
+s3SecretsDesc = "第一行：AccessKeyID\n第二行：SecretAccessKey\n第三行（可选）：SessionToken"
 
 [pages.xray.finalmask]
 tcpMasks = "TCP 掩码"

@@ -1083,6 +1083,11 @@ template = "Plantilla"
 
 eagerWindowMs = "Ventana Eager (ms)"
 holeTimeoutMs = "Tiempo de espera Hole (ms)"
+s3Endpoint = "Punto de enlace S3 (Endpoint)"
+s3Region = "Región S3"
+s3Bucket = "Cubo S3 (Bucket)"
+s3PathStyle = "Direccionamiento estilo ruta (Path-Style)"
+s3SecretsDesc = "Línea 1: AccessKeyID\nLínea 2: SecretAccessKey\nLínea 3 (opcional): SessionToken"
 [pages.inbounds.stream.general]
 request = "Pedido"
 response = "Respuesta"

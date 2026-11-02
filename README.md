@@ -316,7 +316,7 @@ computing environments. The following are key architectures that we support:
 - **External Proxy Endpoint Overrides**: Configurable ingress host and port applied across WireGuard/AmneziaWG `.conf` files, `vpn://` / `wireguard://` share links, and Telegram `tg://proxy` URIs.
 - **Interactive In-Panel API Documentation (`/panel/docs`)**: Explore, search, copy endpoints, and view live cURL and code snippets directly inside the web UI.
 - **Automatic & Manual Config State Rollback**: Pre-flight verification, instant core exit detection, and automatic recovery to `config.json.last_working` preventing service disruptions.
-- **Updated Xray Core (v26.10.21)**: Full support for Finalmask Source IP ACL filtering (`allowedSourceIPs`/`blockedSourceIPs`), automatic filter stripping from share links, XDRIVE transport enhancements, and extended TLS cipher suites.
+- **Updated Xray Core (v26.10.31)**: Full support for Finalmask Source IP ACL filtering (`allowedSourceIPs`/`blockedSourceIPs`), automatic filter stripping from share links, XDRIVE transport enhancements with S3 storage backend, XHTTP HTTP/2 parameters (`h2Params`) and OPTIONS uplink method, and extended TLS cipher suites.
 - **Protocol-Separated Client Credentials**: Dedicated, isolated password generation and persistence for Trojan, Shadowsocks 2022 (strict 16/32-byte Base64 key generator & auto-repair), MASQUE, Hysteria, MTProto, and WireGuard/AmneziaWG.
 - **Connected Devices Management**: Track and manage connected devices (IP, client app, OS, user-agent, last seen) per client with history clearing.
 - **Database Health & Maintenance**: In-panel SQLite diagnostics, WAL truncation, PRAGMA optimization, vacuum, and orphaned row cleanup.
@@ -579,8 +579,6 @@ than one, Just separate them with ,)
 | `POST` | `"/testOutbound"`     | Test outbound connectivity and latency             |
 | `GET`  | `"/getOutboundsTraffic"` | Get cumulative traffic per outbound tag         |
 | `POST` | `"/resetOutboundsTraffic"` | Reset outbound traffic counters               |
-
-[<img src="https://run.pstmn.io/button.svg" alt="Run In Postman" style="width: 128px; height: 32px;">](https://app.getpostman.com/run-collection/5146551-dda3cab3-0e33-485f-96f9-d4262f437ac5?action=collection%2Ffork&source=rip_markdown&collection-url=entityId%3D5146551-dda3cab3-0e33-485f-96f9-d4262f437ac5%26entityType%3Dcollection%26workspaceId%3Dd64f609f-485a-4951-9b8f-876b3f917124)
 
 </details>
 

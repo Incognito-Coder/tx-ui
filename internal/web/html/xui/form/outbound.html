@@ -598,6 +598,7 @@
                             <a-select-option value="local">local</a-select-option>
                             <a-select-option value="google-drive">Google Drive</a-select-option>
                             <a-select-option value="template">template</a-select-option>
+                            <a-select-option value="s3">s3 (Amazon S3 / S3-Compatible)</a-select-option>
                         </a-select>
                     </a-form-item>
                     <a-form-item label='{{ i18n "pages.xray.xdrive.remoteFolder" }}'>
@@ -615,6 +616,32 @@
                         </template>
                         <a-textarea :rows="3" placeholder="ClientID&#10;ClientSecret&#10;RefreshToken" v-model="outbound.stream.xdrive.secrets"></a-textarea>
                     </a-form-item>
+                    <template v-if="outbound.stream.xdrive.service === 's3'">
+                        <a-form-item label='{{ i18n "pages.xray.xdrive.s3Endpoint" }}'>
+                            <a-input placeholder="https://s3.amazonaws.com" v-model.trim="outbound.stream.xdrive.s3Endpoint"></a-input>
+                        </a-form-item>
+                        <a-form-item label='{{ i18n "pages.xray.xdrive.s3Region" }}'>
+                            <a-input placeholder="us-east-1" v-model.trim="outbound.stream.xdrive.s3Region"></a-input>
+                        </a-form-item>
+                        <a-form-item label='{{ i18n "pages.xray.xdrive.s3Bucket" }}'>
+                            <a-input placeholder="my-bucket" v-model.trim="outbound.stream.xdrive.s3Bucket"></a-input>
+                        </a-form-item>
+                        <a-form-item label='{{ i18n "pages.xray.xdrive.s3PathStyle" }}'>
+                            <a-switch v-model="outbound.stream.xdrive.s3PathStyle"></a-switch>
+                        </a-form-item>
+                        <a-form-item>
+                            <template slot="label">
+                                <a-tooltip>
+                                    <template slot="title">
+                                        <span>{{ i18n "pages.xray.xdrive.s3SecretsDesc" }}</span>
+                                    </template>
+                                    {{ i18n "pages.xray.xdrive.secrets" }}
+                                    <a-icon type="question-circle"></a-icon>
+                                </a-tooltip>
+                            </template>
+                            <a-textarea :rows="3" placeholder="AccessKeyID&#10;SecretAccessKey&#10;SessionToken (optional)" v-model="outbound.stream.xdrive.secrets"></a-textarea>
+                        </a-form-item>
+                    </template>
                     <a-form-item label='{{ i18n "pages.xray.xdrive.template" }}' v-if="outbound.stream.xdrive.service === 'template'">
                         <a-textarea :rows="4" placeholder="{ ... }" v-model="outbound.stream.xdrive.template"></a-textarea>
                     </a-form-item>

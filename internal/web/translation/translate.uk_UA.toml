@@ -1083,6 +1083,11 @@ template = "Шаблон"
 
 eagerWindowMs = "Вікно Eager (мс)"
 holeTimeoutMs = "Таймаут Hole (мс)"
+s3Endpoint = "Кінцева точка S3 (Endpoint)"
+s3Region = "Регіон S3 (Region)"
+s3Bucket = "Бакет S3 (Bucket)"
+s3PathStyle = "Адресація у стилі шляху (Path-Style)"
+s3SecretsDesc = "Рядок 1: AccessKeyID\nРядок 2: SecretAccessKey\nРядок 3 (необов'язково): SessionToken"
 [pages.inbounds.stream.general]
 request = "Запит"
 response = "Відповідь"

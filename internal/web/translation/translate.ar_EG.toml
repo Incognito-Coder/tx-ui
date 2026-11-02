@@ -1083,6 +1083,11 @@ template = "القالب"
 
 eagerWindowMs = "نافذة Eager (مللي ثانية)"
 holeTimeoutMs = "مهلة Hole (مللي ثانية)"
+s3Endpoint = "نقطة نهاية S3 (Endpoint)"
+s3Region = "منطقة S3 (Region)"
+s3Bucket = "حاوية S3 (Bucket)"
+s3PathStyle = "عنونة بنمط المسار (Path-Style)"
+s3SecretsDesc = "السطر 1: AccessKeyID\nالسطر 2: SecretAccessKey\nالسطر 3 (اختياري): SessionToken"
 [pages.inbounds.stream.general]
 request = "طلب"
 response = "رد"

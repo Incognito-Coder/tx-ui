@@ -90,10 +90,11 @@
                 <a-icon type="question-circle"></a-icon>
             </a-tooltip>
         </template>
-        <a-select :dropdown-class-name="themeSwitcher.currentTheme" mode="multiple"
-                  placeholder="dns, misconfigtun" v-model="inbound.settings.autoSystemWfpBlockLeak">
+        <a-select :dropdown-class-name="themeSwitcher.currentTheme" mode="tags"
+                  placeholder="dns, misconfigtun, windnsclient, tcp/port, udp/port" v-model="inbound.settings.autoSystemWfpBlockLeak">
             <a-select-option value="dns">dns</a-select-option>
             <a-select-option value="misconfigtun">misconfigtun</a-select-option>
+            <a-select-option value="windnsclient">windnsclient</a-select-option>
         </a-select>
     </a-form-item>
 </a-form>
