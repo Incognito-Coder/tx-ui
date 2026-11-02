@@ -28,6 +28,10 @@
         oldClientId: "",
         clientIps: null,
         delayedStart: false,
+        isEditingTraffic: false,
+        trafficEditUpGB: 0,
+        trafficEditDownGB: 0,
+        trafficEditLoading: false,
         ok() {
             if (clientModal.isEdit) {
                 ObjectUtil.execute(clientModal.confirm, clientModalApp.client, clientModal.dbInbound.id, clientModal.oldClientId);
@@ -51,6 +55,8 @@
             this.clients = this.inbound.clients;
             this.client = client;
             this.delayedStart = false;
+            this.isEditingTraffic = false;
+            this.trafficEditLoading = false;
             if (isEdit) {
                 if (this.client.expiryTime < 0) {
                     this.delayedStart = true;
@@ -181,8 +187,67 @@
             set delayedExpireDays(days) {
                 this.client.expiryTime = -86400000 * days;
             },
+            get isEditingTraffic() {
+                return this.clientModal.isEditingTraffic;
+            },
+            set isEditingTraffic(value) {
+                this.clientModal.isEditingTraffic = value;
+            },
+            get trafficEditUpGB() {
+                return this.clientModal.trafficEditUpGB;
+            },
+            set trafficEditUpGB(value) {
+                this.clientModal.trafficEditUpGB = value;
+            },
+            get trafficEditDownGB() {
+                return this.clientModal.trafficEditDownGB;
+            },
+            set trafficEditDownGB(value) {
+                this.clientModal.trafficEditDownGB = value;
+            },
+            get trafficEditLoading() {
+                return this.clientModal.trafficEditLoading;
+            },
+            set trafficEditLoading(value) {
+                this.clientModal.trafficEditLoading = value;
+            },
         },
         methods: {
+            toggleEditTraffic() {
+                if (this.isEditingTraffic) {
+                    this.isEditingTraffic = false;
+                } else {
+                    const up = this.clientStats ? (this.clientStats.up || 0) : 0;
+                    const down = this.clientStats ? (this.clientStats.down || 0) : 0;
+                    this.trafficEditUpGB = up > 0 ? Number((up / ONE_GB).toFixed(2)) : 0;
+                    this.trafficEditDownGB = down > 0 ? Number((down / ONE_GB).toFixed(2)) : 0;
+                    this.isEditingTraffic = true;
+                }
+            },
+            async saveClientTraffic(email) {
+                if (!email) return;
+                this.trafficEditLoading = true;
+                try {
+                    const upBytes = Math.round((Number(this.trafficEditUpGB) || 0) * ONE_GB);
+                    const downBytes = Math.round((Number(this.trafficEditDownGB) || 0) * ONE_GB);
+                    const res = await HttpUtil.postJson(`/panel/api/inbounds/updateClientTraffic/${encodeURIComponent(email)}`, {
+                        upload: upBytes,
+                        download: downBytes,
+                    });
+                    if (res && res.success) {
+                        if (this.clientStats) {
+                            this.$set(this.clientStats, 'up', upBytes);
+                            this.$set(this.clientStats, 'down', downBytes);
+                        }
+                        this.isEditingTraffic = false;
+                        if (typeof app !== 'undefined' && typeof app.getDBInbounds === 'function') {
+                            await app.getDBInbounds();
+                        }
+                    }
+                } finally {
+                    this.trafficEditLoading = false;
+                }
+            },
             async getDBClientIps(email) {
                 const msg = await HttpUtil.post(`/panel/api/inbounds/clientIps/${email}`);
                 if (!msg.success) {

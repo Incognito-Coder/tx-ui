@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Key Transparency**: Added Public Key, Private Key, and Preshared Key fields directly into the Client Details modal table.
   - **Subscription Service Parity**: Ensured preshared keys are preserved in both standard URI (`subService.go`) and JSON (`subJsonService.go`) subscription outputs.
 
+- **Client Traffic Management in Edit Modals**:
+  - **Inline Traffic Editing**: Added an interactive traffic editor directly inside both the Inbound Client edit modal (`form/client.html`, `client_modal.html`) and the Global Clients list edit modal (`clients.html`), allowing administrators to adjust upload and download counters in gigabytes (GB).
+  - **Reactive Synchronization**: Connected the edit modal to `POST /panel/api/inbounds/updateClientTraffic/:email` with automatic unit conversion, live state updates, and dynamic core hot-reloading.
+
 - **Xray-core v26.10.31 Integration (26.10.21 -> 26.10.31)**:
   - **Dependency Upgrade**: Upgraded `github.com/xtls/xray-core` from commit `1b1647cd9ddf` (`v26.10.21`) to commit `a4a3dff5b20c` (`v26.10.31`).
   - **XHTTP Transport Enhancements**:
@@ -46,6 +50,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Dynamic Inbound Client Addition (Zero Restart)**: Implemented `AddUser` support for the `wireguard` protocol in `xray/api.go` via Xray's `HandlerService` gRPC API, eliminating forced Xray restarts when adding WireGuard clients.
   - **AllowedIPs CIDR Normalization**: Guaranteed valid subnet prefixes (`/32` for IPv4, `/128` for IPv6) in WireGuard peer configurations, fixing client ping/connectivity issues caused by unadorned IP addresses.
   - **Schema Fallback Resiliency**: Added fallback between `peers` and `clients` setting keys in `GetClients`, `BuildInboundConfig`, `AddInboundClient`, and `wireguardClientsAsPeers` to prevent empty peer arrays.
+- **Depleted Client Quota Modification & Re-Enablement**:
+  - **Dynamic Client Re-Enablement Without Core Restart**: Fixed an issue where depleted clients (`up + down >= total`) remained disconnected after increasing their `totalGb` until a full manual Xray restart.
+  - **State-Aware Hot-Syncing**: Enhanced `NodeClientService.Update` and `InboundService.UpdateClientTrafficByEmail` to track previous exhaustion state (`wasTrafficDisabled`) and dynamically add the re-enabled client back into running Xray inbounds via the `HandlerService` API (`hotAddUserToInbound`).
 - **Core Lifecycle & API Port Readiness**:
   - **Eliminated Transient Connection Refusals**: Resolved `connection refused` debug errors during Xray restarts by verifying that the gRPC API port is actively accepting TCP connections before `Process.Start()` returns.
   - **Graceful Termination Wait in `Process.Stop()`**: Added process exit tracking via `doneChan` and `isStopping` flag, ensuring the terminated Xray core fully exits and releases all network ports/sockets before a new instance is spawned.

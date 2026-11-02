@@ -454,6 +454,7 @@ func (s *NodeClientService) Update(nc *model.NodeClient) (bool, error) {
 		"expiry_time": nc.ExpiryTime,
 		"reset":       nc.Reset,
 	}
+	trafficEnable := false
 	now := time.Now().Unix() * 1000
 	if !nc.Enable {
 		trafficUpdates["enable"] = false
@@ -468,8 +469,15 @@ func (s *NodeClientService) Update(nc *model.NodeClient) (bool, error) {
 				isExhausted = true
 			}
 		}
-		trafficUpdates["enable"] = !isExhausted
+		trafficEnable = !isExhausted
+		trafficUpdates["enable"] = trafficEnable
 	}
+
+	var disabledCount int64
+	tx.Model(&xray.ClientTraffic{}).
+		Where("(node_client_id = ? OR LOWER(email) = LOWER(?)) AND enable = ?", nc.Id, oldNC.Email, false).
+		Count(&disabledCount)
+	wasTrafficDisabled := disabledCount > 0
 
 	if err := tx.Model(&xray.ClientTraffic{}).
 		Where("node_client_id = ?", nc.Id).
@@ -478,13 +486,16 @@ func (s *NodeClientService) Update(nc *model.NodeClient) (bool, error) {
 		return false, err
 	}
 
-	// Keep settings JSON in sync for linked inbounds if credentials, enable, or metadata (expiry, quota, etc.) changed
+	// Keep settings JSON in sync for linked inbounds if credentials, enable, metadata (expiry, quota, etc.), or exhaustion state changed
 	credsChanged := hasOld && (oldNC.Email != nc.Email || oldNC.UUID != nc.UUID || oldNC.Password != nc.Password || oldNC.SSPassword != nc.SSPassword || oldNC.MasquePass != nc.MasquePass || oldNC.Auth != nc.Auth || oldNC.Flow != nc.Flow || oldNC.PublicKey != nc.PublicKey || oldNC.PrivateKey != nc.PrivateKey || oldNC.PreSharedKey != nc.PreSharedKey)
 	enableChanged := hasOld && (oldNC.Enable != nc.Enable)
 	metaChanged := hasOld && (oldNC.ExpiryTime != nc.ExpiryTime || oldNC.TotalGB != nc.TotalGB || oldNC.Reset != nc.Reset || oldNC.SubID != nc.SubID || oldNC.LimitIP != nc.LimitIP || oldNC.TgID != nc.TgID || oldNC.Comment != nc.Comment)
+	reEnabled := hasOld && trafficEnable && wasTrafficDisabled
+	reDisabled := hasOld && !trafficEnable && !wasTrafficDisabled
+	shouldHotSync := hasOld && (credsChanged || enableChanged || reEnabled || reDisabled || (metaChanged && trafficEnable))
 
 	links, _ := s.GetLinks(nc.Id)
-	if credsChanged || enableChanged || metaChanged || !hasOld {
+	if credsChanged || enableChanged || metaChanged || reEnabled || reDisabled || !hasOld {
 		for _, l := range links {
 			var inbound model.Inbound
 			if err := tx.First(&inbound, l.InboundId).Error; err == nil {
@@ -493,7 +504,7 @@ func (s *NodeClientService) Update(nc *model.NodeClient) (bool, error) {
 					flow = nc.Flow
 				}
 				removeClientFromInboundSettings(&inbound, oldNC.Email, oldNC.UUID, oldNC.Password, oldNC.Auth)
-				if nc.Enable {
+				if nc.Enable && trafficEnable {
 					addClientToInboundSettings(&inbound, nc, flow)
 				}
 				_ = tx.Model(&model.Inbound{}).Where("id = ?", inbound.Id).Update("settings", inbound.Settings).Error
@@ -505,9 +516,9 @@ func (s *NodeClientService) Update(nc *model.NodeClient) (bool, error) {
 		return false, err
 	}
 
-	// If credentials or enable state changed, hot-sync with running Xray without dropping other users' connections.
+	// If credentials, enable state, or quota exhaustion state changed, hot-sync with running Xray without dropping other users' connections.
 	needRestart := false
-	if hasOld && (credsChanged || enableChanged) {
+	if shouldHotSync {
 		if p != nil && p.IsRunning() {
 			var xrayApi xray.XrayAPI
 			if err := xrayApi.Init(p.GetAPIPort()); err != nil {
@@ -517,10 +528,12 @@ func (s *NodeClientService) Update(nc *model.NodeClient) (bool, error) {
 				for _, l := range links {
 					var inbound model.Inbound
 					if err := db.First(&inbound, l.InboundId).Error; err == nil {
-						if s.hotRemoveUserFromInbound(&xrayApi, &inbound, oldNC.Email) {
-							needRestart = true
+						if !trafficEnable || credsChanged || reDisabled {
+							if s.hotRemoveUserFromInbound(&xrayApi, &inbound, oldNC.Email) {
+								needRestart = true
+							}
 						}
-						if nc.Enable {
+						if nc.Enable && trafficEnable {
 							flow := l.Flow
 							if flow == "" {
 								flow = nc.Flow

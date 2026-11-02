@@ -1467,6 +1467,17 @@ func (s *InboundService) syncNodeClientOnUpdate(tx *gorm.DB, oldEmail string, cl
 			if s.updateClientInInboundSettings(&otherInbound, lookupEmail, client) {
 				_ = tx.Model(&model.Inbound{}).Where("id = ?", otherInbound.Id).Update("settings", otherInbound.Settings).Error
 			}
+			if p != nil && p.IsRunning() && client.Enable {
+				var xrayApi xray.XrayAPI
+				if err := xrayApi.Init(p.GetAPIPort()); err == nil {
+					flow := l.Flow
+					if flow == "" {
+						flow = client.Flow
+					}
+					_ = s.nodeClientService.hotAddUserToInbound(&xrayApi, &otherInbound, &nc, flow)
+					xrayApi.Close()
+				}
+			}
 		}
 	}
 
@@ -4219,24 +4230,145 @@ func (s *InboundService) GetClientTrafficByEmail(email string) (traffic *xray.Cl
 }
 
 func (s *InboundService) UpdateClientTrafficByEmail(email string, upload int64, download int64) error {
+	nodeClientOpMutex.Lock()
+	defer nodeClientOpMutex.Unlock()
+
 	db := database.GetDB()
 
 	var ct xray.ClientTraffic
-	if err := db.Where("LOWER(email) = LOWER(?)", email).First(&ct).Error; err == nil && ct.NodeClientId != nil && *ct.NodeClientId > 0 {
-		return db.Model(&xray.ClientTraffic{}).
+	if err := db.Where("LOWER(email) = LOWER(?)", email).First(&ct).Error; err != nil {
+		return err
+	}
+
+	now := time.Now().Unix() * 1000
+	totalUsed := upload + download
+	newEnable := ct.Enable
+	isExpired := ct.ExpiryTime > 0 && ct.ExpiryTime <= now
+	isDepleted := ct.Total > 0 && totalUsed >= ct.Total
+
+	if isExpired || isDepleted {
+		newEnable = false
+	} else if !ct.Enable && !isExpired && !isDepleted {
+		newEnable = true
+	}
+
+	updates := map[string]any{
+		"up":     upload,
+		"down":   download,
+		"enable": newEnable,
+	}
+
+	if ct.NodeClientId != nil && *ct.NodeClientId > 0 {
+		var nc model.NodeClient
+		if db.First(&nc, *ct.NodeClientId).Error == nil {
+			isExpired = nc.ExpiryTime > 0 && nc.ExpiryTime <= now
+			isDepleted = nc.TotalGB > 0 && totalUsed >= nc.TotalGB
+			if !nc.Enable || isExpired || isDepleted {
+				newEnable = false
+			} else {
+				newEnable = true
+			}
+			updates["enable"] = newEnable
+		}
+
+		err := db.Model(&xray.ClientTraffic{}).
 			Where("node_client_id = ? OR LOWER(email) = LOWER(?)", *ct.NodeClientId, email).
-			Updates(map[string]any{"up": upload, "down": download}).Error
+			Updates(updates).Error
+		if err != nil {
+			return err
+		}
+
+		if ct.Enable != newEnable && p != nil && p.IsRunning() {
+			if nc.Id > 0 {
+				var xrayApi xray.XrayAPI
+				if err := xrayApi.Init(p.GetAPIPort()); err == nil {
+					defer xrayApi.Close()
+					links, _ := s.nodeClientService.GetLinks(*ct.NodeClientId)
+					for _, l := range links {
+						var inbound model.Inbound
+						if db.First(&inbound, l.InboundId).Error == nil {
+							if newEnable {
+								flow := l.Flow
+								if flow == "" {
+									flow = nc.Flow
+								}
+								if s.nodeClientService.hotAddUserToInbound(&xrayApi, &inbound, &nc, flow) {
+									isNeedXrayRestart.Store(true)
+								}
+							} else {
+								if s.nodeClientService.hotRemoveUserFromInbound(&xrayApi, &inbound, nc.Email) {
+									isNeedXrayRestart.Store(true)
+								}
+							}
+						}
+					}
+				} else {
+					isNeedXrayRestart.Store(true)
+				}
+			}
+		}
+		return nil
 	}
 
 	result := db.Model(xray.ClientTraffic{}).
 		Where("LOWER(email) = LOWER(?)", email).
-		Updates(map[string]any{"up": upload, "down": download})
+		Updates(updates)
 
 	err := result.Error
 	if err != nil {
 		logger.Warningf("Error updating ClientTraffic with email %s: %v", email, err)
 		return err
 	}
+
+	if ct.Enable != newEnable && p != nil && p.IsRunning() && ct.InboundId > 0 {
+		inbound, err := s.GetInbound(ct.InboundId)
+		if err == nil {
+			var xrayApi xray.XrayAPI
+			if err := xrayApi.Init(p.GetAPIPort()); err == nil {
+				defer xrayApi.Close()
+				if newEnable {
+					clients, err := s.GetClients(inbound)
+					if err == nil {
+						for _, client := range clients {
+							if strings.EqualFold(client.Email, email) && client.Enable {
+								cipher := ""
+								if string(inbound.Protocol) == "shadowsocks" {
+									var oldSettings map[string]interface{}
+									_ = json.Unmarshal([]byte(inbound.Settings), &oldSettings)
+									if m, ok := oldSettings["method"].(string); ok {
+										cipher = m
+									}
+								}
+								if err1 := xrayApi.AddUser(string(inbound.Protocol), inbound.Tag, map[string]interface{}{
+									"email":        client.Email,
+									"id":           client.ID,
+									"publicKey":    client.PublicKey,
+									"privateKey":   client.PrivateKey,
+									"allowedIPs":   client.AllowedIPs,
+									"psk":          client.Psk,
+									"preSharedKey": client.PreSharedKey,
+									"keepAlive":    strconv.Itoa(client.KeepAlive),
+									"security":     client.Security,
+									"flow":         client.Flow,
+									"auth":         client.Auth,
+									"password":     client.Password,
+									"cipher":       cipher,
+								}); err1 != nil {
+									isNeedXrayRestart.Store(true)
+								}
+								break
+							}
+						}
+					}
+				} else {
+					if err1 := xrayApi.RemoveUser(inbound.Tag, email); err1 != nil {
+						isNeedXrayRestart.Store(true)
+					}
+				}
+			}
+		}
+	}
+
 	return nil
 }
 

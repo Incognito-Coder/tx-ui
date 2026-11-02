@@ -281,16 +281,40 @@
                         v-model.number="client._totalGB"></a-input-number>
     </a-form-item>
     <a-form-item label='{{ i18n "usage" }}' v-if="isEdit && clientStats">
-        <a-tag :color="clientUsageColor(clientStats, app.trafficDiff)">
-            [[ sizeFormat(clientStats.up) ]] /
-            [[ sizeFormat(clientStats.down) ]]
-            ([[ sizeFormat(clientStats.up + clientStats.down) ]])
-        </a-tag>
-        <a-button type="danger" ghost size="small" icon="reload" style="margin-left: 8px;"
-                  @click="resetClientTraffic(client.email, (clientStats && clientStats.inboundId) || (clientModal && clientModal.dbInbound && clientModal.dbInbound.id), $event.currentTarget)"
-                  v-if="client.email && client.email.length > 0">
-            {{ i18n "pages.inbounds.resetTraffic" }}
-        </a-button>
+        <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 8px;">
+            <a-tag :color="clientUsageColor(clientStats, app.trafficDiff)">
+                [[ sizeFormat(clientStats.up) ]] /
+                [[ sizeFormat(clientStats.down) ]]
+                ([[ sizeFormat(clientStats.up + clientStats.down) ]])
+            </a-tag>
+            <a-button type="default" size="small" icon="edit"
+                      @click="toggleEditTraffic()"
+                      v-if="client.email && client.email.length > 0">
+                [[ isEditingTraffic ? '{{ i18n "cancel" }}' : '{{ i18n "edit" }}' ]]
+            </a-button>
+            <a-button type="danger" ghost size="small" icon="reload"
+                      @click="resetClientTraffic(client.email, (clientStats && clientStats.inboundId) || (clientModal && clientModal.dbInbound && clientModal.dbInbound.id), $event.currentTarget)"
+                      v-if="client.email && client.email.length > 0">
+                {{ i18n "pages.inbounds.resetTraffic" }}
+            </a-button>
+        </div>
+        <div v-if="isEditingTraffic" style="margin-top: 10px; padding: 10px; background: rgba(0,0,0,0.03); border-radius: 6px; border: 1px dashed #d9d9d9;">
+            <a-row :gutter="8" type="flex" align="middle">
+                <a-col :span="10">
+                    <span style="font-size: 12px; display: block; margin-bottom: 2px;">{{ i18n "pages.inbounds.up" }} (GB)</span>
+                    <a-input-number :min="0" :step="0.01" :precision="2" v-model.number="trafficEditUpGB" style="width: 100%;"></a-input-number>
+                </a-col>
+                <a-col :span="10">
+                    <span style="font-size: 12px; display: block; margin-bottom: 2px;">{{ i18n "pages.inbounds.down" }} (GB)</span>
+                    <a-input-number :min="0" :step="0.01" :precision="2" v-model.number="trafficEditDownGB" style="width: 100%;"></a-input-number>
+                </a-col>
+                <a-col :span="4" style="text-align: right; padding-top: 18px;">
+                    <a-button type="primary" size="small" :loading="trafficEditLoading" @click="saveClientTraffic(client.email)">
+                        {{ i18n "sure" }}
+                    </a-button>
+                </a-col>
+            </a-row>
+        </div>
     </a-form-item>
     <a-form-item label='{{ i18n "pages.client.delayedStart" }}'>
         <a-switch @click="client._expiryTime=0" v-model="delayedStart"></a-switch>

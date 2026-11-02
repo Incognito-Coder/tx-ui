@@ -1509,15 +1509,38 @@
                             <a-divider>{{ i18n "pages.node_clients.limitsAndPolicy" }}</a-divider>
 
                             <a-form-item label='{{ i18n "usage" }}' v-if="clientModal.isEdit && clientModal.client && clientModal.client.id">
-                                <a-tag color="blue">
-                                    [[ sizeFormat(getTrafficData(clientModal.client).up) ]] /
-                                    [[ sizeFormat(getTrafficData(clientModal.client).down) ]]
-                                    ([[ sizeFormat(getTrafficData(clientModal.client).used) ]])
-                                </a-tag>
-                                <a-button type="danger" ghost size="small" icon="reload" style="margin-left: 8px;"
-                                    @click="resetModalClientTraffic(clientModal.client)">
-                                    {{ i18n "pages.inbounds.resetTraffic" }}
-                                </a-button>
+                                <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 8px;">
+                                    <a-tag color="blue">
+                                        [[ sizeFormat(getTrafficData(clientModal.client).up) ]] /
+                                        [[ sizeFormat(getTrafficData(clientModal.client).down) ]]
+                                        ([[ sizeFormat(getTrafficData(clientModal.client).used) ]])
+                                    </a-tag>
+                                    <a-button type="default" size="small" icon="edit"
+                                        @click="toggleModalClientTrafficEdit(clientModal.client)">
+                                        [[ clientModal.isEditingTraffic ? '{{ i18n "cancel" }}' : '{{ i18n "edit" }}' ]]
+                                    </a-button>
+                                    <a-button type="danger" ghost size="small" icon="reload"
+                                        @click="resetModalClientTraffic(clientModal.client)">
+                                        {{ i18n "pages.inbounds.resetTraffic" }}
+                                    </a-button>
+                                </div>
+                                <div v-if="clientModal.isEditingTraffic" style="margin-top: 10px; padding: 10px; background: rgba(0,0,0,0.03); border-radius: 6px; border: 1px dashed #d9d9d9;">
+                                    <a-row :gutter="8" type="flex" align="middle">
+                                        <a-col :span="10">
+                                            <span style="font-size: 12px; display: block; margin-bottom: 2px;">{{ i18n "pages.inbounds.up" }} (GB)</span>
+                                            <a-input-number :min="0" :step="0.01" :precision="2" v-model.number="clientModal.trafficEditUpGB" style="width: 100%;"></a-input-number>
+                                        </a-col>
+                                        <a-col :span="10">
+                                            <span style="font-size: 12px; display: block; margin-bottom: 2px;">{{ i18n "pages.inbounds.down" }} (GB)</span>
+                                            <a-input-number :min="0" :step="0.01" :precision="2" v-model.number="clientModal.trafficEditDownGB" style="width: 100%;"></a-input-number>
+                                        </a-col>
+                                        <a-col :span="4" style="text-align: right; padding-top: 18px;">
+                                            <a-button type="primary" size="small" :loading="clientModal.trafficEditLoading" @click="saveModalClientTraffic(clientModal.client)">
+                                                {{ i18n "sure" }}
+                                            </a-button>
+                                        </a-col>
+                                    </a-row>
+                                </div>
                             </a-form-item>
 
                             <a-form-item>
@@ -2391,6 +2414,10 @@
                     expiryTimeModel: null,
                     delayedStart: false,
                     delayedExpireDays: 0,
+                    isEditingTraffic: false,
+                    trafficEditUpGB: 0,
+                    trafficEditDownGB: 0,
+                    trafficEditLoading: false,
                     changeDelayedStart(v) {
                         if (v) this.expiryTimeModel = null;
                         else this.delayedExpireDays = 0;
@@ -2491,6 +2518,8 @@
                         this.selectedInboundIds = links
                             .map(l => Number(typeof l === 'object' && l !== null ? l.inboundId : l))
                             .filter(id => !!app.inboundMap[id]);
+                        this.isEditingTraffic = false;
+                        this.trafficEditLoading = false;
                         this.visible = true;
                     },
                 },
@@ -3484,6 +3513,42 @@
                             }
                         },
                     });
+                },
+                toggleModalClientTrafficEdit(c) {
+                    const cm = this.clientModal;
+                    if (cm.isEditingTraffic) {
+                        cm.isEditingTraffic = false;
+                    } else {
+                        const t = this.getTrafficData(c);
+                        const up = t ? (t.up || 0) : 0;
+                        const down = t ? (t.down || 0) : 0;
+                        cm.trafficEditUpGB = up > 0 ? Number((up / ONE_GB).toFixed(2)) : 0;
+                        cm.trafficEditDownGB = down > 0 ? Number((down / ONE_GB).toFixed(2)) : 0;
+                        cm.isEditingTraffic = true;
+                    }
+                },
+                async saveModalClientTraffic(c) {
+                    if (!c || !c.email) return;
+                    const cm = this.clientModal;
+                    cm.trafficEditLoading = true;
+                    try {
+                        const upBytes = Math.round((Number(cm.trafficEditUpGB) || 0) * ONE_GB);
+                        const downBytes = Math.round((Number(cm.trafficEditDownGB) || 0) * ONE_GB);
+                        const res = await HttpUtil.postJson(`/panel/api/inbounds/updateClientTraffic/${encodeURIComponent(c.email)}`, {
+                            upload: upBytes,
+                            download: downBytes,
+                        });
+                        if (res && res.success) {
+                            cm.isEditingTraffic = false;
+                            if (c.traffic) {
+                                this.$set(c.traffic, 'up', upBytes);
+                                this.$set(c.traffic, 'down', downBytes);
+                            }
+                            await this.loadAllData();
+                        }
+                    } finally {
+                        cm.trafficEditLoading = false;
+                    }
                 },
                 confirmDelete(c) {
                     this.$confirm({
