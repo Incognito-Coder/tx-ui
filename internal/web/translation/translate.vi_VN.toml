@@ -949,7 +949,7 @@ outboundInterface = "Giao diện đầu ra"
 outboundInterfaceDesc = "Giao diện đầu ra được loại khỏi các tuyến tự động. Để trống để Xray tự động chọn"
 autoSystemDnsToGateway = "Định tuyến DNS đến Cổng kết nối"
 autoSystemWfpBlockLeak = "Chặn rò rỉ WFP"
-autoSystemWfpBlockLeakDesc = "Quy tắc ngăn chặn rò rỉ của Nền tảng lọc Windows (dns, misconfigtun)"
+autoSystemWfpBlockLeakDesc = "Quy tắc ngăn chặn rò rỉ của Nền tảng lọc Windows (all, allexceptlan, dns, misconfigtun, windnsclient, icmp, tcp, udp, cổng, tiền tố CIDR)"
 
 [pages.xray.finalmask]
 tcpMasks = "Mặt nạ TCP"
@@ -1178,6 +1178,7 @@ blockedSourceIPs = "IP nguồn bị chặn"
 [pages.outbounds]
 "finalRules" = "Final Rules"
 "action" = "Hành động"
+"delay" = "Độ trễ (s)"
 "blockDelay" = "Block Delay (s)"
 "title" = "Outbounds"
 "totalUsage" = "Tổng sử dụng"

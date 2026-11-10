@@ -949,7 +949,7 @@ outboundInterface = "Outbound Interface"
 outboundInterfaceDesc = "Outbound interface excluded from automatic routes. Leave empty to let Xray select it automatically"
 autoSystemDnsToGateway = "Route DNS to Gateway"
 autoSystemWfpBlockLeak = "WFP Block Leak"
-autoSystemWfpBlockLeakDesc = "Windows Filtering Platform leak prevention rules (dns, misconfigtun)"
+autoSystemWfpBlockLeakDesc = "Windows Filtering Platform leak prevention rules (all, allexceptlan, dns, misconfigtun, windnsclient, icmp, tcp, udp, ports, CIDR prefixes)"
 
 [pages.xray.masque]
 address = "Tunnel IP Range (CIDR)"
@@ -1178,6 +1178,7 @@ congestion = "Congestion"
 [pages.outbounds]
 "finalRules" = "Final Rules"
 "action" = "Action"
+"delay" = "Delay (s)"
 "blockDelay" = "Block Delay (s)"
 "title" = "Outbounds"
 "totalUsage" = "Total Usage"

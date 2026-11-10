@@ -949,7 +949,7 @@ outboundInterface = "Interface de saída"
 outboundInterfaceDesc = "Interface de saída excluída das rotas automáticas. Deixe vazio para o Xray selecioná-la automaticamente"
 autoSystemDnsToGateway = "Encaminhar DNS para o Gateway"
 autoSystemWfpBlockLeak = "Bloqueio de Vazamento WFP"
-autoSystemWfpBlockLeakDesc = "Regras de prevenção de vazamento da Plataforma de Filtragem do Windows (dns, misconfigtun)"
+autoSystemWfpBlockLeakDesc = "Regras de prevenção de vazamento da Plataforma de Filtragem do Windows (all, allexceptlan, dns, misconfigtun, windnsclient, icmp, tcp, udp, portas, prefixos CIDR)"
 
 [pages.xray.finalmask]
 tcpMasks = "Máscaras TCP"
@@ -1178,6 +1178,7 @@ blockedSourceIPs = "IPs de Origem Bloqueados"
 [pages.outbounds]
 "finalRules" = "Final Rules"
 "action" = "Action"
+"delay" = "Atraso (s)"
 "blockDelay" = "Block Delay (s)"
 "title" = "Outbounds"
 "totalUsage" = "Total Usage"

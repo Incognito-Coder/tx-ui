@@ -948,7 +948,7 @@ outboundInterface = "出站接口"
 outboundInterfaceDesc = "从自动路由中排除的出站接口。留空时由 Xray 自动选择"
 autoSystemDnsToGateway = "将 DNS 路由至网关"
 autoSystemWfpBlockLeak = "WFP 泄漏阻止"
-autoSystemWfpBlockLeakDesc = "Windows 筛选平台泄漏防护规则 (dns, misconfigtun)"
+autoSystemWfpBlockLeakDesc = "Windows 筛选平台泄漏防护规则 (all, allexceptlan, dns, misconfigtun, windnsclient, icmp, tcp/udp 端口, CIDR 前缀)"
 
 [pages.xray.masque]
 address = "隧道 IP 范围 (CIDR)"
@@ -1177,6 +1177,7 @@ congestion = "拥塞控制"
 [pages.outbounds]
 "finalRules" = "最终规则"
 "action" = "动作"
+"delay" = "延迟 (秒)"
 "blockDelay" = "阻断延迟 (秒)"
 "title" = "出站"
 "totalUsage" = "总用量"

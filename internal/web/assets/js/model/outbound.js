@@ -84,6 +84,17 @@ const UTLS_FINGERPRINT = {
     UTLS_RANDOMIZEDNOALPN: "randomizednoalpn",
     UTLS_RONDOMIZEDNOALPN: "randomizednoalpn",
     UTLS_UNSAFE: "unsafe",
+    UTLS_HELLOCHROME_155: "hellochrome_155",
+    UTLS_HELLOCHROME_133: "hellochrome_133",
+    UTLS_HELLOCHROME_131: "hellochrome_131",
+    UTLS_HELLOCHROME_120: "hellochrome_120",
+    UTLS_HELLOFIREFOX_148: "hellofirefox_148",
+    UTLS_HELLOFIREFOX_120: "hellofirefox_120",
+    UTLS_HELLOSAFARI_26_3: "hellosafari_26_3",
+    UTLS_HELLOIOS_14: "helloios_14",
+    UTLS_HELLOEDGE_106: "helloedge_106",
+    UTLS_HELLO360_11_0: "hello360_11_0",
+    UTLS_HELLOQQ_11_1: "helloqq_11_1",
 };
 
 const ALPN_OPTION = {
@@ -1434,7 +1445,7 @@ class StreamSettings extends CommonClass {
 }
 
 class Mux extends CommonClass {
-    constructor(enabled = false, concurrency = 8, xudpConcurrency = 16, xudpProxyUDP443 = "reject") {
+    constructor(enabled = false, concurrency = 128, xudpConcurrency = 16, xudpProxyUDP443 = "reject") {
         super();
         this.enabled = enabled;
         this.concurrency = concurrency;
@@ -1875,13 +1886,15 @@ Outbound.FreedomSettings = class extends CommonClass {
         domainStrategy = '',
         redirect = '',
         fragment = {},
-        noises = []
+        noises = [],
+        finalRules = []
     ) {
         super();
         this.domainStrategy = domainStrategy;
         this.redirect = redirect;
         this.fragment = fragment;
         this.noises = noises;
+        this.finalRules = finalRules;
     }
 
     static fromJson(json = {}) {
@@ -1890,6 +1903,7 @@ Outbound.FreedomSettings = class extends CommonClass {
             json.redirect,
             json.fragment ? Outbound.FreedomSettings.Fragment.fromJson(json.fragment) : undefined,
             json.noises ? json.noises.map(noise => Outbound.FreedomSettings.Noise.fromJson(noise)) : undefined,
+            json.finalRules ? json.finalRules.map(rule => Outbound.FreedomSettings.FinalRule.fromJson(rule)) : undefined,
         );
     }
 
@@ -1901,12 +1915,70 @@ Outbound.FreedomSettings = class extends CommonClass {
         this.noises.splice(index, 1);
     }
 
+    addFinalRule() {
+        this.finalRules.push(new Outbound.FreedomSettings.FinalRule());
+    }
+
+    delFinalRule(index) {
+        this.finalRules.splice(index, 1);
+    }
+
     toJson() {
         return {
             domainStrategy: ObjectUtil.isEmpty(this.domainStrategy) ? undefined : this.domainStrategy,
             redirect: ObjectUtil.isEmpty(this.redirect) ? undefined : this.redirect,
             fragment: Object.keys(this.fragment).length === 0 ? undefined : this.fragment,
             noises: this.noises.length === 0 ? undefined : Outbound.FreedomSettings.Noise.toJsonArray(this.noises),
+            finalRules: this.finalRules.length === 0 ? undefined : Outbound.FreedomSettings.FinalRule.toJsonArray(this.finalRules),
+        };
+    }
+};
+
+Outbound.FreedomSettings.FinalRule = class extends CommonClass {
+    constructor(
+        action = 'block',
+        network = 'tcp,udp',
+        port = '',
+        ip = [],
+        delay = '',
+        logLevel = ''
+    ) {
+        super();
+        this.action = action;
+        this.network = network;
+        this.port = port;
+        this.ip = ip;
+        this.delay = delay;
+        this.logLevel = logLevel;
+    }
+
+    static fromJson(json = {}) {
+        let ipList = [];
+        if (json.ip) {
+            if (Array.isArray(json.ip)) {
+                ipList = json.ip;
+            } else if (typeof json.ip === 'string') {
+                ipList = json.ip.split(',').map(s => s.trim()).filter(Boolean);
+            }
+        }
+        return new Outbound.FreedomSettings.FinalRule(
+            json.action || 'block',
+            Array.isArray(json.network) ? json.network.join(',') : (json.network || 'tcp,udp'),
+            json.port || '',
+            ipList,
+            json.delay || json.blockDelay || '',
+            json.logLevel || ''
+        );
+    }
+
+    toJson() {
+        return {
+            action: this.action,
+            network: this.network ? this.network.split(',').map(s => s.trim()).filter(Boolean) : undefined,
+            port: ObjectUtil.isEmpty(this.port) ? undefined : this.port,
+            ip: (this.ip && this.ip.length > 0) ? this.ip : undefined,
+            delay: ObjectUtil.isEmpty(this.delay) ? undefined : this.delay,
+            logLevel: ObjectUtil.isEmpty(this.logLevel) ? undefined : this.logLevel,
         };
     }
 };

@@ -949,7 +949,7 @@ outboundInterface = "Antarmuka Keluar"
 outboundInterfaceDesc = "Antarmuka keluar yang dikecualikan dari rute otomatis. Kosongkan agar Xray memilihnya secara otomatis"
 autoSystemDnsToGateway = "Rutekan DNS ke Gateway"
 autoSystemWfpBlockLeak = "Blok Kebocoran WFP"
-autoSystemWfpBlockLeakDesc = "Aturan pencegahan kebocoran Windows Filtering Platform (dns, misconfigtun)"
+autoSystemWfpBlockLeakDesc = "Aturan pencegahan kebocoran Windows Filtering Platform (all, allexceptlan, dns, misconfigtun, windnsclient, icmp, tcp, udp, port, prefiks CIDR)"
 
 [pages.xray.finalmask]
 tcpMasks = "Mask TCP"
@@ -1178,6 +1178,7 @@ filter = "Filter (IP Sumber)"
 [pages.outbounds]
 "finalRules" = "Final Rules"
 "action" = "Action"
+"delay" = "Penundaan (s)"
 "blockDelay" = "Block Delay (s)"
 "title" = "Outbounds"
 "totalUsage" = "Total Usage"

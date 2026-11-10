@@ -949,7 +949,7 @@ outboundInterface = "アウトバウンドインターフェース"
 outboundInterfaceDesc = "自動ルートから除外するアウトバウンドインターフェース。空欄の場合は Xray が自動選択します"
 autoSystemDnsToGateway = "DNSをゲートウェイへルーティング"
 autoSystemWfpBlockLeak = "WFPリーク防止"
-autoSystemWfpBlockLeakDesc = "Windowsフィルタリングプラットフォームのリーク防止ルール (dns, misconfigtun)"
+autoSystemWfpBlockLeakDesc = "Windowsフィルタリングプラットフォームのリーク防止ルール (all, allexceptlan, dns, misconfigtun, windnsclient, icmp, tcp, udp, ポート, CIDRプレフィックス)"
 
 [pages.xray.finalmask]
 tcpMasks = "TCP マスク"
@@ -1178,6 +1178,7 @@ blockedSourceIPs = "ブロックされた送信元 IP"
 [pages.outbounds]
 "finalRules" = "Final Rules"
 "action" = "Action"
+"delay" = "遅延 (秒)"
 "blockDelay" = "Block Delay (s)"
 "title" = "Outbounds"
 "totalUsage" = "Total Usage"

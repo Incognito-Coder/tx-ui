@@ -949,7 +949,7 @@ outboundInterface = "Вихідний інтерфейс"
 outboundInterfaceDesc = "Вихідний інтерфейс, виключений з автоматичних маршрутів. Залиште порожнім для автоматичного вибору Xray"
 autoSystemDnsToGateway = "Маршрутизувати DNS на шлюз"
 autoSystemWfpBlockLeak = "Блокування витоків WFP"
-autoSystemWfpBlockLeakDesc = "Правила запобігання витокам платформи фільтрації Windows (dns, misconfigtun)"
+autoSystemWfpBlockLeakDesc = "Правила запобігання витокам платформи фільтрації Windows (all, allexceptlan, dns, misconfigtun, windnsclient, icmp, tcp/udp порти, префікси CIDR)"
 
 [pages.xray.finalmask]
 tcpMasks = "Маски TCP"
@@ -1178,6 +1178,7 @@ blockedSourceIPs = "Заблоковані IP джерела"
 [pages.outbounds]
 "finalRules" = "Финальные правила"
 "action" = "Действие"
+"delay" = "Затримка (с)"
 "blockDelay" = "Задержка блокировки (с)"
 "title" = "Исходящие"
 "totalUsage" = "Общий трафик"

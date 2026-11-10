@@ -81,6 +81,17 @@ const UTLS_FINGERPRINT = {
     UTLS_RANDOMIZEDNOALPN: "randomizednoalpn",
     UTLS_RONDOMIZEDNOALPN: "randomizednoalpn",
     UTLS_UNSAFE: "unsafe",
+    UTLS_HELLOCHROME_155: "hellochrome_155",
+    UTLS_HELLOCHROME_133: "hellochrome_133",
+    UTLS_HELLOCHROME_131: "hellochrome_131",
+    UTLS_HELLOCHROME_120: "hellochrome_120",
+    UTLS_HELLOFIREFOX_148: "hellofirefox_148",
+    UTLS_HELLOFIREFOX_120: "hellofirefox_120",
+    UTLS_HELLOSAFARI_26_3: "hellosafari_26_3",
+    UTLS_HELLOIOS_14: "helloios_14",
+    UTLS_HELLOEDGE_106: "helloedge_106",
+    UTLS_HELLO360_11_0: "hello360_11_0",
+    UTLS_HELLOQQ_11_1: "helloqq_11_1",
 };
 
 const ALPN_OPTION = {

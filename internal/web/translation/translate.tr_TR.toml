@@ -949,7 +949,7 @@ outboundInterface = "Çıkış Arabirimi"
 outboundInterfaceDesc = "Otomatik rotaların dışında tutulan çıkış arabirimi. Xray'in otomatik seçmesi için boş bırakın"
 autoSystemDnsToGateway = "DNS'i Ağ Geçidine Yönlendir"
 autoSystemWfpBlockLeak = "WFP Sızıntı Engelleme"
-autoSystemWfpBlockLeakDesc = "Windows Filtreleme Platformu sızıntı önleme kuralları (dns, misconfigtun)"
+autoSystemWfpBlockLeakDesc = "Windows Filtreleme Platformu sızıntı önleme kuralları (all, allexceptlan, dns, misconfigtun, windnsclient, icmp, tcp, udp, portlar, CIDR önekleri)"
 
 [pages.xray.finalmask]
 tcpMasks = "TCP Maskeleri"
@@ -1178,6 +1178,7 @@ blockedSourceIPs = "Engellenen Kaynak IP'ler"
 [pages.outbounds]
 "finalRules" = "Final Rules"
 "action" = "Action"
+"delay" = "Gecikme (s)"
 "blockDelay" = "Block Delay (s)"
 "title" = "Outbounds"
 "totalUsage" = "Total Usage"

@@ -19,6 +19,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Inline Traffic Editing**: Added an interactive traffic editor directly inside both the Inbound Client edit modal (`form/client.html`, `client_modal.html`) and the Global Clients list edit modal (`clients.html`), allowing administrators to adjust upload and download counters in gigabytes (GB).
   - **Reactive Synchronization**: Connected the edit modal to `POST /panel/api/inbounds/updateClientTraffic/:email` with automatic unit conversion, live state updates, and dynamic core hot-reloading.
 
+- **Xray-core v26.11.9 Integration (26.10.31 -> 26.11.9)**:
+  - **Dependency Upgrade**: Upgraded `github.com/xtls/xray-core` from commit `a4a3dff5b20c` (`v26.10.31`) to commit `676eaf66f8f0` (`v26.11.9`), alongside `golang.org/x/net` (`v0.62.0`), `klauspost/cpuid/v2` (`v2.4.2`), `refraction-networking/utls` (`20261108164504`), and `xtls/reality` (`20261108101329`).
+  - **Modern Fingerprints & uTLS Integration**:
+    - Registered modern uTLS fingerprints in `inbound.js` and `outbound.js`, including `hellochrome_155` (new default fingerprint in Xray-core #7135), `hellochrome_133`, `hellochrome_131`, `hellochrome_120`, `hellofirefox_148`, `hellofirefox_120`, `hellosafari_26_3`, `helloios_14`, `helloedge_106`, `hello360_11_0`, and `helloqq_11_1`.
+  - **TUN Inbound Windows Filtering Platform (WFP) Leak Protection**:
+    - Significantly expanded `autoSystemWfpBlockLeak` in `tun.html` (matching Xray-core #7315) with options for `"all"`, `"allexceptlan"`, `"icmp"`, `"tcp"`, `"udp"`, ports alone (`53`, `853`), port ranges (`tcp/8000-9000`), and CIDR prefixes (e.g. `[::/0]:all`, `1.1.1.0/24:53`).
+    - Added Windows IPv6 TUN setup error handling and fallback logic (Xray-core #7325, #7332, #7341).
+  - **Direct/Freedom Outbound Final Rules**:
+    - Added native `finalRules` configuration support to `Outbound.FreedomSettings` (`outbound.js`) and Freedom form UI (`outbound.html`), supporting granular actions (`block`, `allow`), network protocols (`tcp`, `udp`), port specifications, IP matchers (`geoip:private`, CIDRs), configurable `delay` (superseding legacy `blockDelay`), and per-rule `logLevel` (`none`, `debug`, `info`, `warning`, `error`) (Xray-core #7329).
+    - Applied default safe routing policy on MASQUE inbounds.
+  - **XDRIVE Transport Google Drive Optimizations**:
+    - Google Drive backend optimizations with slot path defaults (`concurrency: 64`, `flushIntervalMs: 10`, `maxPollIntervalMs: 200`), pre-warmed spare ring pools (`warmSpares`), and Windows file sharing violation retries for local backend (Xray-core #7316, #7340, #7352).
+  - **VLESS Mux (mux.cool) Concurrency & Connection Scalability**:
+    - Increased default Mux concurrency to `128` (was `8`) and connection capacity to `1024` (was `128`) in client settings and models to optimize throughput for modern high-concurrency transports including XDRIVE, XDNS, and XHTTP (Xray-core #4231).
+  - **Log Configuration & Geodata Enhancements**:
+    - Standardized root log level support (`logLevel` alongside `loglevel`) in `config.json` and web settings.
+    - Automatic `.dat.gz` compression download support for XTLS/Xray-rules-dat assets (Xray-core #7334).
+  - **Internationalization (i18n)**:
+    - Added localized `delay` and expanded `autoSystemWfpBlockLeakDesc` across all 13 supported languages.
+  - **Docker & CI/CD Alignment**:
+    - Updated `DockerInit.sh` binary download URL to `v26.11.9`.
+    - Updated GitHub Actions release workflows (`release.yml`) for Linux and Windows to download `v26.11.9`.
+    - Updated interactive documentation (`docs.html`) mock Xray version to `v26.11.9`.
+
 - **Xray-core v26.10.31 Integration (26.10.21 -> 26.10.31)**:
   - **Dependency Upgrade**: Upgraded `github.com/xtls/xray-core` from commit `1b1647cd9ddf` (`v26.10.21`) to commit `a4a3dff5b20c` (`v26.10.31`).
   - **XHTTP Transport Enhancements**:

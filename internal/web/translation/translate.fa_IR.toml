@@ -948,7 +948,7 @@ outboundInterface = "رابط خروجی"
 outboundInterfaceDesc = "رابط خروجی مستثنا از مسیرهای خودکار. برای انتخاب خودکار توسط Xray خالی بگذارید"
 autoSystemDnsToGateway = "هدایت DNS به گیت\u200cوی"
 autoSystemWfpBlockLeak = "جلوگیری از نشت با WFP"
-autoSystemWfpBlockLeakDesc = "قوانین جلوگیری از نشت Windows Filtering Platform (شامل dns و misconfigtun)"
+autoSystemWfpBlockLeakDesc = "قوانین جلوگیری از نشت پلتفرم فیلترینگ ویندوز WFP (شامل all، allexceptlan، dns، misconfigtun، windnsclient، icmp، پورت‌ها و پیشوندهای CIDR)"
 
 [pages.xray.masque]
 address = "محدوده IP تونل (CIDR)"
@@ -1177,6 +1177,7 @@ blockedSourceIPs = "آی\u200cپی\u200cهای مبدأ مسدود شده"
 [pages.outbounds]
 "finalRules" = "قوانین نهایی"
 "action" = "اقدام"
+"delay" = "تأخیر (ثانیه)"
 "blockDelay" = "تأخیر مسدودسازی (ثانیه)"
 "title" = "خروجی‌ها"
 "totalUsage" = "مجموع مصرف"

@@ -949,7 +949,7 @@ outboundInterface = "出站介面"
 outboundInterfaceDesc = "從自動路由中排除的出站介面。留空時由 Xray 自動選擇"
 autoSystemDnsToGateway = "路由 DNS 至閘道"
 autoSystemWfpBlockLeak = "WFP 洩漏防護"
-autoSystemWfpBlockLeakDesc = "Windows 篩選平台洩漏預防規則 (dns, misconfigtun)"
+autoSystemWfpBlockLeakDesc = "Windows 篩選平台洩漏預防規則 (all, allexceptlan, dns, misconfigtun, windnsclient, icmp, tcp/udp 連接埠, CIDR 字首)"
 
 [pages.xray.finalmask]
 tcpMasks = "TCP 遮罩"
@@ -1178,6 +1178,7 @@ blockedSourceIPs = "封鎖的來源 IP"
 [pages.outbounds]
 "finalRules" = "最终规则"
 "action" = "动作"
+"delay" = "延遲 (秒)"
 "blockDelay" = "阻断延迟 (秒)"
 "title" = "出站"
 "totalUsage" = "总用量"

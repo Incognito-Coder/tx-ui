@@ -91,10 +91,17 @@
             </a-tooltip>
         </template>
         <a-select :dropdown-class-name="themeSwitcher.currentTheme" mode="tags"
-                  placeholder="dns, misconfigtun, windnsclient, tcp/port, udp/port" v-model="inbound.settings.autoSystemWfpBlockLeak">
+                  placeholder="all, allexceptlan, dns, misconfigtun, windnsclient, icmp, tcp, udp, 53, 853, tcp/8000-9000, [::/0]:all" v-model="inbound.settings.autoSystemWfpBlockLeak">
+            <a-select-option value="all">all</a-select-option>
+            <a-select-option value="allexceptlan">allexceptlan</a-select-option>
             <a-select-option value="dns">dns</a-select-option>
             <a-select-option value="misconfigtun">misconfigtun</a-select-option>
             <a-select-option value="windnsclient">windnsclient</a-select-option>
+            <a-select-option value="icmp">icmp</a-select-option>
+            <a-select-option value="tcp">tcp</a-select-option>
+            <a-select-option value="udp">udp</a-select-option>
+            <a-select-option value="53">53</a-select-option>
+            <a-select-option value="853">853</a-select-option>
         </a-select>
     </a-form-item>
 </a-form>

@@ -94,6 +94,59 @@
                         </a-form-item>
                     </a-form>
                 </template>
+
+                <!-- Switch for Final Rules -->
+                <a-form-item label='{{ i18n "pages.outbounds.finalRules" }}'>
+                    <a-switch :checked="outbound.settings.finalRules && outbound.settings.finalRules.length > 0"
+                              @change="checked => outbound.settings.finalRules = checked ? [new Outbound.FreedomSettings.FinalRule()] : []">
+                    </a-switch>
+                </a-form-item>
+
+                <!-- Add Final Rule Button -->
+                <template v-if="outbound.settings.finalRules && outbound.settings.finalRules.length > 0">
+                    <a-form-item label='{{ i18n "pages.outbounds.finalRules" }}'>
+                        <a-button @click="outbound.settings.addFinalRule()" icon="plus" size="small"
+                                  type="primary"></a-button>
+                    </a-form-item>
+
+                    <!-- Final Rule Configurations -->
+                    <a-form :colon="false" :key="'fr-' + index" :label-col="{ md: {span:8} }"
+                            :wrapper-col="{ md: {span:14} }"
+                            v-for="(rule, index) in outbound.settings.finalRules">
+                        <a-divider style="margin:0;"> {{ i18n "pages.outbounds.finalRules" }} [[ index + 1 ]]
+                            <a-icon @click="() => outbound.settings.delFinalRule(index)" style="color: rgb(255, 77, 79); cursor: pointer;"
+                                    type="delete"
+                                    v-if="outbound.settings.finalRules.length > 1"></a-icon>
+                        </a-divider>
+                        <a-form-item label='{{ i18n "pages.outbounds.action" }}'>
+                            <a-select :dropdown-class-name="themeSwitcher.currentTheme" v-model="rule.action">
+                                <a-select-option value="block">block</a-select-option>
+                                <a-select-option value="allow">allow</a-select-option>
+                            </a-select>
+                        </a-form-item>
+                        <a-form-item label='{{ i18n "pages.inbounds.network" }}'>
+                            <a-input placeholder="tcp,udp" v-model.trim="rule.network"></a-input>
+                        </a-form-item>
+                        <a-form-item label='{{ i18n "pages.inbounds.port" }}'>
+                            <a-input placeholder="53,443" v-model.trim="rule.port"></a-input>
+                        </a-form-item>
+                        <a-form-item label='IP'>
+                            <a-select :dropdown-class-name="themeSwitcher.currentTheme" mode="tags"
+                                      placeholder="10.0.0.0/8, geoip:private" v-model="rule.ip">
+                                <a-select-option value="geoip:private">geoip:private</a-select-option>
+                                <a-select-option value="geoip:cn">geoip:cn</a-select-option>
+                            </a-select>
+                        </a-form-item>
+                        <a-form-item label='{{ i18n "pages.outbounds.delay" }}' v-if="rule.action === 'block'">
+                            <a-input placeholder="30-60" v-model.trim="rule.delay"></a-input>
+                        </a-form-item>
+                        <a-form-item label='{{ i18n "pages.xray.logLevel" }}' v-if="rule.action === 'block'">
+                            <a-select :dropdown-class-name="themeSwitcher.currentTheme" v-model="rule.logLevel">
+                                <a-select-option :value="l" v-for="l in ['', 'none', 'debug', 'info', 'warning', 'error']">[[ l || 'default' ]]</a-select-option>
+                            </a-select>
+                        </a-form-item>
+                    </a-form>
+                </template>
             </template>
 
             <!-- blackhole settings -->

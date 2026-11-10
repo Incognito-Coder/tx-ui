@@ -3117,12 +3117,14 @@
             },
             logLevel: {
                 get: function () {
-                    if (!this.templateSettings || !this.templateSettings.log || !this.templateSettings.log.loglevel) return "warning";
-                    return this.templateSettings.log.loglevel;
+                    if (!this.templateSettings || !this.templateSettings.log) return "warning";
+                    return this.templateSettings.log.logLevel || this.templateSettings.log.loglevel || "warning";
                 },
                 set: function (newValue) {
                     newTemplateSettings = this.templateSettings;
+                    if (!newTemplateSettings.log) newTemplateSettings.log = {};
                     newTemplateSettings.log.loglevel = newValue;
+                    newTemplateSettings.log.logLevel = newValue;
                     this.templateSettings = newTemplateSettings;
                 }
             },

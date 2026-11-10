@@ -949,7 +949,7 @@ outboundInterface = "واجهة الخروج"
 outboundInterfaceDesc = "واجهة الخروج المستثناة من المسارات التلقائية. اتركها فارغة ليختارها Xray تلقائيًا"
 autoSystemDnsToGateway = "توجيه DNS إلى البوابة"
 autoSystemWfpBlockLeak = "منع تسريب WFP"
-autoSystemWfpBlockLeakDesc = "قواعد منصة ترشيح Windows لمنع التسريب (dns, misconfigtun)"
+autoSystemWfpBlockLeakDesc = "قواعد منصة ترشيح Windows لمنع التسريب (all, allexceptlan, dns, misconfigtun, windnsclient, icmp, tcp, udp, والمنافذ وبادئات CIDR)"
 
 [pages.xray.finalmask]
 tcpMasks = "أقنعة TCP"
@@ -1178,6 +1178,7 @@ filter = "عامل التصفية (IP المصدر)"
 [pages.outbounds]
 "finalRules" = "Final Rules"
 "action" = "Action"
+"delay" = "التأخير (ث)"
 "blockDelay" = "Block Delay (s)"
 "title" = "Outbounds"
 "totalUsage" = "Total Usage"

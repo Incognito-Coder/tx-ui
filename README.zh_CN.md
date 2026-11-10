@@ -305,7 +305,7 @@ location /sub {
 - **External Proxy 外部接入端点覆盖**：支持在 WireGuard/AmneziaWG `.conf` 配置文件 (`Endpoint = dest:port`)、`vpn://` / `wireguard://` 链接与 Telegram `tg://proxy` 链接中直接应用外部代理域名与端口。
 - **内置交互式面板 API 文档 (`/panel/docs`)**：在网页端直接浏览、检索端点、一键复制路径并查看实时 cURL 与多语言调用示例。
 - **配置状态自动与手动回滚**：前置配置测试验证、核心即时退出崩溃监控，发生异常时自动降级恢复至 `config.json.last_working` 确保服务不中断。
-- **最新 Xray-core 核心 (v26.10.31)**：完整支持 Finalmask 源 IP ACL 过滤 (`allowedSourceIPs`/`blockedSourceIPs`)、客户端分享链接自动剔除服务器端过滤、XDRIVE 传输增强（支持 S3 存储后端）、XHTTP 增强（支持 h2Params 与 OPTIONS 上行方法）及扩展 TLS 密码套件。
+- **最新 Xray-core 核心 (v26.11.9)**：集成新默认指纹 `hellochrome_155` 及现代 uTLS 指纹列表、大幅扩展 TUN 模块 WFP 防泄漏能力（支持 all、allexceptlan、icmp、独立端口、端口范围及 CIDR 前缀）、Freedom 出站 `finalRules` 支持 `delay` 与独立 `logLevel`、XDRIVE Google Drive 后端槽位与预热优化，以及提升 VLESS Mux 默认并发限制（128 / 1024）。
 - **协议密码与密钥完全独立生成与保存**：针对 Trojan、Shadowsocks 2022（严格自动修正 16/32 字节 Base64 密钥与防错）、MASQUE、Hysteria、MTProto 及 WireGuard/AmneziaWG 提供独立的凭据生成与持久化存储。
 - **已连接设备跟踪与管理**：记录每个客户端的活跃连接设备（IP、客户端软件、操作系统及最后活跃时间），支持一键清理。
 - **数据库健康诊断与维护**：面板内置 SQLite 状态体检、WAL 截断、PRAGMA 优化、空间释放 (VACUUM) 与孤立破损记录清理。
