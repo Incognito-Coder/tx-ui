@@ -5,21 +5,10 @@ All notable changes to **TX-UI** will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [v0.9.6] - 2026-11-02
+## [v0.9.7] - 2026-11-10
 
 ### 🚀 Features & Enhancements
-- **WireGuard Client Configuration & QR Code Preshared Keys**:
-  - **Interoperable PSK Delivery**: Standardized preshared key handling (`preSharedKey` and `psk`) across client configuration file downloads (`.conf`) and share link URLs.
-  - **Complete URL Query Parameters**: Added `pre_shared_key`, `preshared_key`, and `psk` URL parameters to `wireguard://` links and QR codes, ensuring compatibility across diverse client apps (v2rayN, NekoBox, Shadowrocket, Streisand, etc.).
-  - **Client Modal & Bulk Sync**: Synchronized `preSharedKey` and `psk` across client creation/edit forms, bulk client generation, and detail modal downloads.
-  - **Key Transparency**: Added Public Key, Private Key, and Preshared Key fields directly into the Client Details modal table.
-  - **Subscription Service Parity**: Ensured preshared keys are preserved in both standard URI (`subService.go`) and JSON (`subJsonService.go`) subscription outputs.
-
-- **Client Traffic Management in Edit Modals**:
-  - **Inline Traffic Editing**: Added an interactive traffic editor directly inside both the Inbound Client edit modal (`form/client.html`, `client_modal.html`) and the Global Clients list edit modal (`clients.html`), allowing administrators to adjust upload and download counters in gigabytes (GB).
-  - **Reactive Synchronization**: Connected the edit modal to `POST /panel/api/inbounds/updateClientTraffic/:email` with automatic unit conversion, live state updates, and dynamic core hot-reloading.
-
-- **Xray-core v26.11.9 Integration (26.10.31 -> 26.11.9)**:
+- **Xray-core v26.11.9 Integration & Core Alignment**:
   - **Dependency Upgrade**: Upgraded `github.com/xtls/xray-core` from commit `a4a3dff5b20c` (`v26.10.31`) to commit `676eaf66f8f0` (`v26.11.9`), alongside `golang.org/x/net` (`v0.62.0`), `klauspost/cpuid/v2` (`v2.4.2`), `refraction-networking/utls` (`20261108164504`), and `xtls/reality` (`20261108101329`).
   - **Modern Fingerprints & uTLS Integration**:
     - Registered modern uTLS fingerprints in `inbound.js` and `outbound.js`, including `hellochrome_155` (new default fingerprint in Xray-core #7135), `hellochrome_133`, `hellochrome_131`, `hellochrome_120`, `hellofirefox_148`, `hellofirefox_120`, `hellosafari_26_3`, `helloios_14`, `helloedge_106`, `hello360_11_0`, and `helloqq_11_1`.
@@ -36,12 +25,59 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Log Configuration & Geodata Enhancements**:
     - Standardized root log level support (`logLevel` alongside `loglevel`) in `config.json` and web settings.
     - Automatic `.dat.gz` compression download support for XTLS/Xray-rules-dat assets (Xray-core #7334).
-  - **Internationalization (i18n)**:
-    - Added localized `delay` and expanded `autoSystemWfpBlockLeakDesc` across all 13 supported languages.
   - **Docker & CI/CD Alignment**:
     - Updated `DockerInit.sh` binary download URL to `v26.11.9`.
     - Updated GitHub Actions release workflows (`release.yml`) for Linux and Windows to download `v26.11.9`.
     - Updated interactive documentation (`docs.html`) mock Xray version to `v26.11.9`.
+  - **Internationalization (i18n)**:
+    - Added localized `delay` and expanded `autoSystemWfpBlockLeakDesc` across all 13 supported languages.
+
+- **Telegram Bot CPU Notification Controls & Throttling**:
+  - **Dedicated Toggle Switch**: Added `tgBotCpuNotify` switch in Settings UI (`settings.html`) allowing administrators to enable or disable CPU load alert notifications sent to Telegram.
+  - **Zero-Threshold Disabling**: Setting `tgCpu` to `0` also safely disables CPU notifications, preventing continuous alert loops.
+  - **Immediate Reaction**: Enhanced `CheckCpuJob.Run()` to check bot status, `tgBotCpuNotify`, and `threshold <= 0` on each run, applying changes immediately without requiring a panel restart.
+  - **Notification Rate Limiting**: Added an alert cooldown (10-minute minimum interval between notifications) to prevent Telegram admin spam during prolonged periods of high CPU load.
+  - **Conditional Cron Registration**: Guarded `CheckCpuJob` registration on server startup in `web.go` to only schedule when `tgBotCpuNotify` is enabled and `tgCpu > 0`.
+  - **Complete 13-Locale Translations**: Added `tgBotCpuNotify` and `tgBotCpuNotifyDesc` localization across all 13 supported languages.
+
+- **Local Cross-Compilation & Multi-Platform Packaging Tooling**:
+  - **PowerShell Cross-Build Script (`build.ps1`)**: Complete cross-compilation and packaging script for Windows supporting 12 target architectures, host auto-detection, C compiler resolution (Host GCC, cross-GCC, Zig), pure Go fallback, and release packaging.
+  - **Bash Cross-Build Script (`build.sh`)**: Feature-complete cross-compilation and packaging script for Linux, macOS, WSL, and Git Bash.
+  - **GNU Makefile**: Added root `Makefile` with targets (`make build`, `make build-linux`, `make build-arm64`, `make build-windows`, `make cross`, `make package`, `make package-all`, `make test`, `make clean`).
+  - **Automated Dependency Staging**: Automatically downloads and bundles matching Xray-core (`v26.11.9`), mtg-multi (`v1.16.0`), and geodata rules (`geoip.dat`, `geosite.dat`, Iranian and Russian rule variants) into `.tar.gz` and `.zip` archives matching GitHub release structures.
+  - **Local Caching & Offline Fallback**: Caches downloaded core assets in `build/.cache/` and falls back to existing local `bin/` files for offline builds.
+  - **Windows TUN Bundling**: Automatically packages `wintun.dll` and no-window launch scripts into Windows release packages.
+  - **Documentation**: Documented local compilation and cross-compilation workflows in `README.md`.
+
+- **Client Traffic Management in Edit Modals**:
+  - **Inline Traffic Editing**: Added an interactive traffic editor directly inside both the Inbound Client edit modal (`form/client.html`, `client_modal.html`) and the Global Clients list edit modal (`clients.html`), allowing administrators to adjust upload and download counters in gigabytes (GB).
+  - **Reactive Synchronization**: Connected the edit modal to `POST /panel/api/inbounds/updateClientTraffic/:email` with automatic unit conversion, live state updates, and dynamic core hot-reloading.
+
+### 🐛 Bug Fixes
+- **Freedom Outbound Noise Deprecation & Migration**:
+  - **Warning Elimination**: Resolved Xray-core runtime deprecation warning (`WARNING - XRAY: common/errors: This feature "noises" in Freedom is deprecated, will be removed soon and being migrated to "noise" in "streamSettings.finalmask.udp"`).
+  - **Template Cleanup**: Removed deprecated empty `"noises": []` and `"fragment": {}` from `config.json` and `default.json` default templates.
+  - **Automatic Migration**: Implemented outbound normalizer in `xray.go` that automatically strips empty noise/fragment structures and migrates active Freedom noise arrays to `streamSettings.finalmask.udp` with `type: "noise"`.
+  - **Automated Verification**: Added comprehensive unit test `TestNormalizeLegacyOutboundsFreedomNoises` in `traffic_reset_test.go`.
+
+- **Depleted Client Quota Modification & Re-Enablement**:
+  - **Connection Timeout Resolution**: Resolved client connection timeouts after traffic reset and client updates for depleted users.
+  - **Dynamic Client Re-Enablement Without Core Restart**: Fixed an issue where depleted clients (`up + down >= total`) remained disconnected after increasing their `totalGb` until a full manual Xray restart.
+  - **State-Aware Hot-Syncing**: Enhanced `NodeClientService.Update` and `InboundService.UpdateClientTrafficByEmail` to track previous exhaustion state (`wasTrafficDisabled`) and dynamically add the re-enabled client back into running Xray inbounds via the `HandlerService` API (`hotAddUserToInbound`).
+
+- **Core Lifecycle & Rollback Nil-Safety**:
+  - **Nil Pointer Protection**: Guarded against nil config pointers during rollback on core restart (`refreshAPIPort`).
+  - **Config Equality Check Safety**: Ensured `p.GetConfig()` is checked for non-nil before performing equality checks in `RestartXray`, and reset restart flags when recovering with the last working configuration.
+
+## [v0.9.6] - 2026-11-02
+
+### 🚀 Features & Enhancements
+- **WireGuard Client Configuration & QR Code Preshared Keys**:
+  - **Interoperable PSK Delivery**: Standardized preshared key handling (`preSharedKey` and `psk`) across client configuration file downloads (`.conf`) and share link URLs.
+  - **Complete URL Query Parameters**: Added `pre_shared_key`, `preshared_key`, and `psk` URL parameters to `wireguard://` links and QR codes, ensuring compatibility across diverse client apps (v2rayN, NekoBox, Shadowrocket, Streisand, etc.).
+  - **Client Modal & Bulk Sync**: Synchronized `preSharedKey` and `psk` across client creation/edit forms, bulk client generation, and detail modal downloads.
+  - **Key Transparency**: Added Public Key, Private Key, and Preshared Key fields directly into the Client Details modal table.
+  - **Subscription Service Parity**: Ensured preshared keys are preserved in both standard URI (`subService.go`) and JSON (`subJsonService.go`) subscription outputs.
 
 - **Xray-core v26.10.31 Integration (26.10.21 -> 26.10.31)**:
   - **Dependency Upgrade**: Upgraded `github.com/xtls/xray-core` from commit `1b1647cd9ddf` (`v26.10.21`) to commit `a4a3dff5b20c` (`v26.10.31`).
@@ -74,9 +110,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Dynamic Inbound Client Addition (Zero Restart)**: Implemented `AddUser` support for the `wireguard` protocol in `xray/api.go` via Xray's `HandlerService` gRPC API, eliminating forced Xray restarts when adding WireGuard clients.
   - **AllowedIPs CIDR Normalization**: Guaranteed valid subnet prefixes (`/32` for IPv4, `/128` for IPv6) in WireGuard peer configurations, fixing client ping/connectivity issues caused by unadorned IP addresses.
   - **Schema Fallback Resiliency**: Added fallback between `peers` and `clients` setting keys in `GetClients`, `BuildInboundConfig`, `AddInboundClient`, and `wireguardClientsAsPeers` to prevent empty peer arrays.
-- **Depleted Client Quota Modification & Re-Enablement**:
-  - **Dynamic Client Re-Enablement Without Core Restart**: Fixed an issue where depleted clients (`up + down >= total`) remained disconnected after increasing their `totalGb` until a full manual Xray restart.
-  - **State-Aware Hot-Syncing**: Enhanced `NodeClientService.Update` and `InboundService.UpdateClientTrafficByEmail` to track previous exhaustion state (`wasTrafficDisabled`) and dynamically add the re-enabled client back into running Xray inbounds via the `HandlerService` API (`hotAddUserToInbound`).
 - **Core Lifecycle & API Port Readiness**:
   - **Eliminated Transient Connection Refusals**: Resolved `connection refused` debug errors during Xray restarts by verifying that the gRPC API port is actively accepting TCP connections before `Process.Start()` returns.
   - **Graceful Termination Wait in `Process.Stop()`**: Added process exit tracking via `doneChan` and `isStopping` flag, ensuring the terminated Xray core fully exits and releases all network ports/sockets before a new instance is spawned.
@@ -88,9 +121,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Login Secret Reactivity**: Initialized `loginSecret` in the `User` class constructor (`login.html`) to guarantee Vue reactivity and eliminated button spinner flickering on page load.
   - **Comprehensive Xray Process Nil-Guards**: Added nil-safe checks to `*xray.Process` methods and guarded live Xray API invocations across `InboundService` with `p != nil && p.IsRunning()`.
   - **API Timeout Contexts**: Added 5-second timeout contexts to `AddInbound`, `DelInbound`, and `AddUser` gRPC calls in `XrayAPI`.
-- **Config Rollback & Database Restore Nil-Safety**:
-  - Guarded `refreshAPIPort` against nil `p.config`, eliminating fatal panics (`addr=0x60`) when Xray starts directly from a configuration file on disk via `NewProcessFromConfigFile` (e.g., during automatic rollback after restoring a database backup).
-  - Ensured `p.GetConfig()` is non-nil before performing equality checks in `RestartXray`, and reset restart flags when recovering with the last working configuration.
 
 ## [v0.9.5] - 2026-10-26
 
