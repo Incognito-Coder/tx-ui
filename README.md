@@ -605,6 +605,50 @@ XUI_BIN_FOLDER="bin" XUI_DB_FOLDER="/etc/x-ui" go build main.go
 
 </details>
 
+## Building from Source & Cross Compilation
+
+You can compile TX-UI locally or cross-compile and package for multiple platforms using the build scripts:
+
+### Windows (PowerShell)
+```powershell
+# Build for current host
+.\build.ps1
+
+# Cross-compile for Linux (e.g. amd64, arm64)
+.\build.ps1 linux-amd64
+.\build.ps1 linux-arm64
+
+# Build and create full release package (.tar.gz / .zip with Xray-core, mtg, and geodata)
+.\build.ps1 linux-amd64 -Package
+.\build.ps1 windows-amd64 -Package
+
+# Build and package all supported targets
+.\build.ps1 all -Package
+
+# View all supported target architectures
+.\build.ps1 -ListTargets
+```
+
+### Linux / macOS / Bash
+```bash
+# Build for current host
+./build.sh
+
+# Cross-compile and package release
+./build.sh linux-amd64 --package
+./build.sh all --package
+```
+
+### Using Make
+```bash
+make build          # Build for host
+make build-linux    # Cross-compile for linux-amd64
+make build-arm64    # Cross-compile for linux-arm64
+make cross          # Build linux-amd64, linux-arm64, windows-amd64
+make package        # Build and bundle release package for host
+make package-all    # Build and bundle release packages for all targets
+```
+
 ## Subscription UI
 
 You can use this repository to create a subscription UI for your
