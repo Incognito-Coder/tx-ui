@@ -415,7 +415,10 @@
                                 <setting-list-item desc='{{ i18n "pages.settings.tgNotifyLoginDesc" }}' title='{{ i18n "pages.settings.tgNotifyLogin" }}'
                                                    type="switch"
                                                    v-model="allSetting.tgBotLoginNotify"></setting-list-item>
-                                <setting-list-item :max="100" :min="0"
+                                <setting-list-item desc='{{ i18n "pages.settings.tgBotCpuNotifyDesc" }}' title='{{ i18n "pages.settings.tgBotCpuNotify" }}'
+                                                   type="switch"
+                                                   v-model="allSetting.tgBotCpuNotify"></setting-list-item>
+                                <setting-list-item v-if="allSetting.tgBotCpuNotify" :max="100" :min="0"
                                                    desc='{{ i18n "pages.settings.tgNotifyCpuDesc" }}'
                                                    title='{{ i18n "pages.settings.tgNotifyCpu" }}' type="number" v-model="allSetting.tgCpu"></setting-list-item>
                                 <setting-list-item desc='{{ i18n "pages.settings.telegramProxyDesc"}}' placeholder="socks5://user:pass@host:port"

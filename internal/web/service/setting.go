@@ -50,6 +50,7 @@ var defaultValueMap = map[string]string{
 	"tgRunTime":           "@daily",
 	"tgBotBackup":         "false",
 	"tgBotLoginNotify":    "true",
+	"tgBotCpuNotify":      "true",
 	"tgCpu":               "80",
 	"tgLang":              "en-US",
 	"secretEnable":        "false",
@@ -340,6 +341,14 @@ func (s *SettingService) GetTgBotBackup() (bool, error) {
 
 func (s *SettingService) GetTgBotLoginNotify() (bool, error) {
 	return s.getBool("tgBotLoginNotify")
+}
+
+func (s *SettingService) GetTgBotCpuNotify() (bool, error) {
+	return s.getBool("tgBotCpuNotify")
+}
+
+func (s *SettingService) SetTgBotCpuNotify(value bool) error {
+	return s.setBool("tgBotCpuNotify", value)
 }
 
 func (s *SettingService) GetTgCpu() (int, error) {

@@ -442,8 +442,9 @@ func (s *Server) startTask() {
 		s.cron.AddJob("@every 2m", job.NewCheckHashStorageJob())
 
 		// Check CPU load and alarm to TgBot if threshold passes
+		cpuNotify, _ := s.settingService.GetTgBotCpuNotify()
 		cpuThreshold, err := s.settingService.GetTgCpu()
-		if (err == nil) && (cpuThreshold > 0) {
+		if (err == nil) && cpuNotify && (cpuThreshold > 0) {
 			s.cron.AddJob("@every 10s", cron.SkipIfStillRunning(cron.DefaultLogger)(job.NewCheckCpuJob()))
 		}
 	} else {

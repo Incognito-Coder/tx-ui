@@ -40,6 +40,7 @@ type AllSetting struct {
 	TgRunTime        string `json:"tgRunTime" form:"tgRunTime"`
 	TgBotBackup      bool   `json:"tgBotBackup" form:"tgBotBackup"`
 	TgBotLoginNotify bool   `json:"tgBotLoginNotify" form:"tgBotLoginNotify"`
+	TgBotCpuNotify   bool   `json:"tgBotCpuNotify" form:"tgBotCpuNotify"`
 	TgCpu            int    `json:"tgCpu" form:"tgCpu"`
 	TgLang           string `json:"tgLang" form:"tgLang"`
 	TimeLocation     string `json:"timeLocation" form:"timeLocation"`

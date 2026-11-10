@@ -446,3 +446,41 @@ func TestNormalizeLegacyOutboundsFreedomNoises(t *testing.T) {
 		t.Errorf("expected mask type 'noise', got %v", mask["type"])
 	}
 }
+
+func TestTgBotCpuNotifySetting(t *testing.T) {
+	setupTestDB(t)
+
+	settingService := &SettingService{}
+
+	// Default should be true
+	enabled, err := settingService.GetTgBotCpuNotify()
+	if err != nil {
+		t.Fatalf("GetTgBotCpuNotify failed: %v", err)
+	}
+	if !enabled {
+		t.Errorf("expected default TgBotCpuNotify to be true, got false")
+	}
+
+	// Disable it
+	if err := settingService.SetTgBotCpuNotify(false); err != nil {
+		t.Fatalf("SetTgBotCpuNotify failed: %v", err)
+	}
+
+	// Verify it returns false
+	enabled, err = settingService.GetTgBotCpuNotify()
+	if err != nil {
+		t.Fatalf("GetTgBotCpuNotify after disable failed: %v", err)
+	}
+	if enabled {
+		t.Errorf("expected TgBotCpuNotify to be false, got true")
+	}
+
+	// Verify GetAllSetting reflects the disabled state
+	allSetting, err := settingService.GetAllSetting()
+	if err != nil {
+		t.Fatalf("GetAllSetting failed: %v", err)
+	}
+	if allSetting.TgBotCpuNotify {
+		t.Errorf("expected allSetting.TgBotCpuNotify to be false, got true")
+	}
+}
