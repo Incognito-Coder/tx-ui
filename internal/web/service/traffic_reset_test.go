@@ -401,3 +401,48 @@ func TestExhaustedUserUpdateThenResetTrafficSequence(t *testing.T) {
 		t.Fatalf("BuildInboundConfig excluded the reset client! settings=%s", string(cfg.Settings))
 	}
 }
+
+func TestNormalizeLegacyOutboundsFreedomNoises(t *testing.T) {
+	// 1. Empty noises array is stripped
+	inputEmpty := []byte(`[{"protocol":"freedom","tag":"direct","settings":{"domainStrategy":"AsIs","noises":[],"fragment":{}}}]`)
+	normalized, err := normalizeLegacyOutbounds(inputEmpty)
+	if err != nil {
+		t.Fatalf("normalizeLegacyOutbounds failed: %v", err)
+	}
+	var out []map[string]interface{}
+	if err := json.Unmarshal(normalized, &out); err != nil {
+		t.Fatalf("failed to unmarshal result: %v", err)
+	}
+	settings := out[0]["settings"].(map[string]interface{})
+	if _, exists := settings["noises"]; exists {
+		t.Errorf("expected 'noises' to be removed from freedom settings")
+	}
+	if _, exists := settings["fragment"]; exists {
+		t.Errorf("expected 'fragment' to be removed from freedom settings")
+	}
+
+	// 2. Active noises are migrated to streamSettings.finalmask.udp
+	inputActive := []byte(`[{"protocol":"freedom","tag":"direct","settings":{"noises":[{"type":"rand","packet":"10-20","delay":"10-16"}]}}]`)
+	normActive, err := normalizeLegacyOutbounds(inputActive)
+	if err != nil {
+		t.Fatalf("normalizeLegacyOutbounds active failed: %v", err)
+	}
+	var outActive []map[string]interface{}
+	if err := json.Unmarshal(normActive, &outActive); err != nil {
+		t.Fatalf("failed to unmarshal result: %v", err)
+	}
+	activeSettings := outActive[0]["settings"].(map[string]interface{})
+	if _, exists := activeSettings["noises"]; exists {
+		t.Errorf("expected 'noises' to be deleted after migration")
+	}
+	streamSettings := outActive[0]["streamSettings"].(map[string]interface{})
+	finalmask := streamSettings["finalmask"].(map[string]interface{})
+	udp := finalmask["udp"].([]interface{})
+	if len(udp) != 1 {
+		t.Fatalf("expected 1 udp mask, got %d", len(udp))
+	}
+	mask := udp[0].(map[string]interface{})
+	if mask["type"] != "noise" {
+		t.Errorf("expected mask type 'noise', got %v", mask["type"])
+	}
+}

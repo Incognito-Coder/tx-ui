@@ -347,6 +347,73 @@ func normalizeLegacyOutbounds(raw json_util.RawMessage) (json_util.RawMessage, e
 					changed = true
 				}
 			}
+		} else if protocol == "freedom" {
+			settings, ok := outbound["settings"].(map[string]interface{})
+			if ok {
+				if noises, hasNoises := settings["noises"]; hasNoises {
+					if nList, ok := noises.([]interface{}); ok && len(nList) == 0 {
+						delete(settings, "noises")
+						changed = true
+					} else if noises == nil {
+						delete(settings, "noises")
+						changed = true
+					} else if nList, ok := noises.([]interface{}); ok && len(nList) > 0 {
+						// Migrate legacy Freedom noises to streamSettings.finalmask.udp
+						var maskItems []interface{}
+						for _, item := range nList {
+							if m, ok := item.(map[string]interface{}); ok {
+								noiseItem := map[string]interface{}{}
+								t, _ := m["type"].(string)
+								pkt, _ := m["packet"].(string)
+								delay, _ := m["delay"].(string)
+								if delay != "" {
+									noiseItem["delay"] = delay
+								}
+								if t == "rand" && pkt != "" {
+									noiseItem["rand"] = pkt
+								} else if t != "" {
+									noiseItem["type"] = t
+									if pkt != "" {
+										noiseItem["packet"] = pkt
+									}
+								}
+								maskItems = append(maskItems, noiseItem)
+							}
+						}
+						if len(maskItems) > 0 {
+							streamSettings, _ := outbound["streamSettings"].(map[string]interface{})
+							if streamSettings == nil {
+								streamSettings = map[string]interface{}{}
+								outbound["streamSettings"] = streamSettings
+							}
+							finalmask, _ := streamSettings["finalmask"].(map[string]interface{})
+							if finalmask == nil {
+								finalmask = map[string]interface{}{}
+								streamSettings["finalmask"] = finalmask
+							}
+							udp, _ := finalmask["udp"].([]interface{})
+							udp = append(udp, map[string]interface{}{
+								"type": "noise",
+								"settings": map[string]interface{}{
+									"noise": maskItems,
+								},
+							})
+							finalmask["udp"] = udp
+						}
+						delete(settings, "noises")
+						changed = true
+					}
+				}
+				if fragment, hasFragment := settings["fragment"]; hasFragment {
+					if fMap, ok := fragment.(map[string]interface{}); ok && len(fMap) == 0 {
+						delete(settings, "fragment")
+						changed = true
+					} else if fragment == nil {
+						delete(settings, "fragment")
+						changed = true
+					}
+				}
+			}
 		}
 		if streamSettings, ok := outbound["streamSettings"].(map[string]interface{}); ok {
 			if NormalizeStreamSettings(streamSettings) {
