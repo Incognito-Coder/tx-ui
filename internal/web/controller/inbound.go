@@ -210,6 +210,9 @@ func (a *InboundController) addInboundClient(c *gin.Context) {
 	jsonMsg(c, "Client(s) added", nil)
 	if needRestart {
 		a.xrayService.SetToNeedRestart()
+		go func() {
+			_ = a.xrayService.RestartXray(true)
+		}()
 	}
 }
 
@@ -231,6 +234,9 @@ func (a *InboundController) delInboundClient(c *gin.Context) {
 	jsonMsg(c, "Client deleted", nil)
 	if needRestart {
 		a.xrayService.SetToNeedRestart()
+		go func() {
+			_ = a.xrayService.RestartXray(true)
+		}()
 	}
 }
 
@@ -254,6 +260,9 @@ func (a *InboundController) updateInboundClient(c *gin.Context) {
 	jsonMsg(c, "Client updated", nil)
 	if needRestart {
 		a.xrayService.SetToNeedRestart()
+		go func() {
+			_ = a.xrayService.RestartXray(true)
+		}()
 	}
 }
 
@@ -273,6 +282,9 @@ func (a *InboundController) resetClientTraffic(c *gin.Context) {
 	jsonMsg(c, "Traffic has been reset", nil)
 	if needRestart {
 		a.xrayService.SetToNeedRestart()
+		go func() {
+			_ = a.xrayService.RestartXray(true)
+		}()
 	}
 }
 
@@ -411,6 +423,9 @@ func (a *InboundController) delInboundClientByEmail(c *gin.Context) {
 	jsonMsg(c, "Client deleted successfully", nil)
 	if needRestart {
 		a.xrayService.SetToNeedRestart()
+		go func() {
+			_ = a.xrayService.RestartXray(true)
+		}()
 	}
 }
 

@@ -122,6 +122,9 @@ func (a *NodeClientController) create(c *gin.Context) {
 
 	if needRestart {
 		a.xrayService.SetToNeedRestart()
+		go func() {
+			_ = a.xrayService.RestartXray(true)
+		}()
 	}
 	jsonMsg(c, "Client created", nil)
 }
@@ -164,6 +167,9 @@ func (a *NodeClientController) bulkCreate(c *gin.Context) {
 
 	if needRestart {
 		a.xrayService.SetToNeedRestart()
+		go func() {
+			_ = a.xrayService.RestartXray(true)
+		}()
 	}
 	jsonMsg(c, fmt.Sprintf("Successfully created %d clients", len(req.Clients)), nil)
 }
@@ -201,6 +207,9 @@ func (a *NodeClientController) setLinks(c *gin.Context) {
 
 	if needRestart {
 		a.xrayService.SetToNeedRestart()
+		go func() {
+			_ = a.xrayService.RestartXray(true)
+		}()
 	}
 	jsonMsg(c, "Links updated", nil)
 }
@@ -256,6 +265,9 @@ func (a *NodeClientController) bulkSetLinks(c *gin.Context) {
 
 	if needRestart {
 		a.xrayService.SetToNeedRestart()
+		go func() {
+			_ = a.xrayService.RestartXray(true)
+		}()
 	}
 	jsonMsg(c, fmt.Sprintf("Successfully updated links for %d clients", len(req.ClientIds)), nil)
 }
@@ -267,6 +279,9 @@ func (a *NodeClientController) resetAllTraffics(c *gin.Context) {
 		return
 	}
 	a.xrayService.SetToNeedRestart()
+	go func() {
+		_ = a.xrayService.RestartXray(true)
+	}()
 	jsonMsg(c, "All client traffic reset", nil)
 }
 
@@ -278,6 +293,9 @@ func (a *NodeClientController) delDepleted(c *gin.Context) {
 	}
 	if needRestart {
 		a.xrayService.SetToNeedRestart()
+		go func() {
+			_ = a.xrayService.RestartXray(true)
+		}()
 	}
 	jsonMsg(c, "Depleted clients deleted", nil)
 }
@@ -492,6 +510,9 @@ func (a *NodeClientController) update(c *gin.Context) {
 
 	if needRestart {
 		a.xrayService.SetToNeedRestart()
+		go func() {
+			_ = a.xrayService.RestartXray(true)
+		}()
 	}
 	jsonMsg(c, "Node client updated", nil)
 }
@@ -511,6 +532,9 @@ func (a *NodeClientController) del(c *gin.Context) {
 
 	if needRestart {
 		a.xrayService.SetToNeedRestart()
+		go func() {
+			_ = a.xrayService.RestartXray(true)
+		}()
 	}
 	jsonMsg(c, "Node client deleted", nil)
 }
@@ -553,6 +577,9 @@ func (a *NodeClientController) bulkDel(c *gin.Context) {
 
 	if needRestart {
 		a.xrayService.SetToNeedRestart()
+		go func() {
+			_ = a.xrayService.RestartXray(true)
+		}()
 	}
 	jsonMsg(c, "Node clients deleted", nil)
 }
@@ -657,6 +684,9 @@ func (a *NodeClientController) resetTraffic(c *gin.Context) {
 
 	if needsRestart {
 		a.xrayService.SetToNeedRestart()
+		go func() {
+			_ = a.xrayService.RestartXray(true)
+		}()
 	}
 	jsonMsg(c, "Traffic reset", nil)
 }
@@ -676,6 +706,9 @@ func (a *NodeClientController) toggle(c *gin.Context) {
 
 	if needRestart {
 		a.xrayService.SetToNeedRestart()
+		go func() {
+			_ = a.xrayService.RestartXray(true)
+		}()
 	}
 	jsonMsg(c, "Node client toggled", nil)
 }

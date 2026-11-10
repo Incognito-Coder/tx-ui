@@ -479,8 +479,20 @@ func (s *NodeClientService) Update(nc *model.NodeClient) (bool, error) {
 		Count(&disabledCount)
 	wasTrafficDisabled := disabledCount > 0
 
+	trafficUpdates["node_client_id"] = nc.Id
+	trafficWhere := "node_client_id = ?"
+	trafficArgs := []interface{}{nc.Id}
+	if oldNC.Email != "" {
+		trafficWhere += " OR LOWER(email) = LOWER(?)"
+		trafficArgs = append(trafficArgs, oldNC.Email)
+	}
+	if nc.Email != "" && !strings.EqualFold(nc.Email, oldNC.Email) {
+		trafficWhere += " OR LOWER(email) = LOWER(?)"
+		trafficArgs = append(trafficArgs, nc.Email)
+	}
+
 	if err := tx.Model(&xray.ClientTraffic{}).
-		Where("node_client_id = ?", nc.Id).
+		Where(trafficWhere, trafficArgs...).
 		Updates(trafficUpdates).Error; err != nil {
 		tx.Rollback()
 		return false, err
@@ -504,7 +516,7 @@ func (s *NodeClientService) Update(nc *model.NodeClient) (bool, error) {
 					flow = nc.Flow
 				}
 				removeClientFromInboundSettings(&inbound, oldNC.Email, oldNC.UUID, oldNC.Password, oldNC.Auth)
-				if nc.Enable && trafficEnable {
+				if nc.Enable {
 					addClientToInboundSettings(&inbound, nc, flow)
 				}
 				_ = tx.Model(&model.Inbound{}).Where("id = ?", inbound.Id).Update("settings", inbound.Settings).Error
@@ -935,7 +947,7 @@ func updateClientFlowInInboundSettings(inbound *model.Inbound, email, uuid, newF
 // Returns true if Xray needs to be restarted (e.g. API error or non-API protocol).
 func (s *NodeClientService) hotAddUserToInbound(xrayApi *xray.XrayAPI, inbound *model.Inbound, nc *model.NodeClient, flow string) bool {
 	if inbound.Protocol == model.MTProto || inbound.Protocol == model.AmneziaWG || inbound.Protocol == "mtproto" || inbound.Protocol == "amneziawg" {
-		return false
+		return true
 	}
 	if !inbound.Enable || !nc.Enable {
 		return false
@@ -974,7 +986,7 @@ func (s *NodeClientService) hotAddUserToInbound(xrayApi *xray.XrayAPI, inbound *
 		if m, ok := settings["method"].(string); ok {
 			if xray.IsShadowsocks2022SingleUserOnly(m) {
 				// 2022-blake3-chacha20-poly1305 is strictly single-user, cannot hot-add clients
-				return false
+				return true
 			}
 			cipher = m
 			if length := xray.Shadowsocks2022KeyLength(m); length > 0 {
@@ -1057,7 +1069,7 @@ func (s *NodeClientService) hotAddUserToInbound(xrayApi *xray.XrayAPI, inbound *
 // Returns true if Xray needs to be restarted (e.g. API error or non-API protocol).
 func (s *NodeClientService) hotRemoveUserFromInbound(xrayApi *xray.XrayAPI, inbound *model.Inbound, email string) bool {
 	if inbound.Protocol == model.MTProto || inbound.Protocol == model.AmneziaWG || inbound.Protocol == "mtproto" || inbound.Protocol == "amneziawg" {
-		return false
+		return true
 	}
 	err := xrayApi.RemoveUser(inbound.Tag, email)
 	if err != nil {
@@ -1609,42 +1621,80 @@ func (s *NodeClientService) resetTrafficUnlocked(nodeClientId int) (bool, error)
 	}
 
 	needRestart := false
-	if reEnabled && p != nil && p.IsRunning() {
-		var xrayApi xray.XrayAPI
-		if err := xrayApi.Init(p.GetAPIPort()); err != nil {
-			needRestart = true
-		} else {
-			defer xrayApi.Close()
-			links, _ := s.GetLinks(nodeClientId)
-			for _, l := range links {
-				var inbound model.Inbound
-				if err := db.First(&inbound, l.InboundId).Error; err == nil {
-					flow := l.Flow
-					if flow == "" {
-						flow = nc.Flow
-					}
-					if s.hotAddUserToInbound(&xrayApi, &inbound, &nc, flow) {
-						needRestart = true
+	if reEnabled {
+		links, _ := s.GetLinks(nodeClientId)
+		for _, l := range links {
+			var inbound model.Inbound
+			if err := db.First(&inbound, l.InboundId).Error; err == nil {
+				flow := l.Flow
+				if flow == "" {
+					flow = nc.Flow
+				}
+				if nc.Enable {
+					if addClientToInboundSettings(&inbound, &nc, flow) {
+						_ = db.Model(&model.Inbound{}).Where("id = ?", inbound.Id).Update("settings", inbound.Settings).Error
 					}
 				}
 			}
-			if syncClients && len(siblingNCs) > 0 {
-				for _, snc := range siblingNCs {
-					slinks, _ := s.GetLinks(snc.Id)
-					for _, sl := range slinks {
-						var inbound model.Inbound
-						if err := db.First(&inbound, sl.InboundId).Error; err == nil {
-							flow := sl.Flow
-							if flow == "" {
-								flow = snc.Flow
-							}
-							if s.hotAddUserToInbound(&xrayApi, &inbound, &snc, flow) {
-								needRestart = true
+		}
+		if syncClients && len(siblingNCs) > 0 {
+			for _, snc := range siblingNCs {
+				slinks, _ := s.GetLinks(snc.Id)
+				for _, sl := range slinks {
+					var inbound model.Inbound
+					if err := db.First(&inbound, sl.InboundId).Error; err == nil {
+						flow := sl.Flow
+						if flow == "" {
+							flow = snc.Flow
+						}
+						if snc.Enable {
+							if addClientToInboundSettings(&inbound, &snc, flow) {
+								_ = db.Model(&model.Inbound{}).Where("id = ?", inbound.Id).Update("settings", inbound.Settings).Error
 							}
 						}
 					}
 				}
 			}
+		}
+
+		if p != nil && p.IsRunning() {
+			var xrayApi xray.XrayAPI
+			if err := xrayApi.Init(p.GetAPIPort()); err != nil {
+				needRestart = true
+			} else {
+				defer xrayApi.Close()
+				for _, l := range links {
+					var inbound model.Inbound
+					if err := db.First(&inbound, l.InboundId).Error; err == nil {
+						flow := l.Flow
+						if flow == "" {
+							flow = nc.Flow
+						}
+						if s.hotAddUserToInbound(&xrayApi, &inbound, &nc, flow) {
+							needRestart = true
+						}
+					}
+				}
+				if syncClients && len(siblingNCs) > 0 {
+					for _, snc := range siblingNCs {
+						slinks, _ := s.GetLinks(snc.Id)
+						for _, sl := range slinks {
+							var inbound model.Inbound
+							if err := db.First(&inbound, sl.InboundId).Error; err == nil {
+								flow := sl.Flow
+								if flow == "" {
+									flow = snc.Flow
+								}
+								if s.hotAddUserToInbound(&xrayApi, &inbound, &snc, flow) {
+									needRestart = true
+								}
+							}
+						}
+					}
+				}
+			}
+		} else {
+			needRestart = true
 		}
 	}
 

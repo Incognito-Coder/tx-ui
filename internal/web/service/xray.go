@@ -445,6 +445,7 @@ func (s *XrayService) RestartXray(isForce bool) error {
 	if currentTpl, tplErr := s.settingService.GetXrayConfigTemplate(); tplErr == nil && currentTpl != "" {
 		_ = s.settingService.SetLastWorkingXrayConfigTemplate(currentTpl)
 	}
+	isNeedXrayRestart.Store(false)
 
 	return nil
 }

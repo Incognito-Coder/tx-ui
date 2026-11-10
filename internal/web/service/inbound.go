@@ -2002,6 +2002,19 @@ func (s *InboundService) UpdateInboundClient(data *model.Inbound, clientId strin
 						cipher = m
 					}
 				}
+				pwd := clients[0].Password
+				if oldInbound.Protocol == "shadowsocks" && clients[0].SSPassword != "" {
+					pwd = clients[0].SSPassword
+				}
+				pass := clients[0].Pass
+				if oldInbound.Protocol == "masque" {
+					if clients[0].MasquePass != "" {
+						pass = clients[0].MasquePass
+						pwd = clients[0].MasquePass
+					} else if pass != "" {
+						pwd = pass
+					}
+				}
 				err1 := s.xrayApi.AddUser(string(oldInbound.Protocol), oldInbound.Tag, map[string]interface{}{
 					"email":        clients[0].Email,
 					"id":           clients[0].ID,
@@ -2014,17 +2027,24 @@ func (s *InboundService) UpdateInboundClient(data *model.Inbound, clientId strin
 					"security":     clients[0].Security,
 					"flow":         clients[0].Flow,
 					"auth":         clients[0].Auth,
-					"password":     clients[0].Password,
+					"password":     pwd,
+					"pass":         pass,
 					"cipher":       cipher,
 				})
 				if err1 == nil {
 					logger.Debug("Client edited by api:", clients[0].Email)
 				} else {
-					logger.Debug("Error in adding client by api:", err1)
-					needRestart = true
+					if strings.Contains(err1.Error(), "already exists") {
+						logger.Debug("User already exists in Xray:", clients[0].Email)
+					} else {
+						logger.Debug("Error in adding client by api:", err1)
+						needRestart = true
+					}
 				}
 			}
 			s.xrayApi.Close()
+		} else if oldInbound.Protocol == "amneziawg" || oldInbound.Protocol == "mtproto" || oldInbound.Protocol == model.AmneziaWG || oldInbound.Protocol == model.MTProto {
+			needRestart = true
 		}
 	} else {
 		logger.Debug("Client old email not found")
@@ -3326,7 +3346,7 @@ func (s *InboundService) AddClientStat(tx *gorm.DB, inboundId int, client *model
 
 func (s *InboundService) UpdateClientStat(tx *gorm.DB, email string, client *model.Client) error {
 	result := tx.Model(xray.ClientTraffic{}).
-		Where("email = ?", email).
+		Where("LOWER(email) = LOWER(?)", email).
 		Updates(map[string]interface{}{
 			"enable":      client.Enable,
 			"email":       client.Email,
@@ -3372,7 +3392,7 @@ func (s *InboundService) GetClientInboundByTrafficID(trafficId int) (traffic *xr
 func (s *InboundService) GetClientInboundByEmail(email string) (traffic *xray.ClientTraffic, inbound *model.Inbound, err error) {
 	db := database.GetDB()
 	var traffics []*xray.ClientTraffic
-	err = db.Model(xray.ClientTraffic{}).Where("email = ?", email).Find(&traffics).Error
+	err = db.Model(xray.ClientTraffic{}).Where("LOWER(email) = LOWER(?)", email).Find(&traffics).Error
 	if err != nil {
 		logger.Warningf("Error retrieving ClientTraffic with email %s: %v", email, err)
 		return nil, nil, err
@@ -3896,48 +3916,6 @@ func (s *InboundService) ResetClientTraffic(id int, clientEmail string) (bool, e
 		inboundId = traffic.InboundId
 	}
 
-	if !traffic.Enable && inboundId > 0 {
-		inbound, err := s.GetInbound(inboundId)
-		if err == nil {
-			clients, err := s.GetClients(inbound)
-			if err == nil {
-				for _, client := range clients {
-					if client.Email == clientEmail && client.Enable {
-						if p != nil && p.IsRunning() {
-							s.xrayApi.Init(p.GetAPIPort())
-							cipher := ""
-							if string(inbound.Protocol) == "shadowsocks" {
-								var oldSettings map[string]interface{}
-								_ = json.Unmarshal([]byte(inbound.Settings), &oldSettings)
-								if m, ok := oldSettings["method"].(string); ok {
-									cipher = m
-								}
-							}
-							err1 := s.xrayApi.AddUser(string(inbound.Protocol), inbound.Tag, map[string]interface{}{
-								"email":    client.Email,
-								"id":       client.ID,
-								"security": client.Security,
-								"flow":     client.Flow,
-								"password": client.Password,
-								"cipher":   cipher,
-							})
-							if err1 == nil {
-								logger.Debug("Client enabled due to reset traffic:", clientEmail)
-							} else {
-								logger.Debug("Error in enabling client by api:", err1)
-								needRestart = true
-							}
-							s.xrayApi.Close()
-						} else {
-							needRestart = true
-						}
-						break
-					}
-				}
-			}
-		}
-	}
-
 	tx := db.Begin()
 	defer func() {
 		if r := recover(); r != nil {
@@ -3955,6 +3933,81 @@ func (s *InboundService) ResetClientTraffic(id int, clientEmail string) (bool, e
 
 	if err := tx.Commit().Error; err != nil {
 		return false, err
+	}
+
+	if inboundId > 0 {
+		inbound, err := s.GetInbound(inboundId)
+		if err == nil {
+			if inbound.Protocol == model.MTProto || inbound.Protocol == model.AmneziaWG || inbound.Protocol == "mtproto" || inbound.Protocol == "amneziawg" {
+				needRestart = true
+			} else {
+				clients, err := s.GetClients(inbound)
+				if err == nil {
+					for _, client := range clients {
+						if strings.EqualFold(client.Email, clientEmail) {
+							if p != nil && p.IsRunning() {
+								s.xrayApi.Init(p.GetAPIPort())
+								cipher := ""
+								if string(inbound.Protocol) == "shadowsocks" {
+									var oldSettings map[string]interface{}
+									_ = json.Unmarshal([]byte(inbound.Settings), &oldSettings)
+									if m, ok := oldSettings["method"].(string); ok {
+										cipher = m
+									}
+								}
+								pwd := client.Password
+								if inbound.Protocol == model.Shadowsocks && client.SSPassword != "" {
+									pwd = client.SSPassword
+								}
+								pass := client.Pass
+								if inbound.Protocol == model.Masque {
+									if client.MasquePass != "" {
+										pass = client.MasquePass
+										pwd = client.MasquePass
+									} else if pass != "" {
+										pwd = pass
+									}
+								}
+								psk := client.PreSharedKey
+								if psk == "" {
+									psk = client.Psk
+								}
+								err1 := s.xrayApi.AddUser(string(inbound.Protocol), inbound.Tag, map[string]interface{}{
+									"email":        client.Email,
+									"id":           client.ID,
+									"publicKey":    client.PublicKey,
+									"privateKey":   client.PrivateKey,
+									"allowedIPs":   client.AllowedIPs,
+									"psk":          psk,
+									"preSharedKey": psk,
+									"keepAlive":    strconv.Itoa(client.KeepAlive),
+									"security":     client.Security,
+									"flow":         client.Flow,
+									"auth":         client.Auth,
+									"password":     pwd,
+									"pass":         pass,
+									"cipher":       cipher,
+								})
+								if err1 == nil {
+									logger.Debug("Client enabled due to reset traffic:", clientEmail)
+								} else {
+									if strings.Contains(err1.Error(), "already exists") {
+										logger.Debug("Client already exists in Xray:", clientEmail)
+									} else {
+										logger.Debug("Error in enabling client by api:", err1)
+										needRestart = true
+									}
+								}
+								s.xrayApi.Close()
+							} else {
+								needRestart = true
+							}
+							break
+						}
+					}
+				}
+			}
+		}
 	}
 
 	if needRestart {
@@ -4217,7 +4270,7 @@ func (s *InboundService) GetClientTrafficByEmail(email string) (traffic *xray.Cl
 	db := database.GetDB()
 	var traffics []*xray.ClientTraffic
 
-	err = db.Model(xray.ClientTraffic{}).Where("email = ?", email).Find(&traffics).Error
+	err = db.Model(xray.ClientTraffic{}).Where("LOWER(email) = LOWER(?)", email).Find(&traffics).Error
 	if err != nil {
 		logger.Warningf("Error retrieving ClientTraffic with email %s: %v", email, err)
 		return nil, err
