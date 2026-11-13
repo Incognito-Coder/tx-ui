@@ -300,6 +300,14 @@ location /sub {
 
 ## Features
 
+- **内置订阅模版实时编辑器与即时预览**：集成 CodeMirror 代码编辑器与即时沙盒预览 iframe (`/previewSubTemplate`)，支持 HTML 与 Go 模板高亮、语法校验及热更新无需重启。
+- **PostgreSQL 多引擎数据库支持 (GORM)**：全面支持 PostgreSQL 与 SQLite 双引擎，具备高性能连接池，支持通过 `XUI_DB_TYPE=postgres`、环境变量或命令行交互菜单 (`x-ui database`) 快速切换。
+- **多管理员权限管理 (RBAC) 与入站范围控制**：支持 `admin`、`staff` 和 `viewer` 分级角色、入站范围隔离 (`AllowedInbounds`)、细粒度操作权限（备份/恢复、Xray 核心控制、Geo 更新、流量重置）与只读保护，配备独立 403 页面。
+- **客户端直连 URI 与二维码快捷复制**：只读与普通员工可直接从客户端表格中一键复制连接 URI (`vless://`、`vmess://`、`trojan://`、`wg://` 等) 或查看单入站/多入站二维码。
+- **WireGuard 出站配置解析 (`wireguard://` 与 `.conf`)**：出站弹窗原生支持直接上传 `.conf` 配置文件并自动提取各项参数。
+- **一键恢复出厂设置 (Factory Reset)**：支持通过命令行 `x-ui reset`（脚本选项 28）或网页端数据库维护一键重置，自动销毁所有活动会话并重定向登录。
+- **CGO_ENABLED=0 纯 Go SQLite 双驱动架构**：通过编译标签自动适配（无 CGO 时采用 `glebarez/sqlite`），彻底解决交叉编译无 C 编译器时的运行时 stub 报错。
+- **现代化流畅 UI、对比度与动画优化**：护眼柔和浅色主题 (`#e8edf4`)、高对比度禁用按钮显示、卡片式多选权限网格与平滑过渡动画。
 - **支持 AmneziaWG (AWG 3.1) 协议**：原生内核与运行时集成、可配置抗深度包检测 (DPI) 垃圾包混淆 (`jc`, `jmin`, `jmax`, `s1`-`s4`, `h1`-`h4`)、RFC 7748 Curve25519 密钥对生成、一键导出 `.conf` 客户端配置文件及 `vpn://` / `wireguard://` 分享链接与二维码。
 - **集成 FakeTLS 的 MTProto 代理**：原生集成 `mtg` 多租户边车进程管理器、自动化 FakeTLS 域名伪装密钥生成 (`ee...`/`dd...`)、一键生成 Telegram 专属直连链接 (`tg://proxy`, `t.me/proxy`) 及二维码。
 - **External Proxy 外部接入端点覆盖**：支持在 WireGuard/AmneziaWG `.conf` 配置文件 (`Endpoint = dest:port`)、`vpn://` / `wireguard://` 链接与 Telegram `tg://proxy` 链接中直接应用外部代理域名与端口。

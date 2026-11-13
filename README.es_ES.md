@@ -306,6 +306,14 @@ Nuestra plataforma ofrece compatibilidad con una amplia gama de arquitecturas y 
 
 ## Características
 
+- **Editor en Vivo de Plantillas de Suscripción en el Panel**: Editor de código integrado con vista previa en tiempo real en iframe seguro (`/previewSubTemplate`), resaltado de sintaxis Go Template y HTML, validación de sintaxis y aplicación instantánea sin reiniciar.
+- **Soporte Multimotor para Bases de Datos PostgreSQL (GORM)**: Soporte completo para PostgreSQL junto con SQLite, con agrupación de conexiones de alta concurrencia, configurable vía `XUI_DB_TYPE=postgres`, variables de entorno o menú CLI (`x-ui database`).
+- **Gestión de Acceso de Personal (RBAC) y Restricción de Entradas**: Roles `admin`, `staff` y `viewer`, restricción de acceso a reglas específicas (`AllowedInbounds`), permisos desglosados (respaldo/restauración, control del núcleo Xray, actualizaciones Geo, reinicio de tráfico) y página personalizada 403 Forbidden.
+- **Acceso Directo a URIs de Conexión y Códigos QR para Viewer**: Copia rápida de enlaces de conexión (`vless://`, `vmess://`, `trojan://`, `wg://`, etc.) y generación de códigos QR directamente desde la tabla de clientes.
+- **Analizador de Configuraciones WireGuard (`wireguard://` y `.conf`)**: Carga directa de archivos `.conf` en el modal de salidas y extracción automática de parámetros.
+- **Restablecimiento de Fábrica con un Clic (Factory Reset)**: Limpieza completa y reinicialización de la base de datos con credenciales de administrador por defecto mediante `x-ui reset` (opción 28) o en los ajustes del panel con destrucción inmediata de sesiones.
+- **Controlador Pure-Go SQLite para Compilación CGO_ENABLED=0**: Arquitectura de doble controlador (`glebarez/sqlite` sin CGO), eliminando errores de stub al realizar compilación cruzada sin compiladores C.
+- **Interfaz Fluida Moderna y Corrección de Contraste**: Tema claro refinado (`#e8edf4`), alta visibilidad en botones deshabilitados, casillas de verificación en tarjetas interactivas y animaciones suaves.
 - **Soporte de Protocolo AmneziaWG (AWG 3.1)**: Integración nativa con el kernel y el ejecutable, parámetros de ofuscación de paquetes basura anti-DPI (`jc`, `jmin`, `jmax`, `s1`-`s4`, `h1`-`h4`), generación de pares de claves Curve25519 según RFC 7748, descarga de perfiles `.conf` en un clic y enlaces compartidos `vpn://` / `wireguard://`.
 - **Proxy MTProto con FakeTLS**: Supervisor sidecar nativo `mtg` multiusuario, generador automatizado de secretos FakeTLS con camuflaje de dominio (`ee...`/`dd...`), enlaces directos para Telegram (`tg://proxy`, `t.me/proxy`) y códigos QR.
 - **Soporte de External Proxy para Configuración y Enlaces**: Aplicación directa del host y puerto de proxy externo en archivos `.conf` de WireGuard/AmneziaWG (`Endpoint = dest:port`), enlaces `vpn://` / `wireguard://` y enlaces de Telegram `tg://proxy`.

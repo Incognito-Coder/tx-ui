@@ -311,6 +311,13 @@ computing environments. The following are key architectures that we support:
 
 ## Features
 
+- **In-Panel Live Subscription Template Editor**: Built-in CodeMirror code editor with real-time sandbox preview iframe (`/previewSubTemplate`), Go template and HTML syntax highlighting, instant syntax validation, and atomic hot-apply without restarting.
+- **PostgreSQL Multi-Engine Database Support (GORM)**: First-class PostgreSQL support alongside SQLite with high-concurrency connection pooling, configurable via `XUI_DB_TYPE=postgres`, `XUI_DB_POSTGRES_DSN`, or interactive CLI (`x-ui database`).
+- **Multi-Staff RBAC Management & Inbound Scoping**: Granular multi-user access control (`admin`, `staff`, `viewer` roles), inbound-level scoping (`AllowedInbounds`), operational permissions (database backup/restore, Xray service control, Geo updates, traffic reset), viewer read-only protection, and custom 403 Forbidden pages.
+- **Direct Client Connection URI & QR Access**: Viewers and staff can directly copy connection URIs (`vless://`, `vmess://`, `trojan://`, `wg://`, etc.) or generate single/multi-inbound QR code modals directly from the clients table.
+- **WireGuard Outbound Parser (`wireguard://` & `.conf`)**: Direct `.conf` file upload and automatic parsing in the Outbound modal for WireGuard configurations.
+- **One-Click Factory Reset in CLI & Web UI**: Complete database purge and re-initialization via `x-ui reset`, CLI Option 28, or Web UI Database Maintenance with automatic session destruction.
+- **Pure-Go SQLite Driver for CGO_ENABLED=0 Cross-Compilation**: Automatic dual SQLite driver architecture (`gorm.io/driver/sqlite` with CGO, `github.com/glebarez/sqlite` pure-Go fallback for `CGO_ENABLED=0`), ensuring error-free cross-compilation without C cross-compilers.
 - **AmneziaWG Protocol Support (AWG 3.1)**: Native runner and kernel integration, configurable DPI-resistant junk packet obfuscation (`jc`, `jmin`, `jmax`, `s1`-`s4`, `h1`-`h4`), RFC 7748 Curve25519 keypair generation, one-click `.conf` client configuration download, and mobile share links (`vpn://`, `wireguard://`).
 - **MTProto Proxy with FakeTLS**: Native `mtg` multi-tenant sidecar runner, automated FakeTLS secret generation with domain camouflage (`ee...`/`dd...`), direct Telegram connection links (`tg://proxy`, `t.me/proxy`), and QR codes.
 - **External Proxy Endpoint Overrides**: Configurable ingress host and port applied across WireGuard/AmneziaWG `.conf` files, `vpn://` / `wireguard://` share links, and Telegram `tg://proxy` URIs.
@@ -319,11 +326,11 @@ computing environments. The following are key architectures that we support:
 - **Updated Xray Core (v26.11.9)**: Integrated modern uTLS fingerprints with `hellochrome_155`, expanded TUN WFP leak protection (`all`, `allexceptlan`, `icmp`, ports, port ranges, CIDR prefixes), Freedom outbound `finalRules` with configurable `delay` and granular `logLevel`, optimized XDRIVE Google Drive transport backend with pre-warmed pools and automatic slot defaults, and increased VLESS Mux default concurrency (128 / 1024).
 - **Protocol-Separated Client Credentials**: Dedicated, isolated password generation and persistence for Trojan, Shadowsocks 2022 (strict 16/32-byte Base64 key generator & auto-repair), MASQUE, Hysteria, MTProto, and WireGuard/AmneziaWG.
 - **Connected Devices Management**: Track and manage connected devices (IP, client app, OS, user-agent, last seen) per client with history clearing.
-- **Database Health & Maintenance**: In-panel SQLite diagnostics, WAL truncation, PRAGMA optimization, vacuum, and orphaned row cleanup.
+- **Database Health & Maintenance**: In-panel SQLite & PostgreSQL diagnostics, WAL truncation, PRAGMA optimization, vacuum, and orphaned row cleanup.
+- **Modern Fluid UI & Theming**: Dark, Ultra Dark, and comfortable Slate Light themes (`#e8edf4`), high-contrast disabled tags, responsive checklist card tiles, and smooth global animations.
 - **Force HTTPS installation of panel**
 - **System Status Monitoring** (CPU, RAM, swap, disk, TCP/UDP sockets, live traffic)
 - **Search and filter** within all inbounds and clients
-- **Dark, Ultra Dark, and Light themes**
 - **Supports multi-user and multi-protocol**: VMess, VLESS, Trojan, Shadowsocks, WireGuard, AmneziaWG (AWG 3.1), MTProto (FakeTLS), MASQUE, Hysteria, Tunnel, Socks, HTTP
 - **Supports XTLS native protocols**: RPRX-Direct, Vision, REALITY
 - **Traffic statistics, traffic limit, expiration time limit**
@@ -353,8 +360,11 @@ If you choose not to modify these settings, they will be generated randomly (thi
 
 You can conveniently perform database Backups and Restores directly from the panel.
 
-- **Database Path:**
-    - `/etc/x-ui/x-ui.db`
+- **Supported Engines:**
+  - **SQLite (Default):** `/etc/x-ui/x-ui.db`
+  - **PostgreSQL:** Configure via `x-ui database` or environment variables
+- **CLI Database Menu:** Run `x-ui database` (Option 27 in `x-ui.sh`) to configure engine parameters.
+- **Factory Reset:** Run `x-ui reset` (Option 28 in `x-ui.sh`) or use "Factory Reset" in Web UI Settings under Database Maintenance to wipe and re-initialize the database with default admin credentials.
 
 ### Web Base Path
 
@@ -563,10 +573,19 @@ than one, Just separate them with ,)
 | `POST` | `"/all"`              | Retrieve all panel settings                        |
 | `POST` | `"/update"`           | Update panel settings                              |
 | `POST` | `"/restartPanel"`     | Gracefully restart panel web process               |
-| `POST` | `"/dbStatus"`         | Check SQLite database size, WAL size & integrity   |
+| `POST` | `"/dbStatus"`         | Check database size, WAL size & integrity          |
 | `POST` | `"/optimizeDatabase"` | Optimize database (WAL truncate, PRAGMA optimize)  |
 | `POST` | `"/vacuumDatabase"`   | Reclaim unused disk space via VACUUM               |
 | `POST` | `"/cleanDatabase"`    | Scan and delete orphaned or corrupted rows         |
+| `POST` | `"/factoryReset"`     | Factory reset database and destroy active sessions |
+| `GET`  | `"/staff/list"`       | List staff members with roles and permissions      |
+| `POST` | `"/staff/add"`        | Create new staff member with custom scope          |
+| `POST` | `"/staff/update/:id"` | Update staff roles, permissions, and status        |
+| `POST` | `"/staff/delete/:id"` | Delete a staff account                             |
+| `GET`  | `"/getSubTemplateContent"` | Get active subscription HTML template         |
+| `POST` | `"/saveSubTemplateContent"`| Validate, save, and apply subscription template   |
+| `POST` | `"/previewSubTemplate"`    | Render live sandboxed template preview HTML       |
+| `POST` | `"/resetSubTemplate"`      | Reset subscription template to built-in default   |
 
 #### Xray Configuration API (`/panel/xray`)
 
@@ -589,13 +608,21 @@ than one, Just separate them with ,)
 
 #### Usage
 
-| Variable       |   Type    | Default     |
-|----------------|:---------:|:------------|
-| XUI_LOG_LEVEL  |  "debug"  | "info"      | "warn" | "error" |
-| XUI_DEBUG      | `boolean` | `false`     |
-| XUI_BIN_FOLDER | `string`  | "bin"       |
-| XUI_DB_FOLDER  | `string`  | "/etc/x-ui" |
-| XUI_LOG_FOLDER | `string`  | "/var/log"  |
+| Variable               |   Type    | Default     | Description |
+|------------------------|:---------:|:------------|:------------|
+| XUI_LOG_LEVEL          |  "debug"  | "info"      | "warn" \| "error" |
+| XUI_DEBUG              | `boolean` | `false`     | Enable debug mode |
+| XUI_BIN_FOLDER         | `string`  | "bin"       | Binary assets directory |
+| XUI_DB_FOLDER          | `string`  | "/etc/x-ui" | Database directory |
+| XUI_LOG_FOLDER         | `string`  | "/var/log"  | Log directory |
+| XUI_DB_TYPE            | `string`  | "sqlite"    | Database engine (`sqlite` or `postgres`) |
+| XUI_DB_POSTGRES_DSN    | `string`  | ""          | Full PostgreSQL connection string |
+| XUI_DB_HOST            | `string`  | "localhost" | PostgreSQL host |
+| XUI_DB_PORT            | `integer` | 5432        | PostgreSQL port |
+| XUI_DB_USER            | `string`  | "postgres"  | PostgreSQL username |
+| XUI_DB_PASSWORD        | `string`  | ""          | PostgreSQL password |
+| XUI_DB_NAME            | `string`  | "x_ui"      | PostgreSQL database name |
+| XUI_DB_SSLMODE         | `string`  | "disable"   | PostgreSQL SSL mode |
 
 Example:
 
