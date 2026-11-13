@@ -200,7 +200,7 @@ $PlatformMap = [ordered]@{
         Aliases = @("linux/riscv64", "riscv64")
     }
     "linux-mips" = @{
-        GOOS = "linux"; GOARCH = "mips"; GOARM = ""; GOMIPS = "softfloat";
+        GOOS = "linux"; GOARCH = "mips"; GOARM = ""; GOMIPS = "";
         XrayZip = "Xray-linux-mips32.zip"; XrayBin = "xray-linux-mips";
         MtgTar = ""; MtgBin = "";
         ZigTarget = "mips-linux-musl"; GccPrefix = "mips-linux-gnu-";
@@ -208,7 +208,7 @@ $PlatformMap = [ordered]@{
         Aliases = @("linux/mips", "mips", "mips32")
     }
     "linux-mipsle" = @{
-        GOOS = "linux"; GOARCH = "mipsle"; GOARM = ""; GOMIPS = "softfloat";
+        GOOS = "linux"; GOARCH = "mipsle"; GOARM = ""; GOMIPS = "";
         XrayZip = "Xray-linux-mips32le.zip"; XrayBin = "xray-linux-mipsle";
         MtgTar = ""; MtgBin = "";
         ZigTarget = "mipsel-linux-musl"; GccPrefix = "mipsel-linux-gnu-";

@@ -155,7 +155,6 @@ jobs:
               fi
             elif [ "${{ matrix.platform }}" == "linux-mips" ]; then
               export GOARCH=mips
-              export GOMIPS=softfloat
               if command -v mips-linux-gnu-gcc >/dev/null 2>&1; then
                 export CC=mips-linux-gnu-gcc
               else
@@ -163,7 +162,6 @@ jobs:
               fi
             elif [ "${{ matrix.platform }}" == "linux-mipsle" ]; then
               export GOARCH=mipsle
-              export GOMIPS=softfloat
               if command -v mipsel-linux-gnu-gcc >/dev/null 2>&1; then
                 export CC=mipsel-linux-gnu-gcc
               else
@@ -237,6 +235,8 @@ jobs:
             curl -sSL -O ${Xray_URL}Xray-linux-mips64le.zip && unzip -q Xray-linux-mips64le.zip && rm -f Xray-linux-mips64le.zip || true
           elif [ "${{ matrix.platform }}" == "linux-ppc64le" ]; then
             curl -sSL -O ${Xray_URL}Xray-linux-ppc64le.zip && unzip -q Xray-linux-ppc64le.zip && rm -f Xray-linux-ppc64le.zip || true
+          elif [ "${{ matrix.platform }}" == "linux-loong64" ]; then
+            curl -sSL -O ${Xray_URL}Xray-linux-loong64.zip && unzip -q Xray-linux-loong64.zip && rm -f Xray-linux-loong64.zip || true
           elif [ "${{ matrix.platform }}" == "freebsd-amd64" ]; then
             curl -sSL -O ${Xray_URL}Xray-freebsd-64.zip && unzip -q Xray-freebsd-64.zip && rm -f Xray-freebsd-64.zip || true
           elif [ "${{ matrix.platform }}" == "freebsd-arm64" ]; then
@@ -301,6 +301,7 @@ jobs:
             $xrayZip="Xray-windows-64.zip"
           }
           go build -ldflags "-w -s" -o xui-release.exe -v main.go
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
           mkdir x-ui
           Copy-Item xui-release.exe x-ui\

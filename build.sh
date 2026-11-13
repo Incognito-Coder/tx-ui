@@ -102,10 +102,10 @@ get_target_info() {
             echo "linux-riscv64|linux|riscv64||Xray-linux-riscv64.zip|xray-linux-riscv64|||riscv64-linux-musl|riscv64-linux-gnu-|x-ui|x-ui-linux-riscv64.tar.gz|tar.gz|"
             ;;
         linux-mips|linux/mips|mips|mips32)
-            echo "linux-mips|linux|mips||Xray-linux-mips32.zip|xray-linux-mips|||mips-linux-musl|mips-linux-gnu-|x-ui|x-ui-linux-mips.tar.gz|tar.gz|softfloat"
+            echo "linux-mips|linux|mips||Xray-linux-mips32.zip|xray-linux-mips|||mips-linux-musl|mips-linux-gnu-|x-ui|x-ui-linux-mips.tar.gz|tar.gz|"
             ;;
         linux-mipsle|linux/mipsle|mipsle|mips32le)
-            echo "linux-mipsle|linux|mipsle||Xray-linux-mips32le.zip|xray-linux-mipsle|||mipsel-linux-musl|mipsel-linux-gnu-|x-ui|x-ui-linux-mipsle.tar.gz|tar.gz|softfloat"
+            echo "linux-mipsle|linux|mipsle||Xray-linux-mips32le.zip|xray-linux-mipsle|||mipsel-linux-musl|mipsel-linux-gnu-|x-ui|x-ui-linux-mipsle.tar.gz|tar.gz|"
             ;;
         linux-mips64|linux/mips64|mips64)
             echo "linux-mips64|linux|mips64||Xray-linux-mips64.zip|xray-linux-mips64|||mips64-linux-musl|mips64-linux-gnuabi64-|x-ui|x-ui-linux-mips64.tar.gz|tar.gz|"
