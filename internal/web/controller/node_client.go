@@ -12,6 +12,7 @@ import (
 	"x-ui/internal/database/model"
 	"x-ui/internal/logger"
 	"x-ui/internal/web/service"
+	"x-ui/internal/web/session"
 
 	"github.com/gin-gonic/gin"
 )
@@ -56,6 +57,23 @@ func (a *NodeClientController) list(c *gin.Context) {
 		jsonMsg(c, "Failed to get clients", err)
 		return
 	}
+	user := session.GetLoginUser(c)
+	if user != nil && !user.IsAdmin() && user.AllowedInbounds != "*" && user.AllowedInbounds != "" {
+		filtered := make([]*service.ClientDetail, 0)
+		for _, cd := range clients {
+			allowedLinks := make([]model.NodeClientLink, 0)
+			for _, link := range cd.Links {
+				if user.CanAccessInbound(link.InboundId) {
+					allowedLinks = append(allowedLinks, link)
+				}
+			}
+			if len(allowedLinks) > 0 {
+				cd.Links = allowedLinks
+				filtered = append(filtered, cd)
+			}
+		}
+		clients = filtered
+	}
 	jsonObj(c, clients, nil)
 }
 
@@ -72,10 +90,33 @@ func (a *NodeClientController) getOne(c *gin.Context) {
 		c.Status(http.StatusNotFound)
 		return
 	}
+	user := session.GetLoginUser(c)
+	if user != nil && !user.IsAdmin() && user.AllowedInbounds != "*" && user.AllowedInbounds != "" {
+		links, _ := a.nodeClientService.GetLinks(nc.Id)
+		canAccess := false
+		for _, l := range links {
+			if user.CanAccessInbound(l.InboundId) {
+				canAccess = true
+				break
+			}
+		}
+		if !canAccess {
+			pureJsonMsg(c, http.StatusForbidden, false, "Access denied to this client")
+			return
+		}
+	}
 	jsonObj(c, nc, nil)
 }
 
 func (a *NodeClientController) create(c *gin.Context) {
+	user := session.GetLoginUser(c)
+	if user != nil && !user.IsAdmin() {
+		if user.Role == "viewer" || !user.HasPermission("clients:create") {
+			pureJsonMsg(c, http.StatusForbidden, false, "Permission denied to create client")
+			return
+		}
+	}
+
 	var req struct {
 		model.NodeClient
 		InboundIds []int `json:"inboundIds" form:"inboundIds"`
@@ -97,6 +138,15 @@ func (a *NodeClientController) create(c *gin.Context) {
 		for _, fid := range formIds {
 			if n, perr := strconv.Atoi(fid); perr == nil {
 				req.InboundIds = append(req.InboundIds, n)
+			}
+		}
+	}
+
+	if user != nil && !user.IsAdmin() {
+		for _, inboundId := range req.InboundIds {
+			if !user.CanAccessInbound(inboundId) {
+				pureJsonMsg(c, http.StatusForbidden, false, fmt.Sprintf("Permission denied: inbound %d is outside your allowed scope", inboundId))
+				return
 			}
 		}
 	}
@@ -130,6 +180,14 @@ func (a *NodeClientController) create(c *gin.Context) {
 }
 
 func (a *NodeClientController) bulkCreate(c *gin.Context) {
+	user := session.GetLoginUser(c)
+	if user != nil && !user.IsAdmin() {
+		if user.Role == "viewer" || !user.HasPermission("clients:create") {
+			pureJsonMsg(c, http.StatusForbidden, false, "Permission denied to bulk create clients")
+			return
+		}
+	}
+
 	var req struct {
 		Clients    []model.NodeClient `json:"clients" form:"clients"`
 		InboundIds []int              `json:"inboundIds" form:"inboundIds"`
@@ -159,6 +217,15 @@ func (a *NodeClientController) bulkCreate(c *gin.Context) {
 		}
 	}
 
+	if user != nil && !user.IsAdmin() {
+		for _, inboundId := range req.InboundIds {
+			if !user.CanAccessInbound(inboundId) {
+				pureJsonMsg(c, http.StatusForbidden, false, fmt.Sprintf("Permission denied: inbound %d is outside your allowed scope", inboundId))
+				return
+			}
+		}
+	}
+
 	needRestart, err := a.nodeClientService.BulkCreate(req.Clients, req.InboundIds)
 	if err != nil {
 		jsonMsg(c, "Bulk create failed: "+err.Error(), err)
@@ -180,6 +247,13 @@ func (a *NodeClientController) setLinks(c *gin.Context) {
 		jsonMsg(c, "Invalid client ID", err)
 		return
 	}
+	user := session.GetLoginUser(c)
+	if user != nil && !user.IsAdmin() {
+		if user.Role == "viewer" || !user.HasPermission("clients:edit") {
+			pureJsonMsg(c, http.StatusForbidden, false, "Permission denied to modify client links")
+			return
+		}
+	}
 
 	var req struct {
 		Links []service.NodeClientLinkInput `json:"links" form:"links"`
@@ -195,6 +269,15 @@ func (a *NodeClientController) setLinks(c *gin.Context) {
 		if len(req.Links) == 0 {
 			if linksStr := c.PostForm("links"); linksStr != "" {
 				_ = json.Unmarshal([]byte(linksStr), &req.Links)
+			}
+		}
+	}
+
+	if user != nil && !user.IsAdmin() {
+		for _, link := range req.Links {
+			if !user.CanAccessInbound(link.InboundId) {
+				pureJsonMsg(c, http.StatusForbidden, false, fmt.Sprintf("Permission denied: inbound %d is outside your allowed scope", link.InboundId))
+				return
 			}
 		}
 	}
@@ -215,6 +298,14 @@ func (a *NodeClientController) setLinks(c *gin.Context) {
 }
 
 func (a *NodeClientController) bulkSetLinks(c *gin.Context) {
+	user := session.GetLoginUser(c)
+	if user != nil && !user.IsAdmin() {
+		if user.Role == "viewer" || !user.HasPermission("clients:edit") {
+			pureJsonMsg(c, http.StatusForbidden, false, "Permission denied to modify client links")
+			return
+		}
+	}
+
 	var req struct {
 		ClientIds  []int  `json:"clientIds" form:"clientIds"`
 		InboundIds []int  `json:"inboundIds" form:"inboundIds"`
@@ -257,6 +348,15 @@ func (a *NodeClientController) bulkSetLinks(c *gin.Context) {
 		}
 	}
 
+	if user != nil && !user.IsAdmin() {
+		for _, inboundId := range req.InboundIds {
+			if !user.CanAccessInbound(inboundId) {
+				pureJsonMsg(c, http.StatusForbidden, false, fmt.Sprintf("Permission denied: inbound %d is outside your allowed scope", inboundId))
+				return
+			}
+		}
+	}
+
 	needRestart, err := a.nodeClientService.BulkSetLinks(req.ClientIds, req.InboundIds, req.Action, req.Flow)
 	if err != nil {
 		jsonMsg(c, "Bulk update links failed: "+err.Error(), err)
@@ -273,6 +373,11 @@ func (a *NodeClientController) bulkSetLinks(c *gin.Context) {
 }
 
 func (a *NodeClientController) resetAllTraffics(c *gin.Context) {
+	user := session.GetLoginUser(c)
+	if user != nil && !user.IsAdmin() {
+		pureJsonMsg(c, http.StatusForbidden, false, "Permission denied: admin role required to reset all traffics")
+		return
+	}
 	err := a.nodeClientService.ResetAllTraffics()
 	if err != nil {
 		jsonMsg(c, "Failed to reset traffic", err)
@@ -286,6 +391,13 @@ func (a *NodeClientController) resetAllTraffics(c *gin.Context) {
 }
 
 func (a *NodeClientController) delDepleted(c *gin.Context) {
+	user := session.GetLoginUser(c)
+	if user != nil && !user.IsAdmin() {
+		if user.Role == "viewer" || !user.HasPermission("clients:delete") {
+			pureJsonMsg(c, http.StatusForbidden, false, "Permission denied: cannot delete depleted clients")
+			return
+		}
+	}
 	needRestart, err := a.nodeClientService.DeleteDepleted()
 	if err != nil {
 		jsonMsg(c, "Failed to delete depleted clients", err)
@@ -314,6 +426,13 @@ func (a *NodeClientController) update(c *gin.Context) {
 	if err != nil {
 		jsonMsg(c, "Invalid node client ID", err)
 		return
+	}
+	user := session.GetLoginUser(c)
+	if user != nil && !user.IsAdmin() {
+		if user.Role == "viewer" || !user.HasPermission("clients:edit") {
+			pureJsonMsg(c, http.StatusForbidden, false, "Permission denied to update client")
+			return
+		}
 	}
 
 	existing, err := a.nodeClientService.GetByID(id)
@@ -485,6 +604,15 @@ func (a *NodeClientController) update(c *gin.Context) {
 		}
 	}
 
+	if user != nil && !user.IsAdmin() && req.InboundIds != nil {
+		for _, inId := range *req.InboundIds {
+			if !user.CanAccessInbound(inId) {
+				pureJsonMsg(c, http.StatusForbidden, false, fmt.Sprintf("Permission denied: inbound %d is outside your allowed scope", inId))
+				return
+			}
+		}
+	}
+
 	needRestart, err := a.nodeClientService.Update(&mergedNC)
 	if err != nil {
 		jsonMsg(c, "Failed to update node client: "+err.Error(), err)
@@ -523,6 +651,13 @@ func (a *NodeClientController) del(c *gin.Context) {
 		jsonMsg(c, "Invalid node client ID", err)
 		return
 	}
+	user := session.GetLoginUser(c)
+	if user != nil && !user.IsAdmin() {
+		if user.Role == "viewer" || !user.HasPermission("clients:delete") {
+			pureJsonMsg(c, http.StatusForbidden, false, "Permission denied to delete client")
+			return
+		}
+	}
 
 	needRestart, err := a.nodeClientService.Delete(id)
 	if err != nil {
@@ -540,6 +675,14 @@ func (a *NodeClientController) del(c *gin.Context) {
 }
 
 func (a *NodeClientController) bulkDel(c *gin.Context) {
+	user := session.GetLoginUser(c)
+	if user != nil && !user.IsAdmin() {
+		if user.Role == "viewer" || !user.HasPermission("clients:delete") {
+			pureJsonMsg(c, http.StatusForbidden, false, "Permission denied to delete clients")
+			return
+		}
+	}
+
 	var req struct {
 		Ids []int `json:"ids" form:"ids"`
 	}
@@ -617,6 +760,14 @@ func (a *NodeClientController) addLink(c *gin.Context) {
 		return
 	}
 
+	user := session.GetLoginUser(c)
+	if user != nil && !user.IsAdmin() {
+		if user.Role == "viewer" || !user.HasPermission("clients:edit") || !user.CanAccessInbound(req.InboundId) {
+			pureJsonMsg(c, http.StatusForbidden, false, "Permission denied to link to this inbound")
+			return
+		}
+	}
+
 	needRestart, err := a.nodeClientService.AddLink(id, req.InboundId, req.Flow)
 	if err != nil {
 		jsonMsg(c, "Failed to add link", err)
@@ -640,6 +791,14 @@ func (a *NodeClientController) removeLink(c *gin.Context) {
 	if err != nil {
 		jsonMsg(c, "Invalid inbound ID", err)
 		return
+	}
+
+	user := session.GetLoginUser(c)
+	if user != nil && !user.IsAdmin() {
+		if user.Role == "viewer" || !user.HasPermission("clients:edit") || !user.CanAccessInbound(inboundId) {
+			pureJsonMsg(c, http.StatusForbidden, false, "Permission denied to remove link from this inbound")
+			return
+		}
 	}
 
 	needRestart, err := a.nodeClientService.RemoveLink(id, inboundId)
@@ -675,6 +834,13 @@ func (a *NodeClientController) resetTraffic(c *gin.Context) {
 		jsonMsg(c, "Invalid node client ID", err)
 		return
 	}
+	user := session.GetLoginUser(c)
+	if user != nil && !user.IsAdmin() {
+		if !user.CanResetTraffic || user.Role == "viewer" {
+			pureJsonMsg(c, http.StatusForbidden, false, "Permission denied: traffic reset not allowed")
+			return
+		}
+	}
 
 	needsRestart, err := a.nodeClientService.ResetTraffic(id)
 	if err != nil {
@@ -696,6 +862,13 @@ func (a *NodeClientController) toggle(c *gin.Context) {
 	if err != nil {
 		jsonMsg(c, "Invalid node client ID", err)
 		return
+	}
+	user := session.GetLoginUser(c)
+	if user != nil && !user.IsAdmin() {
+		if user.Role == "viewer" || !user.HasPermission("clients:edit") {
+			pureJsonMsg(c, http.StatusForbidden, false, "Permission denied to toggle client status")
+			return
+		}
 	}
 
 	needRestart, err := a.nodeClientService.Toggle(id)
@@ -780,6 +953,13 @@ func (a *NodeClientController) clearDevices(c *gin.Context) {
 	if err != nil {
 		jsonMsg(c, "Invalid client ID", err)
 		return
+	}
+	user := session.GetLoginUser(c)
+	if user != nil && !user.IsAdmin() {
+		if user.Role == "viewer" {
+			pureJsonMsg(c, http.StatusForbidden, false, "Permission denied to clear client devices")
+			return
+		}
 	}
 	if err := a.nodeClientService.ClearDevices(id); err != nil {
 		jsonMsg(c, "Failed to clear client devices", err)

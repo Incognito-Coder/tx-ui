@@ -283,6 +283,26 @@ reset_config() {
     restart
 }
 
+factory_reset() {
+    echo -e "${red}╔══════════════════════════════════════════════════════════╗${plain}"
+    echo -e "${red}║                     WARNING!                             ║${plain}"
+    echo -e "${red}║ This will permanently delete ALL inbounds, clients,     ║${plain}"
+    echo -e "${red}║ custom settings, and staff accounts!                    ║${plain}"
+    echo -e "${red}║ Admin credentials will be reset to: admin / admin        ║${plain}"
+    echo -e "${red}║ Default port will be reset to: 2053                      ║${plain}"
+    echo -e "${red}╚══════════════════════════════════════════════════════════╝${plain}"
+    confirm "Are you sure you want to factory reset tx-ui?" "n"
+    if [[ $? != 0 ]]; then
+        if [[ $# == 0 ]]; then
+            show_menu
+        fi
+        return 0
+    fi
+    /usr/local/x-ui/x-ui reset
+    LOGI "Factory reset completed successfully."
+    restart
+}
+
 check_config() {
     local info=$(/usr/local/x-ui/x-ui setting -show true)
     if [[ $? != 0 ]]; then
@@ -309,6 +329,20 @@ check_config() {
     else
         echo -e "${green}Access URL: http://${server_ip}:${existing_port}${existing_webBasePath}${plain}"
     fi
+
+    local env_file="/etc/x-ui/x-ui.env"
+    local db_info="SQLite (/etc/x-ui/x-ui.db)"
+    if [[ -f "${env_file}" ]]; then
+        source "${env_file}" 2>/dev/null
+        if [[ "${XUI_DB_TYPE}" == "postgres" || "${XUI_DB_TYPE}" == "postgresql" || "${XUI_DB_TYPE}" == "pg" ]]; then
+            if [[ -n "${XUI_DB_POSTGRES_DSN}" ]]; then
+                db_info="PostgreSQL (${XUI_DB_POSTGRES_DSN})"
+            else
+                db_info="PostgreSQL (${XUI_DB_USER}@${XUI_DB_HOST:-127.0.0.1}:${XUI_DB_PORT:-5432}/${XUI_DB_NAME:-xui})"
+            fi
+        fi
+    fi
+    echo -e "${green}Database: ${db_info}${plain}"
 }
 
 set_port() {
@@ -1793,6 +1827,125 @@ SSH_port_forwarding() {
     esac
 }
 
+database_menu() {
+    echo -e "
+╔────────────────────────────────────────────────╗
+│   ${green}Database Configuration (SQLite / PostgreSQL)${plain}  │
+│   ${green}0.${plain} Return to Main Menu                       │
+│────────────────────────────────────────────────│
+│   ${green}1.${plain} Switch to SQLite (Default)                │
+│   ${green}2.${plain} Switch to PostgreSQL (Standard Parameters)│
+│   ${green}3.${plain} Switch to PostgreSQL (Custom DSN URL)     │
+│   ${green}4.${plain} View Current Database Configuration       │
+╚────────────────────────────────────────────────╝
+"
+    local env_file="/etc/x-ui/x-ui.env"
+    local current_db="SQLite (/etc/x-ui/x-ui.db)"
+    if [[ -f "${env_file}" ]]; then
+        source "${env_file}" 2>/dev/null
+        if [[ "${XUI_DB_TYPE}" == "postgres" || "${XUI_DB_TYPE}" == "postgresql" || "${XUI_DB_TYPE}" == "pg" ]]; then
+            if [[ -n "${XUI_DB_POSTGRES_DSN}" ]]; then
+                current_db="PostgreSQL (DSN: ${XUI_DB_POSTGRES_DSN})"
+            else
+                current_db="PostgreSQL (${XUI_DB_USER}@${XUI_DB_HOST:-127.0.0.1}:${XUI_DB_PORT:-5432}/${XUI_DB_NAME:-xui})"
+            fi
+        fi
+    fi
+    echo -e "Current Database: ${green}${current_db}${plain}\n"
+
+    read -p "Please enter your selection [0-4]: " db_choice
+    case "${db_choice}" in
+    0)
+        show_menu
+        ;;
+    1)
+        mkdir -p /etc/x-ui
+        cat <<EOF > /etc/x-ui/x-ui.env
+XUI_DB_TYPE=sqlite
+EOF
+        chmod 600 /etc/x-ui/x-ui.env
+        LOGI "Database switched to SQLite."
+        restart_panel_prompt
+        ;;
+    2)
+        echo -e "${yellow}Enter PostgreSQL Connection Details:${plain}"
+        read -p "PostgreSQL Host [127.0.0.1]: " pg_host
+        pg_host=${pg_host:-127.0.0.1}
+        read -p "PostgreSQL Port [5432]: " pg_port
+        pg_port=${pg_port:-5432}
+        read -p "Database Name [xui]: " pg_dbname
+        pg_dbname=${pg_dbname:-xui}
+        read -p "Database User [postgres]: " pg_user
+        pg_user=${pg_user:-postgres}
+        read -s -p "Database Password: " pg_pass
+        echo
+        read -p "SSL Mode (disable/require/verify-ca/verify-full) [disable]: " pg_sslmode
+        pg_sslmode=${pg_sslmode:-disable}
+        read -p "Timezone [UTC]: " pg_tz
+        pg_tz=${pg_tz:-UTC}
+
+        mkdir -p /etc/x-ui
+        cat <<EOF > /etc/x-ui/x-ui.env
+XUI_DB_TYPE=postgres
+XUI_DB_HOST=${pg_host}
+XUI_DB_PORT=${pg_port}
+XUI_DB_NAME=${pg_dbname}
+XUI_DB_USER=${pg_user}
+XUI_DB_PASSWORD=${pg_pass}
+XUI_DB_SSLMODE=${pg_sslmode}
+XUI_DB_TIMEZONE=${pg_tz}
+EOF
+        chmod 600 /etc/x-ui/x-ui.env
+        LOGI "PostgreSQL configuration saved to /etc/x-ui/x-ui.env."
+        restart_panel_prompt
+        ;;
+    3)
+        echo -e "${yellow}Enter PostgreSQL DSN URL (e.g. postgres://user:password@host:5432/dbname?sslmode=disable):${plain}"
+        read -p "DSN: " pg_dsn
+        if [[ -z "${pg_dsn}" ]]; then
+            LOGE "DSN cannot be empty!"
+            before_show_menu
+            return
+        fi
+        mkdir -p /etc/x-ui
+        cat <<EOF > /etc/x-ui/x-ui.env
+XUI_DB_TYPE=postgres
+XUI_DB_POSTGRES_DSN=${pg_dsn}
+EOF
+        chmod 600 /etc/x-ui/x-ui.env
+        LOGI "PostgreSQL DSN saved to /etc/x-ui/x-ui.env."
+        restart_panel_prompt
+        ;;
+    4)
+        if [[ -f "${env_file}" ]]; then
+            echo -e "${green}--- /etc/x-ui/x-ui.env ---${plain}"
+            cat "${env_file}"
+            echo -e "${green}--------------------------${plain}"
+        else
+            echo -e "${yellow}No /etc/x-ui/x-ui.env found. Using default SQLite database (/etc/x-ui/x-ui.db).${plain}"
+        fi
+        before_show_menu
+        ;;
+    *)
+        LOGE "Invalid selection!"
+        show_menu
+        ;;
+    esac
+}
+
+restart_panel_prompt() {
+    read -p "Do you want to restart tx-ui now to apply changes? [Y/n]: " yn
+    case $yn in
+    [Nn]*)
+        LOGI "Configuration saved. Please restart tx-ui manually (x-ui restart) when ready."
+        before_show_menu
+        ;;
+    *)
+        restart
+        ;;
+    esac
+}
+
 show_usage() {
     echo -e "┌───────────────────────────────────────────────────────┐
 │  ${blue}x-ui control menu usages (subcommands):${plain}              │
@@ -1803,6 +1956,8 @@ show_usage() {
 │  ${blue}x-ui restart${plain}      - Restart                          │
 │  ${blue}x-ui status${plain}       - Current Status                   │
 │  ${blue}x-ui settings${plain}     - Current Settings                 │
+│  ${blue}x-ui database${plain}     - Database Configuration (SQLite/PG)│
+│  ${blue}x-ui reset${plain}        - Factory Reset (All Data & Settings)│
 │  ${blue}x-ui enable${plain}       - Enable Autostart on OS Startup   │
 │  ${blue}x-ui disable${plain}      - Disable Autostart on OS Startup  │
 │  ${blue}x-ui log${plain}          - Check logs                       │
@@ -1851,10 +2006,12 @@ show_menu() {
 │  ${green}24.${plain} Update Geo Files                          │
 │  ${green}25.${plain} Speedtest by Ookla                        │
 │  ${green}26.${plain} Theme Management                          │
+│  ${green}27.${plain} Database Configuration (SQLite/PG)        │
+│  ${green}28.${plain} Factory Reset (Reset All Data & Settings) │
 ╚────────────────────────────────────────────────╝
 "
     show_status
-    echo && read -p "Please enter your selection [0-26]: " num
+    echo && read -p "Please enter your selection [0-28]: " num
 
     case "${num}" in
     0)
@@ -1938,8 +2095,14 @@ show_menu() {
     26)
         bash <(curl -Ls https://raw.githubusercontent.com/Incognito-Coder/tx-themehub/master/install.sh)
         ;;
+    27)
+        check_install && database_menu
+        ;;
+    28)
+        check_install && factory_reset
+        ;;
     *)
-        LOGE "Please enter the correct number [0-26]"
+        LOGE "Please enter the correct number [0-28]"
         ;;
     esac
 }
@@ -1960,6 +2123,12 @@ if [[ $# > 0 ]]; then
         ;;
     "settings")
         check_install 0 && check_config 0
+        ;;
+    "database" | "db")
+        check_install 0 && database_menu
+        ;;
+    "reset" | "factory-reset")
+        check_install 0 && factory_reset 0
         ;;
     "enable")
         check_install 0 && enable 0

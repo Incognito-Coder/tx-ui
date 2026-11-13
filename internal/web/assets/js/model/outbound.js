@@ -1513,7 +1513,14 @@ class Outbound extends CommonClass {
     }
 
     static fromLink(link) {
-        data = link.split('://');
+        if (!link || typeof link !== 'string') return null;
+        const trimmed = link.trim();
+
+        if (trimmed.includes('[Interface]') || trimmed.includes('[Peer]')) {
+            return this.fromWireguardConf(trimmed);
+        }
+
+        const data = trimmed.split('://');
         if (data.length != 2) return null;
         switch (data[0].toLowerCase()) {
             case Protocols.VMess:
@@ -1521,10 +1528,13 @@ class Outbound extends CommonClass {
             case Protocols.VLESS:
             case Protocols.Trojan:
             case 'ss':
-                return this.fromParamLink(link);
+                return this.fromParamLink(trimmed);
             case 'hysteria2':
             case Protocols.Hysteria:
-                return this.fromHysteriaLink(link);
+                return this.fromHysteriaLink(trimmed);
+            case 'wireguard':
+            case Protocols.Wireguard:
+                return this.fromWireguardLink(trimmed);
             default:
                 return null;
         }
@@ -1717,6 +1727,187 @@ class Outbound extends CommonClass {
         let remark = hash ? decodeURIComponent(hash.substring(1)) : `out-hysteria-${port}`;
 
         return new Outbound(remark, Protocols.Hysteria, settings, stream);
+    }
+
+    static fromWireguardLink(link) {
+        try {
+            const url = new URL(link);
+            const params = url.searchParams;
+
+            let secretKey = '';
+            let endpoint = '';
+
+            if (url.username) {
+                secretKey = decodeURIComponent(url.username);
+                endpoint = url.host;
+            } else if (params.get('privatekey') || params.get('private_key') || params.get('secretkey') || params.get('secret_key')) {
+                secretKey = params.get('privatekey') || params.get('private_key') || params.get('secretkey') || params.get('secret_key');
+                endpoint = url.host;
+            } else {
+                endpoint = url.host;
+            }
+
+            if (!secretKey) {
+                secretKey = params.get('privatekey') || params.get('private_key') || params.get('secretkey') || params.get('secret_key') || '';
+            }
+
+            if (params.get('endpoint')) {
+                endpoint = params.get('endpoint');
+            }
+
+            const publicKey = params.get('publickey') || params.get('public_key') || params.get('peer_public_key') || params.get('peer_pubkey') || params.get('pubkey') || '';
+            const psk = params.get('preshared_key') || params.get('pre_shared_key') || params.get('presharedkey') || params.get('psk') || '';
+            const address = params.get('address') || params.get('ip') || '';
+            const mtu = parseInt(params.get('mtu')) || 1420;
+            const reserved = params.get('reserved') || '';
+            const keepAlive = parseInt(params.get('keepalive') || params.get('persistentkeepalive') || params.get('persistent_keepalive')) || 0;
+            const workers = parseInt(params.get('workers')) || 2;
+            const domainStrategy = params.get('domainStrategy') || params.get('domain_strategy') || '';
+
+            let allowedIPs = ['0.0.0.0/0', '::/0'];
+            const allowedStr = params.get('allowedips') || params.get('allowed_ips');
+            if (allowedStr) {
+                allowedIPs = allowedStr.split(',').map(s => s.trim()).filter(Boolean);
+            }
+
+            const peer = new Outbound.WireguardSettings.Peer(
+                publicKey,
+                psk,
+                allowedIPs,
+                endpoint,
+                keepAlive
+            );
+
+            const settings = new Outbound.WireguardSettings(
+                mtu,
+                secretKey,
+                address ? address.split(',').map(s => s.trim()) : [''],
+                workers,
+                domainStrategy,
+                reserved,
+                [peer],
+                false
+            );
+
+            let tag = url.hash ? decodeURIComponent(url.hash.substring(1)) : `out-wireguard-${endpoint ? endpoint.replace(/[^a-zA-Z0-9_.-]/g, '_') : 'link'}`;
+            if (!tag) tag = 'out-wireguard';
+
+            return new Outbound(tag, Protocols.Wireguard, settings, new StreamSettings());
+        } catch (e) {
+            console.error('Error parsing wireguard link:', e);
+            return null;
+        }
+    }
+
+    static fromWireguardConf(confText) {
+        try {
+            const lines = confText.split(/\r?\n/);
+            let currentSection = '';
+
+            let secretKey = '';
+            let address = '';
+            let mtu = 1420;
+            let reserved = '';
+
+            let peers = [];
+            let currentPeer = null;
+
+            for (let line of lines) {
+                line = line.trim();
+                if (!line || line.startsWith('#') || line.startsWith(';')) continue;
+
+                if (line.startsWith('[') && line.endsWith(']')) {
+                    currentSection = line.substring(1, line.length - 1).trim().toLowerCase();
+                    if (currentSection === 'peer') {
+                        currentPeer = {
+                            publicKey: '',
+                            psk: '',
+                            endpoint: '',
+                            allowedIPs: ['0.0.0.0/0', '::/0'],
+                            keepAlive: 0
+                        };
+                        peers.push(currentPeer);
+                    }
+                    continue;
+                }
+
+                const eqIdx = line.indexOf('=');
+                if (eqIdx === -1) continue;
+
+                const key = line.substring(0, eqIdx).trim().toLowerCase();
+                const val = line.substring(eqIdx + 1).trim();
+
+                if (currentSection === 'interface') {
+                    switch (key) {
+                        case 'privatekey':
+                            secretKey = val;
+                            break;
+                        case 'address':
+                            address = val;
+                            break;
+                        case 'mtu':
+                            mtu = parseInt(val) || 1420;
+                            break;
+                        case 'reserved':
+                            reserved = val;
+                            break;
+                    }
+                } else if (currentSection === 'peer' && currentPeer) {
+                    switch (key) {
+                        case 'publickey':
+                            currentPeer.publicKey = val;
+                            break;
+                        case 'presharedkey':
+                            currentPeer.psk = val;
+                            break;
+                        case 'endpoint':
+                            currentPeer.endpoint = val;
+                            break;
+                        case 'allowedips':
+                            currentPeer.allowedIPs = val.split(',').map(s => s.trim()).filter(Boolean);
+                            break;
+                        case 'persistentkeepalive':
+                            currentPeer.keepAlive = parseInt(val) || 0;
+                            break;
+                    }
+                }
+            }
+
+            if (!secretKey && peers.length === 0) {
+                return null;
+            }
+
+            const peerObjects = peers.map(p => new Outbound.WireguardSettings.Peer(
+                p.publicKey,
+                p.psk,
+                p.allowedIPs,
+                p.endpoint,
+                p.keepAlive
+            ));
+
+            if (peerObjects.length === 0) {
+                peerObjects.push(new Outbound.WireguardSettings.Peer());
+            }
+
+            const settings = new Outbound.WireguardSettings(
+                mtu,
+                secretKey,
+                address ? address.split(',').map(s => s.trim()) : [''],
+                2,
+                '',
+                reserved,
+                peerObjects,
+                false
+            );
+
+            const firstEndpoint = peerObjects[0].endpoint || '';
+            let tag = firstEndpoint ? `out-wireguard-${firstEndpoint.replace(/[^a-zA-Z0-9_.-]/g, '_')}` : 'out-wireguard';
+
+            return new Outbound(tag, Protocols.Wireguard, settings, new StreamSettings());
+        } catch (e) {
+            console.error('Error parsing wireguard conf:', e);
+            return null;
+        }
     }
 
     canEnableTls() {

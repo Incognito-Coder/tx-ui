@@ -5,6 +5,7 @@ Wants=network.target
 
 [Service]
 Environment="XRAY_VMESS_AEAD_FORCED=false"
+EnvironmentFile=-/etc/x-ui/x-ui.env
 Type=simple
 WorkingDirectory=/usr/local/x-ui/
 ExecStart=/usr/local/x-ui/x-ui

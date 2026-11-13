@@ -6,7 +6,9 @@ import (
 	"os"
 	"strings"
 
+	"x-ui/config"
 	"x-ui/internal/database/model"
+	"x-ui/internal/util/crypto"
 	"x-ui/xray"
 
 	"gorm.io/gorm"
@@ -66,30 +68,41 @@ func GetDBStatus() (*DBStatus, error) {
 		Details: make(map[string]int64),
 	}
 
-	if currentDBPath != "" {
-		if fi, err := os.Stat(currentDBPath); err == nil {
-			status.Size = fi.Size()
+	if config.GetDBType() == config.DBTypePostgres {
+		var dbSize int64
+		if err := db.Raw("SELECT pg_database_size(current_database());").Scan(&dbSize).Error; err == nil {
+			status.Size = dbSize
 		}
-		walPath := currentDBPath + "-wal"
-		if fi, err := os.Stat(walPath); err == nil {
-			status.WalSize = fi.Size()
-		}
-	}
-
-	status.TotalSize = status.Size + status.WalSize
-	status.SizeFormatted = FormatBytes(status.Size)
-	status.WalSizeFormatted = FormatBytes(status.WalSize)
-	status.TotalSizeFormatted = FormatBytes(status.TotalSize)
-
-	// Run PRAGMA integrity_check
-	var integrityResult string
-	err := db.Raw("PRAGMA integrity_check(1);").Scan(&integrityResult).Error
-	if err != nil {
-		status.IntegrityCheck = fmt.Sprintf("Error: %v", err)
-	} else if integrityResult == "" {
-		status.IntegrityCheck = "ok"
+		status.TotalSize = status.Size
+		status.SizeFormatted = FormatBytes(status.Size)
+		status.TotalSizeFormatted = FormatBytes(status.TotalSize)
+		status.IntegrityCheck = "ok (PostgreSQL)"
 	} else {
-		status.IntegrityCheck = integrityResult
+		if currentDBPath != "" {
+			if fi, err := os.Stat(currentDBPath); err == nil {
+				status.Size = fi.Size()
+			}
+			walPath := currentDBPath + "-wal"
+			if fi, err := os.Stat(walPath); err == nil {
+				status.WalSize = fi.Size()
+			}
+		}
+
+		status.TotalSize = status.Size + status.WalSize
+		status.SizeFormatted = FormatBytes(status.Size)
+		status.WalSizeFormatted = FormatBytes(status.WalSize)
+		status.TotalSizeFormatted = FormatBytes(status.TotalSize)
+
+		// Run PRAGMA integrity_check
+		var integrityResult string
+		err := db.Raw("PRAGMA integrity_check(1);").Scan(&integrityResult).Error
+		if err != nil {
+			status.IntegrityCheck = fmt.Sprintf("Error: %v", err)
+		} else if integrityResult == "" {
+			status.IntegrityCheck = "ok"
+		} else {
+			status.IntegrityCheck = integrityResult
+		}
 	}
 
 	// Scan corrupted / orphaned rows
@@ -105,6 +118,11 @@ func GetDBStatus() (*DBStatus, error) {
 }
 
 func Optimize() error {
+	if config.GetDBType() == config.DBTypePostgres {
+		return ExecWithRetry(5, func() error {
+			return db.Exec("ANALYZE;").Error
+		})
+	}
 	return ExecWithRetry(5, func() error {
 		if err := db.Exec("PRAGMA wal_checkpoint(TRUNCATE);").Error; err != nil {
 			return err
@@ -121,6 +139,31 @@ func Optimize() error {
 
 func Vacuum() (*VacuumResult, error) {
 	res := &VacuumResult{}
+
+	if config.GetDBType() == config.DBTypePostgres {
+		var beforeSize int64
+		_ = db.Raw("SELECT pg_database_size(current_database());").Scan(&beforeSize)
+		res.BeforeSize = beforeSize
+		res.BeforeSizeFormatted = FormatBytes(beforeSize)
+
+		err := ExecWithRetry(5, func() error {
+			return db.Exec("VACUUM;").Error
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		var afterSize int64
+		_ = db.Raw("SELECT pg_database_size(current_database());").Scan(&afterSize)
+		res.AfterSize = afterSize
+		res.AfterSizeFormatted = FormatBytes(afterSize)
+
+		if beforeSize > afterSize {
+			res.ReclaimedBytes = beforeSize - afterSize
+		}
+		res.ReclaimedFormatted = FormatBytes(res.ReclaimedBytes)
+		return res, nil
+	}
 
 	// Measure sizes before
 	if currentDBPath != "" {
@@ -375,8 +418,82 @@ func CleanCorruptedRows() (*CleanResult, error) {
 	result.Message = fmt.Sprintf("Successfully cleaned %d corrupted/orphaned rows (%d traffic, %d links, %d clients, %d IPs)",
 		result.TotalCleaned, result.CleanedTraffics, result.CleanedLinks, result.CleanedClients, result.CleanedIPs)
 
-	// Checkpoint WAL after cleanup
-	_ = db.Exec("PRAGMA wal_checkpoint(TRUNCATE);").Error
+	// Checkpoint WAL after cleanup if SQLite
+	if config.GetDBType() != config.DBTypePostgres {
+		_ = db.Exec("PRAGMA wal_checkpoint(TRUNCATE);").Error
+	}
 
 	return result, nil
+}
+
+func FactoryReset() error {
+	return ExecWithRetry(5, func() error {
+		return db.Transaction(func(tx *gorm.DB) error {
+			// 1. Delete all client traffic records
+			if err := tx.Session(&gorm.Session{AllowGlobalUpdate: true}).Where("1 = 1").Delete(&xray.ClientTraffic{}).Error; err != nil {
+				return err
+			}
+			// 2. Delete all outbound traffics
+			if err := tx.Session(&gorm.Session{AllowGlobalUpdate: true}).Where("1 = 1").Delete(&model.OutboundTraffics{}).Error; err != nil {
+				return err
+			}
+			// 3. Delete all inbound client IPs
+			if err := tx.Session(&gorm.Session{AllowGlobalUpdate: true}).Where("1 = 1").Delete(&model.InboundClientIps{}).Error; err != nil {
+				return err
+			}
+			// 4. Delete all node client links and node clients
+			if err := tx.Session(&gorm.Session{AllowGlobalUpdate: true}).Where("1 = 1").Delete(&model.NodeClientLink{}).Error; err != nil {
+				return err
+			}
+			if err := tx.Session(&gorm.Session{AllowGlobalUpdate: true}).Where("1 = 1").Delete(&model.NodeClient{}).Error; err != nil {
+				return err
+			}
+			// 5. Delete all client devices
+			if err := tx.Session(&gorm.Session{AllowGlobalUpdate: true}).Where("1 = 1").Delete(&model.ClientDevice{}).Error; err != nil {
+				return err
+			}
+			// 6. Delete all inbounds
+			if err := tx.Session(&gorm.Session{AllowGlobalUpdate: true}).Where("1 = 1").Delete(&model.Inbound{}).Error; err != nil {
+				return err
+			}
+			// 7. Delete all settings
+			if err := tx.Session(&gorm.Session{AllowGlobalUpdate: true}).Where("1 = 1").Delete(&model.Setting{}).Error; err != nil {
+				return err
+			}
+			// 8. Delete all seeders
+			if err := tx.Session(&gorm.Session{AllowGlobalUpdate: true}).Where("1 = 1").Delete(&model.HistoryOfSeeders{}).Error; err != nil {
+				return err
+			}
+			// 9. Delete all users
+			if err := tx.Session(&gorm.Session{AllowGlobalUpdate: true}).Where("1 = 1").Delete(&model.User{}).Error; err != nil {
+				return err
+			}
+
+			// 10. Re-create default admin user
+			hashedPassword, err := crypto.HashPasswordAsBcrypt(defaultPassword)
+			if err != nil {
+				return err
+			}
+
+			defaultAdmin := &model.User{
+				Username:        defaultUsername,
+				Password:        hashedPassword,
+				LoginSecret:     defaultSecret,
+				Role:            "admin",
+				Permissions:     "*",
+				AllowedInbounds: "*",
+				CanResetTraffic: true,
+				Status:          "active",
+			}
+			if err := tx.Create(defaultAdmin).Error; err != nil {
+				return err
+			}
+
+			// 11. Mark password hash seeder as completed
+			hashSeeder := &model.HistoryOfSeeders{
+				SeederName: "UserPasswordHash",
+			}
+			return tx.Create(hashSeeder).Error
+		})
+	})
 }

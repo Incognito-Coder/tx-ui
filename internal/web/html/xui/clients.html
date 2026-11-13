@@ -987,10 +987,10 @@
                             <div slot="title">
                                 <div class="clients-card-header">
                                     <div class="clients-action-buttons">
-                                        <a-button @click="clientModal.showAdd()" icon="user-add" type="primary">
+                                        <a-button @click="clientModal.showAdd()" icon="user-add" type="primary" :disabled="currentUser.isViewer">
                                             <template v-if="!isMobile">{{ i18n "pages.client.add" }}</template>
                                         </a-button>
-                                        <a-button @click="bulkModal.show()" icon="usergroup-add">
+                                        <a-button @click="bulkModal.show()" icon="usergroup-add" :disabled="currentUser.isViewer">
                                             <template v-if="!isMobile">{{ i18n "pages.client.bulk" }}</template>
                                         </a-button>
                                         <a-dropdown :trigger="['click']">
@@ -998,11 +998,11 @@
                                                 <template v-if="!isMobile">{{ i18n "pages.inbounds.generalActions" }}</template>
                                             </a-button>
                                             <a-menu :theme="themeSwitcher.currentTheme" @click="handleGeneralAction" slot="overlay">
-                                                <a-menu-item key="resetAllTraffics">
+                                                <a-menu-item key="resetAllTraffics" :disabled="currentUser.isViewer || !currentUser.canResetTraffic">
                                                     <a-icon type="retweet"></a-icon>
                                                     {{ i18n "pages.inbounds.resetAllClientTraffics" }}
                                                 </a-menu-item>
-                                                <a-menu-item key="delDepleted" style="color: var(--ui-danger);">
+                                                <a-menu-item key="delDepleted" style="color: var(--ui-danger);" :disabled="currentUser.isViewer">
                                                     <a-icon type="rest"></a-icon>
                                                     {{ i18n "pages.inbounds.delDepletedClients" }}
                                                 </a-menu-item>
@@ -1073,7 +1073,7 @@
 
                                         <!-- Bulk Manage Links Button -->
                                         <a-button @click="openBulkLinksModal" icon="link" type="primary" ghost
-                                            v-if="selectedRowKeys.length > 0">
+                                            v-if="selectedRowKeys.length > 0" :disabled="currentUser.isViewer">
                                             <template v-if="!isMobile">{{ i18n "pages.node_clients.bulkManageLinks" }} ([[ selectedRowKeys.length ]])</template>
                                             <template v-else>
                                                 <a-icon type="link"></a-icon> ([[ selectedRowKeys.length ]])
@@ -1081,7 +1081,7 @@
                                         </a-button>
 
                                         <a-button @click="confirmBulkDelete" icon="delete" type="danger"
-                                            v-if="selectedRowKeys.length > 0">
+                                            v-if="selectedRowKeys.length > 0" :disabled="currentUser.isViewer">
                                             <template v-if="!isMobile">{{ i18n "delete" }} ([[ selectedRowKeys.length ]])</template>
                                             <template v-else>([[ selectedRowKeys.length ]])</template>
                                         </a-button>
@@ -1159,7 +1159,8 @@
                                 :scroll="{ x: isMobile ? 380 : 850 }">
                                 <!-- Action column -->
                                 <template slot="action" slot-scope="text, c">
-                                    <a-dropdown :trigger="['click']">
+                                    <div style="display: flex; align-items: center; justify-content: center;">
+                                        <a-dropdown :trigger="['click']">
                                             <a-icon @click="e => e.preventDefault()" style="font-size: 20px; cursor: pointer;"
                                                 type="more"></a-icon>
                                             <a-menu :theme="themeSwitcher.currentTheme" @click="a => clickAction(a, c)"
@@ -1172,11 +1173,11 @@
                                                     <a-icon type="qrcode"></a-icon>
                                                     {{ i18n "qrCode" }} / {{ i18n "links" }}
                                                 </a-menu-item>
-                                                <a-menu-item key="edit">
+                                                <a-menu-item key="edit" :disabled="currentUser.isViewer">
                                                     <a-icon type="edit"></a-icon>
                                                     {{ i18n "edit" }}
                                                 </a-menu-item>
-                                                <a-menu-item key="manageLinks">
+                                                <a-menu-item key="manageLinks" :disabled="currentUser.isViewer">
                                                     <a-icon type="link"></a-icon>
                                                     {{ i18n "pages.node_clients.manageLinks" }}
                                                     <template v-if="isMobile">
@@ -1187,23 +1188,24 @@
                                                         </a-badge>
                                                     </template>
                                                 </a-menu-item>
-                                                <a-menu-item key="resetTraffic">
+                                                <a-menu-item key="resetTraffic" :disabled="currentUser.isViewer || !currentUser.canResetTraffic">
                                                     <a-icon type="retweet"></a-icon>
                                                     {{ i18n "pages.inbounds.resetTraffic" }}
                                                 </a-menu-item>
                                                 <a-menu-divider></a-menu-divider>
-                                                <a-menu-item key="delete">
+                                                <a-menu-item key="delete" :disabled="currentUser.isViewer">
                                                     <span style="color: var(--ui-danger)">
                                                         <a-icon type="delete"></a-icon> {{ i18n "delete" }}
                                                     </span>
                                                 </a-menu-item>
                                             </a-menu>
                                         </a-dropdown>
+                                    </div>
                                 </template>
 
                                 <!-- Enable toggle column -->
                                 <template slot="enable" slot-scope="text, c">
-                                    <a-switch @change="toggleEnable(c)" v-model="c.enable"></a-switch>
+                                    <a-switch :disabled="currentUser.isViewer" @change="toggleEnable(c)" v-model="c.enable"></a-switch>
                                 </template>
 
                                 <!-- Client Email & SubId & Online indicator -->
@@ -1290,14 +1292,15 @@
                                 <template slot="linkedInbounds" slot-scope="text, c">
                                     <div style="display: inline-flex; align-items: center; justify-content: center;">
                                         <template v-if="getClientLinks(c).length === 0">
-                                            <a-tag color="red" class="inbound-menu-trigger" @click="manageLinks(c)">
+                                            <a-tag color="red" class="inbound-menu-trigger" :style="currentUser.isViewer ? 'cursor: default;' : 'cursor: pointer;'"
+                                                   @click="currentUser.isViewer ? null : manageLinks(c)">
                                                 <a-icon type="disconnect"></a-icon>
                                                 <span>{{ i18n "pages.node_clients.manageLinks" }} (0)</span>
                                             </a-tag>
                                         </template>
                                         <template v-else>
                                             <a-dropdown :trigger="['click']">
-                                                <a-tag color="blue" class="inbound-menu-trigger">
+                                                <a-tag color="blue" class="inbound-menu-trigger" style="cursor: pointer;">
                                                     <a-icon type="link"></a-icon>
                                                     <span>
                                                         <template v-if="getClientLinks(c).length === 1">
@@ -1310,23 +1313,35 @@
                                                     <a-icon type="down" style="font-size: 10px;"></a-icon>
                                                 </a-tag>
                                                 <a-menu :theme="themeSwitcher.currentTheme" slot="overlay"
-                                                    style="max-height: 280px; overflow-y: auto; min-width: 220px; box-shadow: 0 4px 16px rgba(0,0,0,0.18); border-radius: 8px; padding: 4px 0;">
+                                                    style="max-height: 320px; overflow-y: auto; min-width: 270px; box-shadow: 0 4px 16px rgba(0,0,0,0.18); border-radius: 8px; padding: 4px 0;">
                                                     <a-menu-item-group :title="getClientLinks(c).length + ' {{ i18n "inbounds" }}'">
-                                                        <a-menu-item v-for="l in getClientLinks(c)" :key="l.inboundId" @click="manageLinks(c)"
+                                                        <a-menu-item v-for="l in getClientLinks(c)" :key="l.inboundId" @click="showClientQrcodes(c, l.inboundId)"
                                                             style="display: flex; align-items: center; justify-content: space-between; padding: 6px 14px;">
-                                                            <div style="display: flex; align-items: center; gap: 6px;">
+                                                            <div style="display: flex; align-items: center; gap: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 175px;">
                                                                 <a-icon type="api" style="color: var(--ui-primary);"></a-icon>
-                                                                <strong>[[ getInboundRemark(l.inboundId) ]]</strong>
+                                                                <strong style="font-size: 12px;">[[ getInboundRemark(l.inboundId) ]]</strong>
                                                                 <span style="font-size: 11px; color: var(--ui-text-muted);">([[ getInboundProtoPort(l.inboundId) ]])</span>
                                                             </div>
-                                                            <a-tag size="small" color="cyan" v-if="l.flow" style="font-size: 10px; margin-left: 8px;">[[ l.flow ]]</a-tag>
+                                                            <div style="display: flex; align-items: center; gap: 6px;" @click.stop>
+                                                                <a-tag size="small" color="cyan" v-if="l.flow" style="font-size: 10px; margin: 0;">[[ l.flow ]]</a-tag>
+                                                                <a-tooltip title='{{ i18n "copy" }} URI'>
+                                                                    <a-icon type="copy" style="color: var(--ui-primary); cursor: pointer; font-size: 13px;"
+                                                                            @click.stop="copyClientInboundLink(c, l.inboundId)"></a-icon>
+                                                                </a-tooltip>
+                                                                <a-tooltip title='{{ i18n "qrCode" }}'>
+                                                                    <a-icon type="qrcode" style="color: var(--ui-primary); cursor: pointer; font-size: 13px;"
+                                                                            @click.stop="showClientQrcodes(c, l.inboundId)"></a-icon>
+                                                                </a-tooltip>
+                                                            </div>
                                                         </a-menu-item>
                                                     </a-menu-item-group>
-                                                    <a-menu-divider></a-menu-divider>
-                                                    <a-menu-item @click="manageLinks(c)" style="color: var(--ui-primary); font-weight: 500;">
-                                                        <a-icon type="edit" style="margin-right: 6px;"></a-icon>
-                                                        {{ i18n "pages.node_clients.manageLinks" }}
-                                                    </a-menu-item>
+                                                    <template v-if="!currentUser.isViewer">
+                                                        <a-menu-divider></a-menu-divider>
+                                                        <a-menu-item @click="manageLinks(c)" style="color: var(--ui-primary); font-weight: 500;">
+                                                            <a-icon type="edit" style="margin-right: 6px;"></a-icon>
+                                                            {{ i18n "pages.node_clients.manageLinks" }}
+                                                        </a-menu-item>
+                                                    </template>
                                                 </a-menu>
                                             </a-dropdown>
                                         </template>
@@ -2374,6 +2389,15 @@
                 selectedRowKeys: [],
                 pageSize: 50,
                 isMobile: window.innerWidth <= 768,
+                currentUser: {
+                    id: {{ if .user }}{{ .user.Id }}{{ else }}0{{ end }},
+                    username: '{{ if .user }}{{ .user.Username }}{{ end }}',
+                    role: '{{ if .user }}{{ .user.Role }}{{ else }}admin{{ end }}',
+                    permissions: '{{ if .user }}{{ .user.Permissions }}{{ else }}*{{ end }}',
+                    canResetTraffic: {{ if .user }}{{ if .user.CanResetTraffic }}true{{ else }}false{{ end }}{{ else }}true{{ end }},
+                    isAdmin: {{ if .user }}{{ if .user.IsAdmin }}true{{ else }}false{{ end }}{{ else }}true{{ end }},
+                    isViewer: {{ if .user }}{{ if eq .user.Role "viewer" }}true{{ else }}false{{ end }}{{ else }}false{{ end }},
+                },
                 clientSortBy: 'default',
                 clientSortOrder: 'asc',
                 datepicker: 'gregorian',
@@ -2423,6 +2447,10 @@
                         else this.delayedExpireDays = 0;
                     },
                     showAdd(defaultInboundId = null) {
+                        if (app.currentUser.isViewer) {
+                            app.$message.error('{{ i18n "pages.forbidden.clientDenied" }}');
+                            return;
+                        }
                         this.isEdit = false;
                         this.title = '{{ i18n "pages.client.add" }}';
                         this.okText = '{{ i18n "sure" }}';
@@ -2472,6 +2500,10 @@
                         this.visible = true;
                     },
                     showEdit(c) {
+                        if (app.currentUser.isViewer) {
+                            app.$message.error('{{ i18n "pages.forbidden.clientDenied" }}');
+                            return;
+                        }
                         this.isEdit = true;
                         this.title = '{{ i18n "pages.client.edit" }}: ' + c.email;
                         this.okText = '{{ i18n "sure" }}';
@@ -3071,6 +3103,11 @@
                     return formatSecond((expTime - now) / 1000);
                 },
                 async toggleEnable(c) {
+                    if (this.currentUser.isViewer) {
+                        c.enable = !c.enable;
+                        this.$message.error('{{ i18n "pages.forbidden.clientDenied" }}');
+                        return;
+                    }
                     const msg = await HttpUtil.post(`/panel/api/clients/${c.id}/toggle`);
                     if (!msg.success) {
                         c.enable = !c.enable;
@@ -3343,23 +3380,101 @@
                 clickAction(action, c) {
                     if (action.key === 'info') this.showClientDetail(c);
                     else if (action.key === 'showLinks') this.showClientQrcodes(c);
-                    else if (action.key === 'edit') this.clientModal.showEdit(c);
-                    else if (action.key === 'manageLinks') this.manageLinks(c);
-                    else if (action.key === 'resetTraffic') this.confirmResetTraffic(c);
-                    else if (action.key === 'delete') this.confirmDelete(c);
+                    else if (action.key === 'edit') {
+                        if (this.currentUser.isViewer) {
+                            this.$message.error('{{ i18n "pages.forbidden.clientDenied" }}');
+                            return;
+                        }
+                        this.clientModal.showEdit(c);
+                    } else if (action.key === 'manageLinks') {
+                        if (this.currentUser.isViewer) {
+                            this.$message.error('{{ i18n "pages.forbidden.clientDenied" }}');
+                            return;
+                        }
+                        this.manageLinks(c);
+                    } else if (action.key === 'resetTraffic') {
+                        if (this.currentUser.isViewer || !this.currentUser.canResetTraffic) {
+                            this.$message.error('{{ i18n "pages.forbidden.trafficResetDenied" }}');
+                            return;
+                        }
+                        this.confirmResetTraffic(c);
+                    } else if (action.key === 'delete') {
+                        if (this.currentUser.isViewer) {
+                            this.$message.error('{{ i18n "pages.forbidden.deleteDenied" }}');
+                            return;
+                        }
+                        this.confirmDelete(c);
+                    }
                 },
                 manageLinks(c) {
                     this.linkDrawer.show(c);
                 },
-                async showClientQrcodes(c) {
+                getSingleInboundClientLink(c, inboundId) {
+                    const ib = this.inboundMap[inboundId] || this.inboundMap[Number(inboundId)];
+                    if (!ib) return '';
+                    const dbInbound = new DBInbound(ib);
+                    const inbound = dbInbound.toInbound();
+                    const isValidMtproto = (s) => {
+                        if (typeof RandomUtil !== 'undefined' && typeof RandomUtil.isValidMtprotoSecret === 'function') {
+                            return RandomUtil.isValidMtprotoSecret(s);
+                        }
+                        return !!(s && typeof s === 'string' && (s.startsWith('ee') || s.startsWith('dd') || s.length >= 32));
+                    };
+                    const isValidWg = (k) => typeof Wireguard !== 'undefined' && typeof Wireguard.isValidKey === 'function' ? Wireguard.isValidKey(k) : (k && typeof k === 'string' && k.length === 44 && k.endsWith('='));
+                    let privKey = isValidWg(c.privateKey) ? c.privateKey : (isValidWg(c.password) ? c.password : '');
+                    let pubKey = isValidWg(c.publicKey) ? c.publicKey : (isValidWg(c.id) ? c.id : '');
+                    if (!privKey || !pubKey) {
+                        if (typeof Wireguard !== 'undefined' && typeof Wireguard.generateKeypair === 'function') {
+                            let kp = Wireguard.generateKeypair(privKey);
+                            privKey = kp.privateKey;
+                            pubKey = kp.publicKey;
+                        }
+                    }
+                    let psk = isValidWg(c.preSharedKey || c.psk) ? (c.preSharedKey || c.psk) : '';
+                    if (!psk && typeof Wireguard !== 'undefined' && typeof Wireguard.generatePresharedKey === 'function') {
+                        psk = Wireguard.keyToBase64(Wireguard.generatePresharedKey());
+                    }
+                    const clientObj = Object.assign({}, c, {
+                        id: c.uuid || c.id,
+                        secret: isValidMtproto(c.secret)
+                            ? c.secret
+                            : (isValidMtproto(c.password)
+                                ? c.password
+                                : ((typeof RandomUtil !== 'undefined' && typeof RandomUtil.randomMtprotoSecret === 'function') ? RandomUtil.randomMtprotoSecret() : '')),
+                        password: c.password || c.uuid || c.id,
+                        publicKey: pubKey,
+                        privateKey: privKey,
+                        preSharedKey: psk,
+                        psk: psk,
+                        adTag: c.adTag,
+                    });
+                    const gen = inbound.genAllLinks(dbInbound.remark, this.remarkModel, clientObj);
+                    if (gen && gen.length > 0) {
+                        const item = gen[0];
+                        return ([Protocols.WIREGUARD, Protocols.AMNEZIAWG, Protocols.MTPROTO].includes(inbound.protocol) && item.url) ? item.url : item.link;
+                    }
+                    return '';
+                },
+                copyClientInboundLink(c, inboundId) {
+                    const link = this.getSingleInboundClientLink(c, inboundId);
+                    if (link) {
+                        this.copyText(link);
+                    } else {
+                        this.$message.warning('No connection link available for this inbound');
+                    }
+                },
+                async showClientQrcodes(c, filterInboundId) {
                     this.qrModal.client = c;
-                    this.qrModal.title = `${c.email}`;
+                    this.qrModal.title = `${c.email}` + (filterInboundId ? ` - ${this.getInboundRemark(filterInboundId)}` : '');
                     this.qrModal.qrcodes = [];
                     this.qrModal.subLink = '';
                     this.qrModal.subJsonLink = '';
 
                     const links = this.clientLinksMap[c.id] || [];
                     links.forEach(l => {
+                        if (filterInboundId && Number(l.inboundId) !== Number(filterInboundId)) {
+                            return;
+                        }
                         const ib = this.inboundMap[l.inboundId];
                         if (!ib) return;
                         const dbInbound = new DBInbound(ib);
@@ -3407,7 +3522,7 @@
                         });
                     });
 
-                    if (this.subSettings.enable && c.subId) {
+                    if (!filterInboundId && this.subSettings.enable && c.subId) {
                         this.qrModal.subLink = this.subSettings.subURI + c.subId;
                         this.qrModal.subJsonLink = this.subSettings.subJsonURI + c.subId;
                         this.qrModal.tab = 'sub';
@@ -3551,6 +3666,10 @@
                     }
                 },
                 confirmDelete(c) {
+                    if (this.currentUser.isViewer) {
+                        this.$message.error('{{ i18n "pages.forbidden.deleteDenied" }}');
+                        return;
+                    }
                     this.$confirm({
                         title: 'Delete Client "' + c.email + '"',
                         content: 'Are you sure you want to delete this client? All links will be removed.',
@@ -3566,6 +3685,10 @@
                     });
                 },
                 confirmBulkDelete() {
+                    if (this.currentUser.isViewer) {
+                        this.$message.error('{{ i18n "pages.forbidden.deleteDenied" }}');
+                        return;
+                    }
                     const count = this.selectedRowKeys.length;
                     if (count === 0) return;
                     this.$confirm({
@@ -3590,6 +3713,10 @@
                     });
                 },
                 openBulkLinksModal() {
+                    if (this.currentUser.isViewer) {
+                        this.$message.error('{{ i18n "pages.forbidden.clientDenied" }}');
+                        return;
+                    }
                     if (this.selectedRowKeys.length === 0) {
                         this.$message.warning('{{ i18n "pages.node_clients.noClientsSelected" }}');
                         return;

@@ -181,27 +181,44 @@
                     .ant-btn-default {\
                         box-shadow: none !important;\
                     }\
-                    .ant-btn-primary {\
+                    .ant-btn-primary:not([disabled]):not(.disabled) {\
                         background: ' + theme.primary + ' !important;\
                         background-color: ' + theme.primary + ' !important;\
                         border-color: ' + theme.primary + ' !important;\
                         color: #ffffff !important;\
                         box-shadow: none !important;\
                     }\
-                    .ant-btn-primary:hover,\
-                    .ant-btn-primary:focus {\
+                    .ant-btn-primary:not([disabled]):not(.disabled):hover,\
+                    .ant-btn-primary:not([disabled]):not(.disabled):focus {\
                         background: ' + theme.hover + ' !important;\
                         background-color: ' + theme.hover + ' !important;\
                         border-color: ' + theme.hover + ' !important;\
                         color: #ffffff !important;\
                         box-shadow: none !important;\
                     }\
-                    .ant-btn-primary:active,\
-                    .ant-btn-primary.active {\
+                    .ant-btn-primary:not([disabled]):not(.disabled):active,\
+                    .ant-btn-primary.active:not([disabled]):not(.disabled) {\
                         background: ' + theme.primary + ' !important;\
                         background-color: ' + theme.primary + ' !important;\
                         border-color: ' + theme.primary + ' !important;\
                         color: #ffffff !important;\
+                        box-shadow: none !important;\
+                    }\
+                    .ant-btn[disabled],\
+                    .ant-btn[disabled]:hover,\
+                    .ant-btn[disabled]:focus,\
+                    .ant-btn.disabled,\
+                    .ant-btn.disabled:hover,\
+                    .ant-btn.disabled:focus,\
+                    .ant-btn-primary[disabled],\
+                    .ant-btn-primary[disabled]:hover,\
+                    .ant-btn-primary[disabled]:focus {\
+                        color: var(--ui-text-muted) !important;\
+                        border-color: var(--ui-border) !important;\
+                        background: var(--ui-surface-muted) !important;\
+                        background-color: var(--ui-surface-muted) !important;\
+                        cursor: not-allowed !important;\
+                        opacity: 0.65 !important;\
                         box-shadow: none !important;\
                     }\
                     .ant-switch-checked {\

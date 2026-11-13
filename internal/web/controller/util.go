@@ -8,6 +8,7 @@ import (
 	"x-ui/config"
 	"x-ui/internal/logger"
 	"x-ui/internal/web/entity"
+	"x-ui/internal/web/session"
 
 	"github.com/gin-gonic/gin"
 )
@@ -64,6 +65,7 @@ func html(c *gin.Context, name string, title string, data gin.H) {
 		data = gin.H{}
 	}
 	data["title"] = title
+	data["user"] = session.GetLoginUser(c)
 	host := c.GetHeader("X-Forwarded-Host")
 	if host == "" {
 		host = c.GetHeader("X-Real-IP")
@@ -79,6 +81,23 @@ func html(c *gin.Context, name string, title string, data gin.H) {
 	data["request_uri"] = c.Request.RequestURI
 	data["base_path"] = c.GetString("base_path")
 	c.HTML(http.StatusOK, name, getContext(data))
+}
+
+func render403(c *gin.Context, reasonKey string) {
+	reason := ""
+	if reasonKey != "" {
+		reason = I18nWeb(c, reasonKey)
+		if reason == "" {
+			reason = reasonKey
+		}
+	} else {
+		reason = I18nWeb(c, "pages.forbidden.adminRequired")
+	}
+	c.Status(http.StatusForbidden)
+	html(c, "403.html", "pages.forbidden.title", gin.H{
+		"reason": reason,
+	})
+	c.Abort()
 }
 
 func getContext(h gin.H) gin.H {

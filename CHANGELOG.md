@@ -5,6 +5,75 @@ All notable changes to **TX-UI** will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.9.8] - 2026-11-13
+
+### 🚀 Features & Enhancements
+- **WireGuard Outbound Protocol Parser (`wireguard://` & `.conf`)**:
+  - **Dual Format Parser**: Enhanced the Outbound creation modal with native parsing for both standard WireGuard INI configuration files (`.conf` format containing `[Interface]` and `[Peer]` sections) and `wireguard://` link URIs in `outbound.js`.
+  - **Direct `.conf` File Upload**: Added an upload button (`Upload .conf`) in the Outbound modal (`outbound.html`, `xray_outbound_modal.html`) that reads and automatically parses `.conf` and `.txt` files directly into outbound form fields and JSON representations.
+  - **Full Parameter Extraction**: Seamlessly extracts private key, address/CIDR, MTU, reserved bytes (`0,0,0`), peer public key, preshared key (PSK), endpoint host/port, allowed IPs, persistent keepalive, and workers.
+  - **Interactive Import UI**: Updated outbound modal input placeholders and toasts (`outbound.html`, `xray_outbound_modal.html`) to guide administrators in importing WireGuard configs as easily as VMess, VLESS, Trojan, SS, and Hysteria2.
+
+- **In-Panel Live Subscription Template Editor & Dynamic Preview**:
+  - **Interactive Live Editor**: Added a full-featured subscription template editor directly inside the Settings Sub Template modal (`settings.html`). Features a side-by-side layout with code editor on the left and a live sandbox preview iframe on the right.
+  - **Syntax Highlighting & Responsive Width**: Integrated CodeMirror 5 XML & HTML-Mixed modes with syntax highlighting for HTML tags, attributes, strings, comments, and Go template tags `{{ ... }}`. Extended modal dialog width to 1420px (96vw) for an expansive coding environment.
+  - **Real-Time Dynamic Preview API**: Added `POST /previewSubTemplate` endpoint rendering realistic mock subscription profiles across multiple protocol links (VLESS Reality, VMess WS, Trojan TLS, WireGuard, Hysteria2), formatted traffic usage stats, expire date counters, and QR code details.
+  - **Instant Save & Core Synchronization**: Implemented `POST /saveSubTemplateContent` with template syntax pre-validation, mock execution test run, persistent atomic disk synchronization across `/etc/x-ui/html` and `sub/html`, automatic `subCustomUI` activation, and graceful panel hot-reloading.
+  - **Template Content Management**: Added `GET /getSubTemplateContent` with automatic fallback to embedded template assets (`htmlFS`) when custom templates are absent.
+
+- **Multi-Staff RBAC Management & Inbound Scoping**:
+  - **Role-Based Access Control (RBAC)**: Added multi-staff administrative support with granular role tiers (`admin`, `staff`, `viewer`) and permission management stored in the `User` database model.
+  - **Granular Operational Scopes**: Added explicit scoped rules and permissions for database backup/export (`CanBackupDB`), database restore/import (`CanRestoreDB`), Xray service control (`CanOperateXray`), Geo data updates (`CanOperateGeo`), and viewing configs/QR codes (`CanViewLinks`).
+  - **Viewer Restrictions & Capabilities**: Strictly forbidden `viewer` accounts from performing database backups/restores, Xray operations (stop/restart/rollback/install), and Geofile updates on both backend APIs and UI, while explicitly empowering viewers to inspect connection configurations and display QR codes across `clients.html` and `inbounds.html`.
+  - **Direct Client Connection URI & QR Access**: Added one-click **Copy URI** button and single-inbound **QR Code** button directly inside each linked inbound menu item in `clients.html`. Dynamically generates full protocol connection URIs (`vless://`, `vmess://`, `trojan://`, `wg://`, etc.) for instant clipboard copying.
+  - **Tabbed QR Code Modal**: Added multi-inbound tabbed QR modal and direct QR modal support for viewers across `clients.html` and `inbound_client_table.html`.
+  - **Inbound Data Visibility for Viewers**: Resolved inbound retrieval filtering in `InboundController.getInbounds` so viewer and staff accounts receive the inbound list to populate `inboundMap` and generate client connection links without permission errors.
+  - **403 Forbidden Action Feedback**: Enforced immediate 403 Forbidden alerts and toasts across `index.html`, `inbounds.html`, and `clients.html` whenever an unauthorized user touches or triggers restricted operations.
+  - **Inbound Access Scoping**: Implemented inbound-level scoping (`AllowedInbounds`), allowing administrators to restrict staff users to managing specific inbounds (e.g. `[1, 2, 5]` or comma-separated `1, 2, 5`) or full panel access (`*`). Inbound listings, edits, and operations are strictly filtered by user scope in `inbound.go`.
+  - **Node Client Controller Scoping**: Scoped all operations in `node_client.go` (`list`, `create`, `bulkCreate`, `update`, `del`, `bulkDel`, `setLinks`, `bulkSetLinks`, `toggle`, `resetTraffic`, `clearDevices`) so staff can only view and manage clients linked to their allowed inbounds.
+  - **Permission Guards & Viewer Role**: Restricted `viewer` accounts to read-only access across the board, automatically disabling or hiding action buttons (add inbound, add client, bulk operations, edit, delete, enable toggles) across `inbounds.html` and `clients.html`.
+  - **Traffic Reset Permissions**: Added fine-grained permissions for traffic resets (`CanResetTraffic`), restricting client and node traffic reset capabilities to authorized staff or full admins.
+  - **403 Forbidden Access Control & i18n**: Added custom themed 403 Forbidden page (`403.html`) and backend HTTP 403 responses on unauthorized page or API access. Fully localized across all 13 supported languages.
+  - **Staff Administration UI**: Enhanced the "Staff & Access Control" management tab in Settings (`settings.html`) with interactive user listing, operational scope tags (`Traffic Reset`, `Xray Control`, `Geo Updates`, `DB Backup`, `DB Restore`, `Configs & QR`), and expanded modal forms for configuring custom scoped rules and granular permissions.
+  - **Security Safeguards**: Enforced admin-only authorization on all staff management API endpoints (`/staff/list`, `/staff/add`, `/staff/update/:id`, `/staff/delete/:id`), prevented self-deletion of active accounts, and protected against deleting the last remaining administrator.
+
+- **Factory Reset in CLI & Web UI (with Session Destruction)**:
+  - **Web UI Factory Reset**: Added interactive Factory Reset option under the "Database Maintenance" section in Settings (`settings.html`) with dual-confirmation popconfirm modal.
+  - **CLI Factory Reset**: Added `x-ui reset` CLI command (`cmd/reset.go`), root CLI command `reset`, and interactive option 28 in `x-ui.sh`.
+  - **Clean State Restoration**: Cleanly wipes SQLite database file or PostgreSQL schema, re-initializes tables, recreates default admin credentials, and automatically restarts Xray core.
+  - **Immediate Session Destruction**: In `session.go`, `ClearSession(c)` purges session data, sets cookie `MaxAge: -1`, deletes `tx-ui` cookies on both root and `base_path`, purges `localStorage` and `sessionStorage`, and invalidates all lingering browser sessions across user recreate, immediately forcing redirection to `/login`.
+
+- **PostgreSQL Multi-Engine Database Support (GORM)**:
+  - **Universal Database Engine**: Added first-class PostgreSQL support alongside existing SQLite engine via `gorm.io/driver/postgres` (`v1.6.3`) and `pgx/v5` (`v5.10.0`), allowing horizontal scalability, cloud RDS/Aurora hosting, and high-availability multi-instance setups.
+  - **Flexible Configuration Options**: Configure via `XUI_DB_TYPE=postgres` with connection strings through `XUI_DB_POSTGRES_DSN`, `DATABASE_URL`, or individual environment variables (`XUI_DB_HOST`, `XUI_DB_PORT`, `XUI_DB_USER`, `XUI_DB_PASSWORD`, `XUI_DB_NAME`, `XUI_DB_SSLMODE`, `XUI_DB_TIMEZONE`).
+  - **Production Connection Pooling**: Configured connection pool parameters (50 max open connections, 10 max idle connections, 1-hour connection max lifetime) for high performance under heavy concurrent subscriber load.
+  - **Interactive CLI & Systemd Environment**: Added database configuration submenu (Option 27 & `x-ui database`) in `x-ui.sh` to switch engines, configure credentials, and save to `/etc/x-ui/x-ui.env`. Updated `x-ui.service` with `EnvironmentFile=-/etc/x-ui/x-ui.env` and `cmd/run.go` to load environment files automatically.
+  - **Engine-Aware Database Maintenance**: Adapted database health checks (`GetDBStatus`), maintenance optimization (`Optimize`), and space reclamation (`Vacuum`) to conditionally run PostgreSQL-native queries (`pg_database_size`, `ANALYZE`, `VACUUM`) while preserving SQLite-specific `PRAGMA wal_checkpoint` and WAL pragmas.
+
+- **Extended Multi-Architecture Cross-Compilation & Builder Tooling**:
+  - **Expanded Architecture Matrix**: Extended cross-compilation scripts (`build.ps1`, `build.sh`, `Makefile`) to support 10 additional architecture targets: `linux-riscv64`, `linux-mips`, `linux-mipsle`, `linux-mips64`, `linux-mips64le`, `linux-ppc64le`, `linux-loong64`, `freebsd-amd64`, `freebsd-arm64`, and `freebsd-386` (increasing total platform matrix from 12 to 22 platforms).
+  - **Pure-Go SQLite Driver for CGO-Free Cross-Compilation**: Implemented automatic dual-driver SQLite support with build tags ([sqlite_cgo.go](file:///c:/Users/mrali/GolandProjects/tx-ui/internal/database/sqlite_cgo.go) and [sqlite_nocgo.go](file:///c:/Users/mrali/GolandProjects/tx-ui/internal/database/sqlite_nocgo.go)). When building with `CGO_ENABLED=0` (pure Go fallback without target C cross-compilers), GORM automatically switches to pure-Go `github.com/glebarez/sqlite` (`modernc.org/sqlite`), completely resolving runtime `mattn/go-sqlite3` stub errors (`go-sqlite3 requires cgo to work. This is a stub`) when starting on target machines.
+  - **Installer Architecture Support**: Updated `install.sh` architecture detection to automatically recognize all 7 cross-builder Linux architectures (`riscv64`, `mips`, `mipsle`, `mips64`, `mips64le`, `ppc64le`, `loong64`).
+  - **MIPS Soft-Float Optimizations**: Added automatic `GOMIPS=softfloat` configuration for 32-bit MIPS architectures.
+  - **GitHub Actions Release CI/CD Expansion**: Updated `.github/workflows/release.yml` with cross-compilation matrix entries, cross-compiler toolchains, pure-Go fallback modes, and automated asset packaging for the new architectures.
+
+### 🐛 Bug Fixes & Performance Improvements
+- **CPU Throttling & Sampling Optimization**:
+  - **Eliminated Cooldown CPU Waste**: Resolved excessive CPU usage caused by the Telegram CPU monitoring job by checking the 10-minute alert cooldown window *before* invoking the blocking 1-second `cpu.Percent(time.Second, false)` sampling call in `check_cpu_usage.go`. During cooldown, the job now returns immediately in nanoseconds instead of wasting 1 second blocking a goroutine every 10 seconds.
+  - **Dynamic Scheduling**: Registered CPU check job unconditionally with dynamic evaluation in `web.go`, allowing `tgBotCpuNotify` and `tgCpu` threshold changes in Settings to take effect immediately without requiring a panel restart.
+  - **Cooldown Reset Helper**: Added `ResetCpuAlertCooldown()` to clear cooldown state when CPU settings are updated.
+
+- **Package Import Cycle Decoupling**:
+  - **Clean Circular Dependency Resolution**: Decoupled circular import between `internal/sub` and `internal/web/service` by housing subscription template preview and persistence routines in `internal/sub/template.go` and referencing them directly from `controller/server.go`.
+
+- **Modern Fluid UI, Contrast & Animation Refinements**:
+  - **Comfortable Light Theme Tone**: Refined light-mode panel background (`--ui-bg: #e8edf4`) to eliminate eye glare while preserving crisp card surfaces.
+  - **High-Contrast Disabled Action Tags**: Fixed invisible disabled action items in light mode (`Stop`, `Restart`, `Backup & Restore`, etc.) with high-contrast text (`#475569`), clear slate borders (`#cbd5e1`), and soft backgrounds (`#e2e8f0`).
+  - **Double-Border & Corner Clipping Elimination**: Removed outer container borders around CodeMirror in Live Subscription Template Editor (`.sub-template-cm`) and unified gutter border-radius, eliminating jagged corner clipping.
+  - **Padded Check List Tiles**: Transformed staff permission checkboxes into styled, responsive card tiles (`.staff-perm-grid` & `.staff-perm-item`) with comfortable padding, hover transitions, and full RTL layout support.
+  - **Refined Action Dropdown Layout**: Contained QR code triggers strictly within the client table 3-dot dropdown menu.
+  - **Fluid Global Easing & Speed Tuning**: Re-tuned global animation timing (`panelTabEnter`, `list`, dialog easing) to ensure smooth, natural transitions rather than rushed animations.
+
 ## [v0.9.7] - 2026-11-10
 
 ### 🚀 Features & Enhancements

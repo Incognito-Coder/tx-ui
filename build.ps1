@@ -184,12 +184,92 @@ $PlatformMap = [ordered]@{
         Aliases = @("darwin/amd64", "macos-amd64", "mac-amd64")
     }
     "darwin-arm64" = @{
-        GOOS = "darwin"; GOARCH = "arm64"; GOARM = "";
+        GOOS = "darwin"; GOARCH = "arm64"; GOARM = ""; GOMIPS = "";
         XrayZip = "Xray-macos-arm64-v8a.zip"; XrayBin = "xray-darwin-arm64";
         MtgTar = ""; MtgBin = "";
         ZigTarget = "aarch64-macos-none"; GccPrefix = "oa64-clang";
         OutBin = "x-ui"; Archive = "x-ui-darwin-arm64.tar.gz"; Format = "tar.gz";
         Aliases = @("darwin/arm64", "macos-arm64", "mac-arm64")
+    }
+    "linux-riscv64" = @{
+        GOOS = "linux"; GOARCH = "riscv64"; GOARM = ""; GOMIPS = "";
+        XrayZip = "Xray-linux-riscv64.zip"; XrayBin = "xray-linux-riscv64";
+        MtgTar = ""; MtgBin = "";
+        ZigTarget = "riscv64-linux-musl"; GccPrefix = "riscv64-linux-gnu-";
+        OutBin = "x-ui"; Archive = "x-ui-linux-riscv64.tar.gz"; Format = "tar.gz";
+        Aliases = @("linux/riscv64", "riscv64")
+    }
+    "linux-mips" = @{
+        GOOS = "linux"; GOARCH = "mips"; GOARM = ""; GOMIPS = "softfloat";
+        XrayZip = "Xray-linux-mips32.zip"; XrayBin = "xray-linux-mips";
+        MtgTar = ""; MtgBin = "";
+        ZigTarget = "mips-linux-musl"; GccPrefix = "mips-linux-gnu-";
+        OutBin = "x-ui"; Archive = "x-ui-linux-mips.tar.gz"; Format = "tar.gz";
+        Aliases = @("linux/mips", "mips", "mips32")
+    }
+    "linux-mipsle" = @{
+        GOOS = "linux"; GOARCH = "mipsle"; GOARM = ""; GOMIPS = "softfloat";
+        XrayZip = "Xray-linux-mips32le.zip"; XrayBin = "xray-linux-mipsle";
+        MtgTar = ""; MtgBin = "";
+        ZigTarget = "mipsel-linux-musl"; GccPrefix = "mipsel-linux-gnu-";
+        OutBin = "x-ui"; Archive = "x-ui-linux-mipsle.tar.gz"; Format = "tar.gz";
+        Aliases = @("linux/mipsle", "mipsle", "mips32le")
+    }
+    "linux-mips64" = @{
+        GOOS = "linux"; GOARCH = "mips64"; GOARM = ""; GOMIPS = "";
+        XrayZip = "Xray-linux-mips64.zip"; XrayBin = "xray-linux-mips64";
+        MtgTar = ""; MtgBin = "";
+        ZigTarget = "mips64-linux-musl"; GccPrefix = "mips64-linux-gnuabi64-";
+        OutBin = "x-ui"; Archive = "x-ui-linux-mips64.tar.gz"; Format = "tar.gz";
+        Aliases = @("linux/mips64", "mips64")
+    }
+    "linux-mips64le" = @{
+        GOOS = "linux"; GOARCH = "mips64le"; GOARM = ""; GOMIPS = "";
+        XrayZip = "Xray-linux-mips64le.zip"; XrayBin = "xray-linux-mips64le";
+        MtgTar = ""; MtgBin = "";
+        ZigTarget = "mips64el-linux-musl"; GccPrefix = "mips64el-linux-gnuabi64-";
+        OutBin = "x-ui"; Archive = "x-ui-linux-mips64le.tar.gz"; Format = "tar.gz";
+        Aliases = @("linux/mips64le", "mips64le")
+    }
+    "linux-ppc64le" = @{
+        GOOS = "linux"; GOARCH = "ppc64le"; GOARM = ""; GOMIPS = "";
+        XrayZip = "Xray-linux-ppc64le.zip"; XrayBin = "xray-linux-ppc64le";
+        MtgTar = ""; MtgBin = "";
+        ZigTarget = "powerpc64le-linux-musl"; GccPrefix = "powerpc64le-linux-gnu-";
+        OutBin = "x-ui"; Archive = "x-ui-linux-ppc64le.tar.gz"; Format = "tar.gz";
+        Aliases = @("linux/ppc64le", "ppc64le", "powerpc64le")
+    }
+    "freebsd-amd64" = @{
+        GOOS = "freebsd"; GOARCH = "amd64"; GOARM = ""; GOMIPS = "";
+        XrayZip = "Xray-freebsd-64.zip"; XrayBin = "xray-freebsd-amd64";
+        MtgTar = ""; MtgBin = "";
+        ZigTarget = "x86_64-freebsd"; GccPrefix = "x86_64-unknown-freebsd-";
+        OutBin = "x-ui"; Archive = "x-ui-freebsd-amd64.tar.gz"; Format = "tar.gz";
+        Aliases = @("freebsd/amd64", "freebsd-64", "freebsd")
+    }
+    "freebsd-arm64" = @{
+        GOOS = "freebsd"; GOARCH = "arm64"; GOARM = ""; GOMIPS = "";
+        XrayZip = "Xray-freebsd-arm64-v8a.zip"; XrayBin = "xray-freebsd-arm64";
+        MtgTar = ""; MtgBin = "";
+        ZigTarget = "aarch64-freebsd"; GccPrefix = "aarch64-unknown-freebsd-";
+        OutBin = "x-ui"; Archive = "x-ui-freebsd-arm64.tar.gz"; Format = "tar.gz";
+        Aliases = @("freebsd/arm64", "freebsd-arm")
+    }
+    "freebsd-386" = @{
+        GOOS = "freebsd"; GOARCH = "386"; GOARM = ""; GOMIPS = "";
+        XrayZip = "Xray-freebsd-32.zip"; XrayBin = "xray-freebsd-386";
+        MtgTar = ""; MtgBin = "";
+        ZigTarget = "i386-freebsd"; GccPrefix = "i686-unknown-freebsd-";
+        OutBin = "x-ui"; Archive = "x-ui-freebsd-386.tar.gz"; Format = "tar.gz";
+        Aliases = @("freebsd/386", "freebsd-32")
+    }
+    "linux-loong64" = @{
+        GOOS = "linux"; GOARCH = "loong64"; GOARM = ""; GOMIPS = "";
+        XrayZip = "Xray-linux-loong64.zip"; XrayBin = "xray-linux-loong64";
+        MtgTar = ""; MtgBin = "";
+        ZigTarget = "loongarch64-linux-musl"; GccPrefix = "loongarch64-linux-gnu-";
+        OutBin = "x-ui"; Archive = "x-ui-linux-loong64.tar.gz"; Format = "tar.gz";
+        Aliases = @("linux/loong64", "loong64")
     }
 }
 
@@ -312,7 +392,7 @@ function Resolve-Compiler {
     }
 
     # Fallback to pure Go
-    return @{ CgoEnabled = "0"; CC = $null; Note = "No cross-compiler found -> Falling back to pure Go (CGO_ENABLED=0)" }
+    return @{ CgoEnabled = "0"; CC = $null; Note = "Pure Go fallback (CGO_ENABLED=0 with pure-Go SQLite)" }
 }
 
 # Asset Downloader with Local Cache
@@ -409,6 +489,11 @@ foreach ($targetKey in $ResolvedTargets) {
         $env:GOARM = $info.GOARM
     } else {
         Remove-Item Env:\GOARM -ErrorAction SilentlyContinue
+    }
+    if ($info.GOMIPS) {
+        $env:GOMIPS = $info.GOMIPS
+    } else {
+        Remove-Item Env:\GOMIPS -ErrorAction SilentlyContinue
     }
     $env:CGO_ENABLED = $compiler.CgoEnabled
     if ($compiler.CC) {

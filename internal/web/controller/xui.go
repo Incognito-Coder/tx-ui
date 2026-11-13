@@ -1,6 +1,8 @@
 package controller
 
 import (
+	"x-ui/internal/web/session"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -46,10 +48,20 @@ func (a *XUIController) clients(c *gin.Context) {
 }
 
 func (a *XUIController) settings(c *gin.Context) {
+	user := session.GetLoginUser(c)
+	if user != nil && !user.IsAdmin() {
+		render403(c, "pages.forbidden.settingsDenied")
+		return
+	}
 	html(c, "settings.html", "pages.settings.title", nil)
 }
 
 func (a *XUIController) xraySettings(c *gin.Context) {
+	user := session.GetLoginUser(c)
+	if user != nil && !user.IsAdmin() {
+		render403(c, "pages.forbidden.xrayDenied")
+		return
+	}
 	html(c, "xray.html", "pages.xray.title", nil)
 }
 

@@ -7,7 +7,8 @@
     </a-tooltip>
     <a-tooltip>
         <template slot="title">{{ i18n "pages.client.edit" }}</template>
-        <a-icon @click="openEditClient(record.id,client);" class="normal-icon" style="font-size: 24px;"
+        <a-icon @click="openEditClient(record.id,client);" :class="currentUser.isViewer ? 'normal-icon disabled-icon' : 'normal-icon'"
+                :style="currentUser.isViewer ? 'font-size: 24px; opacity: 0.35; cursor: pointer;' : 'font-size: 24px; cursor: pointer;'"
                 type="edit"></a-icon>
     </a-tooltip>
     <a-tooltip>
@@ -17,32 +18,44 @@
     </a-tooltip>
     <a-tooltip>
         <template slot="title">{{ i18n "pages.inbounds.resetTraffic" }}</template>
-        <a-popconfirm :overlay-class-name="themeSwitcher.currentTheme"
-                      @confirm="resetClientTraffic(client,record.id,false)"
-                      cancel-text='{{ i18n "cancel"}}' ok-text='{{ i18n "reset"}}'
-                      title='{{ i18n "pages.inbounds.resetTrafficContent"}}'>
-            <a-icon style="color: var(--ui-primary)" slot="icon"
-                    type="question-circle-o"></a-icon>
-            <a-icon class="normal-icon" style="font-size: 24px; cursor: pointer;" type="retweet"
+        <template v-if="!currentUser.isViewer && currentUser.canResetTraffic">
+            <a-popconfirm :overlay-class-name="themeSwitcher.currentTheme"
+                          @confirm="resetClientTraffic(client,record.id,false)"
+                          cancel-text='{{ i18n "cancel"}}' ok-text='{{ i18n "reset"}}'
+                          title='{{ i18n "pages.inbounds.resetTrafficContent"}}'>
+                <a-icon style="color: var(--ui-primary)" slot="icon"
+                        type="question-circle-o"></a-icon>
+                <a-icon class="normal-icon" style="font-size: 24px; cursor: pointer;" type="retweet"
+                        v-if="client.email.length > 0"></a-icon>
+            </a-popconfirm>
+        </template>
+        <template v-else>
+            <a-icon @click="resetClientTraffic(client,record.id,false)" class="normal-icon" style="font-size: 24px; opacity: 0.35; cursor: pointer;" type="retweet"
                     v-if="client.email.length > 0"></a-icon>
-        </a-popconfirm>
+        </template>
     </a-tooltip>
     <a-tooltip>
         <template slot="title">
             <span style="color: var(--ui-danger)"> {{ i18n "delete"}}</span>
         </template>
-        <a-popconfirm :overlay-class-name="themeSwitcher.currentTheme"
-                      @confirm="delClient(record.id,client,false)"
-                      cancel-text='{{ i18n "cancel"}}' ok-text='{{ i18n "delete"}}' ok-type="danger"
-                      title='{{ i18n "pages.inbounds.deleteClientContent"}}'>
-            <a-icon slot="icon" style="color: var(--ui-danger)" type="question-circle-o"></a-icon>
-            <a-icon class="delete-icon" style="font-size: 24px; cursor: pointer;" type="delete"
+        <template v-if="!currentUser.isViewer">
+            <a-popconfirm :overlay-class-name="themeSwitcher.currentTheme"
+                          @confirm="delClient(record.id,client,false)"
+                          cancel-text='{{ i18n "cancel"}}' ok-text='{{ i18n "delete"}}' ok-type="danger"
+                          title='{{ i18n "pages.inbounds.deleteClientContent"}}'>
+                <a-icon slot="icon" style="color: var(--ui-danger)" type="question-circle-o"></a-icon>
+                <a-icon class="delete-icon" style="font-size: 24px; cursor: pointer;" type="delete"
+                        v-if="isRemovable(record.id)"></a-icon>
+            </a-popconfirm>
+        </template>
+        <template v-else>
+            <a-icon @click="delClient(record.id,client,false)" class="delete-icon" style="font-size: 24px; opacity: 0.35; cursor: pointer;" type="delete"
                     v-if="isRemovable(record.id)"></a-icon>
-        </a-popconfirm>
+        </template>
     </a-tooltip>
 </template>
 <template slot="enable" slot-scope="text, client, index">
-    <a-switch @change="switchEnableClient(record.id,client,$event)" v-model="client.enable"></a-switch>
+    <a-switch :disabled="currentUser.isViewer" @change="switchEnableClient(record.id,client,$event)" v-model="client.enable"></a-switch>
 </template>
 <template slot="online" slot-scope="text, client, index">
     <template v-if="client.enable && isClientOnline(client.email)">
@@ -166,7 +179,7 @@
                 <a-icon style="font-size: 14px;" type="qrcode"></a-icon>
                 {{ i18n "qrCode" }}
             </a-menu-item>
-            <a-menu-item @click="openEditClient(record.id,client);">
+            <a-menu-item @click="openEditClient(record.id,client);" :disabled="currentUser.isViewer">
                 <a-icon style="font-size: 14px;" type="edit"></a-icon>
                 {{ i18n "pages.client.edit" }}
             </a-menu-item>
@@ -174,16 +187,16 @@
                 <a-icon style="font-size: 14px;" type="info-circle"></a-icon>
                 {{ i18n "info" }}
             </a-menu-item>
-            <a-menu-item @click="resetClientTraffic(client,record.id)" v-if="client.email.length > 0">
+            <a-menu-item @click="resetClientTraffic(client,record.id)" v-if="client.email.length > 0" :disabled="currentUser.isViewer || !currentUser.canResetTraffic">
                 <a-icon style="font-size: 14px;" type="retweet"></a-icon>
                 {{ i18n "pages.inbounds.resetTraffic" }}
             </a-menu-item>
-            <a-menu-item @click="delClient(record.id,client)" v-if="isRemovable(record.id)">
+            <a-menu-item @click="delClient(record.id,client)" v-if="isRemovable(record.id)" :disabled="currentUser.isViewer">
                 <a-icon style="font-size: 14px;" type="delete"></a-icon>
                 <span style="color: var(--ui-danger)"> {{ i18n "delete"}}</span>
             </a-menu-item>
             <a-menu-item>
-                <a-switch @change="switchEnableClient(record.id,client,$event)" size="small"
+                <a-switch :disabled="currentUser.isViewer" @change="switchEnableClient(record.id,client,$event)" size="small"
                           v-model="client.enable"></a-switch>
                 {{ i18n "enable"}}
             </a-menu-item>
@@ -286,8 +299,8 @@
                                     remainedDays(client.expiryTime) ]]
                                 </a-tag>
                             </a-popover>
-                            <a-tag :color="client.enable ? 'purple' : 'var(--ui-border-strong)'"
-                                   class="infinite-tag"
+                            <a-tag :color="client.enable ? 'purple' : ''"
+                                   :class="{ 'infinite-tag': true, 'tag-disabled': !client.enable }"
                                    v-else>
                                 <svg fill="currentColor" height="10px" viewBox="0 0 640 512" width="14px">
                                     <path d="M484.4 96C407 96 349.2 164.1 320 208.5C290.8 164.1 233 96 155.6 96C69.75 96 0 167.8 0 256s69.75 160 155.6 160C233.1 416 290.8 347.9 320 303.5C349.2 347.9 407 416 484.4 416C570.3 416 640 344.2 640 256S570.3 96 484.4 96zM155.6 368C96.25 368 48 317.8 48 256s48.25-112 107.6-112c67.75 0 120.5 82.25 137.1 112C276 285.8 223.4 368 155.6 368zM484.4 368c-67.75 0-120.5-82.25-137.1-112C364 226.2 416.6 144 484.4 144C543.8 144 592 194.2 592 256S543.8 368 484.4 368z"

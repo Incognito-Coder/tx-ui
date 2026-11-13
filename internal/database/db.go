@@ -8,7 +8,6 @@ import (
 	"os"
 	"path"
 	"slices"
-	"strings"
 	"time"
 
 	"x-ui/config"
@@ -16,7 +15,7 @@ import (
 	"x-ui/internal/util/crypto"
 	"x-ui/xray"
 
-	"gorm.io/driver/sqlite"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
@@ -69,9 +68,14 @@ func initUser() error {
 		}
 
 		user := &model.User{
-			Username:    defaultUsername,
-			Password:    hashedPassword,
-			LoginSecret: defaultSecret,
+			Username:        defaultUsername,
+			Password:        hashedPassword,
+			LoginSecret:     defaultSecret,
+			Role:            "admin",
+			Permissions:     "*",
+			AllowedInbounds: "*",
+			CanResetTraffic: true,
+			Status:          "active",
 		}
 		return db.Create(user).Error
 	}
@@ -130,12 +134,6 @@ func isTableEmpty(tableName string) (bool, error) {
 }
 
 func InitDB(dbPath string) error {
-	dir := path.Dir(dbPath)
-	err := os.MkdirAll(dir, fs.ModePerm)
-	if err != nil {
-		return err
-	}
-
 	var gormLogger logger.Interface
 
 	if config.IsDebug() {
@@ -148,36 +146,53 @@ func InitDB(dbPath string) error {
 		Logger: gormLogger,
 	}
 
-	currentDBPath = dbPath
-	dsn := dbPath
-	sep := "?"
-	if strings.Contains(dsn, "?") {
-		sep = "&"
-	}
-	if !strings.Contains(dsn, "_busy_timeout") {
-		dsn += sep + "_journal_mode=WAL&_busy_timeout=10000&_synchronous=NORMAL&_txlock=immediate"
-	}
-	db, err = gorm.Open(sqlite.Open(dsn), c)
-	if err != nil {
-		db, err = gorm.Open(sqlite.Open(dbPath), c)
+	if config.GetDBType() == config.DBTypePostgres {
+		dsn := config.GetPostgresDSN()
+		currentDBPath = dsn
+		var err error
+		db, err = gorm.Open(postgres.Open(dsn), c)
 		if err != nil {
 			return err
 		}
-	}
 
-	sqlDB, err := db.DB()
-	if err != nil {
-		return err
-	}
-	// Configure connection pool for SQLite to prevent starvation and lock contention
-	sqlDB.SetMaxOpenConns(25)
-	sqlDB.SetMaxIdleConns(5)
-	sqlDB.SetConnMaxLifetime(time.Hour)
+		sqlDB, err := db.DB()
+		if err != nil {
+			return err
+		}
+		// Connection pooling for PostgreSQL
+		sqlDB.SetMaxOpenConns(50)
+		sqlDB.SetMaxIdleConns(10)
+		sqlDB.SetConnMaxLifetime(time.Hour)
+	} else {
+		dir := path.Dir(dbPath)
+		err := os.MkdirAll(dir, fs.ModePerm)
+		if err != nil {
+			return err
+		}
 
-	// Enable WAL mode, set a 10s busy timeout, and use NORMAL synchronous mode for high throughput without lock contention.
-	db.Exec("PRAGMA journal_mode = WAL;")
-	db.Exec("PRAGMA busy_timeout = 10000;")
-	db.Exec("PRAGMA synchronous = NORMAL;")
+		currentDBPath = dbPath
+		db, err = gorm.Open(openSQLite(dbPath), c)
+		if err != nil {
+			db, err = gorm.Open(openSQLiteSimple(dbPath), c)
+			if err != nil {
+				return err
+			}
+		}
+
+		sqlDB, err := db.DB()
+		if err != nil {
+			return err
+		}
+		// Configure connection pool for SQLite to prevent starvation and lock contention
+		sqlDB.SetMaxOpenConns(25)
+		sqlDB.SetMaxIdleConns(5)
+		sqlDB.SetConnMaxLifetime(time.Hour)
+
+		// Enable WAL mode, set a 10s busy timeout, and use NORMAL synchronous mode for high throughput without lock contention.
+		db.Exec("PRAGMA journal_mode = WAL;")
+		db.Exec("PRAGMA busy_timeout = 10000;")
+		db.Exec("PRAGMA synchronous = NORMAL;")
+	}
 
 	if err := initModels(); err != nil {
 		return err
@@ -224,10 +239,17 @@ func IsSQLiteDB(file io.ReaderAt) (bool, error) {
 }
 
 func Checkpoint() error {
+	if config.GetDBType() == config.DBTypePostgres {
+		return nil
+	}
 	// Update WAL
 	err := db.Exec("PRAGMA wal_checkpoint;").Error
 	if err != nil {
 		return err
 	}
 	return nil
+}
+
+func IsPostgres() bool {
+	return config.GetDBType() == config.DBTypePostgres
 }

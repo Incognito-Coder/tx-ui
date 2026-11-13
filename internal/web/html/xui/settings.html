@@ -1,7 +1,97 @@
 <!DOCTYPE html>
 <html lang="en">
 {{template "head" .}}
+<link href="{{ .base_path }}assets/codemirror/codemirror.min.css?{{ .cur_ver }}" rel="stylesheet">
+<link href="{{ .base_path }}assets/codemirror/fold/foldgutter.css" rel="stylesheet">
+<link href="{{ .base_path }}assets/codemirror/xq.min.css?{{ .cur_ver }}" rel="stylesheet">
+<script src="{{ .base_path }}assets/codemirror/codemirror.min.js?{{ .cur_ver }}"></script>
+<script src="{{ .base_path }}assets/codemirror/javascript.js"></script>
+<script src="{{ .base_path }}assets/codemirror/css.js"></script>
+<script src="{{ .base_path }}assets/codemirror/xml.js"></script>
+<script src="{{ .base_path }}assets/codemirror/htmlmixed.js"></script>
 <style>
+    .sub-template-cm {
+        border: 1px solid var(--ui-border);
+        border-radius: var(--ui-radius);
+        overflow: hidden;
+    }
+    .sub-template-cm .CodeMirror,
+    .sub-template-cm .cm-s-xq.CodeMirror,
+    .dark .sub-template-cm .cm-s-xq.CodeMirror,
+    .dark .sub-template-cm .CodeMirror {
+        height: 540px !important;
+        font-family: Consolas, Menlo, Monaco, "Courier New", monospace !important;
+        font-size: 12.5px !important;
+        line-height: 1.5 !important;
+        background: var(--ui-surface) !important;
+        color: var(--ui-text) !important;
+        border: none !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+    }
+    .sub-template-cm .CodeMirror:hover,
+    .sub-template-cm .cm-s-xq.CodeMirror:hover,
+    .dark .sub-template-cm .cm-s-xq.CodeMirror:hover {
+        background-color: var(--ui-surface) !important;
+        border: none !important;
+    }
+    .sub-template-cm .CodeMirror-gutters,
+    .sub-template-cm .cm-s-xq .CodeMirror-gutters,
+    .dark .sub-template-cm .CodeMirror-gutters {
+        background: var(--ui-surface-muted) !important;
+        border-right: 1px solid var(--ui-border) !important;
+        border-top: none !important;
+        border-bottom: none !important;
+        border-left: none !important;
+        border-radius: 0 !important;
+    }
+    .sub-template-cm .CodeMirror-linenumber {
+        color: var(--ui-text-muted) !important;
+    }
+    .sub-template-cm .cm-tag { color: #8250df !important; font-weight: 600; }
+    .sub-template-cm .cm-attribute { color: #d97706 !important; }
+    .sub-template-cm .cm-string { color: #059669 !important; }
+    .sub-template-cm .cm-comment { color: #6b7280 !important; font-style: italic; }
+    .sub-template-cm .cm-variable-2 { color: #0284c7 !important; font-weight: bold; background: rgba(2, 132, 199, 0.08); padding: 0 2px; border-radius: 2px; }
+    .sub-template-cm .cm-bracket { color: #6366f1 !important; }
+    .staff-perm-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin-bottom: 16px;
+    }
+    .staff-perm-item {
+        display: flex;
+        align-items: center;
+        padding: 9px 12px;
+        background: var(--ui-surface-muted, rgba(128,128,128,0.06));
+        border: 1px solid var(--ui-border);
+        border-radius: 6px;
+        transition: all 0.2s ease;
+        cursor: pointer;
+        user-select: none;
+    }
+    .staff-perm-item:hover {
+        border-color: var(--ui-primary);
+        background: var(--ui-primary-soft, rgba(37,99,235,0.08));
+    }
+    .staff-perm-item .ant-checkbox-wrapper {
+        display: flex;
+        align-items: center;
+        width: 100%;
+        margin: 0 !important;
+        font-size: 13px;
+        line-height: 1.4;
+        color: var(--ui-text);
+        cursor: pointer;
+    }
+    .staff-perm-item .ant-checkbox {
+        margin-right: 8px;
+    }
+    [dir="rtl"] .staff-perm-item .ant-checkbox {
+        margin-right: 0;
+        margin-left: 8px;
+    }
     @media (min-width: 769px) {
         .ant-layout-content {
             margin: 24px 16px;
@@ -319,6 +409,20 @@
                                                     <template slot="title">{{ i18n "pages.settings.cleanCorruptedRowsDesc" }}</template>
                                                     <a-button type="danger" icon="tool" :loading="dbCleaning">
                                                         {{ i18n "pages.settings.cleanCorruptedRows" }}
+                                                    </a-button>
+                                                </a-tooltip>
+                                            </a-popconfirm>
+
+                                            <a-popconfirm :overlay-class-name="themeSwitcher.currentTheme"
+                                                          @confirm="factoryResetDatabase"
+                                                          cancel-text='{{ i18n "cancel" }}'
+                                                          ok-text='{{ i18n "confirm" }}'
+                                                          ok-type="danger"
+                                                          title='{{ i18n "pages.settings.factoryResetConfirm" }}'>
+                                                <a-tooltip>
+                                                    <template slot="title">{{ i18n "pages.settings.factoryResetDesc" }}</template>
+                                                    <a-button type="danger" icon="warning" :loading="dbFactoryResetting">
+                                                        {{ i18n "pages.settings.factoryReset" }}
                                                     </a-button>
                                                 </a-tooltip>
                                             </a-popconfirm>
@@ -731,10 +835,79 @@
                                 </a-list-item>
                             </a-list>
                         </a-tab-pane>
+                        <!-- Tab 6: Staff & Role Management -->
+                        <a-tab-pane key="6" tab="Staff & Roles">
+                            <div style="padding: 20px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
+                                    <div>
+                                        <div style="font-weight: 700; font-size: 16px;">Staff & Access Control</div>
+                                        <div style="font-size: 12px; color: var(--ui-text-muted);">Manage panel administrators, operators, and granular role permissions.</div>
+                                    </div>
+                                    <a-button type="primary" icon="user-add" @click="openAddStaffModal">
+                                        Add Staff Member
+                                    </a-button>
+                                </div>
+                                <a-table :data-source="staffList" :row-key="record => record.id" :pagination="false">
+                                    <a-table-column title="User" key="username">
+                                        <template slot-scope="text, record">
+                                            <div style="display: flex; align-items: center; gap: 8px;">
+                                                <a-avatar size="small" :icon="record.role === 'admin' ? 'crown' : 'user'" :style="{ backgroundColor: record.role === 'admin' ? '#722ed1' : '#1890ff' }"></a-avatar>
+                                                <strong>[[ record.username ]]</strong>
+                                            </div>
+                                        </template>
+                                    </a-table-column>
+                                    <a-table-column title="Role" key="role">
+                                        <template slot-scope="text, record">
+                                            <a-tag :color="record.role === 'admin' ? 'purple' : (record.role === 'staff' ? 'blue' : 'cyan')">
+                                                [[ (record.role || 'admin').toUpperCase() ]]
+                                            </a-tag>
+                                        </template>
+                                    </a-table-column>
+                                    <a-table-column title="Status" key="status">
+                                        <template slot-scope="text, record">
+                                            <a-tag :color="record.status === 'disabled' ? 'red' : 'green'">
+                                                [[ (record.status || 'active').toUpperCase() ]]
+                                            </a-tag>
+                                        </template>
+                                    </a-table-column>
+                                    <a-table-column title="Inbound Scope" key="allowedInbounds">
+                                        <template slot-scope="text, record">
+                                            <span v-if="record.allowedInbounds === '*' || !record.allowedInbounds"><a-tag color="cyan">All Inbounds</a-tag></span>
+                                            <span v-else><a-tag color="orange">IDs: [[ record.allowedInbounds ]]</a-tag></span>
+                                        </template>
+                                    </a-table-column>
+                                    <a-table-column title="Operational Scopes" key="scopes">
+                                        <template slot-scope="text, record">
+                                            <span v-if="record.role === 'admin'"><a-tag color="purple">Full System (*)</a-tag></span>
+                                            <span v-else-if="record.role === 'viewer'"><a-tag color="cyan">Read Only</a-tag><a-tag color="blue">Configs & QR</a-tag></span>
+                                            <div v-else style="display: flex; flex-wrap: wrap; gap: 4px;">
+                                                <a-tag v-if="record.canResetTraffic" color="green">Traffic Reset</a-tag>
+                                                <a-tag v-if="record.canOperateXray" color="purple">Xray Control</a-tag>
+                                                <a-tag v-if="record.canOperateGeo" color="pink">Geo Updates</a-tag>
+                                                <a-tag v-if="record.canBackupDB" color="blue">DB Backup</a-tag>
+                                                <a-tag v-if="record.canRestoreDB" color="orange">DB Restore</a-tag>
+                                                <a-tag v-if="record.canViewLinks !== false" color="cyan">Configs & QR</a-tag>
+                                            </div>
+                                        </template>
+                                    </a-table-column>
+                                    <a-table-column title="Actions" key="action">
+                                        <template slot-scope="text, record">
+                                            <div style="display: flex; gap: 8px;">
+                                                <a-button size="small" icon="edit" @click="openEditStaffModal(record)">Edit</a-button>
+                                                <a-popconfirm title="Are you sure you want to delete this staff member?" @confirm="deleteStaffMember(record.id)" ok-text="Yes" cancel-text="No">
+                                                    <a-button size="small" type="danger" icon="delete" :disabled="record.id === user.id">Delete</a-button>
+                                                </a-popconfirm>
+                                            </div>
+                                        </template>
+                                    </a-table-column>
+                                </a-table>
+                            </div>
+                        </a-tab-pane>
                     </a-tabs>
                 </a-space>
             </a-spin>
-        <a-modal :class="themeSwitcher.currentTheme" :closable="true" :footer="null" :width="960"
+        <a-modal :class="themeSwitcher.currentTheme" :closable="true" :footer="null" :width="1420"
+                 :dialog-style="{ maxWidth: '96vw', top: '20px' }"
                  wrap-class-name="panel-modal panel-modal-lg" v-model="subTemplateModal.visible">
             <template slot="title">
                 <div style="display: flex; align-items: center; justify-content: space-between; padding-right: 24px;">
@@ -756,7 +929,7 @@
                     <a-alert :message="subTemplateModal.msg" :type="subTemplateModal.msgType || 'info'" show-icon style="margin-bottom: 14px;"></a-alert>
                 </template>
 
-                <a-tabs default-active-key="catalog" size="small">
+                <a-tabs default-active-key="catalog" size="small" @change="onSubTemplateTabChange">
                     <!-- Tab 1: Curated Theme Catalog -->
                     <a-tab-pane key="catalog" tab='{{ i18n "pages.settings.subTemplateModalTabCatalog" }}' style="padding-top: 12px;">
                         <a-row :gutter="[0, 12]">
@@ -810,6 +983,41 @@
                             </div>
                         </div>
                     </a-tab-pane>
+
+                    <!-- Tab 3: Live In-Panel Editor -->
+                    <a-tab-pane key="editor" tab="Live Editor" style="padding-top: 12px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+                            <div style="display: flex; gap: 8px;">
+                                <a-button size="small" icon="reload" @click="loadSubTemplateContent">Reload Active</a-button>
+                                <a-button size="small" icon="eye" type="primary" @click="renderSubTemplatePreview">Refresh Live Preview</a-button>
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                <a-button size="small" type="primary" icon="save" :loading="subTemplateModal.saving" @click="saveSubTemplateContent">
+                                    Save & Apply
+                                </a-button>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+                            <div style="flex: 1.1; min-width: 420px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                    <span style="font-weight: 600; font-size: 13px;">HTML Template Code</span>
+                                    <span style="font-size: 11px; color: var(--ui-text-muted);">Syntax Highlighted • Go Template Tags Supported</span>
+                                </div>
+                                <div class="sub-template-cm">
+                                    <textarea id="subTemplateEditor" v-model="subTemplateModal.editorContent"></textarea>
+                                </div>
+                            </div>
+                            <div style="flex: 1; min-width: 400px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                    <span style="font-weight: 600; font-size: 13px;">Interactive Live Preview</span>
+                                    <span style="font-size: 11px; color: var(--ui-text-muted);">Sandboxed Realistic Output</span>
+                                </div>
+                                <div style="border: 1px solid var(--ui-border); border-radius: var(--ui-radius); height: 540px; background: #fff; overflow: hidden;">
+                                    <iframe :srcdoc="subTemplateModal.previewHtml" style="width: 100%; height: 100%; border: none;"></iframe>
+                                </div>
+                            </div>
+                        </div>
+                    </a-tab-pane>
                 </a-tabs>
 
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 18px; border-top: 1px solid var(--ui-border); padding-top: 12px;">
@@ -820,6 +1028,118 @@
                         {{ i18n "pages.settings.subTemplateModalResetBtn" }}
                     </a-button>
                 </div>
+            </a-spin>
+        </a-modal>
+
+        <!-- Staff Modal -->
+        <a-modal :class="themeSwitcher.currentTheme" :closable="true" :footer="null" :width="640"
+                 wrap-class-name="panel-modal" v-model="staffModal.visible">
+            <template slot="title">
+                <span style="font-weight: 700; font-size: 16px;">
+                    <a-icon type="team" style="color: var(--ui-primary); margin-right: 8px;"></a-icon>
+                    [[ staffModal.isEdit ? 'Edit Staff Member' : 'Add Staff Member' ]]
+                </span>
+            </template>
+            <a-spin :spinning="staffModal.loading">
+                <a-form layout="vertical">
+                    <a-row :gutter="16">
+                        <a-col :span="12">
+                            <a-form-item label="Username">
+                                <a-input v-model.trim="staffModal.form.username" placeholder="Enter username"></a-input>
+                            </a-form-item>
+                        </a-col>
+                        <a-col :span="12">
+                            <a-form-item :label="staffModal.isEdit ? 'Password (leave blank to keep current)' : 'Password'">
+                                <a-input-password v-model="staffModal.form.password" placeholder="Enter password"></a-input-password>
+                            </a-form-item>
+                        </a-col>
+                    </a-row>
+                    <a-form-item label="Role">
+                        <a-select v-model="staffModal.form.role">
+                            <a-select-option value="admin">Admin (Full System Control)</a-select-option>
+                            <a-select-option value="staff">Staff (Granular Scoped Rules)</a-select-option>
+                            <a-select-option value="viewer">Viewer (Read-Only + Configs & QR Codes)</a-select-option>
+                        </a-select>
+                    </a-form-item>
+
+                    <div v-if="staffModal.form.role === 'viewer'" style="margin-bottom: 16px; padding: 12px; background: rgba(24, 144, 255, 0.08); border-radius: 6px; border: 1px solid rgba(24, 144, 255, 0.2);">
+                        <a-icon type="info-circle" style="color: #1890ff; margin-right: 6px;"></a-icon>
+                        <span style="font-size: 12.5px;">Viewers can view inbounds, clients, inspect connection configs, and display QR codes. All database backups, restores, Xray restarts, geofile updates, and write actions are strictly forbidden (403).</span>
+                    </div>
+
+                    <div v-if="staffModal.form.role === 'admin'" style="margin-bottom: 16px; padding: 12px; background: rgba(114, 46, 209, 0.08); border-radius: 6px; border: 1px solid rgba(114, 46, 209, 0.2);">
+                        <a-icon type="crown" style="color: #722ed1; margin-right: 6px;"></a-icon>
+                        <span style="font-size: 12.5px;">Administrators have unrestricted access to all panel functions, inbound nodes, database operations, and system settings.</span>
+                    </div>
+
+                    <template v-if="staffModal.form.role === 'staff'">
+                        <a-divider orientation="left" style="font-size: 13px; font-weight: 600; margin: 12px 0;">Inbound Scope</a-divider>
+                        <a-form-item label="Allowed Inbound IDs (* for all, or comma-separated e.g. 1, 2, 5)">
+                            <a-input v-model.trim="staffModal.form.allowedInbounds" placeholder="*"></a-input>
+                        </a-form-item>
+
+                        <a-divider orientation="left" style="font-size: 13px; font-weight: 600; margin: 12px 0;">System & Operation Rules</a-divider>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 9px 12px; background: var(--ui-surface-muted, rgba(128,128,128,0.06)); border: 1px solid var(--ui-border); border-radius: 6px;">
+                                <span style="font-size: 12.5px;">Allow Traffic Reset</span>
+                                <a-switch size="small" v-model="staffModal.form.canResetTraffic"></a-switch>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 9px 12px; background: var(--ui-surface-muted, rgba(128,128,128,0.06)); border: 1px solid var(--ui-border); border-radius: 6px;">
+                                <span style="font-size: 12.5px;">View Configs & QR</span>
+                                <a-switch size="small" v-model="staffModal.form.canViewLinks"></a-switch>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 9px 12px; background: var(--ui-surface-muted, rgba(128,128,128,0.06)); border: 1px solid var(--ui-border); border-radius: 6px;">
+                                <span style="font-size: 12.5px;">Xray Service Control</span>
+                                <a-switch size="small" v-model="staffModal.form.canOperateXray"></a-switch>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 9px 12px; background: var(--ui-surface-muted, rgba(128,128,128,0.06)); border: 1px solid var(--ui-border); border-radius: 6px;">
+                                <span style="font-size: 12.5px;">Geo Files Update</span>
+                                <a-switch size="small" v-model="staffModal.form.canOperateGeo"></a-switch>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 9px 12px; background: var(--ui-surface-muted, rgba(128,128,128,0.06)); border: 1px solid var(--ui-border); border-radius: 6px;">
+                                <span style="font-size: 12.5px;">Database Backup (Export)</span>
+                                <a-switch size="small" v-model="staffModal.form.canBackupDB"></a-switch>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 9px 12px; background: var(--ui-surface-muted, rgba(128,128,128,0.06)); border: 1px solid var(--ui-border); border-radius: 6px;">
+                                <span style="font-size: 12.5px;">Database Restore (Import)</span>
+                                <a-switch size="small" v-model="staffModal.form.canRestoreDB"></a-switch>
+                            </div>
+                        </div>
+
+                        <a-divider orientation="left" style="font-size: 13px; font-weight: 600; margin: 12px 0;">Granular Inbound & Client Permissions</a-divider>
+                        <div v-if="staffModal.perms" class="staff-perm-grid">
+                            <div class="staff-perm-item" @click="staffModal.perms.inboundsCreate = !staffModal.perms.inboundsCreate">
+                                <a-checkbox v-model="staffModal.perms.inboundsCreate" @click.stop>Create Inbounds</a-checkbox>
+                            </div>
+                            <div class="staff-perm-item" @click="staffModal.perms.clientsCreate = !staffModal.perms.clientsCreate">
+                                <a-checkbox v-model="staffModal.perms.clientsCreate" @click.stop>Create Clients</a-checkbox>
+                            </div>
+                            <div class="staff-perm-item" @click="staffModal.perms.inboundsUpdate = !staffModal.perms.inboundsUpdate">
+                                <a-checkbox v-model="staffModal.perms.inboundsUpdate" @click.stop>Edit Inbounds</a-checkbox>
+                            </div>
+                            <div class="staff-perm-item" @click="staffModal.perms.clientsUpdate = !staffModal.perms.clientsUpdate">
+                                <a-checkbox v-model="staffModal.perms.clientsUpdate" @click.stop>Edit Clients</a-checkbox>
+                            </div>
+                            <div class="staff-perm-item" @click="staffModal.perms.inboundsDelete = !staffModal.perms.inboundsDelete">
+                                <a-checkbox v-model="staffModal.perms.inboundsDelete" @click.stop>Delete Inbounds</a-checkbox>
+                            </div>
+                            <div class="staff-perm-item" @click="staffModal.perms.clientsDelete = !staffModal.perms.clientsDelete">
+                                <a-checkbox v-model="staffModal.perms.clientsDelete" @click.stop>Delete Clients</a-checkbox>
+                            </div>
+                            <div class="staff-perm-item" @click="staffModal.perms.logsRead = !staffModal.perms.logsRead">
+                                <a-checkbox v-model="staffModal.perms.logsRead" @click.stop>View Logs</a-checkbox>
+                            </div>
+                        </div>
+                    </template>
+
+                    <a-form-item label="Account Active" v-if="staffModal.isEdit">
+                        <a-switch :checked="staffModal.form.status === 'active'" @change="val => staffModal.form.status = val ? 'active' : 'disabled'"></a-switch>
+                    </a-form-item>
+                    <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px;">
+                        <a-button @click="staffModal.visible = false">Cancel</a-button>
+                        <a-button type="primary" :loading="staffModal.loading" @click="saveStaffMember">Save</a-button>
+                    </div>
+                </a-form>
             </a-spin>
         </a-modal>
     </a-layout>
@@ -867,14 +1187,49 @@
             dbOptimizing: false,
             dbVacuuming: false,
             dbCleaning: false,
+            dbFactoryResetting: false,
+            cmSubEditor: null,
             subTemplateModal: {
                 visible: false,
                 loading: false,
+                saving: false,
                 customUrl: '',
+                editorContent: '',
+                previewHtml: '',
                 msg: '',
                 msgType: 'info',
                 isCustom: false,
                 themes: []
+            },
+            staffList: [],
+            staffModal: {
+                visible: false,
+                loading: false,
+                isEdit: false,
+                perms: {
+                    inboundsCreate: false,
+                    inboundsUpdate: false,
+                    inboundsDelete: false,
+                    clientsCreate: true,
+                    clientsUpdate: true,
+                    clientsDelete: false,
+                    logsRead: false,
+                },
+                form: {
+                    id: 0,
+                    username: '',
+                    password: '',
+                    role: 'staff',
+                    permissions: '["inbounds:read","clients:read","clients:view_links"]',
+                    allowedInbounds: '*',
+                    canResetTraffic: true,
+                    canBackupDB: false,
+                    canRestoreDB: false,
+                    canOperateXray: false,
+                    canOperateGeo: false,
+                    canViewLinks: true,
+                    status: 'active'
+                }
             },
             defaultFragment: {
                 packets: 'tlshello',
@@ -1119,6 +1474,216 @@
             async openSubTemplateModal() {
                 this.subTemplateModal.visible = true;
                 await this.fetchSubTemplates();
+                await this.loadSubTemplateContent();
+            },
+            onSubTemplateTabChange(key) {
+                if (key === 'editor') {
+                    this.$nextTick(() => {
+                        this.initSubTemplateCodeMirror();
+                    });
+                }
+            },
+            initSubTemplateCodeMirror() {
+                if (typeof CodeMirror === 'undefined') return;
+                const ta = document.getElementById('subTemplateEditor');
+                if (!ta) return;
+                if (!this.cmSubEditor) {
+                    this.cmSubEditor = CodeMirror.fromTextArea(ta, {
+                        lineNumbers: true,
+                        mode: "htmlmixed",
+                        theme: "xq",
+                        lineWrapping: true,
+                        matchBrackets: true,
+                        autoCloseTags: true,
+                        tabSize: 2,
+                        indentUnit: 2
+                    });
+                    this.cmSubEditor.on('change', (editor) => {
+                        this.subTemplateModal.editorContent = editor.getValue();
+                    });
+                }
+                if (this.subTemplateModal.editorContent && this.cmSubEditor.getValue() !== this.subTemplateModal.editorContent) {
+                    this.cmSubEditor.setValue(this.subTemplateModal.editorContent);
+                }
+                setTimeout(() => {
+                    if (this.cmSubEditor) this.cmSubEditor.refresh();
+                }, 120);
+            },
+            async loadSubTemplateContent() {
+                try {
+                    const res = await HttpUtil.get('/panel/api/server/getSubTemplateContent');
+                    if (res.success && res.obj) {
+                        this.subTemplateModal.editorContent = res.obj.content || '';
+                        if (this.cmSubEditor) {
+                            this.cmSubEditor.setValue(this.subTemplateModal.editorContent);
+                        }
+                        await this.renderSubTemplatePreview();
+                    }
+                } catch (e) {
+                    console.error('Error loading sub template content:', e);
+                }
+            },
+            async renderSubTemplatePreview() {
+                try {
+                    const res = await HttpUtil.post('/panel/api/server/previewSubTemplate', { content: this.subTemplateModal.editorContent }, { silenceMsg: true });
+                    if (res && res.success) {
+                        this.subTemplateModal.previewHtml = res.obj || '';
+                    } else if (typeof res === 'string') {
+                        this.subTemplateModal.previewHtml = res;
+                    }
+                } catch (e) {
+                    console.error('Error rendering preview:', e);
+                }
+            },
+            async saveSubTemplateContent() {
+                this.subTemplateModal.saving = true;
+                this.subTemplateModal.msg = '';
+                try {
+                    const res = await HttpUtil.post('/panel/api/server/saveSubTemplateContent', { content: this.subTemplateModal.editorContent });
+                    if (res.success) {
+                        this.subTemplateModal.msg = res.msg || 'Template saved & applied successfully!';
+                        this.subTemplateModal.msgType = 'success';
+                        this.subTemplateModal.isCustom = true;
+                        this.allSetting.subCustomUI = true;
+                        await this.renderSubTemplatePreview();
+                    } else {
+                        this.subTemplateModal.msg = res.msg || 'Failed to save template';
+                        this.subTemplateModal.msgType = 'error';
+                    }
+                } catch (e) {
+                    this.subTemplateModal.msg = 'Save error: ' + e.message;
+                    this.subTemplateModal.msgType = 'error';
+                } finally {
+                    this.subTemplateModal.saving = false;
+                }
+            },
+            async fetchStaffList() {
+                try {
+                    const res = await HttpUtil.get('/panel/setting/staff/list');
+                    if (res.success && res.obj) {
+                        this.staffList = res.obj || [];
+                    }
+                } catch (e) {
+                    console.error('Error fetching staff list:', e);
+                }
+            },
+            openAddStaffModal() {
+                this.staffModal.isEdit = false;
+                this.staffModal.perms = {
+                    inboundsCreate: false,
+                    inboundsUpdate: false,
+                    inboundsDelete: false,
+                    clientsCreate: true,
+                    clientsUpdate: true,
+                    clientsDelete: false,
+                    logsRead: false,
+                };
+                this.staffModal.form = {
+                    id: 0,
+                    username: '',
+                    password: '',
+                    role: 'staff',
+                    permissions: '["inbounds:read","clients:read","clients:view_links"]',
+                    allowedInbounds: '*',
+                    canResetTraffic: true,
+                    canBackupDB: false,
+                    canRestoreDB: false,
+                    canOperateXray: false,
+                    canOperateGeo: false,
+                    canViewLinks: true,
+                    status: 'active'
+                };
+                this.staffModal.visible = true;
+            },
+            openEditStaffModal(record) {
+                this.staffModal.isEdit = true;
+                let perms = [];
+                try {
+                    perms = JSON.parse(record.permissions || '[]');
+                } catch (e) {
+                    perms = (record.permissions || '').split(',');
+                }
+                const hasP = p => record.role === 'admin' || record.permissions === '*' || perms.includes(p) || perms.includes('*');
+                this.staffModal.perms = {
+                    inboundsCreate: hasP('inbounds:create'),
+                    inboundsUpdate: hasP('inbounds:update') || hasP('inbounds:edit'),
+                    inboundsDelete: hasP('inbounds:delete'),
+                    clientsCreate: hasP('clients:create'),
+                    clientsUpdate: hasP('clients:update') || hasP('clients:edit'),
+                    clientsDelete: hasP('clients:delete'),
+                    logsRead: hasP('logs:read'),
+                };
+                this.staffModal.form = {
+                    id: record.id,
+                    username: record.username,
+                    password: '',
+                    role: record.role || 'staff',
+                    permissions: record.permissions || '*',
+                    allowedInbounds: record.allowedInbounds || '*',
+                    canResetTraffic: record.canResetTraffic,
+                    canBackupDB: !!record.canBackupDB,
+                    canRestoreDB: !!record.canRestoreDB,
+                    canOperateXray: !!record.canOperateXray,
+                    canOperateGeo: !!record.canOperateGeo,
+                    canViewLinks: record.canViewLinks !== false,
+                    status: record.status || 'active'
+                };
+                this.staffModal.visible = true;
+            },
+            async saveStaffMember() {
+                if (!this.staffModal.form.username) {
+                    this.$message.error('Username cannot be empty');
+                    return;
+                }
+                if (!this.staffModal.isEdit && !this.staffModal.form.password) {
+                    this.$message.error('Password cannot be empty');
+                    return;
+                }
+                // Build permissions array from checkboxes if staff
+                if (this.staffModal.form.role === 'staff') {
+                    const pList = ['inbounds:read', 'clients:read'];
+                    if (this.staffModal.form.canViewLinks) pList.push('clients:view_links');
+                    if (this.staffModal.perms.inboundsCreate) pList.push('inbounds:create');
+                    if (this.staffModal.perms.inboundsUpdate) pList.push('inbounds:update');
+                    if (this.staffModal.perms.inboundsDelete) pList.push('inbounds:delete');
+                    if (this.staffModal.perms.clientsCreate) pList.push('clients:create');
+                    if (this.staffModal.perms.clientsUpdate) pList.push('clients:update');
+                    if (this.staffModal.perms.clientsDelete) pList.push('clients:delete');
+                    if (this.staffModal.perms.logsRead) pList.push('logs:read');
+                    this.staffModal.form.permissions = JSON.stringify(pList);
+                }
+
+                this.staffModal.loading = true;
+                try {
+                    const url = this.staffModal.isEdit
+                        ? `/panel/setting/staff/update/${this.staffModal.form.id}`
+                        : '/panel/setting/staff/add';
+                    const res = await HttpUtil.post(url, this.staffModal.form);
+                    if (res.success) {
+                        this.$message.success(res.msg || 'Staff member saved successfully');
+                        this.staffModal.visible = false;
+                        await this.fetchStaffList();
+                    } else {
+                        this.$message.error(res.msg || 'Failed to save staff member');
+                    }
+                } catch (e) {
+                    this.$message.error('Error saving staff member: ' + e.message);
+                } finally {
+                    this.staffModal.loading = false;
+                }
+            },
+            async deleteStaffMember(id) {
+                try {
+                    const res = await HttpUtil.post(`/panel/setting/staff/delete/${id}`);
+                    if (res.success) {
+                        this.$message.success('Staff member deleted successfully');
+                        await this.fetchStaffList();
+                    } else {
+                        this.$message.error(res.msg || 'Failed to delete staff member');
+                    }
+                } catch (e) {
+                    this.$message.error('Error deleting staff member: ' + e.message);
+                }
             },
             async fetchSubTemplates() {
                 this.subTemplateModal.loading = true;
@@ -1276,6 +1841,30 @@
                     this.$message.error(e.message || 'Error cleaning database');
                 } finally {
                     this.dbCleaning = false;
+                }
+            },
+            async factoryResetDatabase() {
+                this.dbFactoryResetting = true;
+                try {
+                    const res = await HttpUtil.post("/panel/setting/factoryReset");
+                    if (res && res.success) {
+                        this.$message.success('{{ i18n "pages.settings.toasts.factoryResetSuccess" }}');
+                        try {
+                            sessionStorage.clear();
+                            localStorage.clear();
+                        } catch (e) {}
+                        setTimeout(() => {
+                            window.location.replace(basePath);
+                        }, 1200);
+                    } else if (res && res.msg) {
+                        this.$message.error(res.msg);
+                    } else {
+                        this.$message.error('Error performing factory reset');
+                    }
+                } catch (e) {
+                    this.$message.error(e.message || 'Error performing factory reset');
+                } finally {
+                    this.dbFactoryResetting = false;
                 }
             },
         },
@@ -1486,6 +2075,7 @@
             this.entryIsIP = this._isIp(this.entryHost);
             await this.getAllSetting();
             await this.fetchDBStatus();
+            await this.fetchStaffList();
             while (true) {
                 await PromiseUtil.sleep(1000);
                 this.saveBtnDisable = this.oldAllSetting.equals(this.allSetting);

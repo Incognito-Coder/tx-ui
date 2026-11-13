@@ -48,7 +48,7 @@ func RunWebServer() {
 		log.Fatalf("Unknown log level: %v", config.GetLogLevel())
 	}
 
-	godotenv.Load()
+	_ = godotenv.Load("/etc/x-ui/x-ui.env", "/usr/local/x-ui/.env", ".env")
 
 	err := database.InitDB(config.GetDBPath())
 	if err != nil {

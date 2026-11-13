@@ -41,6 +41,14 @@ func (j *CheckCpuJob) Run() {
 		return
 	}
 
+	// Early check: avoid blocking 1s CPU sampling if still within 10-minute alert cooldown
+	cpuAlertLock.Lock()
+	if !lastCpuAlertTime.IsZero() && time.Since(lastCpuAlertTime) < 10*time.Minute {
+		cpuAlertLock.Unlock()
+		return
+	}
+	cpuAlertLock.Unlock()
+
 	// get latest status of server (sample over 1s)
 	percent, err := cpu.Percent(time.Second, false)
 	if err == nil && len(percent) > 0 && percent[0] > float64(threshold) {
@@ -58,4 +66,11 @@ func (j *CheckCpuJob) Run() {
 
 		j.tgbotService.SendMsgToTgbotAdmins(msg)
 	}
+}
+
+// ResetCpuAlertCooldown resets the alert timestamp (useful for testing and panel setting resets)
+func ResetCpuAlertCooldown() {
+	cpuAlertLock.Lock()
+	lastCpuAlertTime = time.Time{}
+	cpuAlertLock.Unlock()
 }

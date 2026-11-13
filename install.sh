@@ -49,6 +49,13 @@ arch() {
         armv6* | armv6) echo 'armv6' ;;
         armv5* | armv5) echo 'armv5' ;;
         s390x) echo 's390x' ;;
+        riscv64) echo 'riscv64' ;;
+        mips) echo 'mips' ;;
+        mipsle) echo 'mipsle' ;;
+        mips64) echo 'mips64' ;;
+        mips64le) echo 'mips64le' ;;
+        ppc64le) echo 'ppc64le' ;;
+        loong64 | loongarch64) echo 'loong64' ;;
         *) echo -e "${green}Unsupported CPU architecture! ${plain}" && rm -f install.sh && exit 1 ;;
     esac
 }

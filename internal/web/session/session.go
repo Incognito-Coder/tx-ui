@@ -4,6 +4,7 @@ import (
 	"encoding/gob"
 	"net/http"
 
+	"x-ui/internal/database"
 	"x-ui/internal/database/model"
 
 	"github.com/gin-contrib/sessions"
@@ -11,8 +12,9 @@ import (
 )
 
 const (
-	loginUserKey = "LOGIN_USER"
-	defaultPath  = "/"
+	loginUserKey   = "LOGIN_USER"
+	defaultPath    = "/"
+	ginUserContext = "CURRENT_LOGIN_USER"
 )
 
 func init() {
@@ -25,6 +27,7 @@ func SetLoginUser(c *gin.Context, user *model.User) {
 	}
 	s := sessions.Default(c)
 	s.Set(loginUserKey, *user)
+	c.Set(ginUserContext, user)
 }
 
 func SetMaxAge(c *gin.Context, maxAge int) {
@@ -38,6 +41,12 @@ func SetMaxAge(c *gin.Context, maxAge int) {
 }
 
 func GetLoginUser(c *gin.Context) *model.User {
+	if cached, exists := c.Get(ginUserContext); exists && cached != nil {
+		if u, ok := cached.(*model.User); ok {
+			return u
+		}
+	}
+
 	s := sessions.Default(c)
 	obj := s.Get(loginUserKey)
 	if obj == nil {
@@ -45,10 +54,25 @@ func GetLoginUser(c *gin.Context) *model.User {
 	}
 	user, ok := obj.(model.User)
 	if !ok {
-
-		s.Delete(loginUserKey)
+		ClearSession(c)
 		return nil
 	}
+
+	// Verify that the user still exists in DB and credentials haven't been wiped/reset
+	db := database.GetDB()
+	if db != nil {
+		var dbUser model.User
+		err := db.Select("id, username, password, role, permissions, allowed_inbounds, can_reset_traffic, can_backup_db, can_restore_db, can_operate_xray, can_operate_geo, can_view_links, status").
+			Where("id = ? AND username = ?", user.Id, user.Username).
+			First(&dbUser).Error
+		if err != nil || dbUser.Password != user.Password || dbUser.Status == "disabled" {
+			ClearSession(c)
+			return nil
+		}
+		user = dbUser
+	}
+
+	c.Set(ginUserContext, &user)
 	return &user
 }
 
@@ -57,6 +81,7 @@ func IsLogin(c *gin.Context) bool {
 }
 
 func ClearSession(c *gin.Context) {
+	c.Set(ginUserContext, nil)
 	s := sessions.Default(c)
 	s.Clear()
 	s.Options(sessions.Options{
@@ -65,4 +90,12 @@ func ClearSession(c *gin.Context) {
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
 	})
+	_ = s.Save()
+
+	// Clear session cookie across default root and current base_path
+	c.SetCookie("tx-ui", "", -1, defaultPath, "", false, true)
+	basePath := c.GetString("base_path")
+	if basePath != "" && basePath != defaultPath {
+		c.SetCookie("tx-ui", "", -1, basePath, "", false, true)
+	}
 }

@@ -6,7 +6,9 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
+	"time"
 
 	"x-ui/internal/util/json_util"
 	"x-ui/xray"
@@ -30,10 +32,153 @@ const (
 )
 
 type User struct {
-	Id          int    `json:"id" gorm:"primaryKey;autoIncrement"`
-	Username    string `json:"username"`
-	Password    string `json:"password"`
-	LoginSecret string `json:"loginSecret"`
+	Id              int       `json:"id" gorm:"primaryKey;autoIncrement"`
+	Username        string    `json:"username" gorm:"unique"`
+	Password        string    `json:"password"`
+	LoginSecret     string    `json:"loginSecret"`
+	Role            string    `json:"role" gorm:"default:'admin'"`             // "admin", "staff", "viewer"
+	Permissions     string    `json:"permissions" gorm:"default:'*'"`          // JSON array e.g. ["inbounds:read", "inbounds:write", ...] or "*"
+	AllowedInbounds string    `json:"allowedInbounds" gorm:"default:'*'"`      // JSON array of inbound IDs e.g. [1, 2, 5] or "*"
+	CanResetTraffic bool      `json:"canResetTraffic" gorm:"default:true"`     // permission to reset client traffic
+	CanBackupDB     bool      `json:"canBackupDB" gorm:"default:false"`        // permission to export/backup database
+	CanRestoreDB    bool      `json:"canRestoreDB" gorm:"default:false"`       // permission to import/restore database
+	CanOperateXray  bool      `json:"canOperateXray" gorm:"default:false"`     // permission to stop/restart/install Xray
+	CanOperateGeo   bool      `json:"canOperateGeo" gorm:"default:false"`      // permission to update geo files
+	CanViewLinks    bool      `json:"canViewLinks" gorm:"default:true"`        // permission to view configs and QR codes
+	Status          string    `json:"status" gorm:"default:'active'"`          // "active", "disabled"
+	CreatedAt       time.Time `json:"createdAt"`
+	UpdatedAt       time.Time `json:"updatedAt"`
+}
+
+func (u *User) IsAdmin() bool {
+	return u != nil && (u.Role == "admin" || u.Role == "")
+}
+
+func (u *User) CanBackup() bool {
+	if u == nil || u.Role == "viewer" {
+		return false
+	}
+	if u.IsAdmin() {
+		return true
+	}
+	return u.CanBackupDB || u.HasPermission("database:backup")
+}
+
+func (u *User) CanRestore() bool {
+	if u == nil || u.Role == "viewer" {
+		return false
+	}
+	if u.IsAdmin() {
+		return true
+	}
+	return u.CanRestoreDB || u.HasPermission("database:restore")
+}
+
+func (u *User) CanXray() bool {
+	if u == nil || u.Role == "viewer" {
+		return false
+	}
+	if u.IsAdmin() {
+		return true
+	}
+	return u.CanOperateXray || u.HasPermission("xray:operate")
+}
+
+func (u *User) CanGeo() bool {
+	if u == nil || u.Role == "viewer" {
+		return false
+	}
+	if u.IsAdmin() {
+		return true
+	}
+	return u.CanOperateGeo || u.HasPermission("geofiles:update")
+}
+
+func (u *User) CanViewConfigLinks() bool {
+	if u == nil {
+		return false
+	}
+	if u.Role == "viewer" {
+		return true // Viewer can view configs and QR codes of clients
+	}
+	if u.IsAdmin() {
+		return true
+	}
+	return u.CanViewLinks || u.HasPermission("clients:view_links") || u.HasPermission("clients:export")
+}
+
+func (u *User) HasPermission(perm string) bool {
+	if u == nil {
+		return false
+	}
+	if u.Role == "viewer" {
+		// Viewer explicitly denied for database, xray, and geofiles operations
+		if strings.HasPrefix(perm, "database:") || strings.HasPrefix(perm, "xray:") || strings.HasPrefix(perm, "geofiles:") {
+			return false
+		}
+		// Viewer explicitly allowed to view configs and QR codes
+		if perm == "clients:view_links" || perm == "clients:view_qr" || perm == "clients:export" {
+			return true
+		}
+		// Viewer has read-only access to view inbounds and clients
+		return strings.HasSuffix(perm, ":read") || strings.HasSuffix(perm, ":view") || strings.HasSuffix(perm, ":get") || perm == "read"
+	}
+	if u.IsAdmin() || u.Permissions == "*" || u.Permissions == "" {
+		return true
+	}
+	var perms []string
+	if err := json.Unmarshal([]byte(u.Permissions), &perms); err != nil {
+		// Fallback to comma-separated permissions string
+		for _, p := range strings.Split(u.Permissions, ",") {
+			p = strings.TrimSpace(p)
+			if p == "*" || p == perm {
+				return true
+			}
+			if strings.HasSuffix(p, ":*") && strings.HasPrefix(perm, strings.TrimSuffix(p, "*")) {
+				return true
+			}
+		}
+		return false
+	}
+	for _, p := range perms {
+		if p == "*" || p == perm {
+			return true
+		}
+		if strings.HasSuffix(p, ":*") && strings.HasPrefix(perm, strings.TrimSuffix(p, "*")) {
+			return true
+		}
+	}
+	return false
+}
+
+func (u *User) CanAccessInbound(inboundId int) bool {
+	if u == nil {
+		return false
+	}
+	trimmed := strings.TrimSpace(u.AllowedInbounds)
+	if u.IsAdmin() || trimmed == "*" || trimmed == "" {
+		return true
+	}
+	var ids []int
+	if err := json.Unmarshal([]byte(trimmed), &ids); err == nil {
+		for _, id := range ids {
+			if id == inboundId {
+				return true
+			}
+		}
+		return false
+	}
+	// Fallback to comma-separated format e.g. "1, 2, 5" or "1,2,5"
+	parts := strings.Split(trimmed, ",")
+	for _, p := range parts {
+		p = strings.TrimSpace(p)
+		if n, err := strconv.Atoi(p); err == nil {
+			if n == inboundId {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 type Inbound struct {

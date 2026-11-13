@@ -231,7 +231,7 @@
                         <div slot="title">
                             <a-row>
                                 <a-col :lg="12" :sm="12" :xs="12">
-                                    <a-button @click="openAddInbound" icon="plus" type="primary">
+                                    <a-button @click="openAddInbound" icon="plus" type="primary" :disabled="currentUser.isViewer">
                                         <template v-if="!isMobile">{{ i18n "pages.inbounds.addInbound" }}</template>
                                     </a-button>
                                     <a-dropdown :trigger="['click']">
@@ -241,7 +241,7 @@
                                         </a-button>
                                         <a-menu :theme="themeSwitcher.currentTheme" @click="a => generalActions(a)"
                                                 slot="overlay">
-                                            <a-menu-item key="import">
+                                            <a-menu-item key="import" :disabled="currentUser.isViewer">
                                                 <a-icon type="import"></a-icon>
                                                 {{ i18n "pages.inbounds.importInbound" }}
                                             </a-menu-item>
@@ -254,7 +254,7 @@
                                                 {{ i18n "pages.inbounds.export" }} - {{ i18n
                                                 "pages.settings.subSettings" }}
                                             </a-menu-item>
-                                            <a-menu-item key="resetInbounds">
+                                            <a-menu-item key="resetInbounds" :disabled="currentUser.isViewer || !currentUser.canResetTraffic">
                                                 <a-icon type="reload"></a-icon>
                                                 {{ i18n "pages.inbounds.resetAllTraffic" }}
                                             </a-menu-item>
@@ -339,15 +339,15 @@
                                             <a-icon type="arrow-down"></a-icon>
                                             {{ i18n "moveDown" }}
                                         </a-menu-item>
-                                        <a-menu-item key="edit">
+                                        <a-menu-item key="edit" :disabled="currentUser.isViewer">
                                             <a-icon type="edit"></a-icon>
                                             {{ i18n "edit" }}
                                         </a-menu-item>
-                                        <a-menu-item key="addClient" v-if="dbInbound.isMultiUser()">
+                                        <a-menu-item key="addClient" v-if="dbInbound.isMultiUser()" :disabled="currentUser.isViewer">
                                             <a-icon type="user-add"></a-icon>
                                             {{ i18n "pages.client.add" }}
                                         </a-menu-item>
-                                        <a-menu-item key="addBulkClient" v-if="dbInbound.isMultiUser()">
+                                        <a-menu-item key="addBulkClient" v-if="dbInbound.isMultiUser()" :disabled="currentUser.isViewer">
                                             <a-icon type="usergroup-add"></a-icon>
                                             {{ i18n "pages.client.bulk" }}
                                         </a-menu-item>
@@ -368,15 +368,15 @@
                                             <a-icon type="copy"></a-icon>
                                             {{ i18n "pages.inbounds.exportInbound" }}
                                         </a-menu-item>
-                                        <a-menu-item key="resetTraffic">
+                                        <a-menu-item key="resetTraffic" :disabled="currentUser.isViewer || !currentUser.canResetTraffic">
                                             <a-icon type="retweet"></a-icon>
                                             {{ i18n "pages.inbounds.resetTraffic" }}
                                         </a-menu-item>
-                                        <a-menu-item key="clone">
+                                        <a-menu-item key="clone" :disabled="currentUser.isViewer">
                                             <a-icon type="block"></a-icon>
                                             {{ i18n "pages.inbounds.clone"}}
                                         </a-menu-item>
-                                        <a-menu-item key="delete">
+                                        <a-menu-item key="delete" :disabled="currentUser.isViewer">
                       <span style="color: var(--ui-danger)">
                         <a-icon type="delete"></a-icon> {{ i18n "delete"}}
                       </span>
@@ -442,7 +442,7 @@
                                 </a-popover>
                             </template>
                             <template slot="enable" slot-scope="text, dbInbound">
-                                <a-switch @change="switchEnable(dbInbound.id,dbInbound.enable)"
+                                <a-switch :disabled="currentUser.isViewer" @change="switchEnable(dbInbound.id,dbInbound.enable)"
                                           v-model="dbInbound.enable"></a-switch>
                             </template>
                             <template slot="expiryTime" slot-scope="text, dbInbound">
@@ -735,6 +735,15 @@
             ipLimitEnable: false,
             pageSize: 50,
             isMobile: window.innerWidth <= 768,
+            currentUser: {
+                id: {{ if .user }}{{ .user.Id }}{{ else }}0{{ end }},
+                username: '{{ if .user }}{{ .user.Username }}{{ end }}',
+                role: '{{ if .user }}{{ .user.Role }}{{ else }}admin{{ end }}',
+                permissions: '{{ if .user }}{{ .user.Permissions }}{{ else }}*{{ end }}',
+                canResetTraffic: {{ if .user }}{{ if .user.CanResetTraffic }}true{{ else }}false{{ end }}{{ else }}true{{ end }},
+                isAdmin: {{ if .user }}{{ if .user.IsAdmin }}true{{ else }}false{{ end }}{{ else }}true{{ end }},
+                isViewer: {{ if .user }}{{ if eq .user.Role "viewer" }}true{{ else }}false{{ end }}{{ else }}false{{ end }},
+            },
         },
         methods: {
             loading(spinning = true) {
@@ -1023,6 +1032,10 @@
                 }
             },
             openCloneInbound(dbInbound) {
+                if (this.currentUser.isViewer) {
+                    this.$message.error('{{ i18n "pages.forbidden.inboundDenied" }}');
+                    return;
+                }
                 this.$confirm({
                     title: '{{ i18n "pages.inbounds.cloneInbound"}} "' + dbInbound.remark + '"',
                     content: '{{ i18n "pages.inbounds.cloneInboundContent"}}',
@@ -1056,6 +1069,10 @@
                 await this.submit('/panel/api/inbounds/add', data, inModal);
             },
             openAddInbound() {
+                if (this.currentUser.isViewer) {
+                    this.$message.error('{{ i18n "pages.forbidden.inboundDenied" }}');
+                    return;
+                }
                 inModal.show({
                     title: '{{ i18n "pages.inbounds.addInbound"}}',
                     okText: '{{ i18n "pages.inbounds.create"}}',
@@ -1067,6 +1084,10 @@
                 });
             },
             openEditInbound(dbInboundId) {
+                if (this.currentUser.isViewer) {
+                    this.$message.error('{{ i18n "pages.forbidden.inboundDenied" }}');
+                    return;
+                }
                 dbInbound = this.dbInbounds.find(row => row.id === dbInboundId);
                 const inbound = dbInbound.toInbound();
                 inModal.show({
@@ -1128,6 +1149,10 @@
                 await this.submit(`/panel/api/inbounds/update/${dbInbound.id}`, data, inModal);
             },
             openAddClient(dbInboundId) {
+                if (this.currentUser.isViewer) {
+                    this.$message.error('{{ i18n "pages.forbidden.clientDenied" }}');
+                    return;
+                }
                 const dbInbound = this.dbInbounds.find(row => row.id === dbInboundId);
                 if (!dbInbound || !dbInbound.isMultiUser()) {
                     return;
@@ -1143,6 +1168,10 @@
                 });
             },
             openAddBulkClient(dbInboundId) {
+                if (this.currentUser.isViewer) {
+                    this.$message.error('{{ i18n "pages.forbidden.clientDenied" }}');
+                    return;
+                }
                 const dbInbound = this.dbInbounds.find(row => row.id === dbInboundId);
                 if (!dbInbound || !dbInbound.isMultiUser()) {
                     return;
@@ -1157,6 +1186,10 @@
                 });
             },
             openEditClient(dbInboundId, client) {
+                if (this.currentUser.isViewer) {
+                    this.$message.error('{{ i18n "pages.forbidden.clientDenied" }}');
+                    return;
+                }
                 clientModal.show({
                     title: '{{ i18n "pages.client.edit"}}',
                     okText: '{{ i18n "pages.client.submitEdit"}}',
@@ -1215,6 +1248,10 @@
                 });
             },
             delInbound(dbInboundId) {
+                if (this.currentUser.isViewer) {
+                    this.$message.error('{{ i18n "pages.forbidden.deleteDenied" }}');
+                    return;
+                }
                 this.$confirm({
                     title: '{{ i18n "pages.inbounds.deleteInbound"}}' + ' #' + dbInboundId,
                     content: '{{ i18n "pages.inbounds.deleteInboundContent"}}',
@@ -1225,6 +1262,10 @@
                 });
             },
             delClient(dbInboundId, client, confirmation = true) {
+                if (this.currentUser.isViewer) {
+                    this.$message.error('{{ i18n "pages.forbidden.deleteDenied" }}');
+                    return;
+                }
                 dbInbound = this.dbInbounds.find(row => row.id === dbInboundId);
                 clientId = this.getClientId(dbInbound.protocol, client);
                 if (confirmation) {
@@ -1350,6 +1391,10 @@
                 return (dbInbound.toInbound().clients || []).slice();
             },
             resetClientTraffic(client, dbInboundId, confirmation = true) {
+                if (this.currentUser.isViewer || !this.currentUser.canResetTraffic) {
+                    this.$message.error('{{ i18n "pages.forbidden.trafficResetDenied" }}');
+                    return;
+                }
                 if (confirmation) {
                     this.$confirm({
                         title: '{{ i18n "pages.inbounds.resetTraffic"}}' + ' ' + client.email,

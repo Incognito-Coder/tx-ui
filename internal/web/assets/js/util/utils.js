@@ -139,7 +139,9 @@ class HttpUtil {
             return msg;
         } catch (error) {
             console.error('GET request failed:', error);
-            const errorMsg = new Msg(false, error.response?.data?.message || error.message || 'Request failed');
+            const respMsg = error.response?.data?.msg || error.response?.data?.message;
+            const fallbackMsg = error.response?.status === 403 ? 'Access Denied: 403 Forbidden' : (error.message || 'Request failed');
+            const errorMsg = new Msg(false, respMsg || fallbackMsg);
             this._handleMsg(errorMsg, options);
             return errorMsg;
         }
@@ -153,7 +155,9 @@ class HttpUtil {
             return msg;
         } catch (error) {
             console.error('POST request failed:', error);
-            const errorMsg = new Msg(false, error.response?.data?.message || error.message || 'Request failed');
+            const respMsg = error.response?.data?.msg || error.response?.data?.message;
+            const fallbackMsg = error.response?.status === 403 ? 'Access Denied: 403 Forbidden' : (error.message || 'Request failed');
+            const errorMsg = new Msg(false, respMsg || fallbackMsg);
             this._handleMsg(errorMsg, options);
             return errorMsg;
         }

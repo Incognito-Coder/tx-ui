@@ -38,6 +38,26 @@ jobs:
             os: macos-latest
           - platform: darwin-arm64
             os: macos-latest
+          - platform: linux-riscv64
+            os: ubuntu-22.04
+          - platform: linux-mips
+            os: ubuntu-22.04
+          - platform: linux-mipsle
+            os: ubuntu-22.04
+          - platform: linux-mips64
+            os: ubuntu-22.04
+          - platform: linux-mips64le
+            os: ubuntu-22.04
+          - platform: linux-ppc64le
+            os: ubuntu-22.04
+          - platform: linux-loong64
+            os: ubuntu-22.04
+          - platform: freebsd-amd64
+            os: ubuntu-22.04
+          - platform: freebsd-arm64
+            os: ubuntu-22.04
+          - platform: freebsd-386
+            os: ubuntu-22.04
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout repository
@@ -65,6 +85,18 @@ jobs:
             sudo apt install -y gcc-arm-linux-gnueabi
           elif [ "${{ matrix.platform }}" == "linux-s390x" ]; then
             sudo apt install -y gcc-s390x-linux-gnu
+          elif [ "${{ matrix.platform }}" == "linux-riscv64" ]; then
+            sudo apt install -y gcc-riscv64-linux-gnu || true
+          elif [ "${{ matrix.platform }}" == "linux-mips" ]; then
+            sudo apt install -y gcc-mips-linux-gnu || true
+          elif [ "${{ matrix.platform }}" == "linux-mipsle" ]; then
+            sudo apt install -y gcc-mipsel-linux-gnu || true
+          elif [ "${{ matrix.platform }}" == "linux-mips64" ]; then
+            sudo apt install -y gcc-mips64-linux-gnuabi64 || true
+          elif [ "${{ matrix.platform }}" == "linux-mips64le" ]; then
+            sudo apt install -y gcc-mips64el-linux-gnuabi64 || true
+          elif [ "${{ matrix.platform }}" == "linux-ppc64le" ]; then
+            sudo apt install -y gcc-powerpc64le-linux-gnu || true
           fi
 
       - name: Build x-ui (Linux / macOS)
@@ -78,6 +110,16 @@ jobs:
             elif [ "${{ matrix.platform }}" == "darwin-arm64" ]; then
               export GOOS=darwin
               export GOARCH=arm64
+            fi
+          elif [[ "${{ matrix.platform }}" == freebsd-* ]]; then
+            export GOOS=freebsd
+            export CGO_ENABLED=0
+            if [ "${{ matrix.platform }}" == "freebsd-amd64" ]; then
+              export GOARCH=amd64
+            elif [ "${{ matrix.platform }}" == "freebsd-arm64" ]; then
+              export GOARCH=arm64
+            elif [ "${{ matrix.platform }}" == "freebsd-386" ]; then
+              export GOARCH=386
             fi
           else
             export GOOS=linux
@@ -104,6 +146,53 @@ jobs:
             elif [ "${{ matrix.platform }}" == "linux-s390x" ]; then
               export GOARCH=s390x
               export CC=s390x-linux-gnu-gcc
+            elif [ "${{ matrix.platform }}" == "linux-riscv64" ]; then
+              export GOARCH=riscv64
+              if command -v riscv64-linux-gnu-gcc >/dev/null 2>&1; then
+                export CC=riscv64-linux-gnu-gcc
+              else
+                export CGO_ENABLED=0
+              fi
+            elif [ "${{ matrix.platform }}" == "linux-mips" ]; then
+              export GOARCH=mips
+              export GOMIPS=softfloat
+              if command -v mips-linux-gnu-gcc >/dev/null 2>&1; then
+                export CC=mips-linux-gnu-gcc
+              else
+                export CGO_ENABLED=0
+              fi
+            elif [ "${{ matrix.platform }}" == "linux-mipsle" ]; then
+              export GOARCH=mipsle
+              export GOMIPS=softfloat
+              if command -v mipsel-linux-gnu-gcc >/dev/null 2>&1; then
+                export CC=mipsel-linux-gnu-gcc
+              else
+                export CGO_ENABLED=0
+              fi
+            elif [ "${{ matrix.platform }}" == "linux-mips64" ]; then
+              export GOARCH=mips64
+              if command -v mips64-linux-gnuabi64-gcc >/dev/null 2>&1; then
+                export CC=mips64-linux-gnuabi64-gcc
+              else
+                export CGO_ENABLED=0
+              fi
+            elif [ "${{ matrix.platform }}" == "linux-mips64le" ]; then
+              export GOARCH=mips64le
+              if command -v mips64el-linux-gnuabi64-gcc >/dev/null 2>&1; then
+                export CC=mips64el-linux-gnuabi64-gcc
+              else
+                export CGO_ENABLED=0
+              fi
+            elif [ "${{ matrix.platform }}" == "linux-ppc64le" ]; then
+              export GOARCH=ppc64le
+              if command -v powerpc64le-linux-gnu-gcc >/dev/null 2>&1; then
+                export CC=powerpc64le-linux-gnu-gcc
+              else
+                export CGO_ENABLED=0
+              fi
+            elif [ "${{ matrix.platform }}" == "linux-loong64" ]; then
+              export GOARCH=loong64
+              export CGO_ENABLED=0
             fi
           fi
           go build -ldflags "-w -s" -o xui-release -v main.go
@@ -136,6 +225,24 @@ jobs:
             curl -sSL -O ${Xray_URL}Xray-macos-64.zip && unzip -q Xray-macos-64.zip && rm -f Xray-macos-64.zip
           elif [ "${{ matrix.platform }}" == "darwin-arm64" ]; then
             curl -sSL -O ${Xray_URL}Xray-macos-arm64-v8a.zip && unzip -q Xray-macos-arm64-v8a.zip && rm -f Xray-macos-arm64-v8a.zip
+          elif [ "${{ matrix.platform }}" == "linux-riscv64" ]; then
+            curl -sSL -O ${Xray_URL}Xray-linux-riscv64.zip && unzip -q Xray-linux-riscv64.zip && rm -f Xray-linux-riscv64.zip || true
+          elif [ "${{ matrix.platform }}" == "linux-mips" ]; then
+            curl -sSL -O ${Xray_URL}Xray-linux-mips32.zip && unzip -q Xray-linux-mips32.zip && rm -f Xray-linux-mips32.zip || true
+          elif [ "${{ matrix.platform }}" == "linux-mipsle" ]; then
+            curl -sSL -O ${Xray_URL}Xray-linux-mips32le.zip && unzip -q Xray-linux-mips32le.zip && rm -f Xray-linux-mips32le.zip || true
+          elif [ "${{ matrix.platform }}" == "linux-mips64" ]; then
+            curl -sSL -O ${Xray_URL}Xray-linux-mips64.zip && unzip -q Xray-linux-mips64.zip && rm -f Xray-linux-mips64.zip || true
+          elif [ "${{ matrix.platform }}" == "linux-mips64le" ]; then
+            curl -sSL -O ${Xray_URL}Xray-linux-mips64le.zip && unzip -q Xray-linux-mips64le.zip && rm -f Xray-linux-mips64le.zip || true
+          elif [ "${{ matrix.platform }}" == "linux-ppc64le" ]; then
+            curl -sSL -O ${Xray_URL}Xray-linux-ppc64le.zip && unzip -q Xray-linux-ppc64le.zip && rm -f Xray-linux-ppc64le.zip || true
+          elif [ "${{ matrix.platform }}" == "freebsd-amd64" ]; then
+            curl -sSL -O ${Xray_URL}Xray-freebsd-64.zip && unzip -q Xray-freebsd-64.zip && rm -f Xray-freebsd-64.zip || true
+          elif [ "${{ matrix.platform }}" == "freebsd-arm64" ]; then
+            curl -sSL -O ${Xray_URL}Xray-freebsd-arm64-v8a.zip && unzip -q Xray-freebsd-arm64-v8a.zip && rm -f Xray-freebsd-arm64-v8a.zip || true
+          elif [ "${{ matrix.platform }}" == "freebsd-386" ]; then
+            curl -sSL -O ${Xray_URL}Xray-freebsd-32.zip && unzip -q Xray-freebsd-32.zip && rm -f Xray-freebsd-32.zip || true
           fi
 
           rm -f geoip.dat geosite.dat

@@ -15,12 +15,10 @@
     }
 
     .overview-usage-card {
-        background: linear-gradient(135deg, rgba(255, 255, 255, 0.85) 0%, rgba(248, 250, 252, 0.95) 100%) !important;
-        backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
+        background: #ffffff !important;
         border: 1px solid var(--ui-border) !important;
         border-radius: var(--ui-radius-lg) !important;
-        box-shadow: 0 4px 24px -2px rgba(0, 0, 0, 0.05), inset 0 1px 0 0 rgba(255, 255, 255, 0.7) !important;
+        box-shadow: 0 4px 18px -2px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.03) !important;
         transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
     }
 
@@ -28,6 +26,8 @@
         background: linear-gradient(135deg, rgba(21, 28, 40, 0.85) 0%, rgba(13, 19, 31, 0.9) 100%) !important;
         border-color: rgba(255, 255, 255, 0.08) !important;
         box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.35), inset 0 1px 0 0 rgba(255, 255, 255, 0.08) !important;
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
     }
 
     html[data-theme="ultra-dark"] .overview-usage-card {
@@ -115,7 +115,7 @@
     }
 
     .usage-tile {
-        background: var(--ui-surface);
+        background: var(--ui-surface-muted);
         border: 1px solid var(--ui-border);
         border-radius: var(--ui-radius);
         padding: 16px 12px 14px 12px;
@@ -126,7 +126,6 @@
         position: relative;
         overflow: hidden;
         transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-        backdrop-filter: blur(8px);
     }
 
     .usage-tile:hover {
@@ -228,9 +227,8 @@
         border-radius: var(--ui-radius) !important;
         border: 1px solid var(--ui-border) !important;
         background: var(--ui-surface) !important;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03) !important;
-        transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
-        backdrop-filter: blur(10px);
+        box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04) !important;
+        transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1) !important;
     }
 
     .overview-details-grid .ant-card:hover {
@@ -321,7 +319,7 @@
         font-weight: 550;
         border-radius: 6px;
         line-height: 1.45;
-        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
     }
 
     .overview-details-grid .ant-tag:hover {
@@ -516,10 +514,14 @@
                                         </template>
                                         <a-icon type="question-circle" style="color: var(--ui-danger); cursor: pointer;"></a-icon>
                                     </a-popover>
-                                    <a-tag @click="stopXrayService" color="purple" style="cursor: pointer;">
+                                    <a-tag @click="stopXrayService" :color="currentUser.isViewer || !currentUser.canOperateXray ? '' : 'purple'" :class="{ 'tag-disabled': currentUser.isViewer || !currentUser.canOperateXray }"
+                                           :style="currentUser.isViewer || !currentUser.canOperateXray ? 'cursor: not-allowed;' : 'cursor: pointer;'"
+                                           :title="currentUser.isViewer || !currentUser.canOperateXray ? '{{ i18n "pages.forbidden.xrayOpsDenied" }}' : ''">
                                         <a-icon type="poweroff"></a-icon> {{ i18n "pages.index.stopXray" }}
                                     </a-tag>
-                                    <a-tag @click="restartXrayService" color="purple" style="cursor: pointer;">
+                                    <a-tag @click="restartXrayService" :color="currentUser.isViewer || !currentUser.canOperateXray ? '' : 'purple'" :class="{ 'tag-disabled': currentUser.isViewer || !currentUser.canOperateXray }"
+                                           :style="currentUser.isViewer || !currentUser.canOperateXray ? 'cursor: not-allowed;' : 'cursor: pointer;'"
+                                           :title="currentUser.isViewer || !currentUser.canOperateXray ? '{{ i18n "pages.forbidden.xrayOpsDenied" }}' : ''">
                                         <a-icon type="reload"></a-icon> {{ i18n "pages.index.restartXray" }}
                                     </a-tag>
                                     <a-tag v-if="status.xray && status.xray.hasWorkingConfig"
@@ -556,7 +558,9 @@
                                     <a-tag @click="openConfig" color="purple" style="cursor: pointer;">
                                         <a-icon type="setting"></a-icon> {{ i18n "pages.index.config" }}
                                     </a-tag>
-                                    <a-tag @click="openBackup" color="purple" style="cursor: pointer;">
+                                    <a-tag @click="openBackup" :color="currentUser.isViewer || (!currentUser.canBackupDB && !currentUser.canRestoreDB) ? '' : 'purple'" :class="{ 'tag-disabled': currentUser.isViewer || (!currentUser.canBackupDB && !currentUser.canRestoreDB) }"
+                                           :style="currentUser.isViewer || (!currentUser.canBackupDB && !currentUser.canRestoreDB) ? 'cursor: not-allowed;' : 'cursor: pointer;'"
+                                           :title="currentUser.isViewer || (!currentUser.canBackupDB && !currentUser.canRestoreDB) ? '{{ i18n "pages.forbidden.databaseDenied" }}' : ''">
                                         <a-icon type="save"></a-icon> {{ i18n "pages.index.backup" }}
                                     </a-tag>
                                 </div>
@@ -571,7 +575,9 @@
                                         <a-icon type="compass" style="color: #ec4899;"></a-icon>
                                         {{ i18n "pages.index.geoData" }}:
                                     </span>
-                                    <a-tag @click="openSelectGeoVersion" color="purple" style="cursor: pointer;">
+                                    <a-tag @click="openSelectGeoVersion" :color="currentUser.isViewer || !currentUser.canOperateGeo ? '' : 'purple'" :class="{ 'tag-disabled': currentUser.isViewer || !currentUser.canOperateGeo }"
+                                           :style="currentUser.isViewer || !currentUser.canOperateGeo ? 'cursor: not-allowed;' : 'cursor: pointer;'"
+                                           :title="currentUser.isViewer || !currentUser.canOperateGeo ? '{{ i18n "pages.forbidden.geoOpsDenied" }}' : ''">
                                         <a-icon type="cloud-download"></a-icon> {{ i18n "pages.index.geoUpdate" }}
                                     </a-tag>
                                     <a-tag color="green">
@@ -1222,6 +1228,19 @@
             showIp: false,
             ipLimitEnable: false,
             isMobile: window.innerWidth <= 768,
+            currentUser: {
+                id: {{ if .user }}{{ .user.Id }}{{ else }}0{{ end }},
+                username: '{{ if .user }}{{ .user.Username }}{{ end }}',
+                role: '{{ if .user }}{{ .user.Role }}{{ else }}admin{{ end }}',
+                isAdmin: {{ if .user }}{{ if .user.IsAdmin }}true{{ else }}false{{ end }}{{ else }}true{{ end }},
+                isViewer: {{ if .user }}{{ if eq .user.Role "viewer" }}true{{ else }}false{{ end }}{{ else }}false{{ end }},
+                canResetTraffic: {{ if .user }}{{ if .user.CanResetTraffic }}true{{ else }}false{{ end }}{{ else }}true{{ end }},
+                canBackupDB: {{ if .user }}{{ if .user.CanBackup }}true{{ else }}false{{ end }}{{ else }}true{{ end }},
+                canRestoreDB: {{ if .user }}{{ if .user.CanRestore }}true{{ else }}false{{ end }}{{ else }}true{{ end }},
+                canOperateXray: {{ if .user }}{{ if .user.CanXray }}true{{ else }}false{{ end }}{{ else }}true{{ end }},
+                canOperateGeo: {{ if .user }}{{ if .user.CanGeo }}true{{ else }}false{{ end }}{{ else }}true{{ end }},
+                canViewLinks: {{ if .user }}{{ if .user.CanViewConfigLinks }}true{{ else }}false{{ end }}{{ else }}true{{ end }},
+            },
         },
         methods: {
             loading(spinning, tip = '{{ i18n "loading"}}') {
@@ -1259,6 +1278,10 @@
                 this.status = new Status(data);
             },
             async openSelectV2rayVersion() {
+                if (this.currentUser.isViewer || !this.currentUser.canOperateXray) {
+                    this.$message.error('{{ i18n "pages.forbidden.xrayOpsDenied" }}');
+                    return;
+                }
                 this.loading(true);
                 const msg = await HttpUtil.get('/panel/api/server/getXrayVersion');
                 this.loading(false);
@@ -1268,6 +1291,10 @@
                 versionModal.show(msg.obj);
             },
             switchV2rayVersion(version) {
+                if (this.currentUser.isViewer || !this.currentUser.canOperateXray) {
+                    this.$message.error('{{ i18n "pages.forbidden.xrayOpsDenied" }}');
+                    return;
+                }
                 this.$confirm({
                     title: '{{ i18n "pages.index.xraySwitchVersionDialog"}}',
                     content: '{{ i18n "pages.index.xraySwitchVersionDialogDesc"}}' + ` ${version}?`,
@@ -1283,6 +1310,10 @@
                 });
             },
             async stopXrayService() {
+                if (this.currentUser.isViewer || !this.currentUser.canOperateXray) {
+                    this.$message.error('{{ i18n "pages.forbidden.xrayOpsDenied" }}');
+                    return;
+                }
                 this.loading(true);
                 const msg = await HttpUtil.post('/panel/api/server/stopXrayService');
                 this.loading(false);
@@ -1291,6 +1322,10 @@
                 }
             },
             async restartXrayService() {
+                if (this.currentUser.isViewer || !this.currentUser.canOperateXray) {
+                    this.$message.error('{{ i18n "pages.forbidden.xrayOpsDenied" }}');
+                    return;
+                }
                 this.loading(true);
                 const msg = await HttpUtil.post('/panel/api/server/restartXrayService');
                 this.loading(false);
@@ -1299,6 +1334,10 @@
                 }
             },
             rollbackXrayConfig() {
+                if (this.currentUser.isViewer || !this.currentUser.canOperateXray) {
+                    this.$message.error('{{ i18n "pages.forbidden.xrayOpsDenied" }}');
+                    return;
+                }
                 this.$confirm({
                     title: '{{ i18n "pages.index.rollbackXray" }}',
                     content: '{{ i18n "pages.index.rollbackConfirm" }}',
@@ -1358,6 +1397,10 @@
                 this.switchPanelVersion(version);
             },
             async openSelectGeoVersion() {
+                if (this.currentUser.isViewer || !this.currentUser.canOperateGeo) {
+                    this.$message.error('{{ i18n "pages.forbidden.geoOpsDenied" }}');
+                    return;
+                }
                 this.loading(true);
                 const msg = await HttpUtil.get('/panel/api/server/getGeoVersions');
                 this.loading(false);
@@ -1367,6 +1410,10 @@
                 geoModal.show(msg.obj);
             },
             switchGeoVersion(version) {
+                if (this.currentUser.isViewer || !this.currentUser.canOperateGeo) {
+                    this.$message.error('{{ i18n "pages.forbidden.geoOpsDenied" }}');
+                    return;
+                }
                 this.$confirm({
                     title: '{{ i18n "pages.index.geoUpdate" }}',
                     content: `Update geo assets to release ${version}?`,
@@ -1383,6 +1430,10 @@
                 });
             },
             async updateGeoFiles() {
+                if (this.currentUser.isViewer || !this.currentUser.canOperateGeo) {
+                    this.$message.error('{{ i18n "pages.forbidden.geoOpsDenied" }}');
+                    return;
+                }
                 this.loading(true, '{{ i18n "pages.index.dontRefresh"}}');
                 const msg = await HttpUtil.post('/panel/api/server/updateGeoFiles');
                 this.loading(false);
@@ -1392,6 +1443,10 @@
                 await this.getStatus();
             },
             restartPanel() {
+                if (this.currentUser.isViewer || !this.currentUser.isAdmin) {
+                    this.$message.error('{{ i18n "pages.forbidden.adminRequired" }}');
+                    return;
+                }
                 this.$confirm({
                     title: '{{ i18n "pages.settings.restartPanel" }}',
                     content: '{{ i18n "pages.settings.restartPanelDesc" }}',
@@ -1467,6 +1522,10 @@
                 txtModal.show('config.json', JSON.stringify(msg.obj, null, 2), 'config.json');
             },
             openBackup() {
+                if (this.currentUser.isViewer || (!this.currentUser.canBackupDB && !this.currentUser.canRestoreDB)) {
+                    this.$message.error('{{ i18n "pages.forbidden.databaseDenied" }}');
+                    return;
+                }
                 backupModal.show({
                     title: '{{ i18n "pages.index.backupTitle" }}',
                     description: '{{ i18n "pages.index.backupDescription" }}',
@@ -1475,9 +1534,17 @@
                 });
             },
             exportDatabase() {
+                if (this.currentUser.isViewer || !this.currentUser.canBackupDB) {
+                    this.$message.error('{{ i18n "pages.forbidden.databaseDenied" }}');
+                    return;
+                }
                 window.location = basePath + 'panel/api/server/getDb';
             },
             importDatabase() {
+                if (this.currentUser.isViewer || !this.currentUser.canRestoreDB) {
+                    this.$message.error('{{ i18n "pages.forbidden.databaseDenied" }}');
+                    return;
+                }
                 const fileInput = document.createElement('input');
                 fileInput.type = 'file';
                 fileInput.accept = '.db';

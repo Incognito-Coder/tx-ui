@@ -35,10 +35,12 @@ func main() {
 	var enabletgbot bool
 	var tgbotRuntime string
 	var reset bool
+	var factoryReset bool
 	var show bool
 	var getCert bool
 	var remove_secret bool
 	settingCmd.BoolVar(&reset, "reset", false, "Reset all settings")
+	settingCmd.BoolVar(&factoryReset, "factory-reset", false, "Factory reset all data, settings, inbounds, clients, and staff")
 	settingCmd.BoolVar(&show, "show", false, "Display current settings")
 	settingCmd.BoolVar(&remove_secret, "remove_secret", false, "Remove secret key")
 	settingCmd.IntVar(&port, "port", 0, "Set panel port number")
@@ -63,6 +65,7 @@ func main() {
 		fmt.Println("    run            run web panel")
 		fmt.Println("    migrate        migrate form other/old x-ui")
 		fmt.Println("    setting        set settings")
+		fmt.Println("    reset          factory reset all panel data and restore defaults")
 	}
 
 	flag.Parse()
@@ -81,13 +84,17 @@ func main() {
 		cmd.RunWebServer()
 	case "migrate":
 		cmd.MigrateDb()
+	case "reset", "factory-reset":
+		cmd.FactoryReset()
 	case "setting":
 		err := settingCmd.Parse(os.Args[2:])
 		if err != nil {
 			fmt.Println(err)
 			return
 		}
-		if reset {
+		if factoryReset {
+			cmd.FactoryReset()
+		} else if reset {
 			cmd.ResetSetting()
 		} else {
 			cmd.UpdateSetting(port, username, password, webBasePath, listenIP)

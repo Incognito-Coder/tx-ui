@@ -66,6 +66,64 @@ func GetDBPath() string {
 	return fmt.Sprintf("%s/%s.db", GetDBFolderPath(), GetName())
 }
 
+type DBType string
+
+const (
+	DBTypeSQLite   DBType = "sqlite"
+	DBTypePostgres DBType = "postgres"
+)
+
+func GetDBType() DBType {
+	t := strings.ToLower(strings.TrimSpace(os.Getenv("XUI_DB_TYPE")))
+	if t == "postgres" || t == "postgresql" || t == "pg" {
+		return DBTypePostgres
+	}
+	return DBTypeSQLite
+}
+
+func GetPostgresDSN() string {
+	dsn := os.Getenv("XUI_DB_POSTGRES_DSN")
+	if dsn == "" {
+		dsn = os.Getenv("DATABASE_URL")
+	}
+	if dsn != "" {
+		return dsn
+	}
+
+	host := os.Getenv("XUI_DB_HOST")
+	if host == "" {
+		host = "127.0.0.1"
+	}
+	port := os.Getenv("XUI_DB_PORT")
+	if port == "" {
+		port = "5432"
+	}
+	user := os.Getenv("XUI_DB_USER")
+	if user == "" {
+		user = "postgres"
+	}
+	password := os.Getenv("XUI_DB_PASSWORD")
+	dbname := os.Getenv("XUI_DB_NAME")
+	if dbname == "" {
+		dbname = "xui"
+	}
+	sslmode := os.Getenv("XUI_DB_SSLMODE")
+	if sslmode == "" {
+		sslmode = "disable"
+	}
+	timezone := os.Getenv("XUI_DB_TIMEZONE")
+	if timezone == "" {
+		timezone = "UTC"
+	}
+
+	if password != "" {
+		return fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s TimeZone=%s",
+			host, port, user, password, dbname, sslmode, timezone)
+	}
+	return fmt.Sprintf("host=%s port=%s user=%s dbname=%s sslmode=%s TimeZone=%s",
+		host, port, user, dbname, sslmode, timezone)
+}
+
 func GetLogFolder() string {
 	logFolderPath := os.Getenv("XUI_LOG_FOLDER")
 	if logFolderPath == "" {

@@ -2,8 +2,10 @@ package controller
 
 import (
 	"encoding/json"
+	"net/http"
 	"x-ui/internal/util/common"
 	"x-ui/internal/web/service"
+	"x-ui/internal/web/session"
 
 	"github.com/gin-gonic/gin"
 )
@@ -23,8 +25,19 @@ func NewXraySettingController(g *gin.RouterGroup) *XraySettingController {
 	return a
 }
 
+func (a *XraySettingController) checkAdmin(c *gin.Context) {
+	loginUser := session.GetLoginUser(c)
+	if loginUser == nil || !loginUser.IsAdmin() {
+		pureJsonMsg(c, http.StatusForbidden, false, I18nWeb(c, "pages.forbidden.adminRequired"))
+		c.Abort()
+		return
+	}
+	c.Next()
+}
+
 func (a *XraySettingController) initRouter(g *gin.RouterGroup) {
 	g = g.Group("/xray")
+	g.Use(a.checkAdmin)
 
 	g.POST("/", a.getXraySetting)
 	g.POST("/update", a.updateSetting)

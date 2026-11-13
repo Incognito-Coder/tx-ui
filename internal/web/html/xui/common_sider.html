@@ -17,6 +17,7 @@
         <b>{{ i18n "menu.clients"}}</b>
     </span>
 </a-menu-item>
+{{if or (not .user) .user.IsAdmin}}
 <a-menu-item key="{{ .base_path }}panel/settings">
     <a-icon type="setting"></a-icon>
     <span>
@@ -29,6 +30,7 @@
         <b>{{ i18n "menu.xray"}}</b>
     </span>
 </a-menu-item>
+{{end}}
 <a-menu-item key="{{ .base_path }}panel/docs">
     <a-icon type="api"></a-icon>
     <span>

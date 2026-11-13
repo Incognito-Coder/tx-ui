@@ -1076,12 +1076,19 @@
         </a-form>
     </a-tab-pane>
     <a-tab-pane force-render="true" key="2" tab="JSON">
-        <a-form-item style="margin: 10px 0"> Link:
-            <a-input placeholder="vmess:// vless:// trojan:// ss:// hysteria2://" style="width: 300px; margin-right: 5px;"
-                     v-model.trim="outModal.link"></a-input>
-            <a-button @click="convertLink" type="primary">
-                <a-icon type="form"></a-icon>
-            </a-button>
+        <a-form-item style="margin: 10px 0"> Link / Config:
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <a-input placeholder="vmess:// vless:// trojan:// ss:// hysteria2:// wireguard:// or .conf" style="flex: 1; min-width: 280px;"
+                         v-model.trim="outModal.link" @press-enter="convertLink"></a-input>
+                <a-button @click="convertLink" type="primary" title="Import link or config text">
+                    <a-icon type="form"></a-icon> Import
+                </a-button>
+                <a-upload :before-upload="handleWgConfUpload" :show-upload-list="false" accept=".conf,.txt">
+                    <a-button type="default" icon="upload">
+                        Upload .conf
+                    </a-button>
+                </a-upload>
+            </div>
         </a-form-item>
         <textarea id="outboundJson" style="position:absolute; left: -800px;"></textarea>
     </a-tab-pane>

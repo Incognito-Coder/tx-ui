@@ -93,10 +93,40 @@ get_target_info() {
             echo "windows-386|windows|386||Xray-windows-32.zip|xray-windows-386.exe|mtg-multi-${MTG_VERSION}-windows-386.zip|mtg-windows-386.exe|i386-windows-gnu|i686-w64-mingw32-|x-ui.exe|x-ui-windows-386.zip|zip"
             ;;
         darwin-amd64|darwin/amd64|macos-amd64|mac-amd64)
-            echo "darwin-amd64|darwin|amd64||Xray-macos-64.zip|xray-darwin-amd64|||x86_64-macos-none|o64-clang|x-ui|x-ui-darwin-amd64.tar.gz|tar.gz"
+            echo "darwin-amd64|darwin|amd64||Xray-macos-64.zip|xray-darwin-amd64|||x86_64-macos-none|o64-clang|x-ui|x-ui-darwin-amd64.tar.gz|tar.gz|"
             ;;
         darwin-arm64|darwin/arm64|macos-arm64|mac-arm64)
-            echo "darwin-arm64|darwin|arm64||Xray-macos-arm64-v8a.zip|xray-darwin-arm64|||aarch64-macos-none|oa64-clang|x-ui|x-ui-darwin-arm64.tar.gz|tar.gz"
+            echo "darwin-arm64|darwin|arm64||Xray-macos-arm64-v8a.zip|xray-darwin-arm64|||aarch64-macos-none|oa64-clang|x-ui|x-ui-darwin-arm64.tar.gz|tar.gz|"
+            ;;
+        linux-riscv64|linux/riscv64|riscv64)
+            echo "linux-riscv64|linux|riscv64||Xray-linux-riscv64.zip|xray-linux-riscv64|||riscv64-linux-musl|riscv64-linux-gnu-|x-ui|x-ui-linux-riscv64.tar.gz|tar.gz|"
+            ;;
+        linux-mips|linux/mips|mips|mips32)
+            echo "linux-mips|linux|mips||Xray-linux-mips32.zip|xray-linux-mips|||mips-linux-musl|mips-linux-gnu-|x-ui|x-ui-linux-mips.tar.gz|tar.gz|softfloat"
+            ;;
+        linux-mipsle|linux/mipsle|mipsle|mips32le)
+            echo "linux-mipsle|linux|mipsle||Xray-linux-mips32le.zip|xray-linux-mipsle|||mipsel-linux-musl|mipsel-linux-gnu-|x-ui|x-ui-linux-mipsle.tar.gz|tar.gz|softfloat"
+            ;;
+        linux-mips64|linux/mips64|mips64)
+            echo "linux-mips64|linux|mips64||Xray-linux-mips64.zip|xray-linux-mips64|||mips64-linux-musl|mips64-linux-gnuabi64-|x-ui|x-ui-linux-mips64.tar.gz|tar.gz|"
+            ;;
+        linux-mips64le|linux/mips64le|mips64le)
+            echo "linux-mips64le|linux|mips64le||Xray-linux-mips64le.zip|xray-linux-mips64le|||mips64el-linux-musl|mips64el-linux-gnuabi64-|x-ui|x-ui-linux-mips64le.tar.gz|tar.gz|"
+            ;;
+        linux-ppc64le|linux/ppc64le|ppc64le|powerpc64le)
+            echo "linux-ppc64le|linux|ppc64le||Xray-linux-ppc64le.zip|xray-linux-ppc64le|||powerpc64le-linux-musl|powerpc64le-linux-gnu-|x-ui|x-ui-linux-ppc64le.tar.gz|tar.gz|"
+            ;;
+        freebsd-amd64|freebsd/amd64|freebsd-64|freebsd)
+            echo "freebsd-amd64|freebsd|amd64||Xray-freebsd-64.zip|xray-freebsd-amd64|||x86_64-freebsd|x86_64-unknown-freebsd-|x-ui|x-ui-freebsd-amd64.tar.gz|tar.gz|"
+            ;;
+        freebsd-arm64|freebsd/arm64|freebsd-arm)
+            echo "freebsd-arm64|freebsd|arm64||Xray-freebsd-arm64-v8a.zip|xray-freebsd-arm64|||aarch64-freebsd|aarch64-unknown-freebsd-|x-ui|x-ui-freebsd-arm64.tar.gz|tar.gz|"
+            ;;
+        freebsd-386|freebsd/386|freebsd-32)
+            echo "freebsd-386|freebsd|386||Xray-freebsd-32.zip|xray-freebsd-386|||i386-freebsd|i686-unknown-freebsd-|x-ui|x-ui-freebsd-386.tar.gz|tar.gz|"
+            ;;
+        linux-loong64|linux/loong64|loong64)
+            echo "linux-loong64|linux|loong64||Xray-linux-loong64.zip|xray-linux-loong64|||loongarch64-linux-musl|loongarch64-linux-gnu-|x-ui|x-ui-linux-loong64.tar.gz|tar.gz|"
             ;;
         *)
             echo ""
@@ -108,6 +138,8 @@ ALL_PLATFORMS=(
     "linux-amd64" "linux-arm64" "linux-armv7" "linux-armv6" "linux-armv5" "linux-386" "linux-s390x"
     "windows-amd64" "windows-arm64" "windows-386"
     "darwin-amd64" "darwin-arm64"
+    "linux-riscv64" "linux-mips" "linux-mipsle" "linux-mips64" "linux-mips64le" "linux-ppc64le"
+    "freebsd-amd64" "freebsd-arm64" "freebsd-386" "linux-loong64"
 )
 
 # Detect host platform
@@ -331,13 +363,14 @@ for target in "${UNIQUE_TARGETS[@]}"; do
     t_out_bin=$(echo "$info" | cut -d'|' -f11)
     t_archive=$(echo "$info" | cut -d'|' -f12)
     t_format=$(echo "$info" | cut -d'|' -f13)
+    t_gomips=$(echo "$info" | cut -d'|' -f14)
 
     echo -e "\n${GREEN}>>> Building target: ${canonical} (${t_goos}/${t_goarch})${NC}"
 
     # Determine C compiler and CGO setting
     CGO_ENABLED="0"
     CC_BIN=""
-    COMPILER_NOTE="Pure Go (CGO disabled)"
+    COMPILER_NOTE="Pure Go (CGO_ENABLED=0 with pure-Go SQLite)"
 
     if [[ "$CGO_MODE" != "0" ]]; then
         if [[ -n "${CC:-}" ]]; then
@@ -391,6 +424,7 @@ for target in "${UNIQUE_TARGETS[@]}"; do
     export GOOS="$t_goos"
     export GOARCH="$t_goarch"
     if [[ -n "$t_goarm" ]]; then export GOARM="$t_goarm"; else unset GOARM || true; fi
+    if [[ -n "$t_gomips" ]]; then export GOMIPS="$t_gomips"; else unset GOMIPS || true; fi
     export CGO_ENABLED="$CGO_ENABLED"
     if [[ -n "$CC_BIN" ]]; then export CC="$CC_BIN"; else unset CC || true; fi
 

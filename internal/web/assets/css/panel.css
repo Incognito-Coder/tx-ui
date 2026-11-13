@@ -13,12 +13,12 @@
     --ui-success: #059669;
     --ui-warning: #d97706;
     --ui-danger: #dc2626;
-    --ui-bg: #f3f6fb;
+    --ui-bg: #e8edf4;
     --ui-surface: #ffffff;
-    --ui-surface-muted: #f8fafc;
-    --ui-border: #e2e8f0;
-    --ui-border-strong: #cbd5e1;
-    --ui-text: #172033;
+    --ui-surface-muted: #f1f4f9;
+    --ui-border: #d4dce7;
+    --ui-border-strong: #bcc7d6;
+    --ui-text: #0f172a;
     --ui-text-muted: #64748b;
     --ui-radius-sm: 7px;
     --ui-radius: 11px;
@@ -550,16 +550,14 @@ html[data-theme="ultra-dark"] #sider {
     color: var(--ui-text);
     border: 1px solid var(--ui-border) !important;
     border-radius: var(--ui-radius-lg) !important;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 250, 252, 0.96) 100%) !important;
-    box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.04), inset 0 1px 0 0 rgba(255, 255, 255, 0.7) !important;
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    background: #ffffff !important;
+    box-shadow: 0 4px 18px -2px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.03) !important;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
     overflow: hidden;
 }
 
 #content-layout .ant-card-hoverable:hover {
-    transform: translateY(-2px);
+    transform: translateY(-3px) scale(1.002);
     border-color: var(--ui-primary) !important;
     box-shadow: 0 8px 24px -4px rgba(37, 99, 235, 0.12), 0 0 0 1px var(--ui-primary) !important;
 }
@@ -569,9 +567,12 @@ html[data-theme="ultra-dark"] #sider {
     background: linear-gradient(135deg, rgba(21, 28, 40, 0.85) 0%, rgba(13, 19, 31, 0.9) 100%) !important;
     border-color: rgba(255, 255, 255, 0.08) !important;
     box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.35), inset 0 1px 0 0 rgba(255, 255, 255, 0.08) !important;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
 }
 
 .dark #content-layout .ant-card-hoverable:hover {
+    transform: translateY(-3px) scale(1.002);
     border-color: var(--ui-primary) !important;
     box-shadow: 0 8px 28px -4px rgba(0, 0, 0, 0.45), 0 0 0 1px var(--ui-primary) !important;
 }
@@ -677,7 +678,7 @@ html[data-theme="ultra-dark"] #content-layout .ant-card-hoverable:hover {
     border: 1px solid var(--ui-border);
     backdrop-filter: blur(10px);
     overflow: hidden;
-    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: all 0.35s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .ant-collapse-content {
@@ -973,12 +974,37 @@ html[data-theme="ultra-dark"] #content-layout .ant-card-hoverable:hover {
 
 .ant-btn[disabled],
 .ant-btn[disabled]:hover,
-.ant-btn[disabled]:focus {
-    color: var(--ui-text-muted);
-    border-color: var(--ui-border);
-    background: var(--ui-surface-muted);
-    box-shadow: none;
-    opacity: .65;
+.ant-btn[disabled]:focus,
+.ant-btn[disabled]:active,
+.ant-btn.disabled,
+.ant-btn.disabled:hover,
+.ant-btn.disabled:focus,
+.ant-btn.disabled:active,
+.ant-btn-primary[disabled],
+.ant-btn-primary[disabled]:hover,
+.ant-btn-primary[disabled]:focus,
+.ant-btn-primary[disabled]:active,
+.ant-btn-danger[disabled],
+.ant-btn-danger[disabled]:hover,
+.ant-btn-danger[disabled]:focus,
+.ant-btn-danger[disabled]:active,
+.ant-btn-default[disabled],
+.ant-btn-default[disabled]:hover,
+.ant-btn-default[disabled]:focus,
+.ant-btn-default[disabled]:active {
+    color: var(--ui-text-muted) !important;
+    border-color: var(--ui-border) !important;
+    background: var(--ui-surface-muted) !important;
+    background-color: var(--ui-surface-muted) !important;
+    box-shadow: none !important;
+    cursor: not-allowed !important;
+    opacity: .65 !important;
+    text-shadow: none !important;
+}
+
+.ant-btn[disabled] .anticon,
+.ant-btn.disabled .anticon {
+    color: var(--ui-text-muted) !important;
 }
 
 .ant-btn-group {
@@ -1360,6 +1386,25 @@ a:focus-visible {
     border-color: var(--ui-danger);
 }
 
+.sub-template-cm {
+    border-radius: var(--ui-radius);
+    overflow: hidden;
+}
+
+.sub-template-cm .CodeMirror {
+    width: 100%;
+    height: 540px;
+    margin: 0;
+    overflow: hidden;
+    border: 1px solid var(--ui-border) !important;
+    border-radius: var(--ui-radius) !important;
+}
+
+.sub-template-cm .CodeMirror-gutters {
+    border-top-left-radius: var(--ui-radius) !important;
+    border-bottom-left-radius: var(--ui-radius) !important;
+}
+
 .xray-table-actions {
     display: flex;
     align-items: center;
@@ -1440,6 +1485,81 @@ a:focus-visible {
     font-weight: 600;
     line-height: 20px;
     border-radius: 6px;
+    color: var(--ui-text);
+    border: 1px solid var(--ui-border);
+    background: var(--ui-surface-muted);
+}
+
+/* Default / Neutral Tag (when no preset color is set) */
+.ant-tag:not([class*="ant-tag-"]):not(.ant-tag-has-color),
+.ant-tag.ant-tag-default {
+    color: var(--ui-text) !important;
+    border: 1px solid var(--ui-border-strong) !important;
+    background: var(--ui-surface-muted) !important;
+}
+
+/* Disabled & Inactive Action Tags (such as stop, restart, backup for viewers) */
+.ant-tag.tag-disabled,
+.ant-tag-disabled,
+.ant-tag[disabled],
+.ant-tag[color="default"],
+.ant-tag-has-color:not([style*="background"]):not([style*="background-color"]) {
+    color: var(--ui-text-muted) !important;
+    border: 1px solid var(--ui-border-strong) !important;
+    background: var(--ui-surface-muted) !important;
+    background-color: var(--ui-surface-muted) !important;
+    cursor: not-allowed !important;
+    opacity: 0.88 !important;
+}
+
+body:not(.dark) .ant-tag.tag-disabled,
+body:not(.dark) .ant-tag-disabled,
+body:not(.dark) .ant-tag[disabled],
+body:not(.dark) .ant-tag[color="default"],
+html:not(.dark) .ant-tag.tag-disabled,
+html:not(.dark) .ant-tag-disabled,
+html:not(.dark) .ant-tag[disabled],
+html:not(.dark) .ant-tag[color="default"],
+.light .ant-tag.tag-disabled,
+.light .ant-tag-disabled,
+.light .ant-tag[disabled],
+.light .ant-tag[color="default"],
+#app.light .ant-tag.tag-disabled,
+#app.light .ant-tag-disabled,
+#app.light .ant-tag[disabled] {
+    color: #475569 !important;
+    background: #e2e8f0 !important;
+    background-color: #e2e8f0 !important;
+    border: 1px solid #cbd5e1 !important;
+    border-color: #cbd5e1 !important;
+}
+
+body:not(.dark) .ant-tag.tag-disabled .anticon,
+body:not(.dark) .ant-tag-disabled .anticon,
+body:not(.dark) .ant-tag[disabled] .anticon,
+body:not(.dark) .ant-tag[color="default"] .anticon,
+html:not(.dark) .ant-tag.tag-disabled .anticon,
+html:not(.dark) .ant-tag-disabled .anticon,
+.light .ant-tag.tag-disabled .anticon,
+#app.light .ant-tag.tag-disabled .anticon,
+body:not(.dark) .ant-tag.tag-disabled *,
+html:not(.dark) .ant-tag.tag-disabled *,
+.light .ant-tag.tag-disabled *,
+#app.light .ant-tag.tag-disabled * {
+    color: #475569 !important;
+}
+
+.ant-tag.tag-disabled .anticon,
+.ant-tag-disabled .anticon,
+.ant-tag[color="default"] .anticon,
+.ant-tag-has-color:not([style*="background"]):not([style*="background-color"]) .anticon {
+    color: var(--ui-text-muted) !important;
+}
+
+.ant-tag.tag-disabled:hover,
+.ant-tag-disabled:hover {
+    transform: none !important;
+    box-shadow: none !important;
 }
 
 .ant-tag-blue {
@@ -1470,6 +1590,68 @@ a:focus-visible {
     color: #be123c;
     border-color: #fecdd3;
     background: #fff1f2;
+}
+
+/* Disabled Inputs, Number Inputs, and Selects */
+.ant-input-disabled,
+.ant-input[disabled],
+.ant-input-number-disabled,
+.ant-input-number[disabled],
+.ant-select-disabled .ant-select-selection {
+    color: var(--ui-text-muted) !important;
+    background-color: var(--ui-surface-muted) !important;
+    border-color: var(--ui-border) !important;
+    cursor: not-allowed !important;
+    opacity: 0.75 !important;
+}
+
+.ant-input-disabled::placeholder,
+.ant-input[disabled]::placeholder {
+    color: var(--ui-text-muted) !important;
+    opacity: 0.5 !important;
+}
+
+/* Disabled Checkboxes & Radio Buttons */
+.ant-checkbox-disabled + span,
+.ant-radio-disabled + span,
+.ant-radio-button-wrapper-disabled {
+    color: var(--ui-text-muted) !important;
+    cursor: not-allowed !important;
+    opacity: 0.65 !important;
+}
+
+.ant-checkbox-disabled .ant-checkbox-inner,
+.ant-radio-disabled .ant-radio-inner {
+    background-color: var(--ui-surface-muted) !important;
+    border-color: var(--ui-border-strong) !important;
+}
+
+.ant-radio-button-wrapper-disabled {
+    background-color: var(--ui-surface-muted) !important;
+    border-color: var(--ui-border) !important;
+}
+
+/* Disabled Menus and Dropdowns */
+.ant-dropdown-menu-item-disabled,
+.ant-dropdown-menu-submenu-title-disabled,
+.ant-menu-item-disabled,
+.ant-menu-submenu-disabled,
+.ant-select-dropdown-menu-item-disabled {
+    color: var(--ui-text-muted) !important;
+    background: transparent !important;
+    cursor: not-allowed !important;
+    opacity: 0.55 !important;
+}
+
+.ant-dropdown-menu-item-disabled .anticon,
+.ant-menu-item-disabled .anticon {
+    color: var(--ui-text-muted) !important;
+}
+
+/* Disabled Switches */
+.ant-switch-disabled {
+    cursor: not-allowed !important;
+    opacity: 0.5 !important;
 }
 
 .ant-badge-status-dot {
@@ -1912,7 +2094,7 @@ li.ant-calendar-time-picker-select-option-selected {
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
     background-color: rgba(0, 0, 0, 0.45);
-    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: all 0.35s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .dark .ant-modal-mask,
@@ -1928,7 +2110,7 @@ li.ant-calendar-time-picker-select-option-selected {
     box-shadow: 0 20px 48px -8px rgba(0, 0, 0, 0.16), 0 4px 16px -2px rgba(0, 0, 0, 0.08), inset 0 1px 0 0 rgba(255, 255, 255, 0.9) !important;
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: all 0.35s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .dark .ant-modal-content,
@@ -3027,25 +3209,87 @@ html[data-theme="ultra-dark"] body.dark {
     cursor: pointer;
 }
 
-/* Smooth Page Load Entrance Animation */
+/* ==========================================================================
+   Modern Fluid Global Animation System (Scale-Glide & Soft Depth)
+   ========================================================================== */
+
+/* Main Page & Section Transitions (Vue <transition appear name="list">) */
 .list-enter-active {
-    transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    transition: transform 0.48s cubic-bezier(0.16, 1, 0.3, 1),
+                opacity 0.42s cubic-bezier(0.16, 1, 0.3, 1) !important;
     will-change: transform, opacity;
+    transform-origin: center 10%;
 }
 
 .list-leave-active {
-    transition: transform 0.25s cubic-bezier(0.7, 0, 0.84, 0), opacity 0.25s ease-in !important;
+    transition: transform 0.22s cubic-bezier(0.4, 0, 1, 1),
+                opacity 0.2s ease-out !important;
+    will-change: transform, opacity;
 }
 
 .list-enter {
     opacity: 0 !important;
-    transform: translateY(24px) scale(0.98) !important;
+    transform: translateY(14px) scale(0.985) !important;
 }
 
-.list-leave-to,
-.list-leave-active {
+.list-leave-to {
     opacity: 0 !important;
-    transform: translateY(-16px) scale(0.99) !important;
+    transform: translateY(-8px) scale(0.99) !important;
+}
+
+/* Tabs Switching Smooth Reveal */
+.ant-tabs-tabpane-active {
+    animation: panelTabEnter 0.36s cubic-bezier(0.16, 1, 0.3, 1) both !important;
+}
+
+@keyframes panelTabEnter {
+    0% {
+        opacity: 0;
+        transform: translateY(10px) scale(0.99);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Ant Design Modal & Dialog Modern Easing */
+.zoom-enter,
+.zoom-appear {
+    animation-duration: 0.34s !important;
+    animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.zoom-leave {
+    animation-duration: 0.2s !important;
+    animation-timing-function: cubic-bezier(0.4, 0, 1, 1) !important;
+}
+
+/* Ant Design Dropdown, Select & Popover Modern Transitions */
+.slide-up-enter,
+.slide-up-appear {
+    animation-duration: 0.24s !important;
+    animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.slide-up-leave {
+    animation-duration: 0.18s !important;
+    animation-timing-function: cubic-bezier(0.4, 0, 1, 1) !important;
+}
+
+/* Interactive Button Press Micro-Feedback */
+.ant-btn {
+    transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.ant-btn:active:not([disabled]) {
+    transform: scale(0.97) !important;
+}
+
+/* Smooth Table Row Interactions */
+#content-layout .ant-table-tbody > tr {
+    transition: background-color 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
 /* Inbound selection grid styling */
@@ -3066,15 +3310,17 @@ html[data-theme="ultra-dark"] body.dark {
     display: inline-flex;
     align-items: center;
     margin: 0 !important;
-    padding: 8px 12px;
+    padding: 9px 13px;
     background: var(--ui-surface);
     border: 1px solid var(--ui-border);
     border-radius: var(--ui-radius-sm);
     transition: all 0.2s ease;
     line-height: 1.4;
+    cursor: pointer;
 }
 
-.inbound-select-grid .ant-checkbox-wrapper:hover {
+.inbound-select-grid .ant-checkbox-wrapper:hover,
+.inbound-select-grid .ant-checkbox-wrapper-checked {
     border-color: var(--ui-primary);
     background: var(--ui-primary-soft);
 }
@@ -3099,4 +3345,58 @@ html[data-theme="ultra-dark"] body.dark {
 .ant-modal[dir="rtl"] .inbound-select-grid .ant-checkbox-wrapper .ant-checkbox {
     margin-right: 0;
     margin-left: 10px;
+}
+
+/* Staff Permissions Checklist Grid */
+.staff-perm-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-top: 10px;
+    margin-bottom: 14px;
+}
+
+@media (max-width: 576px) {
+    .staff-perm-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.staff-perm-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 14px;
+    background: var(--ui-surface-muted);
+    border: 1px solid var(--ui-border);
+    border-radius: var(--ui-radius-sm);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+}
+
+.staff-perm-item:hover {
+    background: var(--ui-surface);
+    border-color: var(--ui-primary);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.staff-perm-item .ant-checkbox-wrapper {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    margin-left: 0 !important;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ui-text);
+}
+
+.staff-perm-item .ant-checkbox-wrapper .ant-checkbox {
+    margin-right: 8px;
+    flex-shrink: 0;
+}
+
+[dir="rtl"] .staff-perm-item .ant-checkbox-wrapper .ant-checkbox,
+.ant-modal[dir="rtl"] .staff-perm-item .ant-checkbox-wrapper .ant-checkbox {
+    margin-right: 0;
+    margin-left: 8px;
 }

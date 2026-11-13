@@ -38,12 +38,14 @@ var (
 	show          bool
 	getCert       bool
 	remove_secret bool
+	factoryReset  bool
 )
 
 func init() {
 	rootCmd.AddCommand(settingCmd)
 
 	settingCmd.Flags().BoolVar(&reset, "reset", false, "Reset all settings")
+	settingCmd.Flags().BoolVar(&factoryReset, "factory-reset", false, "Factory reset: clear inbounds, clients, staff, and restore default settings & admin user")
 	settingCmd.Flags().BoolVar(&show, "show", false, "Display current settings")
 	settingCmd.Flags().BoolVar(&remove_secret, "remove_secret", false, "Remove secret key")
 	settingCmd.Flags().IntVar(&port, "port", 0, "Set panel port number")
@@ -61,7 +63,9 @@ func init() {
 	settingCmd.Flags().BoolVar(&enabletgbot, "enabletgbot", false, "Enable notifications via Telegram bot")
 
 	settingCmd.Run = func(cmd *cobra.Command, args []string) {
-		if reset {
+		if factoryReset {
+			FactoryReset()
+		} else if reset {
 			ResetSetting()
 		} else {
 			UpdateSetting(port, username, password, webBasePath, listenIP)
@@ -85,6 +89,31 @@ func init() {
 			UpdateTgbotEnableSts(enabletgbot)
 		}
 	}
+}
+
+func FactoryReset() {
+	err := database.InitDB(config.GetDBPath())
+	if err != nil {
+		fmt.Println("Failed to initialize database:", err)
+		return
+	}
+
+	settingService := service.SettingService{}
+	err = settingService.FactoryReset()
+	if err != nil {
+		fmt.Println("Failed to perform factory reset:", err)
+		return
+	}
+
+	serverService := service.ServerService{}
+	_ = serverService.RestartXrayService()
+
+	fmt.Println("Panel has been successfully reset to factory settings.")
+	fmt.Println("Default login credentials:")
+	fmt.Println("  Username: admin")
+	fmt.Println("  Password: admin")
+	fmt.Println("  Port: 2053")
+	fmt.Println("  WebBasePath: /")
 }
 
 func ResetSetting() {

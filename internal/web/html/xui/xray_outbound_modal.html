@@ -117,12 +117,37 @@
                     this.outModal.outbound = newOutbound;
                     this.outModal.toggleJson(true);
                     this.outModal.check();
-                    this.$message.success('Link imported successfully...');
+                    this.$message.success('Outbound imported successfully...');
                     outModal.link = '';
                 } else {
-                    this.$message.error('Wrong Link!');
+                    this.$message.error('Invalid Link or Config format!');
                     outModal.link = '';
                 }
+            },
+            handleWgConfUpload(file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const text = e.target.result;
+                    if (!text || text.trim().length === 0) {
+                        this.$message.error('The selected file is empty!');
+                        return;
+                    }
+                    const newOutbound = Outbound.fromLink(text);
+                    if (newOutbound) {
+                        this.outModal.outbound = newOutbound;
+                        this.outModal.toggleJson(true);
+                        this.outModal.check();
+                        this.$message.success('WireGuard configuration (.conf) imported successfully!');
+                        outModal.link = '';
+                    } else {
+                        this.$message.error('Failed to parse WireGuard config file. Please check file format.');
+                    }
+                };
+                reader.onerror = () => {
+                    this.$message.error('Failed to read configuration file');
+                };
+                reader.readAsText(file);
+                return false;
             },
         },
     });

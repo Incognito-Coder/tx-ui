@@ -1459,7 +1459,7 @@
                         <div style="display: flex; align-items: center; gap: 8px;">
                             <span style="font-size: 13px; color: var(--ui-text-muted);">Watch:</span>
                             <a-switch v-model="metricsModal.autoRefresh" @change="toggleMetricsAutoRefresh"></a-switch>
-                            <a-tag :color="metricsModal.autoRefresh ? 'green' : 'default'">[[ metricsModal.autoRefresh ? 'Watching' : 'Paused' ]]</a-tag>
+                            <a-tag :color="metricsModal.autoRefresh ? 'green' : 'orange'">[[ metricsModal.autoRefresh ? 'Watching' : 'Paused' ]]</a-tag>
                         </div>
                     </div>
                     <!-- Categorized Clean View -->

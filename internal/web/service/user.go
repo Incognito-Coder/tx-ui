@@ -42,6 +42,11 @@ func (s *UserService) CheckUser(username string, password string, secret string)
 		return nil
 	}
 
+	if user.Status == "disabled" {
+		logger.Warningf("login attempted by disabled user: %s", username)
+		return nil
+	}
+
 	if crypto.CheckPasswordHash(user.Password, password) {
 		return user
 	}
@@ -132,4 +137,177 @@ func (s *UserService) UpdateFirstUser(username string, password string) error {
 	user.Username = username
 	user.Password = hashedPassword
 	return db.Save(user).Error
+}
+
+func (s *UserService) GetAllUsers() ([]*model.User, error) {
+	db := database.GetDB()
+	var users []*model.User
+	err := db.Model(&model.User{}).Order("id asc").Find(&users).Error
+	if err != nil {
+		return nil, err
+	}
+	return users, nil
+}
+
+func (s *UserService) GetUserById(id int) (*model.User, error) {
+	db := database.GetDB()
+	user := &model.User{}
+	err := db.Model(&model.User{}).Where("id = ?", id).First(user).Error
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
+func (s *UserService) CreateStaffUser(username, password, role, permissions, allowedInbounds string, canResetTraffic, canBackupDB, canRestoreDB, canOperateXray, canOperateGeo, canViewLinks bool) (*model.User, error) {
+	if username == "" {
+		return nil, errors.New("username cannot be empty")
+	}
+	if password == "" {
+		return nil, errors.New("password cannot be empty")
+	}
+
+	db := database.GetDB()
+	var count int64
+	db.Model(&model.User{}).Where("username = ?", username).Count(&count)
+	if count > 0 {
+		return nil, errors.New("username already exists")
+	}
+
+	hashedPassword, err := crypto.HashPasswordAsBcrypt(password)
+	if err != nil {
+		return nil, err
+	}
+
+	if role == "" {
+		role = "staff"
+	}
+	if permissions == "" {
+		permissions = `["inbounds:read","clients:read","clients:view_links"]`
+	}
+	if allowedInbounds == "" {
+		allowedInbounds = "*"
+	}
+
+	if role == "viewer" {
+		canResetTraffic = false
+		canBackupDB = false
+		canRestoreDB = false
+		canOperateXray = false
+		canOperateGeo = false
+		canViewLinks = true
+	} else if role == "admin" {
+		canResetTraffic = true
+		canBackupDB = true
+		canRestoreDB = true
+		canOperateXray = true
+		canOperateGeo = true
+		canViewLinks = true
+		permissions = "*"
+		allowedInbounds = "*"
+	}
+
+	user := &model.User{
+		Username:        username,
+		Password:        hashedPassword,
+		Role:            role,
+		Permissions:     permissions,
+		AllowedInbounds: allowedInbounds,
+		CanResetTraffic: canResetTraffic,
+		CanBackupDB:     canBackupDB,
+		CanRestoreDB:    canRestoreDB,
+		CanOperateXray:  canOperateXray,
+		CanOperateGeo:   canOperateGeo,
+		CanViewLinks:    canViewLinks,
+		Status:          "active",
+	}
+
+	err = db.Create(user).Error
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
+func (s *UserService) UpdateStaffUser(id int, username, password, role, permissions, allowedInbounds string, canResetTraffic, canBackupDB, canRestoreDB, canOperateXray, canOperateGeo, canViewLinks bool, status string) error {
+	db := database.GetDB()
+	user, err := s.GetUserById(id)
+	if err != nil {
+		return err
+	}
+
+	if username != "" && username != user.Username {
+		var count int64
+		db.Model(&model.User{}).Where("username = ? and id != ?", username, id).Count(&count)
+		if count > 0 {
+			return errors.New("username already taken by another account")
+		}
+		user.Username = username
+	}
+
+	if password != "" {
+		hashed, err := crypto.HashPasswordAsBcrypt(password)
+		if err != nil {
+			return err
+		}
+		user.Password = hashed
+	}
+
+	if role != "" {
+		user.Role = role
+	}
+	if permissions != "" {
+		user.Permissions = permissions
+	}
+	if allowedInbounds != "" {
+		user.AllowedInbounds = allowedInbounds
+	}
+
+	if user.Role == "viewer" {
+		user.CanResetTraffic = false
+		user.CanBackupDB = false
+		user.CanRestoreDB = false
+		user.CanOperateXray = false
+		user.CanOperateGeo = false
+		user.CanViewLinks = true
+	} else if user.Role == "admin" {
+		user.CanResetTraffic = true
+		user.CanBackupDB = true
+		user.CanRestoreDB = true
+		user.CanOperateXray = true
+		user.CanOperateGeo = true
+		user.CanViewLinks = true
+		user.Permissions = "*"
+		user.AllowedInbounds = "*"
+	} else {
+		user.CanResetTraffic = canResetTraffic
+		user.CanBackupDB = canBackupDB
+		user.CanRestoreDB = canRestoreDB
+		user.CanOperateXray = canOperateXray
+		user.CanOperateGeo = canOperateGeo
+		user.CanViewLinks = canViewLinks
+	}
+
+	if status != "" {
+		user.Status = status
+	}
+
+	return db.Save(user).Error
+}
+
+func (s *UserService) DeleteStaffUser(id int) error {
+	db := database.GetDB()
+	var totalAdmins int64
+	db.Model(&model.User{}).Where("role = ? OR role = ''", "admin").Count(&totalAdmins)
+
+	user, err := s.GetUserById(id)
+	if err != nil {
+		return err
+	}
+
+	if user.IsAdmin() && totalAdmins <= 1 {
+		return errors.New("cannot delete the only remaining admin account")
+	}
+
+	return db.Delete(&model.User{}, id).Error
 }

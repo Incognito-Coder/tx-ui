@@ -56,11 +56,23 @@ func (a *InboundController) initRouter(g *gin.RouterGroup) {
 
 func (a *InboundController) getInbounds(c *gin.Context) {
 	user := session.GetLoginUser(c)
-	userId := 0
-	if user != nil {
-		userId = user.Id
+	var inbounds []*model.Inbound
+	var err error
+
+	if user == nil || user.IsAdmin() || user.Role == "viewer" || user.AllowedInbounds == "*" || user.AllowedInbounds == "" {
+		inbounds, err = a.inboundService.GetAllInbounds()
+	} else {
+		all, e := a.inboundService.GetAllInbounds()
+		if e != nil {
+			err = e
+		} else {
+			for _, inb := range all {
+				if user.CanAccessInbound(inb.Id) {
+					inbounds = append(inbounds, inb)
+				}
+			}
+		}
 	}
-	inbounds, err := a.inboundService.GetInbounds(userId)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			jsonObj(c, []*model.Inbound{}, nil)
@@ -69,6 +81,9 @@ func (a *InboundController) getInbounds(c *gin.Context) {
 		jsonMsg(c, I18nWeb(c, "pages.inbounds.toasts.obtain"), err)
 		return
 	}
+	if inbounds == nil {
+		inbounds = []*model.Inbound{}
+	}
 	jsonObj(c, inbounds, nil)
 }
 
@@ -76,6 +91,11 @@ func (a *InboundController) getInbound(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		jsonMsg(c, I18nWeb(c, "get"), err)
+		return
+	}
+	user := session.GetLoginUser(c)
+	if user != nil && !user.IsAdmin() && !user.CanAccessInbound(id) {
+		pureJsonMsg(c, http.StatusForbidden, false, "Access denied to this inbound")
 		return
 	}
 	inbound, err := a.inboundService.GetInbound(id)
@@ -111,14 +131,22 @@ func (a *InboundController) getClientTrafficsById(c *gin.Context) {
 }
 
 func (a *InboundController) addInbound(c *gin.Context) {
+	user := session.GetLoginUser(c)
+	if user != nil && !user.IsAdmin() {
+		if user.Role == "viewer" || !user.HasPermission("inbounds:create") {
+			pureJsonMsg(c, http.StatusForbidden, false, "Permission denied: cannot create inbounds")
+			return
+		}
+	}
 	inbound := &model.Inbound{}
 	err := c.ShouldBind(inbound)
 	if err != nil {
 		jsonMsg(c, I18nWeb(c, "pages.inbounds.create"), err)
 		return
 	}
-	user := session.GetLoginUser(c)
-	inbound.UserId = user.Id
+	if user != nil {
+		inbound.UserId = user.Id
+	}
 	if inbound.Listen == "" || inbound.Listen == "0.0.0.0" || inbound.Listen == "::" || inbound.Listen == "::0" {
 		inbound.Tag = fmt.Sprintf("inbound-%v", inbound.Port)
 	} else {
@@ -139,6 +167,13 @@ func (a *InboundController) delInbound(c *gin.Context) {
 		jsonMsg(c, I18nWeb(c, "delete"), err)
 		return
 	}
+	user := session.GetLoginUser(c)
+	if user != nil && !user.IsAdmin() {
+		if user.Role == "viewer" || !user.HasPermission("inbounds:delete") || !user.CanAccessInbound(id) {
+			pureJsonMsg(c, http.StatusForbidden, false, "Permission denied to delete inbound")
+			return
+		}
+	}
 	needRestart := true
 	needRestart, err = a.inboundService.DelInbound(id)
 	jsonMsgObj(c, I18nWeb(c, "delete"), id, err)
@@ -152,6 +187,13 @@ func (a *InboundController) updateInbound(c *gin.Context) {
 	if err != nil {
 		jsonMsg(c, I18nWeb(c, "pages.inbounds.update"), err)
 		return
+	}
+	user := session.GetLoginUser(c)
+	if user != nil && !user.IsAdmin() {
+		if user.Role == "viewer" || !user.HasPermission("inbounds:edit") || !user.CanAccessInbound(id) {
+			pureJsonMsg(c, http.StatusForbidden, false, "Permission denied to update inbound")
+			return
+		}
 	}
 	inbound := &model.Inbound{
 		Id: id,
@@ -199,6 +241,13 @@ func (a *InboundController) addInboundClient(c *gin.Context) {
 		jsonMsg(c, I18nWeb(c, "pages.inbounds.update"), err)
 		return
 	}
+	user := session.GetLoginUser(c)
+	if user != nil && !user.IsAdmin() {
+		if user.Role == "viewer" || !user.HasPermission("clients:create") || !user.CanAccessInbound(data.Id) {
+			pureJsonMsg(c, http.StatusForbidden, false, "Permission denied to add client to this inbound")
+			return
+		}
+	}
 
 	needRestart := true
 
@@ -221,6 +270,13 @@ func (a *InboundController) delInboundClient(c *gin.Context) {
 	if err != nil {
 		jsonMsg(c, I18nWeb(c, "pages.inbounds.update"), err)
 		return
+	}
+	user := session.GetLoginUser(c)
+	if user != nil && !user.IsAdmin() {
+		if user.Role == "viewer" || !user.HasPermission("clients:delete") || !user.CanAccessInbound(id) {
+			pureJsonMsg(c, http.StatusForbidden, false, "Permission denied to delete client from this inbound")
+			return
+		}
 	}
 	clientId := c.Param("clientId")
 
@@ -249,6 +305,13 @@ func (a *InboundController) updateInboundClient(c *gin.Context) {
 		jsonMsg(c, I18nWeb(c, "pages.inbounds.update"), err)
 		return
 	}
+	user := session.GetLoginUser(c)
+	if user != nil && !user.IsAdmin() {
+		if user.Role == "viewer" || !user.HasPermission("clients:edit") || (inbound.Id > 0 && !user.CanAccessInbound(inbound.Id)) {
+			pureJsonMsg(c, http.StatusForbidden, false, "Permission denied to update client")
+			return
+		}
+	}
 
 	needRestart := true
 
@@ -272,6 +335,13 @@ func (a *InboundController) resetClientTraffic(c *gin.Context) {
 		jsonMsg(c, I18nWeb(c, "pages.inbounds.update"), err)
 		return
 	}
+	user := session.GetLoginUser(c)
+	if user != nil && !user.IsAdmin() {
+		if !user.CanResetTraffic || user.Role == "viewer" || !user.CanAccessInbound(id) {
+			pureJsonMsg(c, http.StatusForbidden, false, "Permission denied: traffic reset not allowed")
+			return
+		}
+	}
 	email := c.Param("email")
 
 	needRestart, err := a.inboundService.ResetClientTraffic(id, email)
@@ -289,6 +359,11 @@ func (a *InboundController) resetClientTraffic(c *gin.Context) {
 }
 
 func (a *InboundController) resetAllTraffics(c *gin.Context) {
+	user := session.GetLoginUser(c)
+	if user != nil && !user.IsAdmin() {
+		pureJsonMsg(c, http.StatusForbidden, false, "Permission denied: admin role required")
+		return
+	}
 	err := a.inboundService.ResetAllTraffics()
 	if err != nil {
 		jsonMsg(c, "Something went wrong!", err)
@@ -305,6 +380,13 @@ func (a *InboundController) resetAllClientTraffics(c *gin.Context) {
 		jsonMsg(c, I18nWeb(c, "pages.inbounds.update"), err)
 		return
 	}
+	user := session.GetLoginUser(c)
+	if user != nil && !user.IsAdmin() {
+		if !user.CanResetTraffic || user.Role == "viewer" || !user.CanAccessInbound(id) {
+			pureJsonMsg(c, http.StatusForbidden, false, "Permission denied: traffic reset not allowed")
+			return
+		}
+	}
 
 	err = a.inboundService.ResetAllClientTraffics(id)
 	if err != nil {
@@ -317,15 +399,23 @@ func (a *InboundController) resetAllClientTraffics(c *gin.Context) {
 }
 
 func (a *InboundController) importInbound(c *gin.Context) {
+	user := session.GetLoginUser(c)
+	if user != nil && !user.IsAdmin() {
+		if user.Role == "viewer" || !user.HasPermission("inbounds:create") {
+			pureJsonMsg(c, http.StatusForbidden, false, "Permission denied to import inbounds")
+			return
+		}
+	}
 	inbound := &model.Inbound{}
 	err := json.Unmarshal([]byte(c.PostForm("data")), inbound)
 	if err != nil {
 		jsonMsg(c, "Something went wrong!", err)
 		return
 	}
-	user := session.GetLoginUser(c)
 	inbound.Id = 0
-	inbound.UserId = user.Id
+	if user != nil {
+		inbound.UserId = user.Id
+	}
 	if inbound.Listen == "" || inbound.Listen == "0.0.0.0" || inbound.Listen == "::" || inbound.Listen == "::0" {
 		inbound.Tag = fmt.Sprintf("inbound-%v", inbound.Port)
 	} else {
@@ -350,6 +440,13 @@ func (a *InboundController) delDepletedClients(c *gin.Context) {
 	if err != nil {
 		jsonMsg(c, I18nWeb(c, "pages.inbounds.update"), err)
 		return
+	}
+	user := session.GetLoginUser(c)
+	if user != nil && !user.IsAdmin() {
+		if user.Role == "viewer" || !user.HasPermission("clients:delete") || !user.CanAccessInbound(id) {
+			pureJsonMsg(c, http.StatusForbidden, false, "Permission denied to delete depleted clients")
+			return
+		}
 	}
 	err = a.inboundService.DelDepletedClients(id)
 	if err != nil {
@@ -382,6 +479,13 @@ func (a *InboundController) disabled(c *gin.Context) {
 }
 
 func (a *InboundController) updateClientTraffic(c *gin.Context) {
+	user := session.GetLoginUser(c)
+	if user != nil && !user.IsAdmin() {
+		if !user.CanResetTraffic || user.Role == "viewer" {
+			pureJsonMsg(c, http.StatusForbidden, false, "Permission denied to modify client traffic")
+			return
+		}
+	}
 	email := c.Param("email")
 
 	// Define the request structure for traffic update
@@ -411,6 +515,13 @@ func (a *InboundController) delInboundClientByEmail(c *gin.Context) {
 	if err != nil {
 		jsonMsg(c, "Invalid inbound ID", err)
 		return
+	}
+	user := session.GetLoginUser(c)
+	if user != nil && !user.IsAdmin() {
+		if user.Role == "viewer" || !user.HasPermission("clients:delete") || !user.CanAccessInbound(inboundId) {
+			pureJsonMsg(c, http.StatusForbidden, false, "Permission denied to delete client by email")
+			return
+		}
 	}
 
 	email := c.Param("email")
@@ -483,8 +594,19 @@ func (a *InboundController) reorderInbounds(c *gin.Context) {
 		return
 	}
 
-	// Optional: verify that the ids belong to the current user
 	user := session.GetLoginUser(c)
+	if user != nil && !user.IsAdmin() {
+		if user.Role == "viewer" {
+			pureJsonMsg(c, http.StatusForbidden, false, "Permission denied: viewer cannot reorder inbounds")
+			return
+		}
+		for _, id := range body.Ids {
+			if !user.CanAccessInbound(id) {
+				pureJsonMsg(c, http.StatusForbidden, false, fmt.Sprintf("Permission denied: inbound %d is not in your allowed scope", id))
+				return
+			}
+		}
+	}
 	// load user's inbounds ids
 	inbounds, err := a.inboundService.GetInbounds(user.Id)
 	if err != nil {

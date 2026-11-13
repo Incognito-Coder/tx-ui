@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"os"
 	"reflect"
 	"strconv"
 	"strings"
@@ -748,6 +749,29 @@ func (s *SettingService) VacuumDB() (*database.VacuumResult, error) {
 
 func (s *SettingService) CleanCorruptedRows() (*database.CleanResult, error) {
 	return database.CleanCorruptedRows()
+}
+
+func (s *SettingService) FactoryReset() error {
+	// 1. Wipe database tables and re-create default admin user
+	if err := database.FactoryReset(); err != nil {
+		return err
+	}
+
+	// 2. Remove any custom sub templates from disk if they exist
+	_ = os.Remove("sub/html/sub.html")
+	_ = os.Remove("sub/html/index.html")
+	_ = os.Remove("/etc/x-ui/html/sub.html")
+	_ = os.Remove("/etc/x-ui/html/index.html")
+
+	// 3. Populate all default settings from defaultValueMap
+	for key, value := range defaultValueMap {
+		_ = s.saveSetting(key, value)
+	}
+
+	// 4. Compact database
+	_, _ = database.Vacuum()
+
+	return nil
 }
 
 

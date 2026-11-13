@@ -12,8 +12,10 @@ import (
 	"time"
 
 	"x-ui/internal/logger"
+	"x-ui/internal/sub"
 	"x-ui/internal/web/global"
 	"x-ui/internal/web/service"
+	"x-ui/internal/web/session"
 
 	"github.com/gin-gonic/gin"
 )
@@ -77,6 +79,9 @@ func (a *ServerController) initRouter(g *gin.RouterGroup) {
 	g.GET("/getSubTemplates", a.getSubTemplates)
 	g.POST("/applySubTemplate", a.applySubTemplate)
 	g.POST("/resetSubTemplate", a.resetSubTemplate)
+	g.GET("/getSubTemplateContent", a.getSubTemplateContent)
+	g.POST("/saveSubTemplateContent", a.saveSubTemplateContent)
+	g.POST("/previewSubTemplate", a.previewSubTemplate)
 	g.POST("/getMinecraftProfile", a.getMinecraftProfile)
 }
 
@@ -149,6 +154,11 @@ func (a *ServerController) getXrayVersion(c *gin.Context) {
 }
 
 func (a *ServerController) installXray(c *gin.Context) {
+	loginUser := session.GetLoginUser(c)
+	if loginUser == nil || !loginUser.CanXray() {
+		pureJsonMsg(c, http.StatusForbidden, false, I18nWeb(c, "pages.forbidden.xrayOpsDenied"))
+		return
+	}
 	version := c.Param("version")
 	err := a.serverService.UpdateXray(version)
 	jsonMsg(c, I18nWeb(c, "install")+" xray", err)
@@ -164,6 +174,11 @@ func (a *ServerController) getGeoVersions(c *gin.Context) {
 }
 
 func (a *ServerController) updateGeoFiles(c *gin.Context) {
+	loginUser := session.GetLoginUser(c)
+	if loginUser == nil || !loginUser.CanGeo() {
+		pureJsonMsg(c, http.StatusForbidden, false, I18nWeb(c, "pages.forbidden.geoOpsDenied"))
+		return
+	}
 	version := c.Param("version")
 	if version == "" {
 		version = c.Query("version")
@@ -173,6 +188,11 @@ func (a *ServerController) updateGeoFiles(c *gin.Context) {
 }
 
 func (a *ServerController) stopXrayService(c *gin.Context) {
+	loginUser := session.GetLoginUser(c)
+	if loginUser == nil || !loginUser.CanXray() {
+		pureJsonMsg(c, http.StatusForbidden, false, I18nWeb(c, "pages.forbidden.xrayOpsDenied"))
+		return
+	}
 	a.lastGetStatusTime = time.Now()
 	err := a.serverService.StopXrayService()
 	if err != nil {
@@ -183,6 +203,11 @@ func (a *ServerController) stopXrayService(c *gin.Context) {
 }
 
 func (a *ServerController) restartXrayService(c *gin.Context) {
+	loginUser := session.GetLoginUser(c)
+	if loginUser == nil || !loginUser.CanXray() {
+		pureJsonMsg(c, http.StatusForbidden, false, I18nWeb(c, "pages.forbidden.xrayOpsDenied"))
+		return
+	}
 	err := a.serverService.RestartXrayService()
 	if err != nil {
 		jsonMsg(c, "", err)
@@ -192,6 +217,11 @@ func (a *ServerController) restartXrayService(c *gin.Context) {
 }
 
 func (a *ServerController) rollbackXrayConfig(c *gin.Context) {
+	loginUser := session.GetLoginUser(c)
+	if loginUser == nil || !loginUser.CanXray() {
+		pureJsonMsg(c, http.StatusForbidden, false, I18nWeb(c, "pages.forbidden.xrayOpsDenied"))
+		return
+	}
 	err := a.serverService.RollbackXrayConfig()
 	if err != nil {
 		jsonMsg(c, I18nWeb(c, "pages.server.rollbackFailed"), err)
@@ -224,6 +254,11 @@ func (a *ServerController) getPanelVersions(c *gin.Context) {
 }
 
 func (a *ServerController) installPanel(c *gin.Context) {
+	loginUser := session.GetLoginUser(c)
+	if loginUser == nil || !loginUser.IsAdmin() {
+		pureJsonMsg(c, http.StatusForbidden, false, I18nWeb(c, "pages.forbidden.adminRequired"))
+		return
+	}
 	version := c.Param("version")
 	if version == "" {
 		version = c.Query("version")
@@ -258,6 +293,11 @@ func (a *ServerController) installPanel(c *gin.Context) {
 }
 
 func (a *ServerController) setTunnel(c *gin.Context) {
+	loginUser := session.GetLoginUser(c)
+	if loginUser == nil || !loginUser.IsAdmin() {
+		pureJsonMsg(c, http.StatusForbidden, false, I18nWeb(c, "pages.forbidden.adminRequired"))
+		return
+	}
 	a.serverService.ApplyTunnel(c.Param("ip"), c.Param("port"), c.Param("user"), c.Param("password"))
 	jsonMsg(c, I18nWeb(c, "pages.xray.tunnel.applied"), nil)
 }
@@ -324,6 +364,11 @@ func (a *ServerController) getConfigJson(c *gin.Context) {
 }
 
 func (a *ServerController) getDb(c *gin.Context) {
+	loginUser := session.GetLoginUser(c)
+	if loginUser == nil || !loginUser.CanBackup() {
+		pureJsonMsg(c, http.StatusForbidden, false, I18nWeb(c, "pages.forbidden.databaseDenied"))
+		return
+	}
 	db, err := a.serverService.GetDb()
 	if err != nil {
 		jsonMsg(c, "get Database", err)
@@ -351,6 +396,11 @@ func isValidFilename(filename string) bool {
 }
 
 func (a *ServerController) importDB(c *gin.Context) {
+	loginUser := session.GetLoginUser(c)
+	if loginUser == nil || !loginUser.CanRestore() {
+		pureJsonMsg(c, http.StatusForbidden, false, I18nWeb(c, "pages.forbidden.databaseDenied"))
+		return
+	}
 	// Get the file from the request body
 	file, _, err := c.Request.FormFile("db")
 	if err != nil {
@@ -442,6 +492,11 @@ func (a *ServerController) getSubTemplates(c *gin.Context) {
 }
 
 func (a *ServerController) applySubTemplate(c *gin.Context) {
+	loginUser := session.GetLoginUser(c)
+	if loginUser == nil || !loginUser.IsAdmin() {
+		pureJsonMsg(c, http.StatusForbidden, false, I18nWeb(c, "pages.forbidden.templateDenied"))
+		return
+	}
 	type form struct {
 		URL string `json:"url" form:"url"`
 	}
@@ -474,12 +529,61 @@ func isAllowedSubTemplateURL(rawURL string) bool {
 }
 
 func (a *ServerController) resetSubTemplate(c *gin.Context) {
+	loginUser := session.GetLoginUser(c)
+	if loginUser == nil || !loginUser.IsAdmin() {
+		pureJsonMsg(c, http.StatusForbidden, false, I18nWeb(c, "pages.forbidden.templateDenied"))
+		return
+	}
 	err := a.serverService.ResetSubTemplate()
 	if err != nil {
 		jsonMsg(c, err.Error(), nil)
 		return
 	}
 	jsonMsg(c, I18nWeb(c, "pages.settings.subTemplateModalResetSuccessMsg"), nil)
+}
+
+type SubTemplateContentForm struct {
+	Content string `json:"content" form:"content"`
+}
+
+func (a *ServerController) getSubTemplateContent(c *gin.Context) {
+	result, err := sub.GetSubTemplateContent()
+	if err != nil {
+		jsonMsg(c, err.Error(), err)
+		return
+	}
+	jsonObj(c, result, nil)
+}
+
+func (a *ServerController) saveSubTemplateContent(c *gin.Context) {
+	loginUser := session.GetLoginUser(c)
+	if loginUser == nil || !loginUser.IsAdmin() {
+		pureJsonMsg(c, http.StatusForbidden, false, I18nWeb(c, "pages.forbidden.templateDenied"))
+		return
+	}
+	f := &SubTemplateContentForm{}
+	err := c.ShouldBind(f)
+	if err != nil {
+		jsonMsg(c, "Invalid request", err)
+		return
+	}
+	err = sub.SaveSubTemplateContent(f.Content)
+	if err != nil {
+		jsonMsg(c, err.Error(), err)
+		return
+	}
+	jsonMsg(c, "Template saved and applied successfully", nil)
+}
+
+func (a *ServerController) previewSubTemplate(c *gin.Context) {
+	f := &SubTemplateContentForm{}
+	_ = c.ShouldBind(f)
+	htmlOutput, err := sub.PreviewSubTemplate(f.Content)
+	if err != nil {
+		jsonMsg(c, err.Error(), err)
+		return
+	}
+	jsonObj(c, htmlOutput, nil)
 }
 
 func (a *ServerController) getMinecraftProfile(c *gin.Context) {
