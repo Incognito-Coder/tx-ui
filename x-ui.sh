@@ -286,8 +286,8 @@ reset_config() {
 factory_reset() {
     echo -e "${red}╔══════════════════════════════════════════════════════════╗${plain}"
     echo -e "${red}║                     WARNING!                             ║${plain}"
-    echo -e "${red}║ This will permanently delete ALL inbounds, clients,     ║${plain}"
-    echo -e "${red}║ custom settings, and staff accounts!                    ║${plain}"
+    echo -e "${red}║ This will permanently delete ALL inbounds, clients,      ║${plain}"
+    echo -e "${red}║ custom settings, and staff accounts!                     ║${plain}"
     echo -e "${red}║ Admin credentials will be reset to: admin / admin        ║${plain}"
     echo -e "${red}║ Default port will be reset to: 2053                      ║${plain}"
     echo -e "${red}╚══════════════════════════════════════════════════════════╝${plain}"
@@ -2057,7 +2057,7 @@ EOF
 database_menu() {
     echo -e "
 ╔────────────────────────────────────────────────╗
-│   ${green}Database Configuration (SQLite / PostgreSQL)${plain}  │
+│   ${green}Database Configuration (SQLite / PostgreSQL)${plain} │
 │   ${green}0.${plain} Return to Main Menu                       │
 │────────────────────────────────────────────────│
 │   ${green}1.${plain} Switch to SQLite (Default)                │
