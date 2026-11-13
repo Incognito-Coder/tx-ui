@@ -2099,33 +2099,62 @@ func (t *Tgbot) sendBackup(chatId int64) {
 	output := t.I18nBot("tgbot.messages.backupTime", "Time=="+time.Now().Format("2006-01-02 15:04:05"))
 	t.SendMsgToTgbot(chatId, output)
 
-	// Update by manually trigger a checkpoint operation
-	err := database.Checkpoint()
-	if err != nil {
-		logger.Error("Error in trigger a checkpoint operation: ", err)
-	}
-
-	file, err := os.Open(config.GetDBPath())
-	if err == nil {
-		document := tu.Document(
-			tu.ID(chatId),
-			tu.File(file),
-		)
-		_, err = bot.SendDocument(context.Background(), document)
-		if err != nil {
-			logger.Error("Error in uploading backup: ", err)
+	if database.IsPostgres() {
+		tempExport := fmt.Sprintf("%s.tgbackup.temp", config.GetDBPath())
+		defer func() {
+			_ = os.Remove(tempExport)
+			_ = os.Remove(tempExport + "-wal")
+			_ = os.Remove(tempExport + "-shm")
+		}()
+		if err := database.ExportPostgresToSQLite(tempExport); err != nil {
+			logger.Error("Error exporting PostgreSQL to SQLite for Telegram backup: ", err)
+		} else {
+			file, err := os.Open(tempExport)
+			if err == nil {
+				document := tu.Document(
+					tu.ID(chatId),
+					tu.FileFromReader(file, "x-ui.db"),
+				)
+				_, err = bot.SendDocument(context.Background(), document)
+				file.Close()
+				if err != nil {
+					logger.Error("Error in uploading PostgreSQL backup to Telegram: ", err)
+				}
+			} else {
+				logger.Error("Error opening temp export file for Telegram backup: ", err)
+			}
 		}
 	} else {
-		logger.Error("Error in opening db file for backup: ", err)
+		// Update by manually trigger a checkpoint operation
+		err := database.Checkpoint()
+		if err != nil {
+			logger.Error("Error in trigger a checkpoint operation: ", err)
+		}
+
+		file, err := os.Open(config.GetDBPath())
+		if err == nil {
+			document := tu.Document(
+				tu.ID(chatId),
+				tu.FileFromReader(file, "x-ui.db"),
+			)
+			_, err = bot.SendDocument(context.Background(), document)
+			file.Close()
+			if err != nil {
+				logger.Error("Error in uploading backup: ", err)
+			}
+		} else {
+			logger.Error("Error in opening db file for backup: ", err)
+		}
 	}
 
-	file, err = os.Open(xray.GetConfigPath())
+	file, err := os.Open(xray.GetConfigPath())
 	if err == nil {
 		document := tu.Document(
 			tu.ID(chatId),
 			tu.File(file),
 		)
 		_, err = bot.SendDocument(context.Background(), document)
+		file.Close()
 		if err != nil {
 			logger.Error("Error in uploading config.json: ", err)
 		}

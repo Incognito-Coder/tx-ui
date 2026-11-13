@@ -2034,6 +2034,23 @@ EOF
     echo -e "${green}==================================================================${plain}\n"
 
     LOGI "PostgreSQL configuration saved to /etc/x-ui/x-ui.env."
+
+    # Prompt to migrate existing SQLite data to PostgreSQL to prevent data loss
+    if [[ -f "/etc/x-ui/x-ui.db" ]] && [[ -s "/etc/x-ui/x-ui.db" ]]; then
+        echo -e "${yellow}Existing SQLite database found at /etc/x-ui/x-ui.db.${plain}"
+        read -p "Do you want to migrate all your existing data (inbounds, clients, settings) to PostgreSQL? [Y/n]: " do_mig
+        case "${do_mig}" in
+        [Nn]*)
+            LOGI "Skipping data migration. A clean PostgreSQL database will be used."
+            ;;
+        *)
+            echo -e "${yellow}Migrating data from SQLite to PostgreSQL...${plain}"
+            /usr/local/x-ui/x-ui migrate sqlite-to-pg 2>/dev/null || x-ui migrate sqlite-to-pg 2>/dev/null || true
+            LOGI "Data migration from SQLite to PostgreSQL completed successfully!"
+            ;;
+        esac
+    fi
+
     restart_panel_prompt
 }
 
@@ -2047,7 +2064,8 @@ database_menu() {
 │   ${green}2.${plain} Install & Setup PostgreSQL (Automated)    │
 │   ${green}3.${plain} Switch to PostgreSQL (Standard Parameters)│
 │   ${green}4.${plain} Switch to PostgreSQL (Custom DSN URL)     │
-│   ${green}5.${plain} View Current Database Configuration       │
+│   ${green}5.${plain} Migrate Data (SQLite <-> PostgreSQL)      │
+│   ${green}6.${plain} View Current Database Configuration       │
 ╚────────────────────────────────────────────────╝
 "
     local env_file="/etc/x-ui/x-ui.env"
@@ -2064,12 +2082,26 @@ database_menu() {
     fi
     echo -e "Current Database: ${green}${current_db}${plain}\n"
 
-    read -p "Please enter your selection [0-5]: " db_choice
+    read -p "Please enter your selection [0-6]: " db_choice
     case "${db_choice}" in
     0)
         show_menu
         ;;
     1)
+        if [[ "${current_db}" =~ "PostgreSQL" ]]; then
+            echo -e "${yellow}You are currently using PostgreSQL.${plain}"
+            read -p "Do you want to export and migrate your PostgreSQL data to SQLite (/etc/x-ui/x-ui.db)? [Y/n]: " mig_choice
+            case "${mig_choice}" in
+            [Nn]*)
+                LOGI "Skipping data migration."
+                ;;
+            *)
+                echo -e "${yellow}Exporting PostgreSQL data to SQLite...${plain}"
+                /usr/local/x-ui/x-ui migrate pg-to-sqlite 2>/dev/null || x-ui migrate pg-to-sqlite 2>/dev/null || true
+                LOGI "PostgreSQL data successfully transferred to SQLite."
+                ;;
+            esac
+        fi
         mkdir -p /etc/x-ui
         cat <<EOF > /etc/x-ui/x-ui.env
 XUI_DB_TYPE=sqlite
@@ -2111,6 +2143,18 @@ XUI_DB_TIMEZONE=${pg_tz}
 EOF
         chmod 600 /etc/x-ui/x-ui.env
         LOGI "PostgreSQL configuration saved to /etc/x-ui/x-ui.env."
+        if [[ -f "/etc/x-ui/x-ui.db" ]] && [[ -s "/etc/x-ui/x-ui.db" ]]; then
+            echo -e "${yellow}Existing SQLite database found at /etc/x-ui/x-ui.db.${plain}"
+            read -p "Do you want to migrate your existing data to PostgreSQL? [Y/n]: " do_mig
+            case "${do_mig}" in
+            [Nn]*)
+                ;;
+            *)
+                echo -e "${yellow}Migrating data from SQLite to PostgreSQL...${plain}"
+                /usr/local/x-ui/x-ui migrate sqlite-to-pg 2>/dev/null || x-ui migrate sqlite-to-pg 2>/dev/null || true
+                ;;
+            esac
+        fi
         restart_panel_prompt
         ;;
     4)
@@ -2128,9 +2172,48 @@ XUI_DB_POSTGRES_DSN=${pg_dsn}
 EOF
         chmod 600 /etc/x-ui/x-ui.env
         LOGI "PostgreSQL DSN saved to /etc/x-ui/x-ui.env."
+        if [[ -f "/etc/x-ui/x-ui.db" ]] && [[ -s "/etc/x-ui/x-ui.db" ]]; then
+            echo -e "${yellow}Existing SQLite database found at /etc/x-ui/x-ui.db.${plain}"
+            read -p "Do you want to migrate your existing data to PostgreSQL? [Y/n]: " do_mig
+            case "${do_mig}" in
+            [Nn]*)
+                ;;
+            *)
+                echo -e "${yellow}Migrating data from SQLite to PostgreSQL...${plain}"
+                /usr/local/x-ui/x-ui migrate sqlite-to-pg 2>/dev/null || x-ui migrate sqlite-to-pg 2>/dev/null || true
+                ;;
+            esac
+        fi
         restart_panel_prompt
         ;;
     5)
+        echo -e "
+╔────────────────────────────────────────────────╗
+│   ${green}Migrate Database Data (SQLite <-> PostgreSQL)${plain}│
+│   ${green}0.${plain} Return to Database Menu                   │
+│────────────────────────────────────────────────│
+│   ${green}1.${plain} Migrate SQLite -> PostgreSQL (Load into PG) │
+│   ${green}2.${plain} Migrate PostgreSQL -> SQLite (Export to DB) │
+╚────────────────────────────────────────────────╝
+"
+        read -p "Please enter your selection [0-2]: " mig_sub
+        case "${mig_sub}" in
+        1)
+            echo -e "${yellow}Migrating data from SQLite to PostgreSQL...${plain}"
+            /usr/local/x-ui/x-ui migrate sqlite-to-pg 2>/dev/null || x-ui migrate sqlite-to-pg 2>/dev/null || true
+            before_show_menu
+            ;;
+        2)
+            echo -e "${yellow}Exporting data from PostgreSQL to SQLite...${plain}"
+            /usr/local/x-ui/x-ui migrate pg-to-sqlite 2>/dev/null || x-ui migrate pg-to-sqlite 2>/dev/null || true
+            before_show_menu
+            ;;
+        *)
+            database_menu
+            ;;
+        esac
+        ;;
+    6)
         if [[ -f "${env_file}" ]]; then
             echo -e "${green}--- /etc/x-ui/x-ui.env ---${plain}"
             cat "${env_file}"
@@ -2172,6 +2255,8 @@ show_usage() {
 │  ${blue}x-ui settings${plain}     - Current Settings                 │
 │  ${blue}x-ui database${plain}     - Database Configuration (SQLite/PG)│
 │  ${blue}x-ui postgres${plain}     - Auto Install & Setup PostgreSQL   │
+│  ${blue}x-ui migrate-to-pg${plain} - Migrate Data: SQLite -> PostgreSQL │
+│  ${blue}x-ui migrate-to-sqlite${plain} - Migrate Data: PostgreSQL -> SQLite │
 │  ${blue}x-ui reset${plain}        - Factory Reset (All Data & Settings)│
 │  ${blue}x-ui enable${plain}       - Enable Autostart on OS Startup   │
 │  ${blue}x-ui disable${plain}      - Disable Autostart on OS Startup  │
@@ -2344,6 +2429,12 @@ if [[ $# > 0 ]]; then
         ;;
     "postgres" | "pg" | "pg-install")
         check_install 0 && install_postgresql
+        ;;
+    "migrate-to-pg" | "sqlite-to-pg")
+        check_install 0 && (/usr/local/x-ui/x-ui migrate sqlite-to-pg || x-ui migrate sqlite-to-pg)
+        ;;
+    "migrate-to-sqlite" | "pg-to-sqlite")
+        check_install 0 && (/usr/local/x-ui/x-ui migrate pg-to-sqlite || x-ui migrate pg-to-sqlite)
         ;;
     "reset" | "factory-reset")
         check_install 0 && factory_reset 0

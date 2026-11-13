@@ -513,6 +513,23 @@ func ImportSQLiteToPostgres(sqlitePath string) error {
 	}
 	defer srcSql.Close()
 
+	// Auto-migrate source SQLite models first so any missing columns across older/newer x-ui schemas are populated with defaults
+	sourceModels := []interface{}{
+		&model.User{},
+		&model.Inbound{},
+		&model.OutboundTraffics{},
+		&model.Setting{},
+		&model.InboundClientIps{},
+		&xray.ClientTraffic{},
+		&model.HistoryOfSeeders{},
+		&model.NodeClient{},
+		&model.NodeClientLink{},
+		&model.ClientDevice{},
+	}
+	for _, m := range sourceModels {
+		_ = srcDB.AutoMigrate(m)
+	}
+
 	return ExecWithRetry(5, func() error {
 		return db.Transaction(func(tx *gorm.DB) error {
 			// Clear existing data before import
@@ -527,18 +544,40 @@ func ImportSQLiteToPostgres(sqlitePath string) error {
 			tx.Session(&gorm.Session{AllowGlobalUpdate: true}).Where("1 = 1").Delete(&model.HistoryOfSeeders{})
 			tx.Session(&gorm.Session{AllowGlobalUpdate: true}).Where("1 = 1").Delete(&model.User{})
 
-			// Copy Users
+			// Copy Users with role & permission normalization
 			var users []model.User
 			if err := srcDB.Find(&users).Error; err == nil && len(users) > 0 {
+				for i := range users {
+					if users[i].Role == "" {
+						users[i].Role = "admin"
+					}
+					if users[i].Permissions == "" {
+						users[i].Permissions = "*"
+					}
+					if users[i].AllowedInbounds == "" {
+						users[i].AllowedInbounds = "*"
+					}
+					if users[i].Status == "" {
+						users[i].Status = "active"
+					}
+					users[i].CanResetTraffic = true
+				}
 				if err := tx.Create(&users).Error; err != nil {
 					return fmt.Errorf("failed to import users: %w", err)
 				}
 			}
 
-			// Copy Inbounds
+			// Ensure at least one admin exists if source had no users
+			var userCount int64
+			tx.Model(&model.User{}).Count(&userCount)
+			if userCount == 0 {
+				_ = initUser()
+			}
+
+			// Copy Inbounds (omit ClientStats association to avoid duplicate inserts)
 			var inbounds []model.Inbound
 			if err := srcDB.Find(&inbounds).Error; err == nil && len(inbounds) > 0 {
-				if err := tx.Create(&inbounds).Error; err != nil {
+				if err := tx.Omit("ClientStats").Create(&inbounds).Error; err != nil {
 					return fmt.Errorf("failed to import inbounds: %w", err)
 				}
 			}
@@ -660,7 +699,7 @@ func ExportPostgresToSQLite(targetPath string) error {
 	}
 	var inbounds []model.Inbound
 	if err := db.Find(&inbounds).Error; err == nil && len(inbounds) > 0 {
-		_ = dstDB.Create(&inbounds).Error
+		_ = dstDB.Omit("ClientStats").Create(&inbounds).Error
 	}
 	var settings []model.Setting
 	if err := db.Find(&settings).Error; err == nil && len(settings) > 0 {
