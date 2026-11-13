@@ -857,6 +857,7 @@ html[data-theme="ultra-dark"] #content-layout .ant-card-hoverable:hover {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    vertical-align: middle;
     gap: 7px;
     height: 36px;
     padding: 0 14px;
@@ -870,18 +871,52 @@ html[data-theme="ultra-dark"] #content-layout .ant-card-hoverable:hover {
     transition: all 0.2s ease;
 }
 
+.ant-btn .anticon,
+.ant-btn > .anticon {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    vertical-align: 0 !important;
+    line-height: 1 !important;
+    height: auto !important;
+}
+
+.ant-btn .anticon > svg,
+.ant-btn > .anticon > svg {
+    display: block !important;
+    margin: auto !important;
+}
+
+.ant-btn > span {
+    display: inline-flex !important;
+    align-items: center !important;
+    line-height: 1.5 !important;
+}
+
+.ant-btn > .anticon + span,
+.ant-btn > span + .anticon {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+}
+
 .ant-btn-icon-only {
     width: 36px;
     height: 36px;
-    padding: 0;
+    padding: 0 !important;
     display: inline-flex;
     align-items: center;
     justify-content: center;
 }
 
-.ant-btn>.anticon+span,
-.ant-btn>span+.anticon {
-    margin-left: 0;
+.ant-btn-icon-only > i,
+.ant-btn-icon-only > .anticon {
+    vertical-align: 0 !important;
+}
+
+.ant-btn:has(> .anticon:only-child) {
+    width: 36px;
+    min-width: 36px;
+    padding: 0 !important;
 }
 
 .ant-btn-sm {
@@ -895,7 +930,13 @@ html[data-theme="ultra-dark"] #content-layout .ant-card-hoverable:hover {
 .ant-btn-sm.ant-btn-icon-only {
     width: 30px;
     height: 30px;
-    padding: 0;
+    padding: 0 !important;
+}
+
+.ant-btn-sm:has(> .anticon:only-child) {
+    width: 30px;
+    min-width: 30px;
+    padding: 0 !important;
 }
 
 .ant-btn-lg {
@@ -909,14 +950,21 @@ html[data-theme="ultra-dark"] #content-layout .ant-card-hoverable:hover {
 .ant-btn-lg.ant-btn-icon-only {
     width: 44px;
     height: 44px;
-    padding: 0;
+    padding: 0 !important;
+}
+
+.ant-btn-lg:has(> .anticon:only-child) {
+    width: 44px;
+    min-width: 44px;
+    padding: 0 !important;
 }
 
 .ant-btn-circle,
 .ant-btn-circle-outline {
     width: 36px;
     height: 36px;
-    padding: 0;
+    min-width: 36px;
+    padding: 0 !important;
     border-radius: 50%;
 }
 
@@ -924,16 +972,68 @@ html[data-theme="ultra-dark"] #content-layout .ant-card-hoverable:hover {
 .ant-btn-sm.ant-btn-circle-outline {
     width: 30px;
     height: 30px;
+    min-width: 30px;
+    padding: 0 !important;
 }
 
 .ant-btn-lg.ant-btn-circle,
 .ant-btn-lg.ant-btn-circle-outline {
     width: 44px;
     height: 44px;
+    min-width: 44px;
+    padding: 0 !important;
 }
 
 .ant-btn-round {
     border-radius: 999px;
+    padding: 0 16px;
+}
+
+.ant-btn-round.ant-btn-sm {
+    padding: 0 12px;
+}
+
+.ant-btn-round.ant-btn-lg {
+    padding: 0 20px;
+}
+
+/* Reset loading button padding and icon margin from antd inline-block hacks */
+.ant-btn.ant-btn-loading:not(.ant-btn-circle):not(.ant-btn-circle-outline):not(.ant-btn-icon-only) {
+    padding-left: 14px !important;
+    padding-right: 14px !important;
+}
+
+.ant-btn.ant-btn-loading:not(.ant-btn-circle):not(.ant-btn-circle-outline):not(.ant-btn-icon-only) .anticon:not(:last-child) {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+}
+
+.ant-btn-sm.ant-btn-loading:not(.ant-btn-circle):not(.ant-btn-circle-outline):not(.ant-btn-icon-only) {
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+}
+
+.ant-btn-sm.ant-btn-loading:not(.ant-btn-circle):not(.ant-btn-circle-outline):not(.ant-btn-icon-only) .anticon:not(:last-child) {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+}
+
+.ant-btn-lg.ant-btn-loading:not(.ant-btn-circle):not(.ant-btn-circle-outline):not(.ant-btn-icon-only) {
+    padding-left: 20px !important;
+    padding-right: 20px !important;
+}
+
+.ant-btn-lg.ant-btn-loading:not(.ant-btn-circle):not(.ant-btn-circle-outline):not(.ant-btn-icon-only) .anticon:not(:last-child) {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+}
+
+/* Link-rendered button normalization */
+a.ant-btn,
+a.ant-btn-sm,
+a.ant-btn-lg {
+    padding-top: 0 !important;
+    line-height: 1.5 !important;
 }
 
 .ant-btn-primary {
@@ -1009,10 +1109,12 @@ html[data-theme="ultra-dark"] #content-layout .ant-card-hoverable:hover {
 
 .ant-btn-group {
     display: inline-flex;
+    vertical-align: middle;
 }
 
 .ant-btn-group>.ant-btn {
     border-radius: 0;
+    line-height: 1.5 !important;
 }
 
 .ant-btn-group>.ant-btn:first-child {
@@ -1023,6 +1125,26 @@ html[data-theme="ultra-dark"] #content-layout .ant-card-hoverable:hover {
 .ant-btn-group>.ant-btn:last-child {
     border-start-end-radius: 9px;
     border-end-end-radius: 9px;
+}
+
+.ant-btn-group-sm>.ant-btn:first-child {
+    border-start-start-radius: 8px;
+    border-end-start-radius: 8px;
+}
+
+.ant-btn-group-sm>.ant-btn:last-child {
+    border-start-end-radius: 8px;
+    border-end-end-radius: 8px;
+}
+
+.ant-btn-group-lg>.ant-btn:first-child {
+    border-start-start-radius: 11px;
+    border-end-start-radius: 11px;
+}
+
+.ant-btn-group-lg>.ant-btn:last-child {
+    border-start-end-radius: 11px;
+    border-end-end-radius: 11px;
 }
 
 .ant-btn:focus-visible,
@@ -2024,8 +2146,11 @@ html[data-theme="ultra-dark"] .ant-menu-item-group-title {
 .ant-calendar-footer .ant-calendar-ok-btn,
 .ant-calendar-ok-btn.ant-btn {
     height: 30px !important;
-    line-height: 28px !important;
+    line-height: 1.5 !important;
     padding: 0 14px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
     background: var(--ui-primary) !important;
     color: #ffffff !important;
     border: 1px solid var(--ui-primary) !important;
@@ -2415,7 +2540,7 @@ html[data-theme="ultra-dark"] .ant-modal-content {
     height: 38px;
     margin: 0;
     padding: 0 18px !important;
-    line-height: 36px;
+    line-height: 1.5;
 }
 
 .ant-modal-footer .ant-btn+.ant-btn,
@@ -3130,26 +3255,29 @@ html[data-theme="ultra-dark"] body.dark {
     .ant-btn {
         height: 38px;
         padding-inline: 13px;
-        line-height: 36px;
+        line-height: 1.5;
     }
 
     .ant-btn-sm {
         height: 30px;
         padding-inline: 10px;
-        line-height: 28px;
+        line-height: 1.5;
     }
 
     .ant-btn-circle,
     .ant-btn-circle-outline {
         width: 38px;
+        height: 38px;
         min-width: 38px;
-        padding: 0;
+        padding: 0 !important;
     }
 
     .ant-btn-sm.ant-btn-circle,
     .ant-btn-sm.ant-btn-circle-outline {
         width: 30px;
+        height: 30px;
         min-width: 30px;
+        padding: 0 !important;
     }
 
     .ant-form-item-control-wrapper,
