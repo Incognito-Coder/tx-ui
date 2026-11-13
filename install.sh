@@ -480,7 +480,7 @@ install_x-ui() {
     echo -e "┌───────────────────────────────────────────────────────┐"
     echo -e "│  ${blue}tx-ui / x-ui control menu usages (subcommands):${plain}      │"
     echo -e "│                                                       │"
-    echo -e "│  ${blue}tx-ui / x-ui${plain}        - Admin Management Script          │"
+    echo -e "│  ${blue}tx-ui / x-ui${plain}      - Admin Management Script          │"
     echo -e "│  ${blue}x-ui start${plain}        - Start                            │"
     echo -e "│  ${blue}x-ui stop${plain}         - Stop                             │"
     echo -e "│  ${blue}x-ui restart${plain}      - Restart                          │"
