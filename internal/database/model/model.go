@@ -107,6 +107,30 @@ func (u *User) CanViewConfigLinks() bool {
 	return u.CanViewLinks || u.HasPermission("clients:view_links") || u.HasPermission("clients:export")
 }
 
+func matchPermission(p, perm string) bool {
+	p = strings.TrimSpace(p)
+	perm = strings.TrimSpace(perm)
+	if p == "*" || p == perm {
+		return true
+	}
+	if strings.HasSuffix(p, ":*") && strings.HasPrefix(perm, strings.TrimSuffix(p, "*")) {
+		return true
+	}
+	// Action aliases: edit <-> update, write -> create/edit/update/delete
+	pParts := strings.SplitN(p, ":", 2)
+	permParts := strings.SplitN(perm, ":", 2)
+	if len(pParts) == 2 && len(permParts) == 2 && pParts[0] == permParts[0] {
+		pAct, permAct := pParts[1], permParts[1]
+		if (pAct == "edit" || pAct == "update") && (permAct == "edit" || permAct == "update") {
+			return true
+		}
+		if pAct == "write" && (permAct == "create" || permAct == "edit" || permAct == "update" || permAct == "delete") {
+			return true
+		}
+	}
+	return false
+}
+
 func (u *User) HasPermission(perm string) bool {
 	if u == nil {
 		return false
@@ -130,21 +154,14 @@ func (u *User) HasPermission(perm string) bool {
 	if err := json.Unmarshal([]byte(u.Permissions), &perms); err != nil {
 		// Fallback to comma-separated permissions string
 		for _, p := range strings.Split(u.Permissions, ",") {
-			p = strings.TrimSpace(p)
-			if p == "*" || p == perm {
-				return true
-			}
-			if strings.HasSuffix(p, ":*") && strings.HasPrefix(perm, strings.TrimSuffix(p, "*")) {
+			if matchPermission(p, perm) {
 				return true
 			}
 		}
 		return false
 	}
 	for _, p := range perms {
-		if p == "*" || p == perm {
-			return true
-		}
-		if strings.HasSuffix(p, ":*") && strings.HasPrefix(perm, strings.TrimSuffix(p, "*")) {
+		if matchPermission(p, perm) {
 			return true
 		}
 	}

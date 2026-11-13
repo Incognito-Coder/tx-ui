@@ -249,7 +249,7 @@ func (a *NodeClientController) setLinks(c *gin.Context) {
 	}
 	user := session.GetLoginUser(c)
 	if user != nil && !user.IsAdmin() {
-		if user.Role == "viewer" || !user.HasPermission("clients:edit") {
+		if user.Role == "viewer" || (!user.HasPermission("clients:edit") && !user.HasPermission("clients:update")) {
 			pureJsonMsg(c, http.StatusForbidden, false, "Permission denied to modify client links")
 			return
 		}
@@ -300,7 +300,7 @@ func (a *NodeClientController) setLinks(c *gin.Context) {
 func (a *NodeClientController) bulkSetLinks(c *gin.Context) {
 	user := session.GetLoginUser(c)
 	if user != nil && !user.IsAdmin() {
-		if user.Role == "viewer" || !user.HasPermission("clients:edit") {
+		if user.Role == "viewer" || (!user.HasPermission("clients:edit") && !user.HasPermission("clients:update")) {
 			pureJsonMsg(c, http.StatusForbidden, false, "Permission denied to modify client links")
 			return
 		}
@@ -429,7 +429,7 @@ func (a *NodeClientController) update(c *gin.Context) {
 	}
 	user := session.GetLoginUser(c)
 	if user != nil && !user.IsAdmin() {
-		if user.Role == "viewer" || !user.HasPermission("clients:edit") {
+		if user.Role == "viewer" || (!user.HasPermission("clients:edit") && !user.HasPermission("clients:update")) {
 			pureJsonMsg(c, http.StatusForbidden, false, "Permission denied to update client")
 			return
 		}
@@ -762,7 +762,7 @@ func (a *NodeClientController) addLink(c *gin.Context) {
 
 	user := session.GetLoginUser(c)
 	if user != nil && !user.IsAdmin() {
-		if user.Role == "viewer" || !user.HasPermission("clients:edit") || !user.CanAccessInbound(req.InboundId) {
+		if user.Role == "viewer" || (!user.HasPermission("clients:edit") && !user.HasPermission("clients:update")) || !user.CanAccessInbound(req.InboundId) {
 			pureJsonMsg(c, http.StatusForbidden, false, "Permission denied to link to this inbound")
 			return
 		}
@@ -795,7 +795,7 @@ func (a *NodeClientController) removeLink(c *gin.Context) {
 
 	user := session.GetLoginUser(c)
 	if user != nil && !user.IsAdmin() {
-		if user.Role == "viewer" || !user.HasPermission("clients:edit") || !user.CanAccessInbound(inboundId) {
+		if user.Role == "viewer" || (!user.HasPermission("clients:edit") && !user.HasPermission("clients:update")) || !user.CanAccessInbound(inboundId) {
 			pureJsonMsg(c, http.StatusForbidden, false, "Permission denied to remove link from this inbound")
 			return
 		}
@@ -865,7 +865,7 @@ func (a *NodeClientController) toggle(c *gin.Context) {
 	}
 	user := session.GetLoginUser(c)
 	if user != nil && !user.IsAdmin() {
-		if user.Role == "viewer" || !user.HasPermission("clients:edit") {
+		if user.Role == "viewer" || (!user.HasPermission("clients:edit") && !user.HasPermission("clients:update")) {
 			pureJsonMsg(c, http.StatusForbidden, false, "Permission denied to toggle client status")
 			return
 		}

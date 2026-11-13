@@ -1644,10 +1644,16 @@
                     const pList = ['inbounds:read', 'clients:read'];
                     if (this.staffModal.form.canViewLinks) pList.push('clients:view_links');
                     if (this.staffModal.perms.inboundsCreate) pList.push('inbounds:create');
-                    if (this.staffModal.perms.inboundsUpdate) pList.push('inbounds:update');
+                    if (this.staffModal.perms.inboundsUpdate) {
+                        pList.push('inbounds:update');
+                        pList.push('inbounds:edit');
+                    }
                     if (this.staffModal.perms.inboundsDelete) pList.push('inbounds:delete');
                     if (this.staffModal.perms.clientsCreate) pList.push('clients:create');
-                    if (this.staffModal.perms.clientsUpdate) pList.push('clients:update');
+                    if (this.staffModal.perms.clientsUpdate) {
+                        pList.push('clients:update');
+                        pList.push('clients:edit');
+                    }
                     if (this.staffModal.perms.clientsDelete) pList.push('clients:delete');
                     if (this.staffModal.perms.logsRead) pList.push('logs:read');
                     this.staffModal.form.permissions = JSON.stringify(pList);

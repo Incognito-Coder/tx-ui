@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	"x-ui/internal/database"
 	"x-ui/internal/database/model"
 	"x-ui/internal/web/service"
 	"x-ui/internal/web/session"
@@ -156,8 +157,22 @@ func (a *InboundController) addInbound(c *gin.Context) {
 	needRestart := false
 	inbound, needRestart, err = a.inboundService.AddInbound(inbound)
 	jsonMsgObj(c, I18nWeb(c, "pages.inbounds.create"), inbound, err)
-	if err == nil && needRestart {
-		a.xrayService.SetToNeedRestart()
+	if err == nil {
+		if user != nil && !user.IsAdmin() && user.AllowedInbounds != "*" && user.AllowedInbounds != "" {
+			var ids []int
+			if jsonErr := json.Unmarshal([]byte(user.AllowedInbounds), &ids); jsonErr == nil {
+				ids = append(ids, inbound.Id)
+				b, _ := json.Marshal(ids)
+				user.AllowedInbounds = string(b)
+			} else {
+				user.AllowedInbounds = fmt.Sprintf("%s, %d", user.AllowedInbounds, inbound.Id)
+			}
+			database.GetDB().Model(&model.User{}).Where("id = ?", user.Id).Update("allowed_inbounds", user.AllowedInbounds)
+			session.SetLoginUser(c, user)
+		}
+		if needRestart {
+			a.xrayService.SetToNeedRestart()
+		}
 	}
 }
 
@@ -190,7 +205,7 @@ func (a *InboundController) updateInbound(c *gin.Context) {
 	}
 	user := session.GetLoginUser(c)
 	if user != nil && !user.IsAdmin() {
-		if user.Role == "viewer" || !user.HasPermission("inbounds:edit") || !user.CanAccessInbound(id) {
+		if user.Role == "viewer" || (!user.HasPermission("inbounds:edit") && !user.HasPermission("inbounds:update")) || !user.CanAccessInbound(id) {
 			pureJsonMsg(c, http.StatusForbidden, false, "Permission denied to update inbound")
 			return
 		}
@@ -307,7 +322,7 @@ func (a *InboundController) updateInboundClient(c *gin.Context) {
 	}
 	user := session.GetLoginUser(c)
 	if user != nil && !user.IsAdmin() {
-		if user.Role == "viewer" || !user.HasPermission("clients:edit") || (inbound.Id > 0 && !user.CanAccessInbound(inbound.Id)) {
+		if user.Role == "viewer" || (!user.HasPermission("clients:edit") && !user.HasPermission("clients:update")) || (inbound.Id > 0 && !user.CanAccessInbound(inbound.Id)) {
 			pureJsonMsg(c, http.StatusForbidden, false, "Permission denied to update client")
 			return
 		}
@@ -430,8 +445,22 @@ func (a *InboundController) importInbound(c *gin.Context) {
 	needRestart := false
 	inbound, needRestart, err = a.inboundService.AddInbound(inbound)
 	jsonMsgObj(c, I18nWeb(c, "pages.inbounds.create"), inbound, err)
-	if err == nil && needRestart {
-		a.xrayService.SetToNeedRestart()
+	if err == nil {
+		if user != nil && !user.IsAdmin() && user.AllowedInbounds != "*" && user.AllowedInbounds != "" {
+			var ids []int
+			if jsonErr := json.Unmarshal([]byte(user.AllowedInbounds), &ids); jsonErr == nil {
+				ids = append(ids, inbound.Id)
+				b, _ := json.Marshal(ids)
+				user.AllowedInbounds = string(b)
+			} else {
+				user.AllowedInbounds = fmt.Sprintf("%s, %d", user.AllowedInbounds, inbound.Id)
+			}
+			database.GetDB().Model(&model.User{}).Where("id = ?", user.Id).Update("allowed_inbounds", user.AllowedInbounds)
+			session.SetLoginUser(c, user)
+		}
+		if needRestart {
+			a.xrayService.SetToNeedRestart()
+		}
 	}
 }
 
