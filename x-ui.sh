@@ -1827,6 +1827,216 @@ SSH_port_forwarding() {
     esac
 }
 
+install_postgresql() {
+    LOGI "Starting automated PostgreSQL installation..."
+    local pkg_manager=""
+    if command -v apt-get &>/dev/null; then
+        pkg_manager="apt-get"
+    elif command -v dnf &>/dev/null; then
+        pkg_manager="dnf"
+    elif command -v yum &>/dev/null; then
+        pkg_manager="yum"
+    elif command -v pacman &>/dev/null; then
+        pkg_manager="pacman"
+    elif command -v apk &>/dev/null; then
+        pkg_manager="apk"
+    fi
+
+    if [[ -z "${pkg_manager}" ]]; then
+        LOGE "Supported package manager (apt-get, dnf, yum, pacman, apk) not found."
+        before_show_menu
+        return
+    fi
+
+    echo -e "${yellow}Installing PostgreSQL server using ${pkg_manager}...${plain}"
+    case "${pkg_manager}" in
+    apt-get)
+        apt-get update -y
+        apt-get install -y postgresql postgresql-contrib
+        ;;
+    dnf)
+        dnf -y update
+        dnf install -y postgresql-server postgresql-contrib
+        ;;
+    yum)
+        yum -y update
+        yum install -y postgresql-server postgresql-contrib
+        ;;
+    pacman)
+        pacman -Sy --noconfirm postgresql
+        ;;
+    apk)
+        apk update
+        apk add postgresql postgresql-contrib
+        ;;
+    esac
+
+    # Initialize PostgreSQL cluster if needed (CentOS/RHEL/Fedora/Arch/Alpine)
+    if [[ "${pkg_manager}" == "dnf" || "${pkg_manager}" == "yum" ]]; then
+        if command -v postgresql-setup &>/dev/null; then
+            postgresql-setup --initdb 2>/dev/null || postgresql-setup initdb 2>/dev/null || true
+        fi
+    elif [[ "${pkg_manager}" == "pacman" ]]; then
+        if [[ ! -d "/var/lib/postgres/data" ]] || [[ -z "$(ls -A /var/lib/postgres/data 2>/dev/null)" ]]; then
+            mkdir -p /var/lib/postgres/data
+            chown -R postgres:postgres /var/lib/postgres
+            su - postgres -c "initdb --locale=C.UTF-8 -E UTF8 -D '/var/lib/postgres/data'" 2>/dev/null || true
+        fi
+    elif [[ "${pkg_manager}" == "apk" ]]; then
+        if [[ ! -d "/var/lib/postgresql/data" ]] || [[ -z "$(ls -A /var/lib/postgresql/data 2>/dev/null)" ]]; then
+            mkdir -p /var/lib/postgresql/data
+            chown -R postgres:postgres /var/lib/postgresql
+            su - postgres -c "initdb -D '/var/lib/postgresql/data'" 2>/dev/null || true
+        fi
+    fi
+
+    # Start and enable PostgreSQL service
+    echo -e "${yellow}Starting and enabling PostgreSQL service...${plain}"
+    if command -v systemctl &>/dev/null; then
+        systemctl daemon-reload
+        systemctl enable postgresql 2>/dev/null || systemctl enable postgresql.service 2>/dev/null || true
+        systemctl restart postgresql 2>/dev/null || systemctl restart postgresql.service 2>/dev/null || true
+    elif command -v rc-service &>/dev/null; then
+        rc-service postgresql restart 2>/dev/null || true
+        rc-update add postgresql default 2>/dev/null || true
+    fi
+
+    sleep 2
+
+    # Check if PostgreSQL is ready
+    local pg_ready=false
+    if command -v pg_isready &>/dev/null; then
+        if pg_isready -q; then
+            pg_ready=true
+        fi
+    fi
+    if [[ "${pg_ready}" == "false" ]]; then
+        if command -v systemctl &>/dev/null && systemctl is-active --quiet postgresql; then
+            pg_ready=true
+        fi
+    fi
+
+    if [[ "${pg_ready}" == "false" ]]; then
+        LOGW "PostgreSQL service status uncertain, attempting database configuration anyway..."
+    else
+        LOGI "PostgreSQL service is running!"
+    fi
+
+    echo -e "\n${yellow}Configure tx-ui PostgreSQL Database:${plain}"
+    local default_dbname="x_ui"
+    local default_dbuser="x_ui_user"
+    local default_dbpass
+    # Generate 16-character secure random password
+    default_dbpass=$(head /dev/urandom 2>/dev/null | tr -dc A-Za-z0-9 2>/dev/null | head -c 16 2>/dev/null)
+    if [[ -z "${default_dbpass}" ]]; then
+        default_dbpass="xui_$(date +%s)_pass"
+    fi
+
+    read -p "Database Name [${default_dbname}]: " input_dbname
+    local pg_dbname=${input_dbname:-$default_dbname}
+
+    read -p "Database Username [${default_dbuser}]: " input_dbuser
+    local pg_user=${input_dbuser:-$default_dbuser}
+
+    read -p "Database Password [auto-generated: ${default_dbpass}]: " input_dbpass
+    local pg_pass=${input_dbpass:-$default_dbpass}
+
+    local pg_port="5432"
+
+    echo -e "\n${yellow}Creating PostgreSQL user and database...${plain}"
+
+    # Use psql via postgres system user
+    local sql_commands="
+DO \$\$
+BEGIN
+    IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = '${pg_user}') THEN
+        CREATE ROLE \"${pg_user}\" WITH LOGIN PASSWORD '${pg_pass}';
+    ELSE
+        ALTER ROLE \"${pg_user}\" WITH PASSWORD '${pg_pass}';
+    END IF;
+END
+\$\$;
+"
+    su - postgres -c "psql -v ON_ERROR_STOP=1 -c \"${sql_commands}\"" 2>/dev/null || {
+        sudo -u postgres psql -c "${sql_commands}" 2>/dev/null || true
+    }
+
+    # Create database if not exists
+    local check_db_sql="SELECT 1 FROM pg_database WHERE datname = '${pg_dbname}';"
+    local db_exists
+    db_exists=$(su - postgres -c "psql -t -A -c \"${check_db_sql}\"" 2>/dev/null || sudo -u postgres psql -t -A -c "${check_db_sql}" 2>/dev/null || echo "")
+
+    if [[ "${db_exists}" != "1" ]]; then
+        su - postgres -c "psql -c \"CREATE DATABASE \\\"${pg_dbname}\\\" OWNER \\\"${pg_user}\\\";\"" 2>/dev/null || {
+            sudo -u postgres psql -c "CREATE DATABASE \"${pg_dbname}\" OWNER \"${pg_user}\";" 2>/dev/null || true
+        }
+    fi
+
+    # Grant schema and database privileges
+    local grant_sql="
+GRANT ALL PRIVILEGES ON DATABASE \"${pg_dbname}\" TO \"${pg_user}\";
+ALTER DATABASE \"${pg_dbname}\" OWNER TO \"${pg_user}\";
+\c \"${pg_dbname}\"
+GRANT ALL ON SCHEMA public TO \"${pg_user}\";
+ALTER SCHEMA public OWNER TO \"${pg_user}\";
+"
+    su - postgres -c "psql -c \"${grant_sql}\"" 2>/dev/null || {
+        sudo -u postgres psql -c "${grant_sql}" 2>/dev/null || true
+    }
+
+    # Verify connection with pg_user
+    local conn_ok=false
+    if command -v psql &>/dev/null; then
+        if PGPASSWORD="${pg_pass}" psql -h 127.0.0.1 -p "${pg_port}" -U "${pg_user}" -d "${pg_dbname}" -c '\q' 2>/dev/null; then
+            conn_ok=true
+        fi
+    fi
+
+    # If connection to 127.0.0.1 failed, check if pg_hba.conf needs md5/scram entry
+    if [[ "${conn_ok}" == "false" ]]; then
+        LOGW "Direct 127.0.0.1 connection check with new user failed. Adjusting pg_hba.conf..."
+        local hba_file
+        hba_file=$(su - postgres -c "psql -t -A -c 'SHOW hba_file;'" 2>/dev/null || sudo -u postgres psql -t -A -c 'SHOW hba_file;' 2>/dev/null || echo "")
+        if [[ -f "${hba_file}" ]]; then
+            if ! grep -q -E "^host\s+all\s+all\s+127\.0\.0\.1/32" "${hba_file}"; then
+                echo "host    all             all             127.0.0.1/32            md5" >> "${hba_file}"
+                if command -v systemctl &>/dev/null; then
+                    systemctl reload postgresql 2>/dev/null || systemctl restart postgresql 2>/dev/null || true
+                fi
+            fi
+        fi
+    fi
+
+    # Write configuration to /etc/x-ui/x-ui.env
+    mkdir -p /etc/x-ui
+    cat <<EOF > /etc/x-ui/x-ui.env
+XUI_DB_TYPE=postgres
+XUI_DB_HOST=127.0.0.1
+XUI_DB_PORT=${pg_port}
+XUI_DB_NAME=${pg_dbname}
+XUI_DB_USER=${pg_user}
+XUI_DB_PASSWORD=${pg_pass}
+XUI_DB_SSLMODE=disable
+XUI_DB_TIMEZONE=UTC
+EOF
+    chmod 600 /etc/x-ui/x-ui.env
+
+    echo -e "\n${green}==================================================================${plain}"
+    echo -e "${green} PostgreSQL Server Installed & Configured Successfully!${plain}"
+    echo -e "${green}==================================================================${plain}"
+    echo -e "Host:     ${yellow}127.0.0.1${plain}"
+    echo -e "Port:     ${yellow}${pg_port}${plain}"
+    echo -e "Database: ${yellow}${pg_dbname}${plain}"
+    echo -e "User:     ${yellow}${pg_user}${plain}"
+    echo -e "Password: ${yellow}${pg_pass}${plain}"
+    echo -e "SSL Mode: ${yellow}disable${plain}"
+    echo -e "Env File: ${yellow}/etc/x-ui/x-ui.env${plain}"
+    echo -e "${green}==================================================================${plain}\n"
+
+    LOGI "PostgreSQL configuration saved to /etc/x-ui/x-ui.env."
+    restart_panel_prompt
+}
+
 database_menu() {
     echo -e "
 ╔────────────────────────────────────────────────╗
@@ -1834,9 +2044,10 @@ database_menu() {
 │   ${green}0.${plain} Return to Main Menu                       │
 │────────────────────────────────────────────────│
 │   ${green}1.${plain} Switch to SQLite (Default)                │
-│   ${green}2.${plain} Switch to PostgreSQL (Standard Parameters)│
-│   ${green}3.${plain} Switch to PostgreSQL (Custom DSN URL)     │
-│   ${green}4.${plain} View Current Database Configuration       │
+│   ${green}2.${plain} Install & Setup PostgreSQL (Automated)    │
+│   ${green}3.${plain} Switch to PostgreSQL (Standard Parameters)│
+│   ${green}4.${plain} Switch to PostgreSQL (Custom DSN URL)     │
+│   ${green}5.${plain} View Current Database Configuration       │
 ╚────────────────────────────────────────────────╝
 "
     local env_file="/etc/x-ui/x-ui.env"
@@ -1853,7 +2064,7 @@ database_menu() {
     fi
     echo -e "Current Database: ${green}${current_db}${plain}\n"
 
-    read -p "Please enter your selection [0-4]: " db_choice
+    read -p "Please enter your selection [0-5]: " db_choice
     case "${db_choice}" in
     0)
         show_menu
@@ -1868,6 +2079,9 @@ EOF
         restart_panel_prompt
         ;;
     2)
+        install_postgresql
+        ;;
+    3)
         echo -e "${yellow}Enter PostgreSQL Connection Details:${plain}"
         read -p "PostgreSQL Host [127.0.0.1]: " pg_host
         pg_host=${pg_host:-127.0.0.1}
@@ -1899,7 +2113,7 @@ EOF
         LOGI "PostgreSQL configuration saved to /etc/x-ui/x-ui.env."
         restart_panel_prompt
         ;;
-    3)
+    4)
         echo -e "${yellow}Enter PostgreSQL DSN URL (e.g. postgres://user:password@host:5432/dbname?sslmode=disable):${plain}"
         read -p "DSN: " pg_dsn
         if [[ -z "${pg_dsn}" ]]; then
@@ -1916,7 +2130,7 @@ EOF
         LOGI "PostgreSQL DSN saved to /etc/x-ui/x-ui.env."
         restart_panel_prompt
         ;;
-    4)
+    5)
         if [[ -f "${env_file}" ]]; then
             echo -e "${green}--- /etc/x-ui/x-ui.env ---${plain}"
             cat "${env_file}"
@@ -1957,6 +2171,7 @@ show_usage() {
 │  ${blue}x-ui status${plain}       - Current Status                   │
 │  ${blue}x-ui settings${plain}     - Current Settings                 │
 │  ${blue}x-ui database${plain}     - Database Configuration (SQLite/PG)│
+│  ${blue}x-ui postgres${plain}     - Auto Install & Setup PostgreSQL   │
 │  ${blue}x-ui reset${plain}        - Factory Reset (All Data & Settings)│
 │  ${blue}x-ui enable${plain}       - Enable Autostart on OS Startup   │
 │  ${blue}x-ui disable${plain}      - Disable Autostart on OS Startup  │
@@ -2126,6 +2341,9 @@ if [[ $# > 0 ]]; then
         ;;
     "database" | "db")
         check_install 0 && database_menu
+        ;;
+    "postgres" | "pg" | "pg-install")
+        check_install 0 && install_postgresql
         ;;
     "reset" | "factory-reset")
         check_install 0 && factory_reset 0

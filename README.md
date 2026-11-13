@@ -363,7 +363,7 @@ You can conveniently perform database Backups and Restores directly from the pan
 - **Supported Engines:**
   - **SQLite (Default):** `/etc/x-ui/x-ui.db`
   - **PostgreSQL:** Configure via `x-ui database` or environment variables
-- **CLI Database Menu:** Run `x-ui database` (Option 27 in `x-ui.sh`) to configure engine parameters.
+- **CLI Database Menu:** Run `x-ui database` (Option 27 in `x-ui.sh`) to configure engine parameters, or `x-ui postgres` to automatically install, initialize, and configure a local PostgreSQL cluster.
 - **Factory Reset:** Run `x-ui reset` (Option 28 in `x-ui.sh`) or use "Factory Reset" in Web UI Settings under Database Maintenance to wipe and re-initialize the database with default admin credentials.
 
 ### Web Base Path

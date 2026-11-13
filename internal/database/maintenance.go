@@ -12,6 +12,7 @@ import (
 	"x-ui/xray"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 type DBStatus struct {
@@ -496,4 +497,204 @@ func FactoryReset() error {
 			return tx.Create(hashSeeder).Error
 		})
 	})
+}
+
+func ImportSQLiteToPostgres(sqlitePath string) error {
+	c := &gorm.Config{
+		Logger: logger.Discard,
+	}
+	srcDB, err := gorm.Open(openSQLiteSimple(sqlitePath), c)
+	if err != nil {
+		return fmt.Errorf("failed to open source sqlite database: %w", err)
+	}
+	srcSql, err := srcDB.DB()
+	if err != nil {
+		return fmt.Errorf("failed to get sqlite handle: %w", err)
+	}
+	defer srcSql.Close()
+
+	return ExecWithRetry(5, func() error {
+		return db.Transaction(func(tx *gorm.DB) error {
+			// Clear existing data before import
+			tx.Session(&gorm.Session{AllowGlobalUpdate: true}).Where("1 = 1").Delete(&model.ClientDevice{})
+			tx.Session(&gorm.Session{AllowGlobalUpdate: true}).Where("1 = 1").Delete(&model.NodeClientLink{})
+			tx.Session(&gorm.Session{AllowGlobalUpdate: true}).Where("1 = 1").Delete(&model.NodeClient{})
+			tx.Session(&gorm.Session{AllowGlobalUpdate: true}).Where("1 = 1").Delete(&xray.ClientTraffic{})
+			tx.Session(&gorm.Session{AllowGlobalUpdate: true}).Where("1 = 1").Delete(&model.InboundClientIps{})
+			tx.Session(&gorm.Session{AllowGlobalUpdate: true}).Where("1 = 1").Delete(&model.OutboundTraffics{})
+			tx.Session(&gorm.Session{AllowGlobalUpdate: true}).Where("1 = 1").Delete(&model.Inbound{})
+			tx.Session(&gorm.Session{AllowGlobalUpdate: true}).Where("1 = 1").Delete(&model.Setting{})
+			tx.Session(&gorm.Session{AllowGlobalUpdate: true}).Where("1 = 1").Delete(&model.HistoryOfSeeders{})
+			tx.Session(&gorm.Session{AllowGlobalUpdate: true}).Where("1 = 1").Delete(&model.User{})
+
+			// Copy Users
+			var users []model.User
+			if err := srcDB.Find(&users).Error; err == nil && len(users) > 0 {
+				if err := tx.Create(&users).Error; err != nil {
+					return fmt.Errorf("failed to import users: %w", err)
+				}
+			}
+
+			// Copy Inbounds
+			var inbounds []model.Inbound
+			if err := srcDB.Find(&inbounds).Error; err == nil && len(inbounds) > 0 {
+				if err := tx.Create(&inbounds).Error; err != nil {
+					return fmt.Errorf("failed to import inbounds: %w", err)
+				}
+			}
+
+			// Copy Settings
+			var settings []model.Setting
+			if err := srcDB.Find(&settings).Error; err == nil && len(settings) > 0 {
+				if err := tx.Create(&settings).Error; err != nil {
+					return fmt.Errorf("failed to import settings: %w", err)
+				}
+			}
+
+			// Copy OutboundTraffics
+			var outbounds []model.OutboundTraffics
+			if err := srcDB.Find(&outbounds).Error; err == nil && len(outbounds) > 0 {
+				if err := tx.Create(&outbounds).Error; err != nil {
+					return fmt.Errorf("failed to import outbound traffics: %w", err)
+				}
+			}
+
+			// Copy InboundClientIps
+			var clientIps []model.InboundClientIps
+			if err := srcDB.Find(&clientIps).Error; err == nil && len(clientIps) > 0 {
+				if err := tx.Create(&clientIps).Error; err != nil {
+					return fmt.Errorf("failed to import client ips: %w", err)
+				}
+			}
+
+			// Copy ClientTraffic
+			var traffics []xray.ClientTraffic
+			if err := srcDB.Find(&traffics).Error; err == nil && len(traffics) > 0 {
+				if err := tx.Create(&traffics).Error; err != nil {
+					return fmt.Errorf("failed to import client traffics: %w", err)
+				}
+			}
+
+			// Copy HistoryOfSeeders
+			var seeders []model.HistoryOfSeeders
+			if err := srcDB.Find(&seeders).Error; err == nil && len(seeders) > 0 {
+				if err := tx.Create(&seeders).Error; err != nil {
+					return fmt.Errorf("failed to import seeders: %w", err)
+				}
+			}
+
+			// Copy NodeClient
+			var nodeClients []model.NodeClient
+			if err := srcDB.Find(&nodeClients).Error; err == nil && len(nodeClients) > 0 {
+				if err := tx.Create(&nodeClients).Error; err != nil {
+					return fmt.Errorf("failed to import node clients: %w", err)
+				}
+			}
+
+			// Copy NodeClientLink
+			var nodeClientLinks []model.NodeClientLink
+			if err := srcDB.Find(&nodeClientLinks).Error; err == nil && len(nodeClientLinks) > 0 {
+				if err := tx.Create(&nodeClientLinks).Error; err != nil {
+					return fmt.Errorf("failed to import node client links: %w", err)
+				}
+			}
+
+			// Copy ClientDevice
+			var clientDevices []model.ClientDevice
+			if err := srcDB.Find(&clientDevices).Error; err == nil && len(clientDevices) > 0 {
+				if err := tx.Create(&clientDevices).Error; err != nil {
+					return fmt.Errorf("failed to import client devices: %w", err)
+				}
+			}
+
+			// Sync sequences in PostgreSQL
+			tablesWithSeq := []string{"users", "inbounds", "settings", "client_traffics", "outbound_traffics", "inbound_client_ips", "history_of_seeders", "node_clients", "node_client_links", "client_devices"}
+			for _, t := range tablesWithSeq {
+				_ = tx.Exec(fmt.Sprintf("SELECT setval(pg_get_serial_sequence('%s', 'id'), coalesce(max(id), 1), max(id) IS NOT NULL) FROM \"%s\";", t, t)).Error
+			}
+
+			return nil
+		})
+	})
+}
+
+func ExportPostgresToSQLite(targetPath string) error {
+	_ = os.Remove(targetPath)
+	_ = os.Remove(targetPath + "-wal")
+	_ = os.Remove(targetPath + "-shm")
+
+	c := &gorm.Config{Logger: logger.Discard}
+	dstDB, err := gorm.Open(openSQLiteSimple(targetPath), c)
+	if err != nil {
+		return fmt.Errorf("failed to create destination sqlite database: %w", err)
+	}
+	dstSql, err := dstDB.DB()
+	if err != nil {
+		return fmt.Errorf("failed to get sqlite handle: %w", err)
+	}
+	defer dstSql.Close()
+
+	// Auto-migrate models into the destination SQLite database
+	models := []interface{}{
+		&model.User{},
+		&model.Inbound{},
+		&model.OutboundTraffics{},
+		&model.Setting{},
+		&model.InboundClientIps{},
+		&xray.ClientTraffic{},
+		&model.HistoryOfSeeders{},
+		&model.NodeClient{},
+		&model.NodeClientLink{},
+		&model.ClientDevice{},
+	}
+	for _, m := range models {
+		if err := dstDB.AutoMigrate(m); err != nil {
+			return fmt.Errorf("failed to auto-migrate table in export: %w", err)
+		}
+	}
+
+	// Copy data from Postgres into SQLite
+	var users []model.User
+	if err := db.Find(&users).Error; err == nil && len(users) > 0 {
+		_ = dstDB.Create(&users).Error
+	}
+	var inbounds []model.Inbound
+	if err := db.Find(&inbounds).Error; err == nil && len(inbounds) > 0 {
+		_ = dstDB.Create(&inbounds).Error
+	}
+	var settings []model.Setting
+	if err := db.Find(&settings).Error; err == nil && len(settings) > 0 {
+		_ = dstDB.Create(&settings).Error
+	}
+	var outbounds []model.OutboundTraffics
+	if err := db.Find(&outbounds).Error; err == nil && len(outbounds) > 0 {
+		_ = dstDB.Create(&outbounds).Error
+	}
+	var clientIps []model.InboundClientIps
+	if err := db.Find(&clientIps).Error; err == nil && len(clientIps) > 0 {
+		_ = dstDB.Create(&clientIps).Error
+	}
+	var traffics []xray.ClientTraffic
+	if err := db.Find(&traffics).Error; err == nil && len(traffics) > 0 {
+		_ = dstDB.Create(&traffics).Error
+	}
+	var seeders []model.HistoryOfSeeders
+	if err := db.Find(&seeders).Error; err == nil && len(seeders) > 0 {
+		_ = dstDB.Create(&seeders).Error
+	}
+	var nodeClients []model.NodeClient
+	if err := db.Find(&nodeClients).Error; err == nil && len(nodeClients) > 0 {
+		_ = dstDB.Create(&nodeClients).Error
+	}
+	var nodeClientLinks []model.NodeClientLink
+	if err := db.Find(&nodeClientLinks).Error; err == nil && len(nodeClientLinks) > 0 {
+		_ = dstDB.Create(&nodeClientLinks).Error
+	}
+	var clientDevices []model.ClientDevice
+	if err := db.Find(&clientDevices).Error; err == nil && len(clientDevices) > 0 {
+		_ = dstDB.Create(&clientDevices).Error
+	}
+
+	_ = dstDB.Exec("PRAGMA wal_checkpoint(TRUNCATE);").Error
+	return nil
 }

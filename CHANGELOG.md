@@ -48,6 +48,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Flexible Configuration Options**: Configure via `XUI_DB_TYPE=postgres` with connection strings through `XUI_DB_POSTGRES_DSN`, `DATABASE_URL`, or individual environment variables (`XUI_DB_HOST`, `XUI_DB_PORT`, `XUI_DB_USER`, `XUI_DB_PASSWORD`, `XUI_DB_NAME`, `XUI_DB_SSLMODE`, `XUI_DB_TIMEZONE`).
   - **Production Connection Pooling**: Configured connection pool parameters (50 max open connections, 10 max idle connections, 1-hour connection max lifetime) for high performance under heavy concurrent subscriber load.
   - **Interactive CLI & Systemd Environment**: Added database configuration submenu (Option 27 & `x-ui database`) in `x-ui.sh` to switch engines, configure credentials, and save to `/etc/x-ui/x-ui.env`. Updated `x-ui.service` with `EnvironmentFile=-/etc/x-ui/x-ui.env` and `cmd/run.go` to load environment files automatically.
+  - **Automated PostgreSQL Installer & Setup in `x-ui.sh`**: Added automated PostgreSQL server installation and cluster setup accessible via `x-ui postgres` (or Option 27 submenu). Automatically detects Linux package managers (`apt`, `dnf`, `yum`, `pacman`, `apk`), installs packages, initializes cluster directories, starts and enables `postgresql.service`, creates database and user with secure random credentials, configures `pg_hba.conf` and schema ownership for PostgreSQL 15+, and saves configuration to `/etc/x-ui/x-ui.env`.
+  - **Cross-Engine Backup & Restore**: Added `database.ImportSQLiteToPostgres` and `database.ExportPostgresToSQLite`. When tx-ui is running on PostgreSQL, exporting a backup downloads a standard SQLite database containing all records, and importing an SQLite database seamlessly populates PostgreSQL with automatic sequence synchronization.
   - **Engine-Aware Database Maintenance**: Adapted database health checks (`GetDBStatus`), maintenance optimization (`Optimize`), and space reclamation (`Vacuum`) to conditionally run PostgreSQL-native queries (`pg_database_size`, `ANALYZE`, `VACUUM`) while preserving SQLite-specific `PRAGMA wal_checkpoint` and WAL pragmas.
 
 - **Extended Multi-Architecture Cross-Compilation & Builder Tooling**:
@@ -58,6 +60,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **GitHub Actions Release CI/CD Expansion**: Updated `.github/workflows/release.yml` with cross-compilation matrix entries, cross-compiler toolchains, pure-Go fallback modes, and automated asset packaging for the new architectures.
 
 ### 🐛 Bug Fixes & Performance Improvements
+- **Database Backup Restore & WAL Salt Collision (`SQLITE_NOTADB: 26`)**:
+  - **Eliminated `file is not a database (26)`**: Resolved the restore failure when importing database backups by ensuring the uploaded file descriptor is explicitly flushed (`tempFile.Sync()`) and closed (`tempFile.Close()`) before SQLite attempts to inspect or lock it.
+  - **Isolated Database Pre-Validation**: Implemented `database.ValidateSQLiteDB` to verify database schema and run `PRAGMA integrity_check` in an isolated connection without touching or mutating the global application database handle.
+  - **Clean WAL Teardown & Salt Synchronization**: Properly closed active database connections (`database.CloseDB()`) before file operations, and purged old stale `-wal` and `-shm` files to prevent SQLite from attempting WAL crash recovery against mismatched salts from a previous database instance.
+  - **Safe Rollback**: Implemented automatic backup and rollback safeguards that restore the previous database files if imported database migration fails.
+
 - **CPU Throttling & Sampling Optimization**:
   - **Eliminated Cooldown CPU Waste**: Resolved excessive CPU usage caused by the Telegram CPU monitoring job by checking the 10-minute alert cooldown window *before* invoking the blocking 1-second `cpu.Percent(time.Second, false)` sampling call in `check_cpu_usage.go`. During cooldown, the job now returns immediately in nanoseconds instead of wasting 1 second blocking a goroutine every 10 seconds.
   - **Dynamic Scheduling**: Registered CPU check job unconditionally with dynamic evaluation in `web.go`, allowing `tgBotCpuNotify` and `tgCpu` threshold changes in Settings to take effect immediately without requiring a panel restart.

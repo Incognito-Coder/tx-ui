@@ -2,12 +2,14 @@ package database
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"io/fs"
 	"log"
 	"os"
 	"path"
 	"slices"
+	"strings"
 	"time"
 
 	"x-ui/config"
@@ -236,6 +238,45 @@ func IsSQLiteDB(file io.ReaderAt) (bool, error) {
 		return false, err
 	}
 	return bytes.Equal(buf, signature), nil
+}
+
+func ValidateSQLiteDB(filePath string) error {
+	c := &gorm.Config{
+		Logger: logger.Discard,
+	}
+
+	tempDB, err := gorm.Open(openSQLiteSimple(filePath), c)
+	if err != nil {
+		return fmt.Errorf("failed to open database file: %w", err)
+	}
+
+	sqlDB, err := tempDB.DB()
+	if err != nil {
+		return fmt.Errorf("failed to get sql handle: %w", err)
+	}
+	defer sqlDB.Close()
+
+	// Integrity check to ensure pages and tree structures are valid
+	var integrityResult string
+	if err := tempDB.Raw("PRAGMA integrity_check(1);").Scan(&integrityResult).Error; err != nil {
+		return fmt.Errorf("integrity check query failed: %w", err)
+	}
+	if !strings.EqualFold(integrityResult, "ok") {
+		return fmt.Errorf("database integrity check failed: %s", integrityResult)
+	}
+
+	// Verify that at least one of the essential x-ui tables exists
+	var tableCount int64
+	if err := tempDB.Raw("SELECT count(*) FROM sqlite_master WHERE type='table' AND name IN ('inbounds', 'settings', 'users');").Scan(&tableCount).Error; err != nil {
+		return fmt.Errorf("failed to inspect database tables: %w", err)
+	}
+	if tableCount == 0 {
+		return fmt.Errorf("database does not contain valid x-ui tables (inbounds, settings, or users)")
+	}
+
+	// Truncate any WAL created during open/read so the file remains clean
+	_ = tempDB.Exec("PRAGMA wal_checkpoint(TRUNCATE);").Error
+	return nil
 }
 
 func Checkpoint() error {

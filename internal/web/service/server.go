@@ -1320,6 +1320,19 @@ func (s *ServerService) GetConfigJson() (interface{}, error) {
 }
 
 func (s *ServerService) GetDb() ([]byte, error) {
+	if database.IsPostgres() {
+		tempExport := fmt.Sprintf("%s.export.temp", config.GetDBPath())
+		defer func() {
+			_ = os.Remove(tempExport)
+			_ = os.Remove(tempExport + "-wal")
+			_ = os.Remove(tempExport + "-shm")
+		}()
+		if err := database.ExportPostgresToSQLite(tempExport); err != nil {
+			return nil, err
+		}
+		return os.ReadFile(tempExport)
+	}
+
 	// Update by manually trigger a checkpoint operation
 	err := database.Checkpoint()
 	if err != nil {
@@ -1342,100 +1355,155 @@ func (s *ServerService) GetDb() ([]byte, error) {
 }
 
 func (s *ServerService) ImportDB(file multipart.File) error {
-	// Check if the file is a SQLite database
+	// 1. Seek to beginning of multipart file
+	if seeker, ok := file.(io.Seeker); ok {
+		_, _ = seeker.Seek(0, io.SeekStart)
+	}
+
+	// 2. Validate SQLite database signature
 	isValidDb, err := database.IsSQLiteDB(file)
 	if err != nil {
 		return common.NewErrorf("Error checking db file format: %v", err)
 	}
 	if !isValidDb {
-		return common.NewError("Invalid db file format")
+		return common.NewError("Invalid db file format: file is not a valid SQLite database")
 	}
 
-	// Reset the file reader to the beginning
-	_, err = file.Seek(0, 0)
-	if err != nil {
-		return common.NewErrorf("Error resetting file reader: %v", err)
-	}
-
-	// Save the file as temporary file
-	tempPath := fmt.Sprintf("%s.temp", config.GetDBPath())
-	// Remove the existing fallback file (if any) before creating one
-	_, err = os.Stat(tempPath)
-	if err == nil {
-		errRemove := os.Remove(tempPath)
-		if errRemove != nil {
-			return common.NewErrorf("Error removing existing temporary db file: %v", errRemove)
+	// Reset seeker to beginning before copying
+	if seeker, ok := file.(io.Seeker); ok {
+		_, err = seeker.Seek(0, io.SeekStart)
+		if err != nil {
+			return common.NewErrorf("Error resetting file reader: %v", err)
 		}
 	}
-	// Create the temporary file
+
+	// 3. Save uploaded file to a temporary file
+	tempPath := fmt.Sprintf("%s.temp", config.GetDBPath())
+	_ = os.Remove(tempPath)
+	_ = os.Remove(tempPath + "-wal")
+	_ = os.Remove(tempPath + "-shm")
+
 	tempFile, err := os.Create(tempPath)
 	if err != nil {
 		return common.NewErrorf("Error creating temporary db file: %v", err)
 	}
-	defer tempFile.Close()
 
-	// Remove temp file before returning
-	defer os.Remove(tempPath)
-
-	// Save uploaded file to temporary file
 	_, err = io.Copy(tempFile, file)
 	if err != nil {
-		return common.NewErrorf("Error saving db: %v", err)
+		tempFile.Close()
+		_ = os.Remove(tempPath)
+		return common.NewErrorf("Error saving uploaded db: %v", err)
 	}
 
-	// Check if we can init db or not
-	err = database.InitDB(tempPath)
-	if err != nil {
-		return common.NewErrorf("Error checking db: %v", err)
+	// Explicitly flush buffers and CLOSE tempFile immediately so SQLite can open and lock it cleanly
+	if err := tempFile.Sync(); err != nil {
+		tempFile.Close()
+		_ = os.Remove(tempPath)
+		return common.NewErrorf("Error syncing db to disk: %v", err)
+	}
+	if err := tempFile.Close(); err != nil {
+		_ = os.Remove(tempPath)
+		return common.NewErrorf("Error closing temporary db file: %v", err)
 	}
 
-	// Stop Xray
+	defer func() {
+		_ = os.Remove(tempPath)
+		_ = os.Remove(tempPath + "-wal")
+		_ = os.Remove(tempPath + "-shm")
+	}()
+
+	// 4. Validate temporary database in isolation (ensures tables and integrity are valid without altering global state)
+	if err := database.ValidateSQLiteDB(tempPath); err != nil {
+		return common.NewErrorf("Database verification failed: %v", err)
+	}
+
+	// 5. If running on PostgreSQL, import tables from SQLite temp file directly into PostgreSQL
+	if database.IsPostgres() {
+		s.StopXrayService()
+		if err := database.ImportSQLiteToPostgres(tempPath); err != nil {
+			_ = s.RestartXrayService()
+			return common.NewErrorf("Failed to import database into PostgreSQL: %v", err)
+		}
+		s.inboundService.MigrateDB()
+		if err := s.RestartXrayService(); err != nil {
+			return common.NewErrorf("Imported DB successfully into PostgreSQL, but failed to start Xray: %v", err)
+		}
+		return nil
+	}
+
+	// 6. If running on SQLite:
+	// Stop Xray service first
 	s.StopXrayService()
 
-	// Backup the current database for fallback
-	fallbackPath := fmt.Sprintf("%s.backup", config.GetDBPath())
-	// Remove the existing fallback file (if any)
-	_, err = os.Stat(fallbackPath)
-	if err == nil {
-		errRemove := os.Remove(fallbackPath)
-		if errRemove != nil {
-			return common.NewErrorf("Error removing existing fallback db file: %v", errRemove)
-		}
-	}
-	// Move the current database to the fallback location
-	err = os.Rename(config.GetDBPath(), fallbackPath)
-	if err != nil {
-		return common.NewErrorf("Error backing up temporary db file: %v", err)
+	// Checkpoint and close current live DB so locks and active connection handles are completely released
+	_ = database.Checkpoint()
+	if err := database.CloseDB(); err != nil {
+		return common.NewErrorf("Error closing current database: %v", err)
 	}
 
-	// Remove the temporary file before returning
-	defer os.Remove(fallbackPath)
+	dbPath := config.GetDBPath()
+	walPath := dbPath + "-wal"
+	shmPath := dbPath + "-shm"
+	fallbackPath := dbPath + ".backup"
+	fallbackWalPath := dbPath + ".backup-wal"
+
+	// Remove old fallback backups if any
+	_ = os.Remove(fallbackPath)
+	_ = os.Remove(fallbackWalPath)
+
+	// Move current DB to fallback
+	if err := os.Rename(dbPath, fallbackPath); err != nil {
+		_ = database.InitDB(dbPath)
+		return common.NewErrorf("Error backing up current db file: %v", err)
+	}
+	if _, err := os.Stat(walPath); err == nil {
+		_ = os.Rename(walPath, fallbackWalPath)
+	}
+	_ = os.Remove(shmPath)
+
+	// CRITICAL: Clean up any stale wal/shm at target dbPath so new DB doesn't inherit old WAL!
+	_ = os.Remove(walPath)
+	_ = os.Remove(shmPath)
+
+	// Ensure temp wal/shm are truncated/removed before moving
+	_ = os.Remove(tempPath + "-wal")
+	_ = os.Remove(tempPath + "-shm")
 
 	// Move temp to DB path
-	err = os.Rename(tempPath, config.GetDBPath())
-	if err != nil {
-		errRename := os.Rename(fallbackPath, config.GetDBPath())
-		if errRename != nil {
-			return common.NewErrorf("Error moving db file and restoring fallback: %v", errRename)
+	if err := os.Rename(tempPath, dbPath); err != nil {
+		// Rollback from fallback
+		_ = os.Rename(fallbackPath, dbPath)
+		if _, errW := os.Stat(fallbackWalPath); errW == nil {
+			_ = os.Rename(fallbackWalPath, walPath)
 		}
-		return common.NewErrorf("Error moving db file: %v", err)
+		_ = database.InitDB(dbPath)
+		return common.NewErrorf("Error moving new db file into place: %v", err)
 	}
 
-	// Migrate DB
-	err = database.InitDB(config.GetDBPath())
-	if err != nil {
-		errRename := os.Rename(fallbackPath, config.GetDBPath())
-		if errRename != nil {
-			return common.NewErrorf("Error migrating db and restoring fallback: %v", errRename)
+	// Initialize and migrate the newly imported database
+	if err := database.InitDB(dbPath); err != nil {
+		// Rollback from fallback
+		_ = database.CloseDB()
+		_ = os.Remove(dbPath)
+		_ = os.Remove(walPath)
+		_ = os.Remove(shmPath)
+		_ = os.Rename(fallbackPath, dbPath)
+		if _, errW := os.Stat(fallbackWalPath); errW == nil {
+			_ = os.Rename(fallbackWalPath, walPath)
 		}
-		return common.NewErrorf("Error migrating db: %v", err)
+		_ = database.InitDB(dbPath)
+		return common.NewErrorf("Error migrating imported db: %v", err)
 	}
+
+	// Clean up fallback backups
+	_ = os.Remove(fallbackPath)
+	_ = os.Remove(fallbackWalPath)
+
 	s.inboundService.MigrateDB()
 
-	// Start Xray
-	err = s.RestartXrayService()
-	if err != nil {
-		return common.NewErrorf("Imported DB but Failed to start Xray: %v", err)
+	// Restart Xray
+	if err := s.RestartXrayService(); err != nil {
+		return common.NewErrorf("Imported DB successfully, but failed to start Xray: %v", err)
 	}
 
 	return nil

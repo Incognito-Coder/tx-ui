@@ -1556,6 +1556,23 @@ html:not(.dark) .ant-tag.tag-disabled *,
     color: var(--ui-text-muted) !important;
 }
 
+.dark .ant-tag.tag-disabled,
+#app.dark .ant-tag.tag-disabled,
+body.dark .ant-tag.tag-disabled,
+.dark .ant-tag-disabled,
+#app.dark .ant-tag-disabled,
+body.dark .ant-tag-disabled {
+    color: #94a3b8 !important;
+    background: rgba(255, 255, 255, 0.05) !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+.dark .ant-tag.tag-disabled *,
+#app.dark .ant-tag.tag-disabled *,
+body.dark .ant-tag.tag-disabled * {
+    color: #94a3b8 !important;
+}
+
 .ant-tag.tag-disabled:hover,
 .ant-tag-disabled:hover {
     transform: none !important;
