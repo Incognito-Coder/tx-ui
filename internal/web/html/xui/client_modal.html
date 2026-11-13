@@ -1,4 +1,4 @@
-{{define "clientsModal"}}
+{{ define "clientsModal" }}
 <a-modal :class="themeSwitcher.currentTheme" :closable="true" :confirm-loading="clientModal.confirmLoading" :mask-closable="false"
          :ok-text="clientModal.okText" :title="clientModal.title" @ok="clientModal.ok"
          cancel-text='{{ i18n "close" }}'
@@ -9,7 +9,7 @@
             Disabled
         </a-tag>
     </template>
-    {{template "form/client"}}
+    {{ template "form/client" }}
 </a-modal>
 <script>
 
@@ -278,11 +278,11 @@
             resetClientTraffic(email, dbInboundId, iconElement) {
                 const inboundId = dbInboundId || (this.clientModal.dbInbound && this.clientModal.dbInbound.id);
                 this.$confirm({
-                    title: '{{ i18n "pages.inbounds.resetTraffic"}}',
-                    content: '{{ i18n "pages.inbounds.resetTrafficContent"}}',
+                    title: '{{ i18n "pages.inbounds.resetTraffic" }}',
+                    content: '{{ i18n "pages.inbounds.resetTrafficContent" }}',
                     class: themeSwitcher.currentTheme,
-                    okText: '{{ i18n "reset"}}',
-                    cancelText: '{{ i18n "cancel"}}',
+                    okText: '{{ i18n "reset" }}',
+                    cancelText: '{{ i18n "cancel" }}',
                     onOk: async () => {
                         let msg;
                         if (inboundId && Number(inboundId) > 0) {

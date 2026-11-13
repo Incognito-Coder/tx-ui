@@ -1265,3 +1265,12 @@ inboundDenied = "Permissão negada: conexão fora do escopo permitido."
 clientDenied = "Permissão negada: cliente fora do escopo permitido."
 deleteDenied = "Permissão negada: você não tem permissão para excluir."
 trafficResetDenied = "Permissão negada: redefinição de tráfego é restrita."
+
+[pages.notFound]
+title = "404 Não encontrado"
+subtitle = "Página Não Encontrada"
+desc = "A página que você procura não existe, foi removida ou está temporariamente indisponível."
+backToInbounds = "Voltar para Conexões"
+backHome = "Voltar ao Início"
+back = "Voltar"
+logout = "Sair"

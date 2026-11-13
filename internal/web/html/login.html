@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-{{template "head" .}}
+{{ template "head" . }}
 <style>
     html * {
         -webkit-font-smoothing: antialiased;
@@ -420,16 +420,16 @@
                                 </a-form-item>
                                 <a-form-item>
                                     <password-input @keydown.enter.native="login" autocomplete="password" icon="lock"
-                                                    name="password"
-                                                    placeholder='{{ i18n "password" }}'
-                                                    v-model.trim="user.password">
+                                        name="password"
+                                        placeholder='{{ i18n "password" }}'
+                                        v-model.trim="user.password">
                                     </password-input>
                                 </a-form-item>
                                 <a-form-item v-if="secretEnable">
                                     <password-input @keydown.enter.native="login" autocomplete="secret" icon="key"
-                                                    name="secret"
-                                                    placeholder='{{ i18n "secretToken" }}'
-                                                    v-model.trim="user.loginSecret">
+                                        name="secret"
+                                        placeholder='{{ i18n "secretToken" }}'
+                                        v-model.trim="user.loginSecret">
                                     </password-input>
                                 </a-form-item>
                                 <a-form-item>
@@ -448,7 +448,7 @@
                                                       ref="selectLang" style="width: 200px;"
                                                       v-model="lang">
                                                 <a-select-option :value="l.value" label="English"
-                                                                 v-for="l in supportLangs">
+                                                    v-for="l in supportLangs">
                                                     <span :aria-label="l.name" role="img" v-text="l.icon"></span>
                                                     &nbsp;&nbsp;<span v-text="l.name"></span>
                                                 </a-select-option>
@@ -469,9 +469,9 @@
         </a-layout-content>
     </transition>
 </a-layout>
-{{template "js" .}}
-{{template "component/themeSwitcher" .}}
-{{template "component/password" .}}
+{{ template "js" . }}
+{{ template "component/themeSwitcher" . }}
+{{ template "component/password" . }}
 <script>
     class User {
         constructor() {

@@ -1,4 +1,4 @@
-{{define "promptModal"}}
+{{ define "promptModal" }}
 <a-modal :class="themeSwitcher.currentTheme" :closable="true" :confirm-loading="promptModal.confirmLoading"
          :mask-closable="false" :ok-text="promptModal.okText" :title="promptModal.title"
          @ok="promptModal.ok"
@@ -17,7 +17,7 @@
         title: '',
         type: '',
         value: '',
-        okText: '{{ i18n "sure"}}',
+        okText: '{{ i18n "sure" }}',
         visible: false,
         confirmLoading: false,
         keyEnter(e) {
@@ -41,7 +41,7 @@
                  title = '',
                  type = 'text',
                  value = '',
-                 okText = '{{ i18n "sure"}}',
+                 okText = '{{ i18n "sure" }}',
                  confirm = () => {
                  },
              }) {

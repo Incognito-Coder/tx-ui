@@ -1,60 +1,59 @@
-{{define "menuItems"}}
+{{ define "menuItems" }}
 <a-menu-item key="{{ .base_path }}panel/">
     <a-icon type="dashboard"></a-icon>
     <span>
-        <b>{{ i18n "menu.dashboard"}}</b>
+        <b>{{ i18n "menu.dashboard" }}</b>
     </span>
 </a-menu-item>
 <a-menu-item key="{{ .base_path }}panel/inbounds">
     <a-icon type="cloud"></a-icon>
     <span>
-        <b>{{ i18n "menu.inbounds"}}</b>
+        <b>{{ i18n "menu.inbounds" }}</b>
     </span>
 </a-menu-item>
 <a-menu-item key="{{ .base_path }}panel/clients">
     <a-icon type="team"></a-icon>
     <span>
-        <b>{{ i18n "menu.clients"}}</b>
+        <b>{{ i18n "menu.clients" }}</b>
     </span>
 </a-menu-item>
 {{if or (not .user) .user.IsAdmin}}
 <a-menu-item key="{{ .base_path }}panel/settings">
     <a-icon type="setting"></a-icon>
     <span>
-        <b>{{ i18n "menu.settings"}}</b>
+        <b>{{ i18n "menu.settings" }}</b>
     </span>
 </a-menu-item>
 <a-menu-item key="{{ .base_path }}panel/xray">
     <a-icon type="tool"></a-icon>
     <span>
-        <b>{{ i18n "menu.xray"}}</b>
+        <b>{{ i18n "menu.xray" }}</b>
     </span>
 </a-menu-item>
 {{end}}
 <a-menu-item key="{{ .base_path }}panel/docs">
     <a-icon type="api"></a-icon>
     <span>
-        <b>{{ i18n "menu.apiDocs"}}</b>
+        <b>{{ i18n "menu.apiDocs" }}</b>
     </span>
 </a-menu-item>
 <a-menu-item class="panel-menu-github" key="https://github.com/Incognito-Coder/TX-ThemeHub">
     <a-icon type="github"></a-icon>
     <span>
-        <b>{{ i18n "menu.txThemeHub"}}</b>
+        <b>{{ i18n "menu.txThemeHub" }}</b>
     </span>
 </a-menu-item>
 <a-menu-item class="panel-menu-logout" key="{{ .base_path }}logout">
     <a-icon type="logout"></a-icon>
     <span>
-        <b>{{ i18n "menu.logout"}}</b>
+        <b>{{ i18n "menu.logout" }}</b>
     </span>
 </a-menu-item>
 {{end}}
 
-
-{{define "commonSider"}}
+{{ define "commonSider" }}
 <a-layout-sider :collapsed="siderDrawer.collapsed" :theme="themeSwitcher.currentTheme"
-                @collapse="(collapsed, type) => siderDrawer.setCollapsed(collapsed, type)"
+    @collapse="(collapsed, type) => siderDrawer.setCollapsed(collapsed, type)"
                 breakpoint="md" collapsible id="sider">
     <div @click="location.href = '{{ .base_path }}panel/'"
          @keydown.enter="location.href = '{{ .base_path }}panel/'"
@@ -70,7 +69,7 @@
             :theme="themeSwitcher.currentTheme"
             @click="({key}) => key.startsWith('http') ? window.open(key, '_blank', 'noopener,noreferrer') : location.href = key"
             mode="inline">
-            {{template "menuItems" .}}
+            {{ template "menuItems" . }}
         </a-menu>
         <div class="panel-theme-control">
             <theme-switch :collapsed="siderDrawer.collapsed"></theme-switch>
@@ -99,7 +98,7 @@
         <a-menu :selected-keys="['{{ .request_uri }}']" :theme="themeSwitcher.currentTheme"
             @click="({key}) => { siderDrawer.close(); key.startsWith('http') ? window.open(key, '_blank', 'noopener,noreferrer') : location.href = key }"
             mode="inline">
-            {{template "menuItems" .}}
+            {{ template "menuItems" . }}
         </a-menu>
         <div class="panel-theme-control">
             <theme-switch></theme-switch>

@@ -1,4 +1,4 @@
-{{define "client_table"}}
+{{ define "client_table" }}
 <template slot="actions" slot-scope="text, client, index">
     <a-tooltip>
         <template slot="title">{{ i18n "qrCode" }}</template>
@@ -20,9 +20,9 @@
         <template slot="title">{{ i18n "pages.inbounds.resetTraffic" }}</template>
         <template v-if="!currentUser.isViewer && currentUser.canResetTraffic">
             <a-popconfirm :overlay-class-name="themeSwitcher.currentTheme"
-                          @confirm="resetClientTraffic(client,record.id,false)"
-                          cancel-text='{{ i18n "cancel"}}' ok-text='{{ i18n "reset"}}'
-                          title='{{ i18n "pages.inbounds.resetTrafficContent"}}'>
+                @confirm="resetClientTraffic(client,record.id,false)"
+                cancel-text='{{ i18n "cancel" }}' ok-text='{{ i18n "reset" }}'
+                title='{{ i18n "pages.inbounds.resetTrafficContent" }}'>
                 <a-icon style="color: var(--ui-primary)" slot="icon"
                         type="question-circle-o"></a-icon>
                 <a-icon class="normal-icon" style="font-size: 24px; cursor: pointer;" type="retweet"
@@ -36,13 +36,13 @@
     </a-tooltip>
     <a-tooltip>
         <template slot="title">
-            <span style="color: var(--ui-danger)"> {{ i18n "delete"}}</span>
+            <span style="color: var(--ui-danger)"> {{ i18n "delete" }}</span>
         </template>
         <template v-if="!currentUser.isViewer">
             <a-popconfirm :overlay-class-name="themeSwitcher.currentTheme"
-                          @confirm="delClient(record.id,client,false)"
-                          cancel-text='{{ i18n "cancel"}}' ok-text='{{ i18n "delete"}}' ok-type="danger"
-                          title='{{ i18n "pages.inbounds.deleteClientContent"}}'>
+                @confirm="delClient(record.id,client,false)"
+                cancel-text='{{ i18n "cancel" }}' ok-text='{{ i18n "delete" }}' ok-type="danger"
+                title='{{ i18n "pages.inbounds.deleteClientContent" }}'>
                 <a-icon slot="icon" style="color: var(--ui-danger)" type="question-circle-o"></a-icon>
                 <a-icon class="delete-icon" style="font-size: 24px; cursor: pointer;" type="delete"
                         v-if="isRemovable(record.id)"></a-icon>
@@ -119,8 +119,7 @@
     <template v-if="client.expiryTime !=0 && client.reset >0">
         <a-popover :overlay-class-name="themeSwitcher.currentTheme">
             <template slot="content">
-        <span v-if="client.expiryTime < 0">{{ i18n "pages.client.delayedStart" }}
-        </span>
+        <span v-if="client.expiryTime < 0">{{ i18n "pages.client.delayedStart" }}</span>
                 <span v-else>
           <template v-if="app.datepicker === 'gregorian'">
             [[ DateUtil.formatMillis(client._expiryTime) ]]
@@ -146,8 +145,7 @@
     <template v-else>
         <a-popover :overlay-class-name="themeSwitcher.currentTheme" v-if="client.expiryTime != 0">
             <template slot="content">
-        <span v-if="client.expiryTime < 0">{{ i18n "pages.client.delayedStart" }}
-        </span>
+        <span v-if="client.expiryTime < 0">{{ i18n "pages.client.delayedStart" }}</span>
                 <span v-else>
           <template v-if="app.datepicker === 'gregorian'">
             [[ DateUtil.formatMillis(client._expiryTime) ]]
@@ -158,9 +156,7 @@
         </span>
             </template>
             <a-tag :color="userExpiryColor(app.expireDiff, client, themeSwitcher.isDarkTheme)"
-                   style="min-width: 50px; border: none;"> [[
-                remainedDays(client.expiryTime) ]]
-            </a-tag>
+                   style="min-width: 50px; border: none;"> [[ remainedDays(client.expiryTime) ]]</a-tag>
         </a-popover>
         <a-tag :color="userExpiryColor(app.expireDiff, client, themeSwitcher.isDarkTheme)" class="infinite-tag" style="border: none;"
                v-else>
@@ -193,12 +189,12 @@
             </a-menu-item>
             <a-menu-item @click="delClient(record.id,client)" v-if="isRemovable(record.id)" :disabled="currentUser.isViewer">
                 <a-icon style="font-size: 14px;" type="delete"></a-icon>
-                <span style="color: var(--ui-danger)"> {{ i18n "delete"}}</span>
+                <span style="color: var(--ui-danger)"> {{ i18n "delete" }}</span>
             </a-menu-item>
             <a-menu-item>
                 <a-switch :disabled="currentUser.isViewer" @change="switchEnableClient(record.id,client,$event)" size="small"
                           v-model="client.enable"></a-switch>
-                {{ i18n "enable"}}
+                {{ i18n "enable" }}
             </a-menu-item>
         </a-menu>
     </a-dropdown>
@@ -211,9 +207,7 @@
                     <td colspan="3" style="text-align: center;">{{ i18n "pages.inbounds.traffic" }}</td>
                 </tr>
                 <tr>
-                    <td style="margin:0; text-align: right;font-size: 1em;" width="80px"> [[
-                        sizeFormat(getUpStats(record, client.email) + getDownStats(record, client.email)) ]]
-                    </td>
+                    <td style="margin:0; text-align: right;font-size: 1em;" width="80px"> [[ sizeFormat(getUpStats(record, client.email) + getDownStats(record, client.email)) ]]</td>
                     <td v-if="!client.enable" width="120px">
                         <a-progress :percent="statsProgress(record, client.email)"
                                     :show-info="false" stroke-color="var(--ui-border-strong)"/>
@@ -254,14 +248,11 @@
                 </tr>
                 <tr>
                     <template v-if="client.expiryTime !=0 && client.reset >0">
-                        <td style="margin:0; text-align: right;font-size: 1em;" width="80px"> [[
-                            remainedDays(client.expiryTime) ]]
-                        </td>
+                        <td style="margin:0; text-align: right;font-size: 1em;" width="80px"> [[ remainedDays(client.expiryTime) ]]</td>
                         <td class="infinite-bar" width="120px">
                             <a-popover :overlay-class-name="themeSwitcher.currentTheme">
                                 <template slot="content">
-                  <span v-if="client.expiryTime < 0">{{ i18n "pages.client.delayedStart" }}
-                  </span>
+                  <span v-if="client.expiryTime < 0">{{ i18n "pages.client.delayedStart" }}</span>
                                     <span v-else>
                     <template v-if="app.datepicker === 'gregorian'">
                       [[ DateUtil.formatMillis(client._expiryTime) ]]
@@ -283,8 +274,7 @@
                         <td colspan="3" style="text-align: center;">
                             <a-popover :overlay-class-name="themeSwitcher.currentTheme" v-if="client.expiryTime != 0">
                                 <template slot="content">
-                  <span v-if="client.expiryTime < 0">{{ i18n "pages.client.delayedStart" }}
-                  </span>
+                  <span v-if="client.expiryTime < 0">{{ i18n "pages.client.delayedStart" }}</span>
                                     <span v-else>
                     <template v-if="app.datepicker === 'gregorian'">
                       [[ DateUtil.formatMillis(client._expiryTime) ]]
@@ -295,9 +285,7 @@
                   </span>
                                 </template>
                                 <a-tag :color="userExpiryColor(app.expireDiff, client, themeSwitcher.isDarkTheme)"
-                                       style="min-width: 50px; border: none;"> [[
-                                    remainedDays(client.expiryTime) ]]
-                                </a-tag>
+                                       style="min-width: 50px; border: none;"> [[ remainedDays(client.expiryTime) ]]</a-tag>
                             </a-popover>
                             <a-tag :color="client.enable ? 'purple' : ''"
                                    :class="{ 'infinite-tag': true, 'tag-disabled': !client.enable }"

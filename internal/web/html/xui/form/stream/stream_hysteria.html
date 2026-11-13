@@ -1,4 +1,4 @@
-{{define "form/streamHysteria"}}
+{{ define "form/streamHysteria" }}
 <a-form :colon="false" :label-col="{ md: {span:8} }"
         :wrapper-col="{ md: {span:14} }">
     <a-form-item label='Auth Password'>
@@ -6,7 +6,7 @@
     </a-form-item>
     <a-form-item label='UDP Idle Timeout'>
         <a-input-number v-model.number="inbound.stream.hysteria.udpIdleTimeout"
-                        :min="0"></a-input-number>
+            :min="0"></a-input-number>
     </a-form-item>
     <a-form-item label='Masquerade'>
         <a-switch v-model="inbound.stream.hysteria.masqueradeSwitch"></a-switch>
@@ -22,7 +22,7 @@
             </a-select>
         </a-form-item>
         <a-form-item label='Dir'
-                     v-if="inbound.stream.hysteria.masquerade.type === 'file'">
+            v-if="inbound.stream.hysteria.masquerade.type === 'file'">
             <a-input
                     v-model.trim="inbound.stream.hysteria.masquerade.dir"></a-input>
         </a-form-item>
@@ -56,11 +56,10 @@
             </a-form-item>
             <a-form-item :wrapper-col="{span:24}">
                 <a-input-group compact
-                               v-for="(header, index) in inbound.stream.hysteria.masquerade.headers">
+                    v-for="(header, index) in inbound.stream.hysteria.masquerade.headers">
                     <a-input style="width: 50%" v-model.trim="header.name"
-                             placeholder='{{ i18n "pages.inbounds.stream.general.name"}}'>
-                        <template slot="addonBefore" style="margin: 0;">[[
-                            index+1 ]]</template>
+                             placeholder='{{ i18n "pages.inbounds.stream.general.name" }}'>
+                        <template slot="addonBefore" style="margin: 0;">[[ index+1 ]]</template>
                     </a-input>
                     <a-input style="width: 50%" v-model.trim="header.value"
                              placeholder='{{ i18n "pages.inbounds.stream.general.value" }}'>

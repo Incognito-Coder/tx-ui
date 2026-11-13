@@ -1,4 +1,4 @@
-{{define "component/settingListItem"}}
+{{ define "component/settingListItem" }}
 <a-list-item style="padding: 20px">
     <a-row v-if="type === 'textarea'">
         <a-col>
@@ -18,7 +18,7 @@
             </template>
             <template v-else-if="type === 'number'">
                 <a-input-number :max="max" :min="min" :step="step" :value="value"
-                                @change="value => $emit('input', value)" style="width: 100%;"></a-input-number>
+                    @change="value => $emit('input', value)" style="width: 100%;"></a-input-number>
             </template>
             <template v-else-if="type === 'switch'">
                 <a-switch :checked="value" @change="value => $emit('input', value)"></a-switch>
@@ -28,11 +28,11 @@
 </a-list-item>
 {{end}}
 
-{{define "component/setting"}}
+{{ define "component/setting" }}
 <script>
     Vue.component('setting-list-item', {
         props: ["type", "title", "desc", "value", "min", "max", "step", "placeholder"],
-        template: `{{template "component/settingListItem"}}`,
+        template: `{{ template "component/settingListItem" }}`,
     });
 </script>
 {{end}}

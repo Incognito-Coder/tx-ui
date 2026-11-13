@@ -349,6 +349,10 @@ func (s *Server) initRouter() (*gin.Engine, error) {
 	s.panel = controller.NewXUIController(g)
 	s.api = controller.NewAPIController(g)
 
+	engine.NoRoute(func(c *gin.Context) {
+		controller.Render404(c)
+	})
+
 	return engine, nil
 }
 

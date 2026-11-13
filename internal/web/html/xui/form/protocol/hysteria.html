@@ -1,6 +1,6 @@
-{{define "form/hysteria"}}
+{{ define "form/hysteria" }}
 <a-collapse v-if="isEdit && inbound.settings.hysterias && inbound.settings.hysterias.length > 0">
-    <a-collapse-panel :header="'{{ i18n "pages.client.clientCount"}} : ' +
+    <a-collapse-panel :header="'{{ i18n "pages.client.clientCount" }} : ' +
     inbound.settings.hysterias.length">
     <table width="100%">
         <tr class="client-table-header">
@@ -19,7 +19,7 @@
         :wrapper-col="{ md: {span:14} }">
     <a-form-item :label="'{{ i18n "pages.inbounds.stream.tcp.version" }}'">
     <a-input-number v-model.number="inbound.settings.version" :min="2"
-                    :max="2" disabled></a-input-number>
+        :max="2" disabled></a-input-number>
     </a-form-item>
 </a-form>
 {{end}}

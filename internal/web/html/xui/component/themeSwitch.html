@@ -1,4 +1,4 @@
-{{define "component/themeSwitchTemplate"}}
+{{ define "component/themeSwitchTemplate" }}
 <template>
     <a-menu :inline-collapsed="collapsed" :selected-keys="[]" :theme="themeSwitcher.currentTheme" mode="inline">
         <a-sub-menu>
@@ -12,7 +12,7 @@
                           style="margin-left: 2px;"></a-switch>
             </a-menu-item>
             <a-menu-item @mousedown="themeSwitcher.animationsOffUltra($event)" class="ant-menu-theme-switch"
-                         v-if="themeSwitcher.isDarkTheme"> {{ i18n "menu.themeUltra" }}
+                v-if="themeSwitcher.isDarkTheme"> {{ i18n "menu.themeUltra" }}
                 <a-checkbox :checked="themeSwitcher.isUltra" @click="themeSwitcher.toggleUltra()"
                             style="margin-left: 2px;"></a-checkbox>
             </a-menu-item>
@@ -51,7 +51,7 @@
 </template>
 {{end}}
 
-{{define "component/themeSwitchTemplateLogin"}}
+{{ define "component/themeSwitchTemplateLogin" }}
 <template>
     <a-menu :selected-keys="[]" :theme="themeSwitcher.currentTheme"
             @mousedown="themeSwitcher.animationsOff($event)" mode="inline">
@@ -99,7 +99,7 @@
 </template>
 {{end}}
 
-{{define "component/themeSwitcher"}}
+{{ define "component/themeSwitcher" }}
 <script>
     function createThemeSwitcher() {
         const storedDark = localStorage.getItem('dark-mode');
@@ -656,7 +656,7 @@
                 default: false,
             },
         },
-        template: `{{template "component/themeSwitchTemplate"}}`,
+        template: `{{ template "component/themeSwitchTemplate" }}`,
         data: () => ({
             themeSwitcher
         }),
@@ -672,7 +672,7 @@
     });
     Vue.component('theme-switch-login', {
         props: [],
-        template: `{{template "component/themeSwitchTemplateLogin"}}`,
+        template: `{{ template "component/themeSwitchTemplateLogin" }}`,
         data: () => ({
             themeSwitcher
         }),

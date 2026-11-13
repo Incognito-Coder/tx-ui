@@ -1265,3 +1265,12 @@ inboundDenied = "Permission denied: Inbound is outside your allowed scope."
 clientDenied = "Permission denied: Client is outside your allowed scope."
 deleteDenied = "Permission denied: You do not have permission to delete."
 trafficResetDenied = "Permission denied: Traffic reset is restricted."
+
+[pages.notFound]
+title = "404 Not Found"
+subtitle = "Page Not Found"
+desc = "The page you are looking for does not exist, has been removed, or is temporarily unavailable."
+backToInbounds = "Back to Inbounds"
+backHome = "Back to Home"
+back = "Go Back"
+logout = "Logout"

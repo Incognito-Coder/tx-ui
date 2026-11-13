@@ -1265,3 +1265,12 @@ inboundDenied = "アクセス拒否: このインバウンドは許可された�
 clientDenied = "アクセス拒否: このクライアントは許可された範囲外です。"
 deleteDenied = "アクセス拒否: 削除権限がありません。"
 trafficResetDenied = "アクセス拒否: トラフィックのリセットは制限されています。"
+
+[pages.notFound]
+title = "404 見つかりません"
+subtitle = "ページが見つかりません"
+desc = "お探しのページは存在しないか、削除されたか、一時的に利用できない可能性があります。"
+backToInbounds = "インバウンドに戻る"
+backHome = "ホームに戻る"
+back = "戻る"
+logout = "ログアウト"

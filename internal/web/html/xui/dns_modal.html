@@ -1,4 +1,4 @@
-{{define "dnsModal"}}
+{{ define "dnsModal" }}
 <a-modal :class="themeSwitcher.currentTheme" :closable="true" :mask-closable="false" :ok-text="dnsModal.okText" :title="dnsModal.title"
          @ok="dnsModal.ok" cancel-text='{{ i18n "close" }}' id="dns-modal"
          v-model="dnsModal.visible" wrap-class-name="panel-modal panel-modal-lg">
@@ -28,7 +28,7 @@
         <a-form-item label='Skip Fallback' v-if="isAdvanced">
             <a-switch v-model="dnsModal.dnsServer.skipFallback"></a-switch>
         </a-form-item>
-        <a-form-item label='{{ i18n "pages.xray.dns.expectIPs"}}'>
+        <a-form-item label='{{ i18n "pages.xray.dns.expectIPs" }}'>
             <a-button @click="dnsModal.dnsServer.expectIPs.push('')" icon="plus" size="small" type="primary"></a-button>
             <template v-for="(domain, index) in dnsModal.dnsServer.expectIPs">
                 <a-input v-model.trim="dnsModal.dnsServer.expectIPs[index]">

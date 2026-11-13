@@ -1,4 +1,4 @@
-{{define "form/tlsSettings"}}
+{{ define "form/tlsSettings" }}
 <!-- tls enable -->
 <a-form :colon="false" :label-col="{ md: {span:8} }" :wrapper-col="{ md: {span:14} }" v-if="inbound.canEnableTls()">
     <template v-if="inbound.protocol !== Protocols.HYSTERIA">
@@ -7,7 +7,7 @@
             <a-radio-group v-model="inbound.stream.security" button-style="solid">
                 <a-radio-button value="none">{{ i18n "none" }}</a-radio-button>
                 <a-radio-button v-if="inbound.canEnableReality()"
-                                value="reality">Reality</a-radio-button>
+                    value="reality">Reality</a-radio-button>
                 <a-radio-button value="tls">TLS</a-radio-button>
             </a-radio-group>
         </a-form-item>
@@ -139,7 +139,7 @@
 
     <!-- reality settings -->
     <template v-if="inbound.stream.isReality">
-        {{template "form/realitySettings"}}
+        {{ template "form/realitySettings" }}
     </template>
 </a-form>
 {{end}}

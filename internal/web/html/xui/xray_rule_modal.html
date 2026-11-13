@@ -1,4 +1,4 @@
-{{define "ruleModal"}}
+{{ define "ruleModal" }}
 <a-modal :class="themeSwitcher.currentTheme" :closable="true" :confirm-loading="ruleModal.confirmLoading" :mask-closable="false"
          :ok-text="ruleModal.okText" :title="ruleModal.title" @ok="ruleModal.ok" cancel-text='{{ i18n "close" }}'
          id="rule-modal" v-model="ruleModal.visible" wrap-class-name="panel-modal panel-modal-lg">

@@ -1,4 +1,4 @@
-{{define "form/streamSettings"}}
+{{ define "form/streamSettings" }}
 <!-- select stream network -->
 <a-form :colon="false" :label-col="{ md: {span:8} }" :wrapper-col="{ md: {span:14} }" v-if="inbound.protocol != Protocols.HYSTERIA && inbound.protocol != Protocols.MASQUE">
     <a-form-item label='{{ i18n "transmission" }}'>
@@ -17,56 +17,56 @@
 
 <!-- tcp -->
 <template v-if="inbound.stream.network === 'tcp'">
-    {{template "form/streamTCP"}}
+    {{ template "form/streamTCP" }}
 </template>
 
 <!-- kcp -->
 <template v-if="inbound.stream.network === 'kcp'">
-    {{template "form/streamKCP"}}
+    {{ template "form/streamKCP" }}
 </template>
 
 <!-- ws -->
 <template v-if="inbound.stream.network === 'ws'">
-    {{template "form/streamWS"}}
+    {{ template "form/streamWS" }}
 </template>
 
 <!-- grpc -->
 <template v-if="inbound.stream.network === 'grpc'">
-    {{template "form/streamGRPC"}}
+    {{ template "form/streamGRPC" }}
 </template>
 
 <!-- hysteria -->
 <template v-if="inbound.stream.network === 'hysteria'">
-    {{template "form/streamHysteria"}}
+    {{ template "form/streamHysteria" }}
 </template>
 
 <!-- masque -->
 <template v-if="inbound.stream.network === 'masque'">
-    {{template "form/streamMasque"}}
+    {{ template "form/streamMasque" }}
 </template>
 
 <!-- xdrive -->
 <template v-if="inbound.stream.network === 'xdrive'">
-    {{template "form/streamXDrive"}}
+    {{ template "form/streamXDrive" }}
 </template>
 
 <!-- httpupgrade -->
 <template v-if="inbound.stream.network === 'httpupgrade'">
-    {{template "form/streamHTTPUpgrade"}}
+    {{ template "form/streamHTTPUpgrade" }}
 </template>
 
 <!-- xhttp -->
 <template v-if="inbound.stream.network === 'xhttp'">
-    {{template "form/streamXHTTP"}}
+    {{ template "form/streamXHTTP" }}
 </template>
 
 <!-- sockopt -->
 <template>
-    {{template "form/streamSockopt"}}
+    {{ template "form/streamSockopt" }}
 </template>
 
 <!-- finalmask - for TCP, WS, HTTPUpgrade, XHTTP, mKCP, Hysteria, gRPC, Masque, XDrive -->
 <template v-if="inbound.protocol == Protocols.HYSTERIA || inbound.protocol == Protocols.MASQUE || ['tcp', 'kcp', 'ws', 'grpc', 'httpupgrade', 'xhttp', 'hysteria', 'masque', 'xdrive'].includes(inbound.stream.network)">
-    {{template "form/streamFinalMask"}}
+    {{ template "form/streamFinalMask" }}
 </template>
 {{end}}

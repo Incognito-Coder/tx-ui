@@ -1,4 +1,4 @@
-{{define "qrcodeModal"}}
+{{ define "qrcodeModal" }}
 <a-modal :class="themeSwitcher.currentTheme" :closable="true" :dialog-style="isMobileQr ? { top: '18px' } : {}"
          :footer="null"
          :title="qrModal.title"
@@ -7,7 +7,7 @@
     <tr-qr-modal class="qr-modal">
         <template v-if="app.subSettings?.enable && qrModal.subId">
             <tr-qr-box class="qr-box">
-                <a-tag class="qr-tag" color="purple"><span>{{ i18n "pages.settings.subSettings"}}</span></a-tag>
+                <a-tag class="qr-tag" color="purple"><span>{{ i18n "pages.settings.subSettings" }}</span></a-tag>
                 <tr-qr-bg class="qr-bg-sub">
                     <tr-qr-bg-inner class="qr-bg-sub-inner">
                         <canvas @click="copyToClipboard('qrCode-sub',genSubLink(qrModal.client.subId))" class="qr-cv"
@@ -16,7 +16,7 @@
                 </tr-qr-bg>
             </tr-qr-box>
             <tr-qr-box class="qr-box">
-                <a-tag class="qr-tag" color="purple"><span>{{ i18n "pages.settings.subSettings"}} Json</span></a-tag>
+                <a-tag class="qr-tag" color="purple"><span>{{ i18n "pages.settings.subSettings" }} Json</span></a-tag>
                 <tr-qr-bg class="qr-bg-sub">
                     <tr-qr-bg-inner class="qr-bg-sub-inner">
                         <canvas @click="copyToClipboard('qrCode-subJson',genSubJsonLink(qrModal.client.subId))"

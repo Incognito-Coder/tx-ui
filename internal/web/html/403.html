@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-{{template "head" .}}
+{{ template "head" . }}
 <style>
     @media (min-width: 769px) {
         .ant-layout-content {
@@ -44,7 +44,7 @@
 </style>
 <body>
 <a-layout id="app" v-cloak :class="themeSwitcher.currentTheme">
-    {{template "commonSider" .}}
+    {{ template "commonSider" . }}
     <a-layout id="content-layout">
         <a-layout-content>
             <div class="error-container">
@@ -66,17 +66,15 @@
                         <a-button type="primary" icon="cloud" href="{{ .base_path }}panel/inbounds">
                             {{ i18n "pages.forbidden.backToInbounds" }}
                         </a-button>
-                        <a-button type="default" icon="logout" href="{{ .base_path }}logout">
-                            {{ i18n "pages.forbidden.logout" }}
-                        </a-button>
+                        <a-button type="default" icon="logout" href="{{ .base_path }}logout">{{ i18n "pages.forbidden.logout" }}</a-button>
                     </div>
                 </div>
             </div>
         </a-layout-content>
     </a-layout>
 </a-layout>
-{{template "js" .}}
-{{template "component/themeSwitcher" .}}
+{{ template "js" . }}
+{{ template "component/themeSwitcher" . }}
 <script>
     const app = new Vue({
         delimiters: ['[[', ']]'],

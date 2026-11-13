@@ -1,6 +1,6 @@
-{{define "form/masque"}}
+{{ define "form/masque" }}
 <a-collapse v-if="isEdit && inbound.settings.clients && inbound.settings.clients.length > 0">
-    <a-collapse-panel :header="'{{ i18n "pages.client.clientCount"}} : ' + inbound.settings.clients.length">
+    <a-collapse-panel :header="'{{ i18n "pages.client.clientCount" }} : ' + inbound.settings.clients.length">
     <table width="100%">
         <tr class="client-table-header">
             <th>{{ i18n "pages.inbounds.email" }}</th>

@@ -1265,3 +1265,12 @@ inboundDenied = "Izin ditolak: Inbound berada di luar cakupan izin Anda."
 clientDenied = "Izin ditolak: Klien berada di luar cakupan izin Anda."
 deleteDenied = "Izin ditolak: Anda tidak memiliki izin untuk menghapus."
 trafficResetDenied = "Izin ditolak: Reset lalu lintas dibatasi."
+
+[pages.notFound]
+title = "404 Tidak Ditemukan"
+subtitle = "Halaman Tidak Ditemukan"
+desc = "Halaman yang Anda cari tidak ada, telah dihapus, atau untuk sementara tidak tersedia."
+backToInbounds = "Kembali ke Inbounds"
+backHome = "Kembali ke Beranda"
+back = "Kembali"
+logout = "Keluar"

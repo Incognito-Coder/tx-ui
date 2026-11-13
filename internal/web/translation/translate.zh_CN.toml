@@ -1264,3 +1264,12 @@ inboundDenied = "权限不足：该入站不在您的管辖范围内。"
 clientDenied = "权限不足：该用户不在您的管辖范围内。"
 deleteDenied = "权限不足：您没有删除权限。"
 trafficResetDenied = "权限不足：流量重置受限。"
+
+[pages.notFound]
+title = "404 页面未找到"
+subtitle = "页面不存在"
+desc = "您访问的页面不存在、已被移除或暂时不可用。"
+backToInbounds = "返回入站列表"
+backHome = "返回首页"
+back = "返回"
+logout = "退出登录"

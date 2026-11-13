@@ -1,4 +1,4 @@
-{{define "inboundInfoModal"}}
+{{ define "inboundInfoModal" }}
 <style>
     #inbound-info-modal .tr-info-row a,
     #inbound-info-modal .tr-info-row code {
@@ -10,7 +10,7 @@
     }
 </style>
 <a-modal :class="themeSwitcher.currentTheme" :closable="true" :footer="null" :mask-closable="true"
-         id="inbound-info-modal" title='{{ i18n "pages.inbounds.details"}}' v-model="infoModal.visible" width="880px"
+         id="inbound-info-modal" title='{{ i18n "pages.inbounds.details" }}' v-model="infoModal.visible" width="880px"
          wrap-class-name="panel-modal panel-modal-detail">
     <a-row>
         <a-col :md="12" :xs="24">
@@ -102,20 +102,14 @@
             <a-tag :color="inbound.stream.security == 'none' ? 'red' : 'green'">[[ inbound.stream.security ]]</a-tag>
             <br/>
             <td>Authentication</td>
-            <a-tag :color="inbound.settings.selectedAuth ? 'green' : 'red'">[[ inbound.settings.selectedAuth ?
-                inbound.settings.selectedAuth : '' ]]
-            </a-tag>
+            <a-tag :color="inbound.settings.selectedAuth ? 'green' : 'red'">[[ inbound.settings.selectedAuth ? inbound.settings.selectedAuth : '' ]]</a-tag>
             <br/>
             {{ i18n "encryption" }}
-            <a-tag :color="inbound.settings.encryption ? 'green' : 'red'">[[ inbound.settings.encryption ?
-                inbound.settings.encryption : '' ]]
-            </a-tag>
+            <a-tag :color="inbound.settings.encryption ? 'green' : 'red'">[[ inbound.settings.encryption ? inbound.settings.encryption : '' ]]</a-tag>
             <br/>
             <template v-if="inbound.stream.security != 'none'">
                 {{ i18n "domainName" }}
-                <a-tag :color="inbound.serverName ? 'green' : 'orange'" v-if="inbound.serverName">[[ inbound.serverName
-                    ? inbound.serverName : '' ]]
-                </a-tag>
+                <a-tag :color="inbound.serverName ? 'green' : 'orange'" v-if="inbound.serverName">[[ inbound.serverName ? inbound.serverName : '' ]]</a-tag>
                 <a-tag color="orange" v-else>{{ i18n "none" }}</a-tag>
             </template>
         </template>
@@ -271,11 +265,8 @@
                 <tr v-if="infoModal.clientStats">
                     <td>{{ i18n "usage" }}</td>
                     <td>
-                        <a-tag color="green">[[ sizeFormat(infoModal.clientStats.up + infoModal.clientStats.down) ]]
-                        </a-tag>
-                        <a-tag>↑ [[ sizeFormat(infoModal.clientStats.up) ]] / [[ sizeFormat(infoModal.clientStats.down)
-                            ]] ↓
-                        </a-tag>
+                        <a-tag color="green">[[ sizeFormat(infoModal.clientStats.up + infoModal.clientStats.down) ]]</a-tag>
+                        <a-tag>↑ [[ sizeFormat(infoModal.clientStats.up) ]] / [[ sizeFormat(infoModal.clientStats.down) ]] ↓</a-tag>
                     </td>
                 </tr>
                 <tr v-if="infoModal.clientSettings.comment">
@@ -315,8 +306,7 @@
                 <tr>
                     <td>
                         <a-tag :color="statsColor(infoModal.clientStats)"
-                               v-if="infoModal.clientStats && infoModal.clientSettings.totalGB > 0"> [[ getRemStats() ]]
-                        </a-tag>
+                               v-if="infoModal.clientStats && infoModal.clientSettings.totalGB > 0"> [[ getRemStats() ]]</a-tag>
                     </td>
                     <td>
                         <a-tag :color="statsColor(infoModal.clientStats)" v-if="infoModal.clientSettings.totalGB > 0">
@@ -340,9 +330,7 @@
                                 </template>
                             </a-tag>
                         </template>
-                        <a-tag color="green" v-else-if="infoModal.clientSettings.expiryTime < 0">[[
-                            infoModal.clientSettings.expiryTime / -86400000 ]] {{ i18n "pages.client.days" }}
-                        </a-tag>
+                        <a-tag color="green" v-else-if="infoModal.clientSettings.expiryTime < 0">[[ infoModal.clientSettings.expiryTime / -86400000 ]] {{ i18n "pages.client.days" }}</a-tag>
                         <a-tag class="infinite-tag" color="purple" v-else>
                             <svg fill="currentColor" height="10px" viewBox="0 0 640 512" width="14px">
                                 <path d="M484.4 96C407 96 349.2 164.1 320 208.5C290.8 164.1 233 96 155.6 96C69.75 96 0 167.8 0 256s69.75 160 155.6 160C233.1 416 290.8 347.9 320 303.5C349.2 347.9 407 416 484.4 416C570.3 416 640 344.2 640 256S570.3 96 484.4 96zM155.6 368C96.25 368 48 317.8 48 256s48.25-112 107.6-112c67.75 0 120.5 82.25 137.1 112C276 285.8 223.4 368 155.6 368zM484.4 368c-67.75 0-120.5-82.25-137.1-112C364 226.2 416.6 144 484.4 144C543.8 144 592 194.2 592 256S543.8 368 484.4 368z"
@@ -558,7 +546,6 @@
                 this.isExpired = this.dbInbound.isExpiry;
                 this.clientStats = [];
             }
-
 
             if (app.ipLimitEnable && this.clientSettings) {
                 this.clientSettings.limitIp = this.clientSettings.limitIp || '';

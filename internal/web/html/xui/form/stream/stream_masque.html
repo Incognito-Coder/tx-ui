@@ -1,4 +1,4 @@
-{{define "form/streamMasque"}}
+{{ define "form/streamMasque" }}
 <a-form :colon="false" :label-col="{ md: {span:8} }" :wrapper-col="{ md: {span:14} }">
     <a-form-item label='{{ i18n "host" }}'>
         <a-input placeholder="example.com" v-model.trim="inbound.stream.masque.host"></a-input>
@@ -11,7 +11,7 @@
     </a-form-item>
     <a-form-item :wrapper-col="{span:24}">
         <a-input-group compact v-for="(header, index) in inbound.stream.masque.headers">
-            <a-input placeholder='{{ i18n "pages.inbounds.stream.general.name"}}' style="width: 50%"
+            <a-input placeholder='{{ i18n "pages.inbounds.stream.general.name" }}' style="width: 50%"
                      v-model.trim="header.name">
                 <template slot="addonBefore" style="margin: 0;">[[ index+1 ]]</template>
             </a-input>

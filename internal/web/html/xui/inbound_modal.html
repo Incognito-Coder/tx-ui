@@ -1,10 +1,10 @@
-{{define "inboundModal"}}
+{{ define "inboundModal" }}
 <a-modal :class="themeSwitcher.currentTheme" :closable="true" :confirm-loading="inModal.confirmLoading" :dialog-style="{ top: '20px' }"
          :mask-closable="false" :ok-button-props="{ props: { disabled: !inModal.isValid } }"
          :ok-text="inModal.okText" :title="inModal.title" @cancel="inModal.close" @ok="inModal.ok"
          cancel-text='{{ i18n "close" }}' id="inbound-modal" v-model="inModal.visible"
          wrap-class-name="panel-modal panel-modal-xl">
-    {{template "form/inbound"}}
+    {{ template "form/inbound" }}
 </a-modal>
 <script>
 

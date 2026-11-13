@@ -1,4 +1,4 @@
-{{define "form/inbound"}}
+{{ define "form/inbound" }}
 <a-tabs :active-key="inModal.activeKey" @change="activeKey => inModal.toggleJson(activeKey === 'json')"
         class="inbound-editor-tabs">
 <a-tab-pane key="form" tab="Form">
@@ -58,10 +58,10 @@
             </a-tooltip>
         </template>
         <a-date-picker :dropdown-class-name="themeSwitcher.currentTheme" :show-time="{ format: 'HH:mm:ss' }" format="YYYY-MM-DD HH:mm:ss"
-                       style="width: 100%;" v-if="datepicker == 'gregorian'"
-                       v-model="dbInbound._expiryTime"></a-date-picker>
+            style="width: 100%;" v-if="datepicker == 'gregorian'"
+            v-model="dbInbound._expiryTime"></a-date-picker>
         <persian-datepicker placeholder='{{ i18n "pages.settings.datepickerPlaceholder" }}' v-else
-                            v-model="dbInbound._expiryTime" value="dbInbound._expiryTime">
+            v-model="dbInbound._expiryTime" value="dbInbound._expiryTime">
         </persian-datepicker>
     </a-form-item>
 </a-form>
@@ -70,88 +70,88 @@
 
 <!-- vmess settings -->
 <template v-if="inbound.protocol === Protocols.VMESS">
-    {{template "form/vmess"}}
+    {{ template "form/vmess" }}
 </template>
 
 <!-- vless settings -->
 <template v-if="inbound.protocol === Protocols.VLESS">
-    {{template "form/vless"}}
+    {{ template "form/vless" }}
 </template>
 
 <!-- trojan settings -->
 <template v-if="inbound.protocol === Protocols.TROJAN">
-    {{template "form/trojan"}}
+    {{ template "form/trojan" }}
 </template>
 
 <!-- shadowsocks -->
 <template v-if="inbound.protocol === Protocols.SHADOWSOCKS">
-    {{template "form/shadowsocks"}}
+    {{ template "form/shadowsocks" }}
 </template>
 
 <!-- tunnel -->
 <template v-if="inbound.protocol === Protocols.TUNNEL">
-    {{template "form/tunnel"}}
+    {{ template "form/tunnel" }}
 </template>
 
 <!-- mixed -->
 <template v-if="inbound.protocol === Protocols.MIXED">
-    {{template "form/mixed"}}
+    {{ template "form/mixed" }}
 </template>
 
 <!-- http -->
 <template v-if="inbound.protocol === Protocols.HTTP">
-    {{template "form/http"}}
+    {{ template "form/http" }}
 </template>
 
 <!-- wireguard -->
 <template v-if="inbound.protocol === Protocols.WIREGUARD">
-    {{template "form/wireguard"}}
+    {{ template "form/wireguard" }}
 </template>
 
 <!-- tun -->
 <template v-if="inbound.protocol === Protocols.TUN">
-    {{template "form/tun"}}
+    {{ template "form/tun" }}
 </template>
 
 <!-- hysteria -->
 <template v-if="inbound.protocol === Protocols.HYSTERIA">
-    {{template "form/hysteria"}}
+    {{ template "form/hysteria" }}
 </template>
 
 <!-- masque -->
 <template v-if="inbound.protocol === Protocols.MASQUE">
-    {{template "form/masque"}}
+    {{ template "form/masque" }}
 </template>
 
 <!-- mtproto -->
 <template v-if="inbound.protocol === Protocols.MTPROTO">
-    {{template "form/mtproto"}}
+    {{ template "form/mtproto" }}
 </template>
 
 <!-- amneziawg -->
 <template v-if="inbound.protocol === Protocols.AMNEZIAWG">
-    {{template "form/amneziawg"}}
+    {{ template "form/amneziawg" }}
 </template>
 
 <!-- stream settings -->
 <template v-if="inbound.canEnableStream()">
-    {{template "form/streamSettings"}}
+    {{ template "form/streamSettings" }}
 </template>
 
 <!-- external proxy -->
 <template v-if="inbound.canEnableExternalProxy()">
-    {{template "form/externalProxy" }}
+    {{ template "form/externalProxy" }}
 </template>
 
 <!-- tls settings -->
 <template v-if="inbound.canEnableTls()">
-    {{template "form/tlsSettings"}}
+    {{ template "form/tlsSettings" }}
 </template>
 
 <!-- sniffing -->
 <a-collapse>
     <a-collapse-panel header='Sniffing'>
-        {{template "form/sniffing"}}
+        {{ template "form/sniffing" }}
     </a-collapse-panel>
 </a-collapse>
 </a-tab-pane>

@@ -1,6 +1,6 @@
-{{define "form/vmess"}}
+{{ define "form/vmess" }}
 <a-collapse v-if="isEdit && inbound.settings.vmesses && inbound.settings.vmesses.length > 0">
-    <a-collapse-panel :header="'{{ i18n "pages.client.clientCount"}} : ' + inbound.settings.vmesses.length">
+    <a-collapse-panel :header="'{{ i18n "pages.client.clientCount" }} : ' + inbound.settings.vmesses.length">
         <table width="100%">
             <tr class="client-table-header">
                 <th>{{ i18n "pages.inbounds.email" }}</th>

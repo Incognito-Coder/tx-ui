@@ -1,4 +1,4 @@
-{{define "form/xdnsDomains"}}
+{{ define "form/xdnsDomains" }}
 <a-form-item>
     <template slot="label">
         <a-tooltip>
@@ -44,7 +44,7 @@
 </template>
 {{end}}
 
-{{define "form/xicmpFields"}}
+{{ define "form/xicmpFields" }}
 <a-form-item label='{{ i18n "pages.inbounds.stream.finalmask.dgram" }}'>
     <a-switch v-model="{{.}}.settings.dgram"></a-switch>
 </a-form-item>
@@ -54,7 +54,7 @@
 </a-form-item>
 {{end}}
 
-{{define "form/noiseItem"}}
+{{ define "form/noiseItem" }}
 <a-form-item label='{{ i18n "pages.xray.outbound.type" }}'>
     <a-select v-model="{{.}}.type" :dropdown-class-name="themeSwitcher.currentTheme">
         <a-select-option value="array">Array</a-select-option>
@@ -103,7 +103,7 @@
 </a-form-item>
 {{end}}
 
-{{define "form/noiseFields"}}
+{{ define "form/noiseFields" }}
 <a-form-item label='{{ i18n "reset" }}'>
     <a-input v-model.trim="{{.}}.settings.reset" placeholder="60-120" />
 </a-form-item>
@@ -116,14 +116,14 @@
             @click="() => {{.}}.settings.noise.splice(index, 1)"
             :style="{ color: 'rgb(255, 77, 79)', cursor: 'pointer' }"></a-icon>
     </a-divider>
-    {{template "form/noiseItem" "n"}}
+    {{ template "form/noiseItem" "n" }}
 </template>
 <a-form-item label='{{ i18n "pages.xray.finalmask.noiseScript" }}'>
     <a-textarea :rows="3" placeholder="Lua script for Noise (optional)" v-model="{{.}}.settings.script"></a-textarea>
 </a-form-item>
 {{end}}
 
-{{define "form/realmFields"}}
+{{ define "form/realmFields" }}
 <a-form-item>
     <template slot="label">
         <a-tooltip>
@@ -180,7 +180,7 @@
 </a-form-item>
 {{end}}
 
-{{define "form/mkcpLegacyFields"}}
+{{ define "form/mkcpLegacyFields" }}
 <a-form-item label='{{ i18n "pages.inbounds.stream.finalmask.mkcpHeader" }}'>
     <a-select v-model="{{.}}.settings.header" :dropdown-class-name="themeSwitcher.currentTheme">
         <a-select-option value="">{{ i18n "none" }}</a-select-option>
@@ -208,7 +208,7 @@
 </a-form-item>
 {{end}}
 
-{{define "form/xmcFields"}}
+{{ define "form/xmcFields" }}
 <a-form-item>
     <template slot="label">
         <a-tooltip>
@@ -266,7 +266,7 @@
 </template>
 {{end}}
 
-{{define "form/fragmentFields"}}
+{{ define "form/fragmentFields" }}
 <a-form-item label='{{ i18n "pages.outbounds.packets" }}'>
     <a-input v-model.trim="{{.}}.settings.packets" placeholder="tlshello" />
 </a-form-item>
@@ -281,7 +281,7 @@
 </a-form-item>
 {{end}}
 
-{{define "form/sudokuFields"}}
+{{ define "form/sudokuFields" }}
 <a-form-item label='{{ i18n "password" }}'>
     <a-input v-model.trim="{{.}}.settings.password"
         placeholder='{{ i18n "pages.inbounds.stream.finalmask.obfuscationPassword" }}' />
@@ -303,7 +303,7 @@
 </a-form-item>
 {{end}}
 
-{{define "form/filterFields"}}
+{{ define "form/filterFields" }}
 <a-form-item label='{{ i18n "pages.inbounds.stream.finalmask.allowedSourceIPs" }}'>
     <a-select mode="tags" v-model="{{.}}.settings.allowedSourceIPs"
         :dropdown-class-name="themeSwitcher.currentTheme"
@@ -318,7 +318,7 @@
 </a-form-item>
 {{end}}
 
-{{define "form/udpHopFields"}}
+{{ define "form/udpHopFields" }}
 <a-form-item label='{{ i18n "pages.inbounds.stream.finalmask.remotePorts" }}'>
     <a-input v-model.trim="{{.}}.settings.ports" placeholder="e.g. 10000-20000,30000" />
 </a-form-item>
@@ -327,7 +327,7 @@
 </a-form-item>
 {{end}}
 
-{{define "form/headerCustomTcp"}}
+{{ define "form/headerCustomTcp" }}
 <template v-for="gKey in ['clients', 'servers', 'errors']" :key="gKey">
     <a-divider :style="{ margin: '0' }">[[ gKey ]]</a-divider>
     <a-form-item :label='gKey'>
@@ -376,7 +376,7 @@
 </template>
 {{end}}
 
-{{define "form/headerCustomUdp"}}
+{{ define "form/headerCustomUdp" }}
 <a-form-item label='{{ i18n "pages.inbounds.stream.finalmask.client" }}'>
     <a-icon type="plus" type="primary" size="small" @click="{{.}}.settings.client.push({rand: 0, randRange: '0-255', type: 'array', packet: []})" />
 </a-form-item>

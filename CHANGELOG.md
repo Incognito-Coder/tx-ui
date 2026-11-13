@@ -54,6 +54,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Live PostgreSQL Telegram Bot Backups**: Updated `Tgbot.sendBackup` to dynamically export live PostgreSQL data into SQLite format before transmitting via Telegram, preventing empty or stale backup delivery when using PostgreSQL.
   - **Engine-Aware Database Maintenance**: Adapted database health checks (`GetDBStatus`), maintenance optimization (`Optimize`), and space reclamation (`Vacuum`) to conditionally run PostgreSQL-native queries (`pg_database_size`, `ANALYZE`, `VACUUM`) while preserving SQLite-specific `PRAGMA wal_checkpoint` and WAL pragmas.
 
+- **Themed 404 Not Found Page & Unmatched Route Handling**:
+  - **Dedicated Error Page (`404.html`)**: Added a custom, beautifully styled 404 page adhering to TX-UI design language, consistent with the existing 403 Forbidden page, supporting light, dark, and ultra-dark themes.
+  - **Graceful Unmatched Path Handling**: Attached Gin `engine.NoRoute(...)` and `controller.Render404` to handle incorrect paths cleanly. Intelligently serves JSON error responses for API, server, and AJAX calls, and renders the 404 template with navigational actions ("Back to Inbounds", "Go Back", "Logout", or "Back to Home") for browser requests.
+  - **Complete 13-Locale Translations**: Localized `[pages.notFound]` (`title`, `subtitle`, `desc`, `backToInbounds`, `backHome`, `back`, `logout`) across all 13 supported languages.
+
 - **Extended Multi-Architecture Cross-Compilation & Builder Tooling**:
   - **Expanded Architecture Matrix**: Extended cross-compilation scripts (`build.ps1`, `build.sh`, `Makefile`) to support 10 additional architecture targets: `linux-riscv64`, `linux-mips`, `linux-mipsle`, `linux-mips64`, `linux-mips64le`, `linux-ppc64le`, `linux-loong64`, `freebsd-amd64`, `freebsd-arm64`, and `freebsd-386` (increasing total platform matrix from 12 to 22 platforms).
   - **Pure-Go SQLite Driver for CGO-Free Cross-Compilation**: Implemented automatic dual-driver SQLite support with build tags ([sqlite_cgo.go](file:///c:/Users/mrali/GolandProjects/tx-ui/internal/database/sqlite_cgo.go) and [sqlite_nocgo.go](file:///c:/Users/mrali/GolandProjects/tx-ui/internal/database/sqlite_nocgo.go)). Upgraded pure-Go driver dependencies to `modernc.org/sqlite v1.55.0` and `modernc.org/libc v1.74.1`, providing full CGO-free support for `windows/386` and `linux/loong64` and resolving runtime stub errors when running on target systems without C cross-compilers.
@@ -84,6 +89,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Padded Check List Tiles**: Transformed staff permission checkboxes into styled, responsive card tiles (`.staff-perm-grid` & `.staff-perm-item`) with comfortable padding, hover transitions, and full RTL layout support.
   - **Refined Action Dropdown Layout**: Contained QR code triggers strictly within the client table 3-dot dropdown menu.
   - **Fluid Global Easing & Speed Tuning**: Re-tuned global animation timing (`panelTabEnter`, `list`, dialog easing) to ensure smooth, natural transitions rather than rushed animations.
+
+- **WireGuard Subscription URI Parameter Aliases & Client Compatibility**:
+  - **Multi-Client Query Parameter Aliasing**: Added parameter alias mapping in `subService.go` for server public key (`publickey`, `pubkey`, alongside `public_key`) and pre-shared key (`presharedkey`, `psk`, alongside `preshared_key`), resolving configuration import failures in V2Box, Shadowrocket, and Happ while preserving full compatibility with Streisand.
+  - **Dual Casing & Format Support in JSON Subscriptions**: Supported dual casing (`publicKey` / `public_key`, `presharedKey` / `preshared_key`, `privateKey` / `private_key`) and snake_case aliases in `subJsonService.go` and `inbound.js`.
+
+- **CodeMirror JSON Editor Visual Polish & Corner Clipping**:
+  - **Corner Radius & Stroke Clipping**: Refined CodeMirror JSON editor borders, outline box-shadows, and gutter border-radius inside inbound and outbound modal tabs, eliminating sharp corner clipping and double borders in both light and dark themes.
+
+- **Safe HTML Template Formatting & Lexer Compliance**:
+  - **Parser Stability**: Normalized HTML attribute formatting and indentation across all 63 template files while ensuring Go template actions (`{{ ... }}`) remain strictly atomic on single lines, preventing template lexer syntax errors (`unterminated quoted string`).
+
+- **Index & Inbounds Template Syntax & Runtime Stabilization**:
+  - **HTML Attribute Quote Nesting**: Fixed premature attribute tokenization in `index.html` where nested double quotes inside `:title="... '{{ i18n "..." }}' ..."` broke HTML parsing and risked syntax errors on localized strings containing apostrophes; introduced a dedicated `forbiddenText` data map for clean Vue property binding.
+  - **Eliminated Premature Method Closure in `inbounds.html`**: Removed an errant duplicate closing brace after `pagination(obj)` that prematurely closed `methods: {}` and triggered fatal JavaScript syntax errors (`missing ) after argument list` / `Unexpected token '}'`).
+  - **Static Attribute Title Binding**: Replaced dynamic binding `:title="'{{ i18n "pages.inbounds.autoRefreshInterval" }}'"` with standard static attribute `title='{{ i18n "pages.inbounds.autoRefreshInterval" }}'` in `inbounds.html` and `clients.html`, eliminating inner quote collisions.
+  - **Strict Mode Compliance & Global Scope Leak Prevention**: Eliminated deprecated `with (msg.obj)` in `inbounds.html` `getDefaultSettings` in favor of direct object property assignments, and declared all implicit globals (`dbInbound`, `clientId`, `clientStats`, `remained`, `now`, `sizeOptions`, `p`, etc.) with `const`/`let` across all client table calculation routines and modals.
+  - **Runtime State & Property Normalization**: Initialized `hostName: ''` and full `appStats` object (`tx_update`, `panel_version`) in `index.html` `Status` constructor to prevent `undefined` interpolation and guarded update popovers. Defaulted `backupModal.show({ ... } = {})` parameters and ensured non-mutating copy for `xraylogModal.formatLogs` to avoid array mutation on reverse.
 
 ## [v0.9.7] - 2026-11-10
 

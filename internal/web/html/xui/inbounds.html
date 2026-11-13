@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-{{template "head" .}}
+{{ template "head" . }}
 <link href="{{ .base_path }}assets/codemirror/codemirror.min.css?{{ .cur_ver }}" rel="stylesheet">
 <link href="{{ .base_path }}assets/codemirror/fold/foldgutter.css" rel="stylesheet">
 <link href="{{ .base_path }}assets/codemirror/xq.min.css?{{ .cur_ver }}" rel="stylesheet">
@@ -161,7 +161,7 @@
     {{ template "commonSider" . }}
     <a-layout id="content-layout">
         <a-layout-content>
-            <a-spin :delay="500" :spinning="spinning" tip='{{ i18n "loading"}}'>
+            <a-spin :delay="500" :spinning="spinning" tip='{{ i18n "loading" }}'>
                 <transition appear name="list">
                     <a-alert closable color="red" description='{{ i18n "secAlertSsl" }}'
                              message='{{ i18n "secAlertTitle" }}'
@@ -251,8 +251,7 @@
                                             </a-menu-item>
                                             <a-menu-item key="subs" v-if="subSettings.enable">
                                                 <a-icon type="export"></a-icon>
-                                                {{ i18n "pages.inbounds.export" }} - {{ i18n
-                                                "pages.settings.subSettings" }}
+                                                {{ i18n "pages.inbounds.export" }} - {{ i18n "pages.settings.subSettings" }}
                                             </a-menu-item>
                                             <a-menu-item key="resetInbounds" :disabled="currentUser.isViewer || !currentUser.canResetTraffic">
                                                 <a-icon type="reload"></a-icon>
@@ -282,7 +281,7 @@
                                             </a-menu-item>
                                             <template v-if="isRefreshEnabled">
                                                 <a-menu-divider></a-menu-divider>
-                                                <a-menu-item-group :title="'{{ i18n "pages.inbounds.autoRefreshInterval" }}'">
+                                                <a-menu-item-group title='{{ i18n "pages.inbounds.autoRefreshInterval" }}'>
                                                     <a-menu-item v-for="key in [5,10,15,20,25,30,60]" :key="'interval-' + key" @click="setRefreshInterval(key * 1000)">
                                                         <div style="display: flex; align-items: center; justify-content: space-between; min-width: 90px;">
                                                             <span>[[ key ]]s</span>
@@ -353,16 +352,16 @@
                                         </a-menu-item>
                                         <a-menu-item key="viewClients" v-if="dbInbound.isMultiUser()">
                                             <a-icon type="team"></a-icon>
-                                            {{ i18n "clients"}}
+                                            {{ i18n "clients" }}
                                         </a-menu-item>
                                         <a-menu-item key="qrcode"
-                                                     v-if="(dbInbound.isSS && !dbInbound.toInbound().isSSMultiUser)">
+                                            v-if="(dbInbound.isSS && !dbInbound.toInbound().isSSMultiUser)">
                                             <a-icon type="qrcode"></a-icon>
                                             {{ i18n "qrCode" }}
                                         </a-menu-item>
                                         <a-menu-item key="showInfo">
                                             <a-icon type="info-circle"></a-icon>
-                                            {{ i18n "info"}}
+                                            {{ i18n "info" }}
                                         </a-menu-item>
                                         <a-menu-item key="clipboard">
                                             <a-icon type="copy"></a-icon>
@@ -374,11 +373,11 @@
                                         </a-menu-item>
                                         <a-menu-item key="clone" :disabled="currentUser.isViewer">
                                             <a-icon type="block"></a-icon>
-                                            {{ i18n "pages.inbounds.clone"}}
+                                            {{ i18n "pages.inbounds.clone" }}
                                         </a-menu-item>
                                         <a-menu-item key="delete" :disabled="currentUser.isViewer">
                       <span style="color: var(--ui-danger)">
-                        <a-icon type="delete"></a-icon> {{ i18n "delete"}}
+                        <a-icon type="delete"></a-icon> {{ i18n "delete" }}
                       </span>
                                         </a-menu-item>
                                         <a-menu-item v-if="isMobile">
@@ -394,14 +393,9 @@
                                 <a-tag color="purple" style="margin:0;">[[ dbInbound.protocol ]]</a-tag>
                                 <template
                                         v-if="dbInbound.isVMess || dbInbound.isVLess || dbInbound.isTrojan || dbInbound.isSS">
-                                    <a-tag color="green" style="margin:0;">[[ dbInbound.toInbound().stream.network ]]
-                                    </a-tag>
-                                    <a-tag color="blue" style="margin:0;" v-if="dbInbound.toInbound().stream.isTls">
-                                        TLS
-                                    </a-tag>
-                                    <a-tag color="blue" style="margin:0;" v-if="dbInbound.toInbound().stream.isReality">
-                                        Reality
-                                    </a-tag>
+                                    <a-tag color="green" style="margin:0;">[[ dbInbound.toInbound().stream.network ]]</a-tag>
+                                    <a-tag color="blue" style="margin:0;" v-if="dbInbound.toInbound().stream.isTls">TLS</a-tag>
+                                    <a-tag color="blue" style="margin:0;" v-if="dbInbound.toInbound().stream.isReality">Reality</a-tag>
                                 </template>
                             </template>
                             <template slot="clients" slot-scope="text, dbInbound">
@@ -422,8 +416,7 @@
                                             </tr>
                                             <tr v-if="dbInbound.total > 0 &&  dbInbound.up + dbInbound.down < dbInbound.total">
                                                 <td>{{ i18n "remained" }}</td>
-                                                <td>[[ sizeFormat(dbInbound.total - dbInbound.up - dbInbound.down) ]]
-                                                </td>
+                                                <td>[[ sizeFormat(dbInbound.total - dbInbound.up - dbInbound.down) ]]</td>
                                             </tr>
                                         </table>
                                     </template>
@@ -478,21 +471,17 @@
                                             <tr>
                                                 <td>{{ i18n "pages.inbounds.protocol" }}</td>
                                                 <td>
-                                                    <a-tag color="purple" style="margin:0;">[[ dbInbound.protocol ]]
-                                                    </a-tag>
+                                                    <a-tag color="purple" style="margin:0;">[[ dbInbound.protocol ]]</a-tag>
                                                     <template
                                                             v-if="dbInbound.isVMess || dbInbound.isVLess || dbInbound.isTrojan || dbInbound.isSS">
-                                                        <a-tag color="blue" style="margin:0;">[[
-                                                            dbInbound.toInbound().stream.network ]]
-                                                        </a-tag>
+                                                        <a-tag color="blue" style="margin:0;">[[ dbInbound.toInbound().stream.network ]]</a-tag>
                                                         <a-tag color="green"
                                                                style="margin:0;" v-if="dbInbound.toInbound().stream.isTls">
                                                             tls
                                                         </a-tag>
                                                         <a-tag color="green"
                                                                style="margin:0;"
-                                                               v-if="dbInbound.toInbound().stream.isReality">reality
-                                                        </a-tag>
+                                                               v-if="dbInbound.toInbound().stream.isReality">reality</a-tag>
                                                     </template>
                                                 </td>
                                             </tr>
@@ -524,9 +513,7 @@
                                                                 </tr>
                                                                 <tr v-if="dbInbound.total > 0 &&  dbInbound.up + dbInbound.down < dbInbound.total">
                                                                     <td>{{ i18n "remained" }}</td>
-                                                                    <td>[[ sizeFormat(dbInbound.total - dbInbound.up -
-                                                                        dbInbound.down) ]]
-                                                                    </td>
+                                                                    <td>[[ sizeFormat(dbInbound.total - dbInbound.up - dbInbound.down) ]]</td>
                                                                 </tr>
                                                             </table>
                                                         </template>
@@ -556,8 +543,7 @@
                                                             [[ DateUtil.formatMillis(dbInbound.expiryTime) ]]
                                                         </template>
                                                         <template v-else>
-                                                            [[ DateUtil.convertToJalalian(moment(dbInbound.expiryTime))
-                                                            ]]
+                                                            [[ DateUtil.convertToJalalian(moment(dbInbound.expiryTime)) ]]
                                                         </template>
                                                     </a-tag>
                                                     <a-tag class="infinite-tag" color="purple" style="text-align: center;"
@@ -589,15 +575,15 @@
         </a-layout-content>
     </a-layout>
 </a-layout>
-{{template "js" .}}
+{{ template "js" . }}
 <script src="{{ .base_path }}assets/base64/base64.min.js"></script>
 <script src="{{ .base_path }}assets/qrcode/qrious2.min.js?{{ .cur_ver }}"></script>
 <script src="{{ .base_path }}assets/clipboard/clipboard.min.js?{{ .cur_ver }}"></script>
 <script src="{{ .base_path }}assets/uri/URI.min.js?{{ .cur_ver }}"></script>
 <script src="{{ .base_path }}assets/js/model/inbound.js?{{ .cur_ver }}"></script>
 <script src="{{ .base_path }}assets/js/model/dbinbound.js?{{ .cur_ver }}"></script>
-{{template "component/themeSwitcher" .}}
-{{template "component/persianDatepicker" .}}
+{{ template "component/themeSwitcher" . }}
+{{ template "component/persianDatepicker" . }}
 <script>
     const columns = [{
         title: "ID",
@@ -795,28 +781,27 @@
             },
             async getDefaultSettings() {
                 const msg = await HttpUtil.post('/panel/setting/defaultSettings');
-                if (!msg.success) {
+                if (!msg.success || !msg.obj) {
                     return;
                 }
-                with (msg.obj) {
-                    this.expireDiff = expireDiff * 86400000;
-                    this.trafficDiff = trafficDiff * 1073741824;
-                    this.defaultCert = defaultCert;
-                    this.defaultKey = defaultKey;
-                    this.tgBotEnable = tgBotEnable;
-                    this.subSettings = {
-                        enable: subEnable,
-                        subTitle: subTitle,
-                        subURI: subURI,
-                        subJsonURI: subJsonURI
-                    };
-                    this.pageSize = pageSize;
-                    this.remarkModel = remarkModel;
-                    this.datepicker = datepicker;
-                    this.ipLimitEnable = ipLimitEnable;
-                    if (showInsecureWarning && window.location.protocol !== "https:") {
-                        this.showAlert = true;
-                    }
+                const obj = msg.obj;
+                this.expireDiff = (obj.expireDiff || 0) * 86400000;
+                this.trafficDiff = (obj.trafficDiff || 0) * 1073741824;
+                this.defaultCert = obj.defaultCert || '';
+                this.defaultKey = obj.defaultKey || '';
+                this.tgBotEnable = !!obj.tgBotEnable;
+                this.subSettings = {
+                    enable: !!obj.subEnable,
+                    subTitle: obj.subTitle || '',
+                    subURI: obj.subURI || '',
+                    subJsonURI: obj.subJsonURI || '',
+                };
+                this.pageSize = obj.pageSize || 50;
+                this.remarkModel = obj.remarkModel || '-ieo';
+                this.datepicker = obj.datepicker || 'gregorian';
+                this.ipLimitEnable = !!obj.ipLimitEnable;
+                if (obj.showInsecureWarning && window.location.protocol !== "https:") {
+                    this.showAlert = true;
                 }
             },
             setInbounds(dbInbounds) {
@@ -1037,9 +1022,9 @@
                     return;
                 }
                 this.$confirm({
-                    title: '{{ i18n "pages.inbounds.cloneInbound"}} "' + dbInbound.remark + '"',
-                    content: '{{ i18n "pages.inbounds.cloneInboundContent"}}',
-                    okText: '{{ i18n "pages.inbounds.cloneInboundOk"}}',
+                    title: '{{ i18n "pages.inbounds.cloneInbound" }} "' + dbInbound.remark + '"',
+                    content: '{{ i18n "pages.inbounds.cloneInboundContent" }}',
+                    okText: '{{ i18n "pages.inbounds.cloneInboundOk" }}',
                     class: themeSwitcher.currentTheme,
                     cancelText: '{{ i18n "cancel" }}',
                     onOk: () => {
@@ -1074,8 +1059,8 @@
                     return;
                 }
                 inModal.show({
-                    title: '{{ i18n "pages.inbounds.addInbound"}}',
-                    okText: '{{ i18n "pages.inbounds.create"}}',
+                    title: '{{ i18n "pages.inbounds.addInbound" }}',
+                    okText: '{{ i18n "pages.inbounds.create" }}',
                     cancelText: '{{ i18n "close" }}',
                     confirm: async (inbound, dbInbound) => {
                         await this.addInbound(inbound, dbInbound, inModal);
@@ -1088,11 +1073,11 @@
                     this.$message.error('{{ i18n "pages.forbidden.inboundDenied" }}');
                     return;
                 }
-                dbInbound = this.dbInbounds.find(row => row.id === dbInboundId);
+                const dbInbound = this.dbInbounds.find(row => row.id === dbInboundId);
                 const inbound = dbInbound.toInbound();
                 inModal.show({
-                    title: '{{ i18n "pages.inbounds.modifyInbound"}}',
-                    okText: '{{ i18n "pages.inbounds.update"}}',
+                    title: '{{ i18n "pages.inbounds.modifyInbound" }}',
+                    okText: '{{ i18n "pages.inbounds.update" }}',
                     cancelText: '{{ i18n "close" }}',
                     inbound: inbound,
                     dbInbound: dbInbound,
@@ -1158,8 +1143,8 @@
                     return;
                 }
                 clientModal.show({
-                    title: '{{ i18n "pages.client.add"}}',
-                    okText: '{{ i18n "pages.client.submitAdd"}}',
+                    title: '{{ i18n "pages.client.add" }}',
+                    okText: '{{ i18n "pages.client.submitAdd" }}',
                     dbInbound: dbInbound,
                     confirm: async (clients, dbInboundId) => {
                         await this.addClient(clients, dbInboundId, clientModal);
@@ -1177,8 +1162,8 @@
                     return;
                 }
                 clientsBulkModal.show({
-                    title: '{{ i18n "pages.client.bulk"}} ' + dbInbound.remark,
-                    okText: '{{ i18n "pages.client.bulk"}}',
+                    title: '{{ i18n "pages.client.bulk" }} ' + dbInbound.remark,
+                    okText: '{{ i18n "pages.client.bulk" }}',
                     dbInbound: dbInbound,
                     confirm: async (clients, dbInboundId) => {
                         await this.addClient(clients, dbInboundId, clientsBulkModal);
@@ -1191,8 +1176,8 @@
                     return;
                 }
                 clientModal.show({
-                    title: '{{ i18n "pages.client.edit"}}',
-                    okText: '{{ i18n "pages.client.submitEdit"}}',
+                    title: '{{ i18n "pages.client.edit" }}',
+                    okText: '{{ i18n "pages.client.submitEdit" }}',
                     dbInbound: this.dbInbounds.find(row => row.id === dbInboundId),
                     client: client,
                     confirm: async (client, dbInboundId, clientId) => {
@@ -1232,13 +1217,13 @@
                 await this.submit(`/panel/api/inbounds/updateClient/${clientId}`, data, clientModal);
             },
             resetTraffic(dbInboundId) {
-                dbInbound = this.dbInbounds.find(row => row.id === dbInboundId);
+                const dbInbound = this.dbInbounds.find(row => row.id === dbInboundId);
                 this.$confirm({
-                    title: '{{ i18n "pages.inbounds.resetTraffic"}}' + ' #' + dbInboundId,
-                    content: '{{ i18n "pages.inbounds.resetTrafficContent"}}',
+                    title: '{{ i18n "pages.inbounds.resetTraffic" }}' + ' #' + dbInboundId,
+                    content: '{{ i18n "pages.inbounds.resetTrafficContent" }}',
                     class: themeSwitcher.currentTheme,
-                    okText: '{{ i18n "reset"}}',
-                    cancelText: '{{ i18n "cancel"}}',
+                    okText: '{{ i18n "reset" }}',
+                    cancelText: '{{ i18n "cancel" }}',
                     onOk: () => {
                         const inbound = dbInbound.toInbound();
                         dbInbound.up = 0;
@@ -1253,11 +1238,11 @@
                     return;
                 }
                 this.$confirm({
-                    title: '{{ i18n "pages.inbounds.deleteInbound"}}' + ' #' + dbInboundId,
-                    content: '{{ i18n "pages.inbounds.deleteInboundContent"}}',
+                    title: '{{ i18n "pages.inbounds.deleteInbound" }}' + ' #' + dbInboundId,
+                    content: '{{ i18n "pages.inbounds.deleteInboundContent" }}',
                     class: themeSwitcher.currentTheme,
-                    okText: '{{ i18n "delete"}}',
-                    cancelText: '{{ i18n "cancel"}}',
+                    okText: '{{ i18n "delete" }}',
+                    cancelText: '{{ i18n "cancel" }}',
                     onOk: () => this.submit('/panel/api/inbounds/del/' + dbInboundId),
                 });
             },
@@ -1266,15 +1251,15 @@
                     this.$message.error('{{ i18n "pages.forbidden.deleteDenied" }}');
                     return;
                 }
-                dbInbound = this.dbInbounds.find(row => row.id === dbInboundId);
-                clientId = this.getClientId(dbInbound.protocol, client);
+                const dbInbound = this.dbInbounds.find(row => row.id === dbInboundId);
+                const clientId = this.getClientId(dbInbound.protocol, client);
                 if (confirmation) {
                     this.$confirm({
-                        title: '{{ i18n "pages.inbounds.deleteClient"}}' + ' ' + client.email,
-                        content: '{{ i18n "pages.inbounds.deleteClientContent"}}',
+                        title: '{{ i18n "pages.inbounds.deleteClient" }}' + ' ' + client.email,
+                        content: '{{ i18n "pages.inbounds.deleteClientContent" }}',
                         class: themeSwitcher.currentTheme,
-                        okText: '{{ i18n "delete"}}',
-                        cancelText: '{{ i18n "cancel"}}',
+                        okText: '{{ i18n "delete" }}',
+                        cancelText: '{{ i18n "cancel" }}',
                         onOk: () => this.submit(`/panel/api/inbounds/${dbInboundId}/delClient/${clientId}`),
                     });
                 } else {
@@ -1347,35 +1332,35 @@
                 return newDbInbound;
             },
             showQrcode(dbInboundId, client) {
-                dbInbound = this.dbInbounds.find(row => row.id === dbInboundId);
-                newDbInbound = this.checkFallback(dbInbound);
-                qrModal.show('{{ i18n "qrCode"}}', newDbInbound, client);
+                const dbInbound = this.dbInbounds.find(row => row.id === dbInboundId);
+                const newDbInbound = this.checkFallback(dbInbound);
+                qrModal.show('{{ i18n "qrCode" }}', newDbInbound, client);
             },
             showInfo(dbInboundId, client) {
-                dbInbound = this.dbInbounds.find(row => row.id === dbInboundId);
-                newDbInbound = this.checkFallback(dbInbound);
+                const dbInbound = this.dbInbounds.find(row => row.id === dbInboundId);
+                const newDbInbound = this.checkFallback(dbInbound);
                 infoModal.show(newDbInbound, client);
             },
             switchEnable(dbInboundId, state) {
-                dbInbound = this.dbInbounds.find(row => row.id === dbInboundId);
+                const dbInbound = this.dbInbounds.find(row => row.id === dbInboundId);
                 dbInbound.enable = state;
                 this.submit(`/panel/api/inbounds/update/${dbInbound.id}`, dbInbound);
             },
             async switchEnableClient(dbInboundId, client, state) {
                 this.loading();
                 try {
-                    dbInbound = this.dbInbounds.find(row => row.id === dbInboundId);
+                    const dbInbound = this.dbInbounds.find(row => row.id === dbInboundId);
                     if (!dbInbound) return;
 
-                    inbound = dbInbound.toInbound();
-                    clients = inbound && inbound.clients ? inbound.clients : null;
+                    const inbound = dbInbound.toInbound();
+                    const clients = inbound && inbound.clients ? inbound.clients : null;
                     if (!clients || !Array.isArray(clients)) return;
 
-                    index = this.findIndexOfClient(dbInbound.protocol, clients, client);
+                    const index = this.findIndexOfClient(dbInbound.protocol, clients, client);
                     if (index < 0 || !clients[index]) return;
 
                     clients[index].enable = typeof state === 'boolean' ? state : !!client.enable;
-                    clientId = this.getClientId(dbInbound.protocol, clients[index]);
+                    const clientId = this.getClientId(dbInbound.protocol, clients[index]);
                     await this.updateClient(clients[index], dbInboundId, clientId);
                 } finally {
                     this.loading(false);
@@ -1397,11 +1382,11 @@
                 }
                 if (confirmation) {
                     this.$confirm({
-                        title: '{{ i18n "pages.inbounds.resetTraffic"}}' + ' ' + client.email,
-                        content: '{{ i18n "pages.inbounds.resetTrafficContent"}}',
+                        title: '{{ i18n "pages.inbounds.resetTraffic" }}' + ' ' + client.email,
+                        content: '{{ i18n "pages.inbounds.resetTrafficContent" }}',
                         class: themeSwitcher.currentTheme,
-                        okText: '{{ i18n "reset"}}',
-                        cancelText: '{{ i18n "cancel"}}',
+                        okText: '{{ i18n "reset" }}',
+                        cancelText: '{{ i18n "cancel" }}',
                         onOk: () => this.submit('/panel/api/inbounds/' + dbInboundId + '/resetClientTraffic/' + client.email),
                     })
                 } else {
@@ -1410,31 +1395,31 @@
             },
             resetAllTraffic() {
                 this.$confirm({
-                    title: '{{ i18n "pages.inbounds.resetAllTrafficTitle"}}',
-                    content: '{{ i18n "pages.inbounds.resetAllTrafficContent"}}',
+                    title: '{{ i18n "pages.inbounds.resetAllTrafficTitle" }}',
+                    content: '{{ i18n "pages.inbounds.resetAllTrafficContent" }}',
                     class: themeSwitcher.currentTheme,
-                    okText: '{{ i18n "reset"}}',
-                    cancelText: '{{ i18n "cancel"}}',
+                    okText: '{{ i18n "reset" }}',
+                    cancelText: '{{ i18n "cancel" }}',
                     onOk: () => this.submit('/panel/api/inbounds/resetAllTraffics'),
                 });
             },
             resetAllClientTraffics(dbInboundId) {
                 this.$confirm({
-                    title: dbInboundId > 0 ? '{{ i18n "pages.inbounds.resetInboundClientTrafficTitle"}}' : '{{ i18n "pages.inbounds.resetAllClientTrafficTitle"}}',
-                    content: dbInboundId > 0 ? '{{ i18n "pages.inbounds.resetInboundClientTrafficContent"}}' : '{{ i18n "pages.inbounds.resetAllClientTrafficContent"}}',
+                    title: dbInboundId > 0 ? '{{ i18n "pages.inbounds.resetInboundClientTrafficTitle" }}' : '{{ i18n "pages.inbounds.resetAllClientTrafficTitle" }}',
+                    content: dbInboundId > 0 ? '{{ i18n "pages.inbounds.resetInboundClientTrafficContent" }}' : '{{ i18n "pages.inbounds.resetAllClientTrafficContent" }}',
                     class: themeSwitcher.currentTheme,
-                    okText: '{{ i18n "reset"}}',
-                    cancelText: '{{ i18n "cancel"}}',
+                    okText: '{{ i18n "reset" }}',
+                    cancelText: '{{ i18n "cancel" }}',
                     onOk: () => this.submit('/panel/api/inbounds/resetAllClientTraffics/' + dbInboundId),
                 })
             },
             delDepletedClients(dbInboundId) {
                 this.$confirm({
-                    title: '{{ i18n "pages.inbounds.delDepletedClientsTitle"}}',
-                    content: '{{ i18n "pages.inbounds.delDepletedClientsContent"}}',
+                    title: '{{ i18n "pages.inbounds.delDepletedClientsTitle" }}',
+                    content: '{{ i18n "pages.inbounds.delDepletedClientsContent" }}',
                     class: themeSwitcher.currentTheme,
-                    okText: '{{ i18n "delete"}}',
-                    cancelText: '{{ i18n "cancel"}}',
+                    okText: '{{ i18n "delete" }}',
+                    cancelText: '{{ i18n "cancel" }}',
                     onOk: () => this.submit('/panel/api/inbounds/delDepletedClients/' + dbInboundId),
                 })
             },
@@ -1443,58 +1428,58 @@
             },
             getUpStats(dbInbound, email) {
                 if (email.length == 0) return 0;
-                clientStats = dbInbound.clientStats.find(stats => stats.email === email);
+                const clientStats = dbInbound.clientStats.find(stats => stats.email === email);
                 return clientStats ? clientStats.up : 0;
             },
             getDownStats(dbInbound, email) {
                 if (email.length == 0) return 0;
-                clientStats = dbInbound.clientStats.find(stats => stats.email === email);
+                const clientStats = dbInbound.clientStats.find(stats => stats.email === email);
                 return clientStats ? clientStats.down : 0;
             },
             getSumStats(dbInbound, email) {
                 if (email.length == 0) return 0;
-                clientStats = dbInbound.clientStats.find(stats => stats.email === email);
+                const clientStats = dbInbound.clientStats.find(stats => stats.email === email);
                 return clientStats ? clientStats.up + clientStats.down : 0;
             },
             getRemStats(dbInbound, email) {
                 if (email.length == 0) return 0;
-                clientStats = dbInbound.clientStats.find(stats => stats.email === email);
+                const clientStats = dbInbound.clientStats.find(stats => stats.email === email);
                 if (!clientStats) return 0;
-                remained = clientStats.total - (clientStats.up + clientStats.down);
+                const remained = clientStats.total - (clientStats.up + clientStats.down);
                 return remained > 0 ? remained : 0;
             },
             clientStatsColor(dbInbound, email) {
                 if (email.length == 0) return clientUsageColor();
-                clientStats = dbInbound.clientStats.find(stats => stats.email === email);
+                const clientStats = dbInbound.clientStats.find(stats => stats.email === email);
                 return clientUsageColor(clientStats, app.trafficDiff)
             },
             statsProgress(dbInbound, email) {
                 if (email.length == 0) return 100;
-                clientStats = dbInbound.clientStats.find(stats => stats.email === email);
+                const clientStats = dbInbound.clientStats.find(stats => stats.email === email);
                 if (!clientStats) return 0;
                 if (clientStats.total == 0) return 100;
                 return 100 * (clientStats.down + clientStats.up) / clientStats.total;
             },
             expireProgress(expTime, reset) {
-                now = new Date().getTime();
-                remainedSeconds = expTime < 0 ? -expTime / 1000 : (expTime - now) / 1000;
-                resetSeconds = reset * 86400;
+                const now = new Date().getTime();
+                const remainedSeconds = expTime < 0 ? -expTime / 1000 : (expTime - now) / 1000;
+                const resetSeconds = reset * 86400;
                 if (remainedSeconds >= resetSeconds) return 0;
                 return 100 * (1 - (remainedSeconds / resetSeconds));
             },
             remainedDays(expTime) {
                 if (expTime == 0) return null;
                 if (expTime < 0) return formatSecond(expTime / -1000);
-                now = new Date().getTime();
+                const now = new Date().getTime();
                 if (expTime < now) return '{{ i18n "depleted" }}';
                 return formatSecond((expTime - now) / 1000);
             },
             statsExpColor(dbInbound, email) {
                 if (email.length == 0) return 'var(--ui-text-muted)';
-                clientStats = dbInbound.clientStats.find(stats => stats.email === email);
+                const clientStats = dbInbound.clientStats.find(stats => stats.email === email);
                 if (!clientStats) return 'var(--ui-text-muted)';
-                statsColor = usageColor(clientStats.down + clientStats.up, this.trafficDiff, clientStats.total);
-                expColor = usageColor(new Date().getTime(), this.expireDiff, clientStats.expiryTime);
+                const statsColor = usageColor(clientStats.down + clientStats.up, this.trafficDiff, clientStats.total);
+                const expColor = usageColor(new Date().getTime(), this.expireDiff, clientStats.expiryTime);
                 switch (true) {
                     case statsColor == "red" || expColor == "red":
                         return 'var(--ui-danger)';
@@ -1507,7 +1492,7 @@
                 }
             },
             isClientEnabled(dbInbound, email) {
-                clientStats = dbInbound.clientStats ? dbInbound.clientStats.find(stats => stats.email === email) : null;
+                const clientStats = dbInbound.clientStats ? dbInbound.clientStats.find(stats => stats.email === email) : null;
                 return clientStats ? clientStats['enable'] : true;
             },
             isClientOnline(email) {
@@ -1525,7 +1510,7 @@
                     this.$message.warning('{{ i18n "pages.inbounds.noClientsToast" }}');
                     return;
                 }
-                txtModal.show('{{ i18n "pages.inbounds.export"}}', links, newDbInbound.remark);
+                txtModal.show('{{ i18n "pages.inbounds.export" }}', links, newDbInbound.remark);
             },
             // MASQUE has no share link format, so its clients only work through
             // the JSON subscription; the plain one answers them with an error.
@@ -1549,7 +1534,7 @@
                     return;
                 }
                 txtModal.show(
-                    '{{ i18n "pages.inbounds.export"}} - {{ i18n "pages.settings.subSettings" }}',
+                    '{{ i18n "pages.inbounds.export" }} - {{ i18n "pages.settings.subSettings" }}',
                     [...new Set(subLinks)].join('\n'),
                     dbInbound.remark + "-Subs");
             },
@@ -1577,7 +1562,7 @@
                     }
                 }
                 txtModal.show(
-                    '{{ i18n "pages.inbounds.export"}} - {{ i18n "pages.settings.subSettings" }}',
+                    '{{ i18n "pages.inbounds.export" }} - {{ i18n "pages.settings.subSettings" }}',
                     [...new Set(subLinks)].join('\n'),
                     'All-Inbounds-Subs');
             },
@@ -1586,10 +1571,10 @@
                 for (const dbInbound of this.dbInbounds) {
                     copyText.push(dbInbound.genInboundLinks(this.remarkModel));
                 }
-                txtModal.show('{{ i18n "pages.inbounds.export"}}', copyText.join('\n'), 'All-Inbounds');
+                txtModal.show('{{ i18n "pages.inbounds.export" }}', copyText.join('\n'), 'All-Inbounds');
             },
             copyToClipboard(dbInboundId) {
-                dbInbound = this.dbInbounds.find(row => row.id === dbInboundId);
+                const dbInbound = this.dbInbounds.find(row => row.id === dbInboundId);
                 txtModal.show('{{ i18n "pages.inbounds.inboundData" }}', JSON.stringify(dbInbound, null, 2));
             },
             async startDataRefreshLoop() {
@@ -1626,14 +1611,14 @@
             pagination(obj) {
                 if (this.pageSize > 0 && obj.length > this.pageSize) {
                     // Set page options based on object size
-                    sizeOptions = [];
-                    for (i = this.pageSize; i <= obj.length; i = i + this.pageSize) {
+                    const sizeOptions = [];
+                    for (let i = this.pageSize; i <= obj.length; i = i + this.pageSize) {
                         sizeOptions.push(i.toString());
                     }
                     // Add option to see all in one page
                     sizeOptions.push(i.toString());
 
-                    p = {
+                    const p = {
                         showSizeChanger: true,
                         size: 'small',
                         position: 'bottom',
@@ -1642,7 +1627,7 @@
                     };
                     return p;
                 }
-                return false
+                return false;
             },
             onResize() {
                 this.isMobile = window.innerWidth <= 768;
@@ -1749,12 +1734,12 @@
     });
 </script>
 
-{{template "inboundModal"}}
-{{template "promptModal"}}
-{{template "qrcodeModal"}}
-{{template "textModal"}}
-{{template "inboundInfoModal"}}
-{{template "clientsModal" .}}
-{{template "clientsBulkModal" .}}
+{{ template "inboundModal" }}
+{{ template "promptModal" }}
+{{ template "qrcodeModal" }}
+{{ template "textModal" }}
+{{ template "inboundInfoModal" }}
+{{ template "clientsModal" . }}
+{{ template "clientsBulkModal" . }}
 </body>
 </html>

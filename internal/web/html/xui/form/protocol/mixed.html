@@ -1,4 +1,4 @@
-{{define "form/mixed"}}
+{{ define "form/mixed" }}
 <a-form :colon="false" :label-col="{ md: {span:8} }" :wrapper-col="{ md: {span:14} }">
     <a-form-item label='{{ i18n "pages.inbounds.enable" }} UDP'>
         <a-switch v-model="inbound.settings.udp"></a-switch>

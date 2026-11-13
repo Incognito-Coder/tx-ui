@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-{{template "head" .}}
+{{ template "head" . }}
 <style>
     @media (min-width: 769px) {
         .ant-layout-content {
@@ -456,13 +456,12 @@
                                     </a>
                                     <a-popover
                                             overlay-class-name="themeSwitcher.currentTheme"
-                                            v-if="status.appStats.tx_update !== '' && status.appStats.tx_update !== status.appStats.panel_version">
+                                            v-if="status.appStats && status.appStats.tx_update && status.appStats.tx_update !== status.appStats.panel_version">
                                         <span slot="title"
                                               style="font-size: 12pt">{{ i18n "pages.index.upgradeAvail" }}</span>
                                         <template slot="content">
                                             <a-tag @click="openSelectPanelVersion" color="purple"
-                                                   style="cursor: pointer; float: right;">[[ status.appStats.tx_update ]]
-                                            </a-tag>
+                                                   style="cursor: pointer; float: right;">[[ status.appStats.tx_update ]]</a-tag>
                                         </template>
                                         <a-tag @click="openSelectPanelVersion" color="purple" style="cursor: pointer;">
                                             <a-icon type="cloud-download"></a-icon> {{ i18n "pages.index.upgrade" }}
@@ -516,12 +515,12 @@
                                     </a-popover>
                                     <a-tag @click="stopXrayService" :color="currentUser.isViewer || !currentUser.canOperateXray ? '' : 'purple'" :class="{ 'tag-disabled': currentUser.isViewer || !currentUser.canOperateXray }"
                                            :style="currentUser.isViewer || !currentUser.canOperateXray ? 'cursor: not-allowed;' : 'cursor: pointer;'"
-                                           :title="currentUser.isViewer || !currentUser.canOperateXray ? '{{ i18n "pages.forbidden.xrayOpsDenied" }}' : ''">
+                                           :title="currentUser.isViewer || !currentUser.canOperateXray ? forbiddenText.xray : ''">
                                         <a-icon type="poweroff"></a-icon> {{ i18n "pages.index.stopXray" }}
                                     </a-tag>
                                     <a-tag @click="restartXrayService" :color="currentUser.isViewer || !currentUser.canOperateXray ? '' : 'purple'" :class="{ 'tag-disabled': currentUser.isViewer || !currentUser.canOperateXray }"
                                            :style="currentUser.isViewer || !currentUser.canOperateXray ? 'cursor: not-allowed;' : 'cursor: pointer;'"
-                                           :title="currentUser.isViewer || !currentUser.canOperateXray ? '{{ i18n "pages.forbidden.xrayOpsDenied" }}' : ''">
+                                           :title="currentUser.isViewer || !currentUser.canOperateXray ? forbiddenText.xray : ''">
                                         <a-icon type="reload"></a-icon> {{ i18n "pages.index.restartXray" }}
                                     </a-tag>
                                     <a-tag v-if="status.xray && status.xray.hasWorkingConfig"
@@ -534,9 +533,7 @@
                                             <a-icon type="warning"></a-icon> {{ i18n "pages.index.rolledBack" }}
                                         </a-tag>
                                     </a-tooltip>
-                                    <a-tag @click="openSelectV2rayVersion" color="purple" style="cursor: pointer;">
-                                        v[[ status.xray.version ]]
-                                    </a-tag>
+                                    <a-tag @click="openSelectV2rayVersion" color="purple" style="cursor: pointer;">v[[ status.xray.version ]]</a-tag>
                                 </div>
                             </a-card>
                         </a-col>
@@ -560,7 +557,7 @@
                                     </a-tag>
                                     <a-tag @click="openBackup" :color="currentUser.isViewer || (!currentUser.canBackupDB && !currentUser.canRestoreDB) ? '' : 'purple'" :class="{ 'tag-disabled': currentUser.isViewer || (!currentUser.canBackupDB && !currentUser.canRestoreDB) }"
                                            :style="currentUser.isViewer || (!currentUser.canBackupDB && !currentUser.canRestoreDB) ? 'cursor: not-allowed;' : 'cursor: pointer;'"
-                                           :title="currentUser.isViewer || (!currentUser.canBackupDB && !currentUser.canRestoreDB) ? '{{ i18n "pages.forbidden.databaseDenied" }}' : ''">
+                                           :title="currentUser.isViewer || (!currentUser.canBackupDB && !currentUser.canRestoreDB) ? forbiddenText.database : ''">
                                         <a-icon type="save"></a-icon> {{ i18n "pages.index.backup" }}
                                     </a-tag>
                                 </div>
@@ -577,7 +574,7 @@
                                     </span>
                                     <a-tag @click="openSelectGeoVersion" :color="currentUser.isViewer || !currentUser.canOperateGeo ? '' : 'purple'" :class="{ 'tag-disabled': currentUser.isViewer || !currentUser.canOperateGeo }"
                                            :style="currentUser.isViewer || !currentUser.canOperateGeo ? 'cursor: not-allowed;' : 'cursor: pointer;'"
-                                           :title="currentUser.isViewer || !currentUser.canOperateGeo ? '{{ i18n "pages.forbidden.geoOpsDenied" }}' : ''">
+                                           :title="currentUser.isViewer || !currentUser.canOperateGeo ? forbiddenText.geo : ''">
                                         <a-icon type="cloud-download"></a-icon> {{ i18n "pages.index.geoUpdate" }}
                                     </a-tag>
                                     <a-tag color="green">
@@ -627,7 +624,7 @@
                                 <div class="detail-card-content">
                                     <span class="detail-card-label">
                                         <a-icon type="thunderbolt" style="color: #eab308;"></a-icon>
-                                        {{ i18n "usage"}}:
+                                        {{ i18n "usage" }}:
                                     </span>
                                     <a-tag color="green">
                                         <a-icon type="cluster"></a-icon> RAM: [[ sizeFormat(status.appStats.mem) ]]
@@ -907,19 +904,15 @@
                  type="warning">
         </a-alert>
         <a-space direction="horizontal" style="text-align: center; margin-bottom: 10px;">
-            <a-button @click="exportDatabase()" type="primary">
-                [[ backupModal.exportText ]]
-            </a-button>
-            <a-button @click="importDatabase()" type="primary">
-                [[ backupModal.importText ]]
-            </a-button>
+            <a-button @click="exportDatabase()" type="primary">[[ backupModal.exportText ]]</a-button>
+            <a-button @click="importDatabase()" type="primary">[[ backupModal.importText ]]</a-button>
         </a-space>
     </a-modal>
 </a-layout>
-{{template "js" .}}
+{{ template "js" . }}
 <script src="{{ .base_path }}assets/clipboard/clipboard.min.js?{{ .cur_ver }}"></script>
-{{template "component/themeSwitcher" .}}
-{{template "textModal"}}
+{{ template "component/themeSwitcher" . }}
+{{ template "textModal" }}
 <script>
     const State = {
         Running: "running",
@@ -970,13 +963,14 @@
                 geoip: {exists: false, size: 0, updatedAt: 0, version: ''},
                 geosite: {exists: false, size: 0, updatedAt: 0, version: ''},
             };
-            this.hostname = 0;
+            this.hostName = '';
+            this.hostname = '';
             this.swap = new CurTotal(0, 0);
             this.tcpCount = 0;
             this.udpCount = 0;
             this.uptime = 0;
             this.appUptime = 0;
-            this.appStats = {threads: 0, mem: 0, uptime: 0};
+            this.appStats = {threads: 0, mem: 0, uptime: 0, tx_update: '', panel_version: ''};
             this.xray = {state: State.Stop, errorMsg: "", version: "", color: ""};
 
             if (data == null) {
@@ -993,13 +987,14 @@
             this.netTraffic = data.netTraffic;
             this.publicIP = data.publicIP;
             this.geoFiles = data.geoFiles || this.geoFiles;
-            this.hostName = data.hostname;
+            this.hostName = data.hostname || '';
+            this.hostname = data.hostname || '';
             this.swap = new CurTotal(data.swap.current, data.swap.total);
             this.tcpCount = data.tcpCount;
             this.udpCount = data.udpCount;
             this.uptime = data.uptime;
             this.appUptime = data.appUptime;
-            this.appStats = data.appStats;
+            this.appStats = data.appStats || this.appStats;
             this.xray = data.xray;
             switch (this.xray.state) {
                 case State.Running:
@@ -1154,7 +1149,8 @@
     </tr>
 `;
 
-            logs.reverse().forEach((log, index) => {
+            const logsCopy = logs ? logs.slice() : [];
+            logsCopy.reverse().forEach((log, index) => {
                 let outboundColor = '';
                 if (log.Event === 1) {
                     outboundColor = ' style="color: var(--ui-danger);"';
@@ -1197,7 +1193,7 @@
                  description = '{{ i18n "pages.index.backupDescription" }}',
                  exportText = '{{ i18n "pages.index.exportDatabase" }}',
                  importText = '{{ i18n "pages.index.importDatabase" }}',
-             }) {
+             } = {}) {
             this.title = title;
             this.description = description;
             this.exportText = exportText;
@@ -1223,7 +1219,7 @@
             xraylogModal,
             backupModal,
             spinning: false,
-            loadingTip: '{{ i18n "loading"}}',
+            loadingTip: '{{ i18n "loading" }}',
             showAlert: false,
             showIp: false,
             ipLimitEnable: false,
@@ -1241,9 +1237,14 @@
                 canOperateGeo: {{ if .user }}{{ if .user.CanGeo }}true{{ else }}false{{ end }}{{ else }}true{{ end }},
                 canViewLinks: {{ if .user }}{{ if .user.CanViewConfigLinks }}true{{ else }}false{{ end }}{{ else }}true{{ end }},
             },
+            forbiddenText: {
+                xray: '{{ i18n "pages.forbidden.xrayOpsDenied" }}',
+                database: '{{ i18n "pages.forbidden.databaseDenied" }}',
+                geo: '{{ i18n "pages.forbidden.geoOpsDenied" }}',
+            },
         },
         methods: {
-            loading(spinning, tip = '{{ i18n "loading"}}') {
+            loading(spinning, tip = '{{ i18n "loading" }}') {
                 this.spinning = spinning;
                 this.loadingTip = tip;
             },
@@ -1296,14 +1297,14 @@
                     return;
                 }
                 this.$confirm({
-                    title: '{{ i18n "pages.index.xraySwitchVersionDialog"}}',
-                    content: '{{ i18n "pages.index.xraySwitchVersionDialogDesc"}}' + ` ${version}?`,
-                    okText: '{{ i18n "confirm"}}',
+                    title: '{{ i18n "pages.index.xraySwitchVersionDialog" }}',
+                    content: '{{ i18n "pages.index.xraySwitchVersionDialogDesc" }}' + ` ${version}?`,
+                    okText: '{{ i18n "confirm" }}',
                     class: themeSwitcher.currentTheme,
-                    cancelText: '{{ i18n "cancel"}}',
+                    cancelText: '{{ i18n "cancel" }}',
                     onOk: async () => {
                         versionModal.hide();
-                        this.loading(true, '{{ i18n "pages.index.dontRefresh"}}');
+                        this.loading(true, '{{ i18n "pages.index.dontRefresh" }}');
                         await HttpUtil.post(`/panel/api/server/installXray/${version}`);
                         this.loading(false);
                     },
@@ -1372,15 +1373,15 @@
                 this.$confirm({
                     title: '{{ i18n "pages.index.upgrade" }}',
                     content: `Install panel version ${version}? The panel will restart automatically.`,
-                    okText: '{{ i18n "confirm"}}',
+                    okText: '{{ i18n "confirm" }}',
                     class: themeSwitcher.currentTheme,
-                    cancelText: '{{ i18n "cancel"}}',
+                    cancelText: '{{ i18n "cancel" }}',
                     onOk: async () => {
                         panelVersionModal.hide();
-                        this.loading(true, '{{ i18n "pages.index.installingPanel"}}');
+                        this.loading(true, '{{ i18n "pages.index.installingPanel" }}');
                         const res = await HttpUtil.post(`/panel/api/server/installPanel/${version}`);
                         if (res.success) {
-                            this.loading(true, '{{ i18n "pages.index.installingPanel"}}' + ' - Restarting...');
+                            this.loading(true, '{{ i18n "pages.index.installingPanel" }}' + ' - Restarting...');
                             await PromiseUtil.sleep(6000);
                             location.reload();
                         } else {
@@ -1417,12 +1418,12 @@
                 this.$confirm({
                     title: '{{ i18n "pages.index.geoUpdate" }}',
                     content: `Update geo assets to release ${version}?`,
-                    okText: '{{ i18n "confirm"}}',
+                    okText: '{{ i18n "confirm" }}',
                     class: themeSwitcher.currentTheme,
-                    cancelText: '{{ i18n "cancel"}}',
+                    cancelText: '{{ i18n "cancel" }}',
                     onOk: async () => {
                         geoModal.hide();
-                        this.loading(true, '{{ i18n "pages.index.dontRefresh"}}');
+                        this.loading(true, '{{ i18n "pages.index.dontRefresh" }}');
                         await HttpUtil.post(`/panel/api/server/updateGeoFiles/${version}`);
                         this.loading(false);
                         await this.getStatus();
@@ -1434,7 +1435,7 @@
                     this.$message.error('{{ i18n "pages.forbidden.geoOpsDenied" }}');
                     return;
                 }
-                this.loading(true, '{{ i18n "pages.index.dontRefresh"}}');
+                this.loading(true, '{{ i18n "pages.index.dontRefresh" }}');
                 const msg = await HttpUtil.post('/panel/api/server/updateGeoFiles');
                 this.loading(false);
                 if (!msg.success) {
@@ -1450,11 +1451,11 @@
                 this.$confirm({
                     title: '{{ i18n "pages.settings.restartPanel" }}',
                     content: '{{ i18n "pages.settings.restartPanelDesc" }}',
-                    okText: '{{ i18n "confirm"}}',
+                    okText: '{{ i18n "confirm" }}',
                     class: themeSwitcher.currentTheme,
-                    cancelText: '{{ i18n "cancel"}}',
+                    cancelText: '{{ i18n "cancel" }}',
                     onOk: async () => {
-                        this.loading(true, '{{ i18n "pages.index.dontRefresh"}}');
+                        this.loading(true, '{{ i18n "pages.index.dontRefresh" }}');
                         const restartMsg = await HttpUtil.post("/panel/setting/restartPanel");
                         this.loading(false);
                         if (restartMsg.success) {

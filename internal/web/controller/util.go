@@ -61,6 +61,10 @@ func pureJsonMsg(c *gin.Context, statusCode int, success bool, msg string) {
 }
 
 func html(c *gin.Context, name string, title string, data gin.H) {
+	htmlStatus(c, http.StatusOK, name, title, data)
+}
+
+func htmlStatus(c *gin.Context, status int, name string, title string, data gin.H) {
 	if data == nil {
 		data = gin.H{}
 	}
@@ -80,7 +84,7 @@ func html(c *gin.Context, name string, title string, data gin.H) {
 	data["host"] = host
 	data["request_uri"] = c.Request.RequestURI
 	data["base_path"] = c.GetString("base_path")
-	c.HTML(http.StatusOK, name, getContext(data))
+	c.HTML(status, name, getContext(data))
 }
 
 func render403(c *gin.Context, reasonKey string) {
@@ -93,11 +97,28 @@ func render403(c *gin.Context, reasonKey string) {
 	} else {
 		reason = I18nWeb(c, "pages.forbidden.adminRequired")
 	}
-	c.Status(http.StatusForbidden)
-	html(c, "403.html", "pages.forbidden.title", gin.H{
+	htmlStatus(c, http.StatusForbidden, "403.html", "pages.forbidden.title", gin.H{
 		"reason": reason,
 	})
 	c.Abort()
+}
+
+func Render404(c *gin.Context) {
+	basePath := c.GetString("base_path")
+	path := c.Request.URL.Path
+	if isAjax(c) || strings.Contains(c.GetHeader("Accept"), "application/json") ||
+		(basePath != "" && (strings.HasPrefix(path, basePath+"api/") || strings.HasPrefix(path, basePath+"server/"))) ||
+		strings.HasPrefix(path, "/api/") || strings.HasPrefix(path, "/server/") {
+		pureJsonMsg(c, http.StatusNotFound, false, I18nWeb(c, "pages.notFound.title"))
+		c.Abort()
+		return
+	}
+	htmlStatus(c, http.StatusNotFound, "404.html", "pages.notFound.title", gin.H{})
+	c.Abort()
+}
+
+func render404(c *gin.Context) {
+	Render404(c)
 }
 
 func getContext(h gin.H) gin.H {

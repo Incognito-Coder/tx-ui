@@ -1265,3 +1265,12 @@ inboundDenied = "İzin reddedildi: Bağlantı izin verilen kapsamınızın dış
 clientDenied = "İzin reddedildi: İstemci izin verilen kapsamınızın dışındadır."
 deleteDenied = "İzin reddedildi: Silme izniniz yok."
 trafficResetDenied = "İzin reddedildi: Trafik sıfırlama kısıtlanmıştır."
+
+[pages.notFound]
+title = "404 Sayfa Bulunamadı"
+subtitle = "Sayfa Bulunamadı"
+desc = "Aradığınız sayfa mevcut değil, kaldırılmış veya geçici olarak kullanılamıyor olabilir."
+backToInbounds = "Bağlantılara Geri Dön"
+backHome = "Ana Sayfaya Dön"
+back = "Geri Dön"
+logout = "Çıkış Yap"

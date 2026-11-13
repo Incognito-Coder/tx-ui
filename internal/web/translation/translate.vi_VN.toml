@@ -1265,3 +1265,12 @@ inboundDenied = "Quyền bị từ chối: Cổng vào nằm ngoài phạm vi đ
 clientDenied = "Quyền bị từ chối: Khách hàng nằm ngoài phạm vi được phép của bạn."
 deleteDenied = "Quyền bị từ chối: Bạn không có quyền xóa."
 trafficResetDenied = "Quyền bị từ chối: Đặt lại lưu lượng bị hạn chế."
+
+[pages.notFound]
+title = "404 Không tìm thấy"
+subtitle = "Không tìm thấy trang"
+desc = "Trang bạn đang tìm kiếm không tồn tại, đã bị xóa hoặc tạm thời không khả dụng."
+backToInbounds = "Quay lại Danh sách Cổng vào"
+backHome = "Quay lại Trang chủ"
+back = "Quay lại"
+logout = "Đăng xuất"

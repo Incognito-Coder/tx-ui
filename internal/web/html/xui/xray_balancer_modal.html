@@ -1,4 +1,4 @@
-{{define "balancerModal"}}
+{{ define "balancerModal" }}
 <a-modal
         :class="themeSwitcher.currentTheme"
         :closable="true"
@@ -14,7 +14,7 @@
         wrap-class-name="panel-modal panel-modal-md">
     <a-form :colon="false" :label-col="{ md: {span:8} }" :wrapper-col="{ md: {span:14} }">
         <a-form-item :validate-status="balancerModal.duplicateTag? 'warning' : 'success'" has-feedback
-                     label='{{ i18n "pages.xray.balancer.tag" }}'>
+            label='{{ i18n "pages.xray.balancer.tag" }}'>
             <a-input @change="balancerModal.check()" @input="balancerModal.check()" placeholder='{{ i18n "pages.xray.balancer.tagDesc" }}'
                      v-model.trim="balancerModal.balancer.tag"></a-input>
         </a-form-item>
@@ -27,7 +27,7 @@
             </a-select>
         </a-form-item>
         <a-form-item :validate-status="balancerModal.emptySelector? 'warning' : 'success'" has-feedback
-                     label='{{ i18n "pages.xray.balancer.balancerSelectors" }}'>
+            label='{{ i18n "pages.xray.balancer.balancerSelectors" }}'>
             <a-select :dropdown-class-name="themeSwitcher.currentTheme" @change="balancerModal.checkSelector()" mode="tags"
                       v-model="balancerModal.balancer.selector">
                 <a-select-option :value="tag" v-for="tag in balancerModal.outboundTags">[[ tag ]]</a-select-option>

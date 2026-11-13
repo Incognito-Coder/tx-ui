@@ -1,4 +1,4 @@
-{{define "form/streamFinalMask"}}
+{{ define "form/streamFinalMask" }}
 <a-form :colon="false" :label-col="{ md: {span:8} }"
     v-if="inbound.protocol == Protocols.HYSTERIA || inbound.protocol == Protocols.MASQUE || ['kcp', 'tcp', 'ws', 'grpc', 'httpupgrade', 'xhttp', 'hysteria', 'masque', 'xdrive'].includes(inbound.stream.network)"
     :wrapper-col="{ md: {span:14} }">
@@ -33,27 +33,27 @@
 
                 <!-- TCP header-custom -->
                 <template v-if="mask.type === 'header-custom'">
-                    {{template "form/headerCustomTcp" "mask"}}
+                    {{ template "form/headerCustomTcp" "mask" }}
                 </template>
 
                 <!-- TCP fragment -->
                 <template v-if="mask.type === 'fragment'">
-                    {{template "form/fragmentFields" "mask"}}
+                    {{ template "form/fragmentFields" "mask" }}
                 </template>
 
                 <!-- TCP sudoku -->
                 <template v-if="mask.type === 'sudoku'">
-                    {{template "form/sudokuFields" "mask"}}
+                    {{ template "form/sudokuFields" "mask" }}
                 </template>
 
                 <!-- TCP xmc -->
                 <template v-if="mask.type === 'xmc'">
-                    {{template "form/xmcFields" "mask"}}
+                    {{ template "form/xmcFields" "mask" }}
                 </template>
 
                 <!-- TCP filter -->
                 <template v-if="mask.type === 'filter'">
-                    {{template "form/filterFields" "mask"}}
+                    {{ template "form/filterFields" "mask" }}
                 </template>
             </a-form>
         </template>
@@ -106,28 +106,28 @@
                         placeholder='{{ i18n "pages.inbounds.stream.finalmask.obfuscationPassword" }}'></a-input>
                 </a-form-item>
                 <template v-if="mask.type === 'mkcp-legacy'">
-                    {{template "form/mkcpLegacyFields" "mask"}}
+                    {{ template "form/mkcpLegacyFields" "mask" }}
                 </template>
                 <template v-if="mask.type === 'xdns'">
-                    {{template "form/xdnsDomains" "mask"}}
+                    {{ template "form/xdnsDomains" "mask" }}
                 </template>
                 <template v-if="mask.type === 'header-custom'">
-                    {{template "form/headerCustomUdp" "mask"}}
+                    {{ template "form/headerCustomUdp" "mask" }}
                 </template>
                 <template v-if="mask.type === 'noise'">
-                    {{template "form/noiseFields" "mask"}}
+                    {{ template "form/noiseFields" "mask" }}
                 </template>
                 <template v-if="mask.type === 'sudoku'">
-                    {{template "form/sudokuFields" "mask"}}
+                    {{ template "form/sudokuFields" "mask" }}
                 </template>
                 <template v-if="mask.type === 'xicmp'">
-                    {{template "form/xicmpFields" "mask"}}
+                    {{ template "form/xicmpFields" "mask" }}
                 </template>
                 <template v-if="mask.type === 'realm'">
-                    {{template "form/realmFields" "mask"}}
+                    {{ template "form/realmFields" "mask" }}
                 </template>
                 <template v-if="mask.type === 'filter'">
-                    {{template "form/filterFields" "mask"}}
+                    {{ template "form/filterFields" "mask" }}
                 </template>
             </a-form>
         </template>

@@ -1,4 +1,4 @@
-{{define "form/streamXHTTP"}}
+{{ define "form/streamXHTTP" }}
 <a-form :colon="false" :label-col="{ md: {span:8} }" :wrapper-col="{ md: {span:14} }">
     <a-form-item label='{{ i18n "host" }}'>
         <a-input v-model.trim="inbound.stream.xhttp.host"></a-input>
@@ -11,7 +11,7 @@
     </a-form-item>
     <a-form-item :wrapper-col="{span:24}">
         <a-input-group compact v-for="(header, index) in inbound.stream.xhttp.headers">
-            <a-input placeholder='{{ i18n "pages.inbounds.stream.general.name"}}' style="width: 50%"
+            <a-input placeholder='{{ i18n "pages.inbounds.stream.general.name" }}' style="width: 50%"
                      v-model.trim="header.name">
                 <template slot="addonBefore" style="margin: 0;">[[ index+1 ]]</template>
             </a-input>
@@ -100,7 +100,7 @@
         </a-select>
     </a-form-item>
     <a-form-item label="Session Key"
-                 v-if="inbound.stream.xhttp.sessionPlacement && inbound.stream.xhttp.sessionPlacement !== 'path'">
+        v-if="inbound.stream.xhttp.sessionPlacement && inbound.stream.xhttp.sessionPlacement !== 'path'">
         <a-input placeholder="x_session"
                  v-model.trim="inbound.stream.xhttp.sessionKey"></a-input>
     </a-form-item>
@@ -115,12 +115,12 @@
         </a-select>
     </a-form-item>
     <a-form-item label="Sequence Key"
-                 v-if="inbound.stream.xhttp.seqPlacement && inbound.stream.xhttp.seqPlacement !== 'path'">
+        v-if="inbound.stream.xhttp.seqPlacement && inbound.stream.xhttp.seqPlacement !== 'path'">
         <a-input placeholder="x_seq"
                  v-model.trim="inbound.stream.xhttp.seqKey"></a-input>
     </a-form-item>
     <a-form-item label="Uplink Data Placement"
-                 v-if="inbound.stream.xhttp.mode === 'packet-up'">
+        v-if="inbound.stream.xhttp.mode === 'packet-up'">
         <a-select :dropdown-class-name="themeSwitcher.currentTheme"
                   v-model="inbound.stream.xhttp.uplinkDataPlacement">
             <a-select-option value>Default (body)</a-select-option>
@@ -131,14 +131,14 @@
         </a-select>
     </a-form-item>
     <a-form-item label="Uplink Data Key"
-                 v-if="inbound.stream.xhttp.mode === 'packet-up' && inbound.stream.xhttp.uplinkDataPlacement && inbound.stream.xhttp.uplinkDataPlacement !== 'body'">
+        v-if="inbound.stream.xhttp.mode === 'packet-up' && inbound.stream.xhttp.uplinkDataPlacement && inbound.stream.xhttp.uplinkDataPlacement !== 'body'">
         <a-input placeholder="x_data"
                  v-model.trim="inbound.stream.xhttp.uplinkDataKey"></a-input>
     </a-form-item>
     <a-form-item label="Uplink Chunk Size"
-                 v-if="inbound.stream.xhttp.mode === 'packet-up' && inbound.stream.xhttp.uplinkDataPlacement && inbound.stream.xhttp.uplinkDataPlacement !== 'body'">
+        v-if="inbound.stream.xhttp.mode === 'packet-up' && inbound.stream.xhttp.uplinkDataPlacement && inbound.stream.xhttp.uplinkDataPlacement !== 'body'">
         <a-input-number :min="0"
-                        placeholder="0 (unlimited)" v-model.number="inbound.stream.xhttp.uplinkChunkSize"></a-input-number>
+            placeholder="0 (unlimited)" v-model.number="inbound.stream.xhttp.uplinkChunkSize"></a-input-number>
     </a-form-item>
     <a-form-item label="HTTP/2 Parameters (h2Params)">
         <a-textarea :rows="3" placeholder='{ "MaxConcurrentStreams": 250 }'

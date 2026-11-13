@@ -1,4 +1,4 @@
-{{define "form/outbound"}}
+{{ define "form/outbound" }}
 <!-- base -->
 <a-tabs :active-key="outModal.activeKey" @change="(activeKey) => {outModal.toggleJson(activeKey == '2'); }"
         style="padding: 0; background-color: transparent;">
@@ -10,7 +10,7 @@
                 </a-select>
             </a-form-item>
             <a-form-item :validate-status="outModal.duplicateTag? 'warning' : 'success'" has-feedback
-                         label='{{ i18n "pages.xray.outbound.tag" }}'>
+                label='{{ i18n "pages.xray.outbound.tag" }}'>
                 <a-input @change="outModal.check()" placeholder='{{ i18n "pages.xray.outbound.tagDesc" }}'
                          v-model.trim="outbound.tag"></a-input>
             </a-form-item>
@@ -369,8 +369,7 @@
                 <template v-if="outbound.protocol === Protocols.Shadowsocks">
                     <a-form-item label='{{ i18n "encryption" }}'>
                         <a-select :dropdown-class-name="themeSwitcher.currentTheme" v-model="outbound.settings.method">
-                            <a-select-option :value="method" v-for="(method, method_name) in SSMethods">[[ method_name
-                                ]]
+                            <a-select-option :value="method" v-for="(method, method_name) in SSMethods">[[ method_name ]]
                             </a-select-option>
                         </a-select>
                     </a-form-item>
@@ -379,7 +378,7 @@
                     </a-form-item>
                     <a-form-item label='UoTVersion'>
                         <a-input-number :max="2" :min="1"
-                                        v-model.number="outbound.settings.UoTVersion"></a-input-number>
+                            v-model.number="outbound.settings.UoTVersion"></a-input-number>
                     </a-form-item>
                 </template>
             </template>
@@ -388,7 +387,7 @@
             <template v-if="outbound.protocol === Protocols.Hysteria">
                 <a-form-item label='Version'>
                     <a-input-number :max="2" :min="2" disabled
-                                    v-model.number="outbound.settings.version"></a-input-number>
+                        v-model.number="outbound.settings.version"></a-input-number>
                 </a-form-item>
             </template>
 
@@ -515,7 +514,7 @@
                         </a-select>
                     </a-form-item>
                     <a-form-item label="No gRPC Header"
-                                 v-if="outbound.stream.xhttp.mode === 'stream-up' || outbound.stream.xhttp.mode === 'stream-one'">
+                        v-if="outbound.stream.xhttp.mode === 'stream-up' || outbound.stream.xhttp.mode === 'stream-one'">
                         <a-switch v-model="outbound.stream.xhttp.noGRPCHeader"></a-switch>
                     </a-form-item>
                     <a-form-item label="Min Upload Interval (Ms)" v-if="outbound.stream.xhttp.mode === 'packet-up'">
@@ -565,13 +564,13 @@
                                  v-model.trim="outbound.stream.hysteria.udphopPort"></a-input>
                     </a-form-item>
                     <a-form-item label='UDP Hop Interval Min (s)'
-                                 v-if="outbound.stream.hysteria.udphopPort">
+                        v-if="outbound.stream.hysteria.udphopPort">
                         <a-input-number
                                 :min="5"
                                 v-model.number="outbound.stream.hysteria.udphopIntervalMin"></a-input-number>
                     </a-form-item>
                     <a-form-item label='UDP Hop Interval Max (s)'
-                                 v-if="outbound.stream.hysteria.udphopPort">
+                        v-if="outbound.stream.hysteria.udphopPort">
                         <a-input-number
                                 :min="5"
                                 v-model.number="outbound.stream.hysteria.udphopIntervalMax"></a-input-number>
@@ -621,7 +620,7 @@
                     </a-form-item>
                     <a-form-item :wrapper-col="{span:24}">
                         <a-input-group compact v-for="(header, index) in outbound.stream.masque.headers">
-                            <a-input placeholder='{{ i18n "pages.inbounds.stream.general.name"}}' style="width: 50%"
+                            <a-input placeholder='{{ i18n "pages.inbounds.stream.general.name" }}' style="width: 50%"
                                      v-model.trim="header.name">
                                 <template slot="addonBefore" style="margin: 0;">[[ index+1 ]]</template>
                             </a-input>
@@ -728,7 +727,7 @@
             <!-- finalmask settings -->
             <template v-if="outbound.canEnableStream()">
                 <a-form-item label='{{ i18n "pages.xray.finalmask.tcpMasks" }}'
-                             v-if="outbound.protocol !== Protocols.Hysteria && outbound.stream.network !== 'kcp'">
+                    v-if="outbound.protocol !== Protocols.Hysteria && outbound.stream.network !== 'kcp'">
                     <a-button @click="outbound.stream.addTcpMask('header-custom')" icon="plus" size="small"
                               type="primary"></a-button>
                 </a-form-item>
@@ -753,19 +752,19 @@
                             </a-select>
                         </a-form-item>
                         <template v-if="mask.type === 'header-custom'">
-                            {{template "form/headerCustomTcp" "mask"}}
+                            {{ template "form/headerCustomTcp" "mask" }}
                         </template>
                         <template v-if="mask.type === 'fragment'">
-                            {{template "form/fragmentFields" "mask"}}
+                            {{ template "form/fragmentFields" "mask" }}
                         </template>
                         <template v-if="mask.type === 'sudoku'">
-                            {{template "form/sudokuFields" "mask"}}
+                            {{ template "form/sudokuFields" "mask" }}
                         </template>
                         <template v-if="mask.type === 'xmc'">
-                            {{template "form/xmcFields" "mask"}}
+                            {{ template "form/xmcFields" "mask" }}
                         </template>
                         <template v-if="mask.type === 'filter'">
-                            {{template "form/filterFields" "mask"}}
+                            {{ template "form/filterFields" "mask" }}
                         </template>
                     </a-form>
                 </template>
@@ -815,35 +814,35 @@
                             <a-input placeholder="e.g., www.example.com" v-model.trim="mask.settings.domain"></a-input>
                         </a-form-item>
                         <template v-if="mask.type === 'xdns'">
-                            {{template "form/xdnsDomains" "mask"}}
+                            {{ template "form/xdnsDomains" "mask" }}
                         </template>
                         <!-- Settings for Sudoku -->
                         <template v-if="mask.type === 'sudoku'">
-                            {{template "form/sudokuFields" "mask"}}
+                            {{ template "form/sudokuFields" "mask" }}
                         </template>
                         <!-- Settings for Noise -->
                         <template v-if="mask.type === 'noise'">
-                            {{template "form/noiseFields" "mask"}}
+                            {{ template "form/noiseFields" "mask" }}
                         </template>
                         <!-- Settings for Header-Custom -->
                         <template v-if="mask.type === 'header-custom'">
-                            {{template "form/headerCustomUdp" "mask"}}
+                            {{ template "form/headerCustomUdp" "mask" }}
                         </template>
                         <!-- Settings for udpHop -->
                         <template v-if="mask.type === 'udpHop'">
-                            {{template "form/udpHopFields" "mask"}}
+                            {{ template "form/udpHopFields" "mask" }}
                         </template>
                         <template v-if="mask.type === 'xicmp'">
-                            {{template "form/xicmpFields" "mask"}}
+                            {{ template "form/xicmpFields" "mask" }}
                         </template>
                         <template v-if="mask.type === 'realm'">
-                            {{template "form/realmFields" "mask"}}
+                            {{ template "form/realmFields" "mask" }}
                         </template>
                         <template v-if="mask.type === 'mkcp-legacy'">
-                            {{template "form/mkcpLegacyFields" "mask"}}
+                            {{ template "form/mkcpLegacyFields" "mask" }}
                         </template>
                         <template v-if="mask.type === 'filter'">
-                            {{template "form/filterFields" "mask"}}
+                            {{ template "form/filterFields" "mask" }}
                         </template>
                     </a-form>
                 </template>
@@ -1017,7 +1016,7 @@
                 </a-form-item>
                 <a-form-item label="Keep Alive Interval">
                     <a-input-number :min="0"
-                                    v-model.number="outbound.stream.sockopt.tcpKeepAliveInterval"></a-input-number>
+                        v-model.number="outbound.stream.sockopt.tcpKeepAliveInterval"></a-input-number>
                 </a-form-item>
                 <a-form-item label="Multipath TCP">
                     <a-switch v-model.trim="outbound.stream.sockopt.tcpMptcp"></a-switch>
@@ -1058,11 +1057,11 @@
                 <template v-if="outbound.mux.enabled">
                     <a-form-item label="Concurrency">
                         <a-input-number :max="1024" :min="-1"
-                                        v-model.number="outbound.mux.concurrency"></a-input-number>
+                            v-model.number="outbound.mux.concurrency"></a-input-number>
                     </a-form-item>
                     <a-form-item label="xudp Concurrency">
                         <a-input-number :max="1024" :min="-1"
-                                        v-model.number="outbound.mux.xudpConcurrency"></a-input-number>
+                            v-model.number="outbound.mux.xudpConcurrency"></a-input-number>
                     </a-form-item>
                     <a-form-item label="xudp UDP 443">
                         <a-select :dropdown-class-name="themeSwitcher.currentTheme"
@@ -1085,9 +1084,7 @@
                     <a-icon type="form"></a-icon> Import
                 </a-button>
                 <a-upload :before-upload="handleWgConfUpload" :show-upload-list="false" accept=".conf,.txt">
-                    <a-button type="default" icon="upload">
-                        Upload .conf
-                    </a-button>
+                    <a-button type="default" icon="upload">Upload .conf</a-button>
                 </a-upload>
             </div>
         </a-form-item>

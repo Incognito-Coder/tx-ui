@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-{{template "head" .}}
+{{ template "head" . }}
 <style>
     @media (min-width: 769px) {
         .ant-layout-content {
@@ -898,21 +898,13 @@
                         monitor real-time system metrics, configure Xray-core inbounds/outbounds, trigger rollbacks, and manage database operations.
                     </div>
                     <div class="docs-hero-actions">
-                        <a-button type="primary" icon="copy" @click="copyBaseUrl">
-                            Copy API Base URL
-                        </a-button>
-                        <a-button icon="folder-open" @click="toggleAll(true)">
-                            Expand All
-                        </a-button>
-                        <a-button icon="folder" @click="toggleAll(false)">
-                            Collapse All
-                        </a-button>
+                        <a-button type="primary" icon="copy" @click="copyBaseUrl">Copy API Base URL</a-button>
+                        <a-button icon="folder-open" @click="toggleAll(true)">Expand All</a-button>
+                        <a-button icon="folder" @click="toggleAll(false)">Collapse All</a-button>
                         <a-button icon="bulb" @click="themeSwitcher.toggleTheme()">
                             [[ themeSwitcher.isDarkTheme ? 'Dark Mode' : 'Light Mode' ]]
                         </a-button>
-                        <a-button icon="file-text" @click="openMarkdownDocs">
-                            View API.md
-                        </a-button>
+                        <a-button icon="file-text" @click="openMarkdownDocs">View API.md</a-button>
                     </div>
 
                     <!-- Quick Stats Strip -->
@@ -1005,9 +997,7 @@
                         <!-- Header -->
                         <div class="endpoint-header" @click="toggleEndpoint(ep.id)">
                             <div class="endpoint-header-left">
-                                <span class="endpoint-method" :class="'method-' + ep.method.toLowerCase()">
-                                    [[ ep.method ]]
-                                </span>
+                                <span class="endpoint-method" :class="'method-' + ep.method.toLowerCase()">[[ ep.method ]]</span>
                                 <span class="endpoint-path">[[ ep.path ]]</span>
                                 <span class="endpoint-summary">[[ ep.summary ]]</span>
                             </div>
@@ -1144,8 +1134,8 @@
     </a-layout>
 </a-layout>
 
-{{template "js" .}}
-{{template "component/themeSwitcher" .}}
+{{ template "js" . }}
+{{ template "component/themeSwitcher" . }}
 
 <script>
     const API_ENDPOINTS_DATA = [

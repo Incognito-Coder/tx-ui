@@ -1,4 +1,4 @@
-{{define "head"}}
+{{ define "head" }}
 <head>
     <meta charset="UTF-8">
     <meta content="webkit" name="renderer">
@@ -82,7 +82,7 @@
 
             var key = localStorage.getItem('panel-theme-color') || 'default';
             var customHex = localStorage.getItem('panel-custom-color') || '#2563eb';
-            
+
             var COLOR_PRESETS = {
                 default: { light: { primary: '#2563eb', hover: '#1d4ed8', soft: 'rgba(37, 99, 235, 0.12)', focus: 'rgba(37, 99, 235, 0.20)' }, dark: { primary: '#4f8cff', hover: '#74a4ff', soft: 'rgba(79, 140, 255, 0.16)', focus: 'rgba(79, 140, 255, 0.24)' } },
                 emerald: { light: { primary: '#059669', hover: '#047857', soft: 'rgba(5, 150, 105, 0.12)', focus: 'rgba(5, 150, 105, 0.20)' }, dark: { primary: '#10b981', hover: '#34d399', soft: 'rgba(16, 185, 129, 0.16)', focus: 'rgba(16, 185, 129, 0.24)' } },
@@ -285,7 +285,7 @@
             });
         }
     </script>
-    <title>{{ .host }}-{{ i18n .title}}</title>
+    <title>{{ .host }}-{{ i18n .title }}</title>
 </head>
 <div id="message"></div>
 {{end}}

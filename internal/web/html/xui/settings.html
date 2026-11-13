@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-{{template "head" .}}
+{{ template "head" . }}
 <link href="{{ .base_path }}assets/codemirror/codemirror.min.css?{{ .cur_ver }}" rel="stylesheet">
 <link href="{{ .base_path }}assets/codemirror/fold/foldgutter.css" rel="stylesheet">
 <link href="{{ .base_path }}assets/codemirror/xq.min.css?{{ .cur_ver }}" rel="stylesheet">
@@ -173,7 +173,7 @@
     {{ template "commonSider" . }}
     <a-layout id="content-layout">
         <a-layout-content>
-            <a-spin :delay="500" :spinning="spinning" tip='{{ i18n "loading"}}'>
+            <a-spin :delay="500" :spinning="spinning" tip='{{ i18n "loading" }}'>
                 <transition appear name="list">
                     <a-alert closable color="red" message='{{ i18n "secAlertTitle" }}'
                              show-icon
@@ -192,12 +192,8 @@
                         <a-row class="panel-toolbar">
                             <a-col :sm="10" :xs="24" class="panel-toolbar-actions">
                                 <div class="panel-action-row">
-                                    <a-button :disabled="saveBtnDisable" @click="updateAllSetting" icon="save" type="primary">{{
-                                        i18n "pages.settings.save" }}
-                                    </a-button>
-                                    <a-button :disabled="!saveBtnDisable" @click="restartPanel" icon="reload" type="danger">{{ i18n
-                                        "pages.settings.restartPanel" }}
-                                    </a-button>
+                                    <a-button :disabled="saveBtnDisable" @click="updateAllSetting" icon="save" type="primary">{{ i18n "pages.settings.save" }}</a-button>
+                                    <a-button :disabled="!saveBtnDisable" @click="restartPanel" icon="reload" type="danger">{{ i18n "pages.settings.restartPanel" }}</a-button>
                                 </div>
                             </a-col>
                             <a-col :sm="14" :xs="24" class="panel-toolbar-notice">
@@ -214,13 +210,13 @@
                         </a-row>
                     </a-card>
                     <a-tabs default-active-key="1">
-                        <a-tab-pane key="1" tab='{{ i18n "pages.settings.panelSettings"}}'>
+                        <a-tab-pane key="1" tab='{{ i18n "pages.settings.panelSettings" }}'>
                             <a-list item-layout="horizontal">
                                 <a-list-item>
                                     <a-row style="padding: 20px">
                                         <a-col :lg="24" :xl="12">
-                                            <a-list-item-meta title='{{ i18n "pages.settings.remarkModel"}}'>
-                                                <template slot="description">{{ i18n "pages.settings.sampleRemark"}}:
+                                            <a-list-item-meta title='{{ i18n "pages.settings.remarkModel" }}'>
+                                                <template slot="description">{{ i18n "pages.settings.sampleRemark" }}:
                                                     <i>#[[ remarkSample ]]</i></template>
                                             </a-list-item-meta>
                                         </a-col>
@@ -236,60 +232,58 @@
                                                 </a-select>
                                                 <a-select :dropdown-class-name="themeSwitcher.currentTheme" style="width: 20%;"
                                                           v-model="remarkSeparator">
-                                                    <a-select-option :value="key" v-for="key in remarkSeparators">[[ key
-                                                        ]]
+                                                    <a-select-option :value="key" v-for="key in remarkSeparators">[[ key ]]
                                                     </a-select-option>
                                                 </a-select>
                                             </a-input-group>
                                         </a-col>
                                     </a-row>
                                 </a-list-item>
-                                <setting-list-item desc='{{ i18n "pages.settings.panelListeningIPDesc"}}' title='{{ i18n "pages.settings.panelListeningIP"}}'
-                                                   type="text"
-                                                   v-model="allSetting.webListen"></setting-list-item>
-                                <setting-list-item desc='{{ i18n "pages.settings.panelListeningDomainDesc"}}' title='{{ i18n "pages.settings.panelListeningDomain"}}'
-                                                   type="text"
-                                                   v-model="allSetting.webDomain"></setting-list-item>
+                                <setting-list-item desc='{{ i18n "pages.settings.panelListeningIPDesc" }}' title='{{ i18n "pages.settings.panelListeningIP" }}'
+                                    type="text"
+                                    v-model="allSetting.webListen"></setting-list-item>
+                                <setting-list-item desc='{{ i18n "pages.settings.panelListeningDomainDesc" }}' title='{{ i18n "pages.settings.panelListeningDomain" }}'
+                                    type="text"
+                                    v-model="allSetting.webDomain"></setting-list-item>
                                 <setting-list-item :max="65531" :min="1"
-                                                   desc='{{ i18n "pages.settings.panelPortDesc"}}'
-                                                   title='{{ i18n "pages.settings.panelPort"}}' type="number"
-                                                   v-model="allSetting.webPort"></setting-list-item>
-                                <setting-list-item desc='{{ i18n "pages.settings.publicKeyPathDesc"}}' title='{{ i18n "pages.settings.publicKeyPath"}}'
-                                                   type="text"
-                                                   v-model="allSetting.webCertFile"></setting-list-item>
-                                <setting-list-item desc='{{ i18n "pages.settings.privateKeyPathDesc"}}' title='{{ i18n "pages.settings.privateKeyPath"}}'
-                                                   type="text"
-                                                   v-model="allSetting.webKeyFile"></setting-list-item>
-                                <setting-list-item desc='{{ i18n "pages.settings.panelUrlPathDesc"}}' title='{{ i18n "pages.settings.panelUrlPath"}}'
-                                                   type="text"
-                                                   v-model="allSetting.webBasePath"></setting-list-item>
+                                    desc='{{ i18n "pages.settings.panelPortDesc" }}'
+                                    title='{{ i18n "pages.settings.panelPort" }}' type="number"
+                                    v-model="allSetting.webPort"></setting-list-item>
+                                <setting-list-item desc='{{ i18n "pages.settings.publicKeyPathDesc" }}' title='{{ i18n "pages.settings.publicKeyPath" }}'
+                                    type="text"
+                                    v-model="allSetting.webCertFile"></setting-list-item>
+                                <setting-list-item desc='{{ i18n "pages.settings.privateKeyPathDesc" }}' title='{{ i18n "pages.settings.privateKeyPath" }}'
+                                    type="text"
+                                    v-model="allSetting.webKeyFile"></setting-list-item>
+                                <setting-list-item desc='{{ i18n "pages.settings.panelUrlPathDesc" }}' title='{{ i18n "pages.settings.panelUrlPath" }}'
+                                    type="text"
+                                    v-model="allSetting.webBasePath"></setting-list-item>
                                 <setting-list-item :min="60" desc='{{ i18n "pages.settings.sessionMaxAgeDesc" }}'
-                                                   title='{{ i18n "pages.settings.sessionMaxAge" }}'
-                                                   type="number" v-model="allSetting.sessionMaxAge"></setting-list-item>
+                                    title='{{ i18n "pages.settings.sessionMaxAge" }}'
+                                    type="number" v-model="allSetting.sessionMaxAge"></setting-list-item>
                                 <setting-list-item :min="0" :step="5"
-                                                   desc='{{ i18n "pages.settings.pageSizeDesc" }}'
-                                                   title='{{ i18n "pages.settings.pageSize" }}' type="number" v-model="allSetting.pageSize"></setting-list-item>
+                                    desc='{{ i18n "pages.settings.pageSizeDesc" }}'
+                                    title='{{ i18n "pages.settings.pageSize" }}' type="number" v-model="allSetting.pageSize"></setting-list-item>
                                 <setting-list-item :min="0" desc='{{ i18n "pages.settings.expireTimeDiffDesc" }}'
-                                                   title='{{ i18n "pages.settings.expireTimeDiff" }}'
-                                                   type="number" v-model="allSetting.expireDiff"></setting-list-item>
+                                    title='{{ i18n "pages.settings.expireTimeDiff" }}'
+                                    type="number" v-model="allSetting.expireDiff"></setting-list-item>
                                 <setting-list-item :min="0" desc='{{ i18n "pages.settings.trafficDiffDesc" }}'
-                                                   title='{{ i18n "pages.settings.trafficDiff" }}'
-                                                   type="number" v-model="allSetting.trafficDiff"></setting-list-item>
-                                <setting-list-item :min="0" desc='{{ i18n "pages.settings.xrayCronJobDesc"}}'
-                                                   title='{{ i18n "pages.settings.xrayCronJob"}}'
-                                                   type="number" v-model="allSetting.xrayCronJob"></setting-list-item>
-                                <setting-list-item :min="0" desc='{{ i18n "pages.settings.autoDeleteDayDesc"}}'
-                                                   title='{{ i18n "pages.settings.autoDeleteDay"}}'
-                                                   type="number" v-model="allSetting.autoDeleteDay"></setting-list-item>
-                                <setting-list-item desc='{{ i18n "pages.settings.timeZoneDesc"}}' title='{{ i18n "pages.settings.timeZone"}}'
-                                                   type="text"
-                                                   v-model="allSetting.timeLocation"></setting-list-item>
+                                    title='{{ i18n "pages.settings.trafficDiff" }}'
+                                    type="number" v-model="allSetting.trafficDiff"></setting-list-item>
+                                <setting-list-item :min="0" desc='{{ i18n "pages.settings.xrayCronJobDesc" }}'
+                                    title='{{ i18n "pages.settings.xrayCronJob" }}'
+                                    type="number" v-model="allSetting.xrayCronJob"></setting-list-item>
+                                <setting-list-item :min="0" desc='{{ i18n "pages.settings.autoDeleteDayDesc" }}'
+                                    title='{{ i18n "pages.settings.autoDeleteDay" }}'
+                                    type="number" v-model="allSetting.autoDeleteDay"></setting-list-item>
+                                <setting-list-item desc='{{ i18n "pages.settings.timeZoneDesc" }}' title='{{ i18n "pages.settings.timeZone" }}'
+                                    type="text"
+                                    v-model="allSetting.timeLocation"></setting-list-item>
                                 <a-list-item>
                                     <a-row style="padding: 20px">
                                         <a-col :lg="24" :xl="12">
-                                            <a-list-item-meta title='{{ i18n "pages.settings.datepicker"}}'>
-                                                <template slot="description">{{ i18n
-                                                    "pages.settings.datepickerDescription"}}
+                                            <a-list-item-meta title='{{ i18n "pages.settings.datepicker" }}'>
+                                                <template slot="description">{{ i18n "pages.settings.datepickerDescription" }}
                                                 </template>
                                             </a-list-item-meta>
                                         </a-col>
@@ -319,7 +313,7 @@
                                                           style="width: 100%"
                                                           v-model="lang">
                                                     <a-select-option :label="l.value" :value="l.value"
-                                                                     v-for="l in supportLangs">
+                                                        v-for="l in supportLangs">
                                                         <span :aria-label="l.name" role="img" v-text="l.icon"></span>
                                                         &nbsp;&nbsp; <span v-text="l.name"></span>
                                                     </a-select-option>
@@ -328,9 +322,9 @@
                                         </a-col>
                                     </a-row>
                                 </a-list-item>
-                                <setting-list-item desc='{{ i18n "pages.settings.showInsecureWarningDesc"}}' title='{{ i18n "pages.settings.showInsecureWarning"}}'
-                                                   type="switch"
-                                                   v-model="allSetting.showInsecureWarning"></setting-list-item>
+                                <setting-list-item desc='{{ i18n "pages.settings.showInsecureWarningDesc" }}' title='{{ i18n "pages.settings.showInsecureWarning" }}'
+                                    type="switch"
+                                    v-model="allSetting.showInsecureWarning"></setting-list-item>
                                 <a-list-item style="padding: 20px;">
                                     <div style="width: 100%;">
                                         <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
@@ -387,43 +381,37 @@
                                             </a-tooltip>
 
                                             <a-popconfirm :overlay-class-name="themeSwitcher.currentTheme"
-                                                          @confirm="vacuumDatabase"
-                                                          cancel-text='{{ i18n "cancel" }}'
-                                                          ok-text='{{ i18n "confirm" }}'
-                                                          title='{{ i18n "pages.settings.vacuumDbConfirm" }}'>
+                                                @confirm="vacuumDatabase"
+                                                cancel-text='{{ i18n "cancel" }}'
+                                                ok-text='{{ i18n "confirm" }}'
+                                                title='{{ i18n "pages.settings.vacuumDbConfirm" }}'>
                                                 <a-tooltip>
                                                     <template slot="title">{{ i18n "pages.settings.vacuumDbDesc" }}</template>
-                                                    <a-button icon="inbox" :loading="dbVacuuming">
-                                                        {{ i18n "pages.settings.vacuumDb" }}
-                                                    </a-button>
+                                                    <a-button icon="inbox" :loading="dbVacuuming">{{ i18n "pages.settings.vacuumDb" }}</a-button>
                                                 </a-tooltip>
                                             </a-popconfirm>
 
                                             <a-popconfirm :overlay-class-name="themeSwitcher.currentTheme"
-                                                          @confirm="cleanDatabase"
-                                                          cancel-text='{{ i18n "cancel" }}'
-                                                          ok-text='{{ i18n "delete" }}'
-                                                          ok-type="danger"
-                                                          title='{{ i18n "pages.settings.cleanCorruptedRowsConfirm" }}'>
+                                                @confirm="cleanDatabase"
+                                                cancel-text='{{ i18n "cancel" }}'
+                                                ok-text='{{ i18n "delete" }}'
+                                                ok-type="danger"
+                                                title='{{ i18n "pages.settings.cleanCorruptedRowsConfirm" }}'>
                                                 <a-tooltip>
                                                     <template slot="title">{{ i18n "pages.settings.cleanCorruptedRowsDesc" }}</template>
-                                                    <a-button type="danger" icon="tool" :loading="dbCleaning">
-                                                        {{ i18n "pages.settings.cleanCorruptedRows" }}
-                                                    </a-button>
+                                                    <a-button type="danger" icon="tool" :loading="dbCleaning">{{ i18n "pages.settings.cleanCorruptedRows" }}</a-button>
                                                 </a-tooltip>
                                             </a-popconfirm>
 
                                             <a-popconfirm :overlay-class-name="themeSwitcher.currentTheme"
-                                                          @confirm="factoryResetDatabase"
-                                                          cancel-text='{{ i18n "cancel" }}'
-                                                          ok-text='{{ i18n "confirm" }}'
-                                                          ok-type="danger"
-                                                          title='{{ i18n "pages.settings.factoryResetConfirm" }}'>
+                                                @confirm="factoryResetDatabase"
+                                                cancel-text='{{ i18n "cancel" }}'
+                                                ok-text='{{ i18n "confirm" }}'
+                                                ok-type="danger"
+                                                title='{{ i18n "pages.settings.factoryResetConfirm" }}'>
                                                 <a-tooltip>
                                                     <template slot="title">{{ i18n "pages.settings.factoryResetDesc" }}</template>
-                                                    <a-button type="danger" icon="warning" :loading="dbFactoryResetting">
-                                                        {{ i18n "pages.settings.factoryReset" }}
-                                                    </a-button>
+                                                    <a-button type="danger" icon="warning" :loading="dbFactoryResetting">{{ i18n "pages.settings.factoryReset" }}</a-button>
                                                 </a-tooltip>
                                             </a-popconfirm>
                                         </div>
@@ -431,35 +419,35 @@
                                 </a-list-item>
                             </a-list>
                         </a-tab-pane>
-                        <a-tab-pane key="2" style="padding: 20px;" tab='{{ i18n "pages.settings.securitySettings"}}'>
-                            <a-divider>{{ i18n "pages.settings.security.admin"}}</a-divider>
+                        <a-tab-pane key="2" style="padding: 20px;" tab='{{ i18n "pages.settings.securitySettings" }}'>
+                            <a-divider>{{ i18n "pages.settings.security.admin" }}</a-divider>
                             <a-form :colon="false" :label-col="{ md: {span:10} }" :wrapper-col="{ md: {span:14} }"
                                     layout="horizontal" style="float: left; margin-bottom: 2rem;">
-                                <a-form-item label='{{ i18n "pages.settings.oldUsername"}}'>
+                                <a-form-item label='{{ i18n "pages.settings.oldUsername" }}'>
                                     <a-input autocomplete="username" v-model="user.oldUsername"></a-input>
                                 </a-form-item>
-                                <a-form-item label='{{ i18n "pages.settings.currentPassword"}}'>
+                                <a-form-item label='{{ i18n "pages.settings.currentPassword" }}'>
                                     <password-input autocomplete="current-password"
-                                                    v-model="user.oldPassword"></password-input>
+                                        v-model="user.oldPassword"></password-input>
                                 </a-form-item>
-                                <a-form-item label='{{ i18n "pages.settings.newUsername"}}'>
+                                <a-form-item label='{{ i18n "pages.settings.newUsername" }}'>
                                     <a-input v-model="user.newUsername"></a-input>
                                 </a-form-item>
-                                <a-form-item label='{{ i18n "pages.settings.newPassword"}}'>
+                                <a-form-item label='{{ i18n "pages.settings.newPassword" }}'>
                                     <password-input autocomplete="new-password"
-                                                    v-model="user.newPassword"></password-input>
+                                        v-model="user.newPassword"></password-input>
                                 </a-form-item>
                                 <a-form-item label=" ">
                                     <a-button @click="updateUser" type="primary">{{ i18n "confirm" }}</a-button>
                                 </a-form-item>
                             </a-form>
-                            <a-divider>{{ i18n "pages.settings.security.secret"}}</a-divider>
+                            <a-divider>{{ i18n "pages.settings.security.secret" }}</a-divider>
                             <a-form style="padding: 0 20px;">
                                 <a-list-item>
                                     <a-row>
                                         <a-col :lg="24" :xl="12">
                                             <a-list-item-meta description='{{ i18n "pages.settings.security.loginSecurityDesc" }}'
-                                                              title='{{ i18n "pages.settings.security.loginSecurity" }}'>
+                                                title='{{ i18n "pages.settings.security.loginSecurity" }}'>
                                             </a-list-item-meta>
                                         </a-col>
                                         <a-col :lg="24" :xl="12">
@@ -477,7 +465,7 @@
                                     <a-row>
                                         <a-col :lg="24" :xl="12">
                                             <a-list-item-meta description='{{ i18n "pages.settings.security.secretTokenDesc" }}'
-                                                              title='{{ i18n "pages.settings.security.secretToken" }}'>
+                                                title='{{ i18n "pages.settings.security.secretToken" }}'>
                                             </a-list-item-meta>
                                         </a-col>
                                         <a-col :lg="24" :xl="12">
@@ -488,51 +476,49 @@
                                         </a-col>
                                     </a-row>
                                 </a-list-item>
-                                <a-button :loading="this.changeSecret" @click="updateSecret" type="primary">{{ i18n
-                                    "confirm" }}
-                                </a-button>
+                                <a-button :loading="this.changeSecret" @click="updateSecret" type="primary">{{ i18n "confirm" }}</a-button>
                             </a-form>
                         </a-tab-pane>
-                        <a-tab-pane key="3" tab='{{ i18n "pages.settings.TGBotSettings"}}'>
+                        <a-tab-pane key="3" tab='{{ i18n "pages.settings.TGBotSettings" }}'>
                             <a-list item-layout="horizontal">
                                 <setting-list-item desc='{{ i18n "pages.settings.telegramBotEnableDesc" }}' title='{{ i18n "pages.settings.telegramBotEnable" }}'
-                                                   type="switch"
-                                                   v-model="allSetting.tgBotEnable"></setting-list-item>
-                                <setting-list-item desc='{{ i18n "pages.settings.telegramTokenDesc"}}' title='{{ i18n "pages.settings.telegramToken"}}'
-                                                   type="text"
-                                                   v-model="allSetting.tgBotToken"></setting-list-item>
-                                <setting-list-item desc='{{ i18n "pages.settings.telegramChatIdDesc"}}' title='{{ i18n "pages.settings.telegramChatId"}}'
-                                                   type="text"
-                                                   v-model="allSetting.tgBotChatId"></setting-list-item>
+                                    type="switch"
+                                    v-model="allSetting.tgBotEnable"></setting-list-item>
+                                <setting-list-item desc='{{ i18n "pages.settings.telegramTokenDesc" }}' title='{{ i18n "pages.settings.telegramToken" }}'
+                                    type="text"
+                                    v-model="allSetting.tgBotToken"></setting-list-item>
+                                <setting-list-item desc='{{ i18n "pages.settings.telegramChatIdDesc" }}' title='{{ i18n "pages.settings.telegramChatId" }}'
+                                    type="text"
+                                    v-model="allSetting.tgBotChatId"></setting-list-item>
                                 <setting-list-item desc='Telegram Supergroup Thread/Topic ID (0 for default)' title='Telegram Topic ID'
-                                                   type="number"
-                                                   v-model="allSetting.tgBotTopicId"></setting-list-item>
+                                    type="number"
+                                    v-model="allSetting.tgBotTopicId"></setting-list-item>
                                 <setting-list-item desc='Only send notifications without processing user commands' title='Telegram Bot Notify Only'
-                                                   type="switch"
-                                                   v-model="allSetting.tgBotNotifyOnly"></setting-list-item>
-                                <setting-list-item desc='{{ i18n "pages.settings.telegramNotifyTimeDesc"}}' title='{{ i18n "pages.settings.telegramNotifyTime"}}'
-                                                   type="text"
-                                                   v-model="allSetting.tgRunTime"></setting-list-item>
+                                    type="switch"
+                                    v-model="allSetting.tgBotNotifyOnly"></setting-list-item>
+                                <setting-list-item desc='{{ i18n "pages.settings.telegramNotifyTimeDesc" }}' title='{{ i18n "pages.settings.telegramNotifyTime" }}'
+                                    type="text"
+                                    v-model="allSetting.tgRunTime"></setting-list-item>
                                 <setting-list-item desc='{{ i18n "pages.settings.tgNotifyBackupDesc" }}' title='{{ i18n "pages.settings.tgNotifyBackup" }}'
-                                                   type="switch"
-                                                   v-model="allSetting.tgBotBackup"></setting-list-item>
+                                    type="switch"
+                                    v-model="allSetting.tgBotBackup"></setting-list-item>
                                 <setting-list-item desc='{{ i18n "pages.settings.tgNotifyLoginDesc" }}' title='{{ i18n "pages.settings.tgNotifyLogin" }}'
-                                                   type="switch"
-                                                   v-model="allSetting.tgBotLoginNotify"></setting-list-item>
+                                    type="switch"
+                                    v-model="allSetting.tgBotLoginNotify"></setting-list-item>
                                 <setting-list-item desc='{{ i18n "pages.settings.tgBotCpuNotifyDesc" }}' title='{{ i18n "pages.settings.tgBotCpuNotify" }}'
-                                                   type="switch"
-                                                   v-model="allSetting.tgBotCpuNotify"></setting-list-item>
+                                    type="switch"
+                                    v-model="allSetting.tgBotCpuNotify"></setting-list-item>
                                 <setting-list-item v-if="allSetting.tgBotCpuNotify" :max="100" :min="0"
-                                                   desc='{{ i18n "pages.settings.tgNotifyCpuDesc" }}'
-                                                   title='{{ i18n "pages.settings.tgNotifyCpu" }}' type="number" v-model="allSetting.tgCpu"></setting-list-item>
-                                <setting-list-item desc='{{ i18n "pages.settings.telegramProxyDesc"}}' placeholder="socks5://user:pass@host:port"
-                                                   title='{{ i18n "pages.settings.telegramProxy"}}'
-                                                   type="text"
-                                                   v-model="allSetting.tgBotProxy"></setting-list-item>
-                                <setting-list-item desc='{{ i18n "pages.settings.telegramAPIServerDesc"}}' placeholder="https://api.example.com"
-                                                   title='{{ i18n "pages.settings.telegramAPIServer"}}'
-                                                   type="text"
-                                                   v-model="allSetting.tgBotAPIServer"></setting-list-item>
+                                    desc='{{ i18n "pages.settings.tgNotifyCpuDesc" }}'
+                                    title='{{ i18n "pages.settings.tgNotifyCpu" }}' type="number" v-model="allSetting.tgCpu"></setting-list-item>
+                                <setting-list-item desc='{{ i18n "pages.settings.telegramProxyDesc" }}' placeholder="socks5://user:pass@host:port"
+                                    title='{{ i18n "pages.settings.telegramProxy" }}'
+                                    type="text"
+                                    v-model="allSetting.tgBotProxy"></setting-list-item>
+                                <setting-list-item desc='{{ i18n "pages.settings.telegramAPIServerDesc" }}' placeholder="https://api.example.com"
+                                    title='{{ i18n "pages.settings.telegramAPIServer" }}'
+                                    type="text"
+                                    v-model="allSetting.tgBotAPIServer"></setting-list-item>
                                 <a-list-item>
                                     <a-row style="padding: 20px">
                                         <a-col :lg="24" :xl="12">
@@ -544,7 +530,7 @@
                                                           style="width: 100%"
                                                           v-model="allSetting.tgLang">
                                                     <a-select-option :label="l.value" :value="l.value"
-                                                                     v-for="l in supportLangs">
+                                                        v-for="l in supportLangs">
                                                         <span :aria-label="l.name" role="img" v-text="l.icon"></span>
                                                         &nbsp;&nbsp; <span v-text="l.name"></span>
                                                     </a-select-option>
@@ -557,15 +543,15 @@
                         </a-tab-pane>
                         <a-tab-pane key="4" tab='{{ i18n "pages.settings.subSettings" }}'>
                             <a-list item-layout="horizontal">
-                                <setting-list-item desc='{{ i18n "pages.settings.subEnableDesc"}}' title='{{ i18n "pages.settings.subEnable"}}'
-                                                   type="switch"
-                                                   v-model="allSetting.subEnable"></setting-list-item>
-                                <setting-list-item desc='{{ i18n "pages.settings.subEncryptDesc"}}' title='{{ i18n "pages.settings.subEncrypt"}}'
-                                                   type="switch"
-                                                   v-model="allSetting.subEncrypt"></setting-list-item>
-                                <setting-list-item desc='{{ i18n "pages.settings.subUIDesc"}}' title='{{ i18n "pages.settings.subUI"}}'
-                                                   type="switch"
-                                                   v-model="allSetting.subCustomUI"></setting-list-item>
+                                <setting-list-item desc='{{ i18n "pages.settings.subEnableDesc" }}' title='{{ i18n "pages.settings.subEnable" }}'
+                                    type="switch"
+                                    v-model="allSetting.subEnable"></setting-list-item>
+                                <setting-list-item desc='{{ i18n "pages.settings.subEncryptDesc" }}' title='{{ i18n "pages.settings.subEncrypt" }}'
+                                    type="switch"
+                                    v-model="allSetting.subEncrypt"></setting-list-item>
+                                <setting-list-item desc='{{ i18n "pages.settings.subUIDesc" }}' title='{{ i18n "pages.settings.subUI" }}'
+                                    type="switch"
+                                    v-model="allSetting.subCustomUI"></setting-list-item>
                                  <a-list-item style="padding: 16px 20px;">
                                      <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; flex-wrap: wrap; gap: 12px;">
                                          <div>
@@ -586,68 +572,68 @@
                                          </div>
                                      </div>
                                  </a-list-item>
-                                <setting-list-item desc='{{ i18n "pages.settings.subShowInfoDesc"}}' title='{{ i18n "pages.settings.subShowInfo"}}'
-                                                   type="switch"
-                                                   v-model="allSetting.subShowInfo"></setting-list-item>
+                                <setting-list-item desc='{{ i18n "pages.settings.subShowInfoDesc" }}' title='{{ i18n "pages.settings.subShowInfo" }}'
+                                    type="switch"
+                                    v-model="allSetting.subShowInfo"></setting-list-item>
                                 <setting-list-item desc='{{ i18n "pages.settings.clientSynchronizationDesc" }}'
-                                                   title='{{ i18n "pages.settings.clientSynchronization" }}'
-                                                   type="switch"
-                                                   v-model="allSetting.syncClients"></setting-list-item>
-                                <setting-list-item desc='{{ i18n "pages.settings.subTitleDesc"}}' title='{{ i18n "pages.settings.subTitle"}}'
-                                                   type="text"
-                                                   v-model="allSetting.subTitle"></setting-list-item>
-                                <setting-list-item desc='{{ i18n "pages.settings.subSupportUrlDesc"}}' title='{{ i18n "pages.settings.subSupportUrl"}}'
-                                                   type="text"
-                                                   v-model="allSetting.subSupportUrl"></setting-list-item>
-                                <setting-list-item desc='{{ i18n "pages.settings.subProfileUrlDesc"}}' title='{{ i18n "pages.settings.subProfileUrl"}}'
-                                                   type="text"
-                                                   v-model="allSetting.subProfileUrl"></setting-list-item>
-                                <setting-list-item desc='{{ i18n "pages.settings.subAnnounceDesc"}}' title='{{ i18n "pages.settings.subAnnounce"}}'
-                                                   type="text"
-                                                   v-model="allSetting.subAnnounce"></setting-list-item>
-                                <setting-list-item desc='{{ i18n "pages.settings.subListenDesc"}}' title='{{ i18n "pages.settings.subListen"}}'
-                                                   type="text"
-                                                   v-model="allSetting.subListen"></setting-list-item>
-                                <setting-list-item desc='{{ i18n "pages.settings.subDomainDesc"}}' title='{{ i18n "pages.settings.subDomain"}}'
-                                                   type="text"
-                                                   v-model="allSetting.subDomain"></setting-list-item>
+                                    title='{{ i18n "pages.settings.clientSynchronization" }}'
+                                    type="switch"
+                                    v-model="allSetting.syncClients"></setting-list-item>
+                                <setting-list-item desc='{{ i18n "pages.settings.subTitleDesc" }}' title='{{ i18n "pages.settings.subTitle" }}'
+                                    type="text"
+                                    v-model="allSetting.subTitle"></setting-list-item>
+                                <setting-list-item desc='{{ i18n "pages.settings.subSupportUrlDesc" }}' title='{{ i18n "pages.settings.subSupportUrl" }}'
+                                    type="text"
+                                    v-model="allSetting.subSupportUrl"></setting-list-item>
+                                <setting-list-item desc='{{ i18n "pages.settings.subProfileUrlDesc" }}' title='{{ i18n "pages.settings.subProfileUrl" }}'
+                                    type="text"
+                                    v-model="allSetting.subProfileUrl"></setting-list-item>
+                                <setting-list-item desc='{{ i18n "pages.settings.subAnnounceDesc" }}' title='{{ i18n "pages.settings.subAnnounce" }}'
+                                    type="text"
+                                    v-model="allSetting.subAnnounce"></setting-list-item>
+                                <setting-list-item desc='{{ i18n "pages.settings.subListenDesc" }}' title='{{ i18n "pages.settings.subListen" }}'
+                                    type="text"
+                                    v-model="allSetting.subListen"></setting-list-item>
+                                <setting-list-item desc='{{ i18n "pages.settings.subDomainDesc" }}' title='{{ i18n "pages.settings.subDomain" }}'
+                                    type="text"
+                                    v-model="allSetting.subDomain"></setting-list-item>
                                 <setting-list-item :max="65531" :min="1"
-                                                   desc='{{ i18n "pages.settings.subPortDesc"}}'
-                                                   title='{{ i18n "pages.settings.subPort"}}' type="number"
-                                                   v-model.number="allSetting.subPort"></setting-list-item>
-                                <setting-list-item desc='{{ i18n "pages.settings.subPathDesc"}}' title='{{ i18n "pages.settings.subPath"}}'
-                                                   type="text"
-                                                   v-model="allSetting.subPath"></setting-list-item>
-                                <setting-list-item desc='{{ i18n "pages.settings.subCertPathDesc"}}' title='{{ i18n "pages.settings.subCertPath"}}'
-                                                   type="text"
-                                                   v-model="allSetting.subCertFile"></setting-list-item>
-                                <setting-list-item desc='{{ i18n "pages.settings.subKeyPathDesc"}}' title='{{ i18n "pages.settings.subKeyPath"}}'
-                                                   type="text"
-                                                   v-model="allSetting.subKeyFile"></setting-list-item>
-                                <setting-list-item desc='{{ i18n "pages.settings.subURIDesc"}}' placeholder="(http|https)://domain[:port]/path/"
-                                                   title='{{ i18n "pages.settings.subURI"}}'
-                                                   type="text"
-                                                   v-model="allSetting.subURI"></setting-list-item>
-                                <setting-list-item :min="1" desc='{{ i18n "pages.settings.subUpdatesDesc"}}'
-                                                   title='{{ i18n "pages.settings.subUpdates"}}'
-                                                   type="number" v-model="allSetting.subUpdates"></setting-list-item>
+                                    desc='{{ i18n "pages.settings.subPortDesc" }}'
+                                    title='{{ i18n "pages.settings.subPort" }}' type="number"
+                                    v-model.number="allSetting.subPort"></setting-list-item>
+                                <setting-list-item desc='{{ i18n "pages.settings.subPathDesc" }}' title='{{ i18n "pages.settings.subPath" }}'
+                                    type="text"
+                                    v-model="allSetting.subPath"></setting-list-item>
+                                <setting-list-item desc='{{ i18n "pages.settings.subCertPathDesc" }}' title='{{ i18n "pages.settings.subCertPath" }}'
+                                    type="text"
+                                    v-model="allSetting.subCertFile"></setting-list-item>
+                                <setting-list-item desc='{{ i18n "pages.settings.subKeyPathDesc" }}' title='{{ i18n "pages.settings.subKeyPath" }}'
+                                    type="text"
+                                    v-model="allSetting.subKeyFile"></setting-list-item>
+                                <setting-list-item desc='{{ i18n "pages.settings.subURIDesc" }}' placeholder="(http|https)://domain[:port]/path/"
+                                    title='{{ i18n "pages.settings.subURI" }}'
+                                    type="text"
+                                    v-model="allSetting.subURI"></setting-list-item>
+                                <setting-list-item :min="1" desc='{{ i18n "pages.settings.subUpdatesDesc" }}'
+                                    title='{{ i18n "pages.settings.subUpdates" }}'
+                                    type="number" v-model="allSetting.subUpdates"></setting-list-item>
                             </a-list>
                         </a-tab-pane>
                         <a-tab-pane key="5" tab='{{ i18n "pages.settings.subSettings" }} Json'
                                     v-if="allSetting.subEnable">
                             <a-list item-layout="horizontal">
-                                <setting-list-item desc='{{ i18n "pages.settings.subPathDesc"}}' title='{{ i18n "pages.settings.subPath"}}'
-                                                   type="text"
-                                                   v-model="allSetting.subJsonPath"></setting-list-item>
-                                <setting-list-item desc='{{ i18n "pages.settings.subURIDesc"}}' placeholder="(http|https)://domain[:port]/path/"
-                                                   title='{{ i18n "pages.settings.subURI"}}'
-                                                   type="text"
-                                                   v-model="allSetting.subJsonURI"></setting-list-item>
+                                <setting-list-item desc='{{ i18n "pages.settings.subPathDesc" }}' title='{{ i18n "pages.settings.subPath" }}'
+                                    type="text"
+                                    v-model="allSetting.subJsonPath"></setting-list-item>
+                                <setting-list-item desc='{{ i18n "pages.settings.subURIDesc" }}' placeholder="(http|https)://domain[:port]/path/"
+                                    title='{{ i18n "pages.settings.subURI" }}'
+                                    type="text"
+                                    v-model="allSetting.subJsonURI"></setting-list-item>
                                 <a-list-item style="padding: 20px">
                                     <a-row>
                                         <a-col :lg="24" :xl="12">
-                                            <a-list-item-meta title='{{ i18n "pages.settings.fragment"}}'>
-                                                <template slot="description">{{ i18n "pages.settings.fragmentDesc"}}
+                                            <a-list-item-meta title='{{ i18n "pages.settings.fragment" }}'>
+                                                <template slot="description">{{ i18n "pages.settings.fragmentDesc" }}
                                                 </template>
                                             </a-list-item-meta>
                                         </a-col>
@@ -656,20 +642,20 @@
                                         </a-col>
                                     </a-row>
                                     <a-collapse style="margin-top: 14px;" v-if="fragment">
-                                        <a-collapse-panel header='{{ i18n "pages.settings.fragmentSett"}}'
-                                                          v-if="fragment">
+                                        <a-collapse-panel header='{{ i18n "pages.settings.fragmentSett" }}'
+                                            v-if="fragment">
                                             <setting-list-item placeholder="1-1 | 1-3 | tlshello | ..." style="padding: 10px 20px" title='Packets'
-                                                               type="text"
-                                                               v-model="fragmentPackets"></setting-list-item>
+                                                type="text"
+                                                v-model="fragmentPackets"></setting-list-item>
                                             <setting-list-item placeholder="100-200" style="padding: 10px 20px" title='Length'
-                                                               type="text"
-                                                               v-model="fragmentLength"></setting-list-item>
+                                                type="text"
+                                                v-model="fragmentLength"></setting-list-item>
                                             <setting-list-item placeholder="10-20" style="padding: 10px 20px" title='Interval'
-                                                               type="text"
-                                                               v-model="fragmentInterval"></setting-list-item>
+                                                type="text"
+                                                v-model="fragmentInterval"></setting-list-item>
                                             <setting-list-item placeholder="300-400" style="padding: 10px 20px" title='MaxSplit'
-                                                               type="text"
-                                                               v-model="fragmentMaxSplit"></setting-list-item>
+                                                type="text"
+                                                v-model="fragmentMaxSplit"></setting-list-item>
                                         </a-collapse-panel>
                                     </a-collapse>
                                 </a-list-item>
@@ -677,7 +663,7 @@
                                     <a-row>
                                         <a-col :lg="24" :xl="12">
                                             <a-list-item-meta title='Noises'>
-                                                <template slot="description">{{ i18n "pages.settings.noisesDesc"}}
+                                                <template slot="description">{{ i18n "pages.settings.noisesDesc" }}
                                                 </template>
                                             </a-list-item-meta>
                                         </a-col>
@@ -687,7 +673,7 @@
                                     </a-row>
                                     <a-collapse style="margin-top: 14px;" v-if="noises">
                                         <a-collapse-panel :header="`Noise ${index + 1}`" :key="index"
-                                                          v-for="(noise, index) in noisesArray">
+                                            v-for="(noise, index) in noisesArray">
                                             <a-list-item style="padding: 10px 20px">
                                                 <a-row>
                                                     <a-col :lg="24" :xl="12">
@@ -698,8 +684,8 @@
                                                                   @change="(value) => updateNoiseType(index, value)"
                                                                   style="width: 100%">
                                                             <a-select-option :key="p" :label="p"
-                                                                             :value="p"
-                                                                             v-for="p in ['rand', 'base64', 'str', 'hex']">
+                                                                :value="p"
+                                                                v-for="p in ['rand', 'base64', 'str', 'hex']">
                                                                 [[ p ]]
                                                             </a-select-option>
                                                         </a-select>
@@ -716,8 +702,8 @@
                                                                   @change="(value) => updateNoiseApplyTo(index, value)"
                                                                   style="width: 100%">
                                                             <a-select-option :key="p" :label="p"
-                                                                             :value="p"
-                                                                             v-for="p in ['ip', 'ipv4', 'ipv6']">
+                                                                :value="p"
+                                                                v-for="p in ['ip', 'ipv4', 'ipv6']">
                                                                 [[ p ]]
                                                             </a-select-option>
                                                         </a-select>
@@ -733,19 +719,16 @@
                                                                title='Delay (ms)'
                                                                type="text"></setting-list-item>
                                             <a-button @click="removeNoise(index)" type="danger"
-                                                      v-if="noisesArray.length > 1">Remove
-                                            </a-button>
+                                                      v-if="noisesArray.length > 1">Remove</a-button>
                                         </a-collapse-panel>
                                     </a-collapse>
-                                    <a-button @click="addNoise" style="margin-top: 10px" type="primary" v-if="noises">
-                                        Add Noise
-                                    </a-button>
+                                    <a-button @click="addNoise" style="margin-top: 10px" type="primary" v-if="noises">Add Noise</a-button>
                                 </a-list-item>
                                 <a-list-item style="padding: 20px">
                                     <a-row>
                                         <a-col :lg="24" :xl="12">
-                                            <a-list-item-meta title='{{ i18n "pages.settings.mux"}}'>
-                                                <template slot="description">{{ i18n "pages.settings.muxDesc"}}
+                                            <a-list-item-meta title='{{ i18n "pages.settings.mux" }}'>
+                                                <template slot="description">{{ i18n "pages.settings.muxDesc" }}
                                                 </template>
                                             </a-list-item-meta>
                                         </a-col>
@@ -754,13 +737,13 @@
                                         </a-col>
                                     </a-row>
                                     <a-collapse style="margin-top: 14px;" v-if="enableMux">
-                                        <a-collapse-panel header='{{ i18n "pages.settings.muxSett"}}'>
+                                        <a-collapse-panel header='{{ i18n "pages.settings.muxSett" }}'>
                                             <setting-list-item :max="1024" :min="-1"
-                                                               style="padding: 10px 20px" title='Concurrency' type="number"
-                                                               v-model="muxConcurrency"></setting-list-item>
+                                                style="padding: 10px 20px" title='Concurrency' type="number"
+                                                v-model="muxConcurrency"></setting-list-item>
                                             <setting-list-item :max="1024" :min="-1"
-                                                               style="padding: 10px 20px" title='xudp Concurrency'
-                                                               type="number" v-model="muxXudpConcurrency"></setting-list-item>
+                                                style="padding: 10px 20px" title='xudp Concurrency'
+                                                type="number" v-model="muxXudpConcurrency"></setting-list-item>
                                             <a-list-item style="padding: 10px 20px">
                                                 <a-row>
                                                     <a-col :lg="24" :xl="12">
@@ -770,7 +753,7 @@
                                                         <a-select :dropdown-class-name="themeSwitcher.currentTheme" style="width: 100%"
                                                                   v-model="muxXudpProxyUDP443">
                                                             <a-select-option :label="p" :value="p"
-                                                                             v-for="p in ['reject', 'allow', 'skip']">
+                                                                v-for="p in ['reject', 'allow', 'skip']">
                                                                 [[ p ]]
                                                             </a-select-option>
                                                         </a-select>
@@ -783,8 +766,8 @@
                                 <a-list-item style="padding: 20px">
                                     <a-row>
                                         <a-col :lg="24" :xl="12">
-                                            <a-list-item-meta title='{{ i18n "pages.settings.direct"}}'>
-                                                <template slot="description">{{ i18n "pages.settings.directDesc"}}
+                                            <a-list-item-meta title='{{ i18n "pages.settings.direct" }}'>
+                                                <template slot="description">{{ i18n "pages.settings.directDesc" }}
                                                 </template>
                                             </a-list-item-meta>
                                         </a-col>
@@ -793,7 +776,7 @@
                                         </a-col>
                                     </a-row>
                                     <a-collapse style="margin-top: 14px;" v-if="enableDirect">
-                                        <a-collapse-panel header='{{ i18n "pages.settings.direct"}}'>
+                                        <a-collapse-panel header='{{ i18n "pages.settings.direct" }}'>
                                             <a-list-item>
                                                 <a-row style="padding: 0 20px">
                                                     <a-col :lg="24" :xl="12">
@@ -805,8 +788,7 @@
                                                                   style="width: 100%"
                                                                   v-model="directIPs">
                                                             <a-select-option :label="p.label" :value="p.value"
-                                                                             v-for="p in directIPsOptions"> [[ p.label
-                                                                ]]
+                                                                v-for="p in directIPsOptions"> [[ p.label ]]
                                                             </a-select-option>
                                                         </a-select>
                                                     </a-col>
@@ -823,8 +805,7 @@
                                                                   style="width: 100%"
                                                                   v-model="directDomains">
                                                             <a-select-option :label="p.label" :value="p.value"
-                                                                             v-for="p in diretDomainsOptions"> [[
-                                                                p.label ]]
+                                                                v-for="p in diretDomainsOptions"> [[ p.label ]]
                                                             </a-select-option>
                                                         </a-select>
                                                     </a-col>
@@ -843,9 +824,7 @@
                                         <div style="font-weight: 700; font-size: 16px;">Staff & Access Control</div>
                                         <div style="font-size: 12px; color: var(--ui-text-muted);">Manage panel administrators, operators, and granular role permissions.</div>
                                     </div>
-                                    <a-button type="primary" icon="user-add" @click="openAddStaffModal">
-                                        Add Staff Member
-                                    </a-button>
+                                    <a-button type="primary" icon="user-add" @click="openAddStaffModal">Add Staff Member</a-button>
                                 </div>
                                 <a-table :data-source="staffList" :row-key="record => record.id" :pagination="false">
                                     <a-table-column title="User" key="username">
@@ -865,9 +844,7 @@
                                     </a-table-column>
                                     <a-table-column title="Status" key="status">
                                         <template slot-scope="text, record">
-                                            <a-tag :color="record.status === 'disabled' ? 'red' : 'green'">
-                                                [[ (record.status || 'active').toUpperCase() ]]
-                                            </a-tag>
+                                            <a-tag :color="record.status === 'disabled' ? 'red' : 'green'">[[ (record.status || 'active').toUpperCase() ]]</a-tag>
                                         </template>
                                     </a-table-column>
                                     <a-table-column title="Inbound Scope" key="allowedInbounds">
@@ -1144,11 +1121,11 @@
         </a-modal>
     </a-layout>
 </a-layout>
-{{template "js" .}}
+{{ template "js" . }}
 <script src="{{ .base_path }}assets/js/model/setting.js?{{ .cur_ver }}"></script>
-{{template "component/themeSwitcher" .}}
-{{template "component/password" .}}
-{{template "component/setting"}}
+{{ template "component/themeSwitcher" . }}
+{{ template "component/password" . }}
+{{ template "component/setting" }}
 <script>
     const app = new Vue({
         delimiters: ['[[', ']]'],

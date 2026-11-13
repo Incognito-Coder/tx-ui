@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+{{ template "head" . }}
+<style>
+    @media (min-width: 769px) {
+        .ant-layout-content {
+            margin: 24px 16px;
+        }
+    }
+    .error-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: calc(100vh - 120px);
+        padding: 24px;
+    }
+    .error-card {
+        background: var(--ui-surface);
+        border: 1px solid var(--ui-border);
+        border-radius: var(--ui-radius);
+        padding: 48px 36px;
+        text-align: center;
+        max-width: 540px;
+        width: 100%;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    }
+    .error-icon {
+        font-size: 64px;
+        color: #faad14;
+        margin-bottom: 20px;
+    }
+    .error-code {
+        font-size: 28px;
+        font-weight: 800;
+        margin-bottom: 8px;
+        color: var(--ui-text);
+    }
+    .error-message {
+        font-size: 14px;
+        color: var(--ui-text-muted);
+        margin-bottom: 24px;
+        line-height: 1.6;
+    }
+</style>
+<body>
+<a-layout id="app" v-cloak :class="themeSwitcher.currentTheme">
+    {{if .user}}
+        {{ template "commonSider" . }}
+    {{end}}
+    <a-layout id="content-layout">
+        <a-layout-content>
+            <div class="error-container">
+                <div class="error-card">
+                    <div class="error-icon">
+                        <a-icon type="compass"></a-icon>
+                    </div>
+                    <div class="error-code">{{ i18n "pages.notFound.title" }}</div>
+                    <div class="error-message">
+                        {{ i18n "pages.notFound.desc" }}
+                    </div>
+                    <div style="display: flex; justify-content: center; gap: 12px; flex-wrap: wrap;">
+                        {{if .user}}
+                            <a-button type="primary" icon="cloud" href="{{ .base_path }}panel/inbounds">
+                                {{ i18n "pages.notFound.backToInbounds" }}
+                            </a-button>
+                            <a-button type="default" icon="rollback" onclick="window.history.length > 1 ? window.history.back() : location.href = '{{ .base_path }}panel/inbounds'">
+                                {{ i18n "pages.notFound.back" }}
+                            </a-button>
+                            <a-button type="default" icon="logout" href="{{ .base_path }}logout">
+                                {{ i18n "pages.notFound.logout" }}
+                            </a-button>
+                        {{else}}
+                            <a-button type="primary" icon="home" href="{{ .base_path }}">
+                                {{ i18n "pages.notFound.backHome" }}
+                            </a-button>
+                            <a-button type="default" icon="rollback" onclick="window.history.length > 1 ? window.history.back() : location.href = '{{ .base_path }}'">
+                                {{ i18n "pages.notFound.back" }}
+                            </a-button>
+                        {{end}}
+                    </div>
+                </div>
+            </div>
+        </a-layout-content>
+    </a-layout>
+</a-layout>
+{{ template "js" . }}
+{{ template "component/themeSwitcher" . }}
+<script>
+    const app = new Vue({
+        delimiters: ['[[', ']]'],
+        el: '#app',
+        data: {
+            siderDrawer: typeof siderDrawer !== 'undefined' ? siderDrawer : {},
+            themeSwitcher,
+        }
+    });
+</script>
+</body>
+</html>

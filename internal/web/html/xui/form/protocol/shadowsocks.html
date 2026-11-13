@@ -1,7 +1,7 @@
-{{define "form/shadowsocks"}}
+{{ define "form/shadowsocks" }}
 <template v-if="inbound.isSSMultiUser && isEdit && inbound.settings.shadowsockses && inbound.settings.shadowsockses.length > 0">
     <a-collapse>
-        <a-collapse-panel :header="'{{ i18n "pages.client.clientCount"}} : ' + inbound.settings.shadowsockses.length">
+        <a-collapse-panel :header="'{{ i18n "pages.client.clientCount" }} : ' + inbound.settings.shadowsockses.length">
             <table width="100%">
                 <tr class="client-table-header">
                     <th>{{ i18n "pages.inbounds.email" }}</th>

@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-{{template "head" .}}
+{{ template "head" . }}
 <style>
     /* ─── Base layout ─────────────────────────────────────── */
     .ant-table .ant-table-content .ant-table-scroll .ant-table-body {
@@ -860,7 +860,6 @@
         transform: translateY(-1px);
     }
 
-
     /* ─── Inbound dropdown trigger ─────────────────────────── */
     .inbound-menu-trigger {
         cursor: pointer;
@@ -942,7 +941,7 @@
         {{ template "commonSider" . }}
         <a-layout id="content-layout">
             <a-layout-content>
-                <a-spin :delay="500" :spinning="spinning" tip='{{ i18n "loading"}}'>
+                <a-spin :delay="500" :spinning="spinning" tip='{{ i18n "loading" }}'>
                     <!-- Header Stats Cards -->
                     <transition appear name="list">
                         <a-card hoverable class="page-stats-card">
@@ -1107,7 +1106,7 @@
                                                 </a-menu-item>
                                                 <template v-if="isClientsRefreshEnabled">
                                                     <a-menu-divider></a-menu-divider>
-                                                    <a-menu-item-group :title="'{{ i18n "pages.inbounds.autoRefreshInterval" }}'">
+                                                    <a-menu-item-group title='{{ i18n "pages.inbounds.autoRefreshInterval" }}'>
                                                         <a-menu-item v-for="key in [5,10,15,20,25,30,60]" :key="'interval-' + key" @click="setClientsRefreshInterval(key * 1000)">
                                                             <div style="display: flex; align-items: center; justify-content: space-between; min-width: 90px;">
                                                                 <span>[[ key ]]s</span>
@@ -1359,16 +1358,10 @@
                                                 [[ DateUtil.convertToJalalian(moment(c.expiryTime)) ]]
                                             </template>
                                         </template>
-                                        <a-tag :color="isExpired(c) ? 'red' : 'blue'" style="min-width: 50px;">
-                                            [[ remainedDays(c.expiryTime) ]]
-                                        </a-tag>
+                                        <a-tag :color="isExpired(c) ? 'red' : 'blue'" style="min-width: 50px;">[[ remainedDays(c.expiryTime) ]]</a-tag>
                                     </a-popover>
-                                    <a-tag color="green" v-else-if="c.expiryTime < 0">
-                                        [[ remainedDays(c.expiryTime) ]]
-                                    </a-tag>
-                                    <a-tag class="infinite-tag" color="purple" v-else>
-                                        &infin;
-                                    </a-tag>
+                                    <a-tag color="green" v-else-if="c.expiryTime < 0">[[ remainedDays(c.expiryTime) ]]</a-tag>
+                                    <a-tag class="infinite-tag" color="purple" v-else>&infin;</a-tag>
                                 </template>
                             </a-table>
                         </a-card>
@@ -1566,7 +1559,7 @@
                                     </a-tooltip>
                                 </template>
                                 <a-input-number :min="0" :step="1" :precision="2"
-                                                v-model.number="clientModal.client._totalGB"></a-input-number>
+                                    v-model.number="clientModal.client._totalGB"></a-input-number>
                             </a-form-item>
 
                             <a-form-item label='{{ i18n "pages.client.delayedStart" }}'>
@@ -1758,9 +1751,7 @@
                             <a-button size="small" @click="bulkLinksModal.selectAll(clientInbounds)" style="margin-right: 6px;">
                                 {{ i18n "all" }}
                             </a-button>
-                            <a-button size="small" @click="bulkLinksModal.clearAll()">
-                                {{ i18n "none" }}
-                            </a-button>
+                            <a-button size="small" @click="bulkLinksModal.clearAll()">{{ i18n "none" }}</a-button>
                         </div>
                         <span style="font-size: 12px; color: var(--ui-text-muted);">
                             [[ bulkLinksModal.selectedInboundIds.length ]] / [[ clientInbounds.length ]] {{ i18n "inbounds" }}
@@ -1803,9 +1794,7 @@
                         <a-button size="small" @click="linkDrawer.selectAll()" style="margin-right: 6px;">
                             {{ i18n "pages.node_clients.selectAll" }}
                         </a-button>
-                        <a-button size="small" @click="linkDrawer.clearAll()">
-                            {{ i18n "pages.node_clients.selectNone" }}
-                        </a-button>
+                        <a-button size="small" @click="linkDrawer.clearAll()">{{ i18n "pages.node_clients.selectNone" }}</a-button>
                     </div>
                 </div>
 
@@ -1818,9 +1807,7 @@
                                     style="margin-right: 8px;">
                                 </a-checkbox>
                                 <strong>[[ inbound.remark || ('Inbound #' + inbound.id) ]]</strong>
-                                <span style="margin-left: auto; font-size: 12px; color: #888;">
-                                    [[ inbound.protocol ]]:[[ inbound.port ]]
-                                </span>
+                                <span style="margin-left: auto; font-size: 12px; color: #888;">[[ inbound.protocol ]]:[[ inbound.port ]]</span>
                             </div>
                             <div v-if="linkDrawer.isLinked(inbound.id)" style="margin-left: 28px;">
                                 <a-input :placeholder='`{{ i18n "pages.node_clients.flowOverride" }}`'
@@ -1834,12 +1821,8 @@
                 </a-list>
 
                 <div style="margin-top: 16px; text-align: right;">
-                    <a-button @click="linkDrawer.close()" style="margin-right: 8px;">
-                        {{ i18n "cancel" }}
-                    </a-button>
-                    <a-button @click="handleDrawerSave" type="primary" :loading="linkDrawer.loading">
-                        {{ i18n "sure" }}
-                    </a-button>
+                    <a-button @click="linkDrawer.close()" style="margin-right: 8px;">{{ i18n "cancel" }}</a-button>
+                    <a-button @click="handleDrawerSave" type="primary" :loading="linkDrawer.loading">{{ i18n "sure" }}</a-button>
                 </div>
             </a-spin>
         </a-drawer>
@@ -2084,9 +2067,7 @@
                                         [[ detailModal.client.deviceModel ]]
                                     </a-tag>
                                 </template>
-                                <span v-else style="font-size: 11px; color: var(--ui-text-muted); font-weight: normal;">
-                                    {{ i18n "none" }}
-                                </span>
+                                <span v-else style="font-size: 11px; color: var(--ui-text-muted); font-weight: normal;">{{ i18n "none" }}</span>
                             </div>
                         </div>
 
@@ -2104,9 +2085,7 @@
                                     <code class="compact-code" style="font-size: 10px; max-width: 160px;">[[ detailModal.client.deviceHwid ]]</code>
                                     <a-icon @click="copyText(detailModal.client.deviceHwid)" style="cursor: pointer; color: var(--ui-primary); font-size: 12px;" type="copy"></a-icon>
                                 </template>
-                                <span v-else style="font-size: 11px; color: var(--ui-text-muted); font-weight: normal;">
-                                    {{ i18n "none" }}
-                                </span>
+                                <span v-else style="font-size: 11px; color: var(--ui-text-muted); font-weight: normal;">{{ i18n "none" }}</span>
                             </div>
                         </div>
 
@@ -2149,9 +2128,7 @@
                                         [[ detailModal.client.lastSubIP ]]
                                     </a-tag>
                                 </template>
-                                <span v-else style="font-size: 11px; color: var(--ui-text-muted); font-weight: normal;">
-                                    {{ i18n "none" }}
-                                </span>
+                                <span v-else style="font-size: 11px; color: var(--ui-text-muted); font-weight: normal;">{{ i18n "none" }}</span>
                             </div>
                         </div>
                     </div>
@@ -2186,7 +2163,6 @@
                         </div>
                     </div>
                 </div>
-
 
                 <!-- Linked Inbounds Section (Compact) -->
                 <div style="margin-top: 8px; padding-top: 6px; border-top: 1px solid var(--ui-border);">
@@ -2301,15 +2277,15 @@
         </a-modal>
     </a-layout>
 
-    {{template "js" .}}
+    {{ template "js" . }}
     <script src="{{ .base_path }}assets/base64/base64.min.js"></script>
     <script src="{{ .base_path }}assets/qrcode/qrious2.min.js?{{ .cur_ver }}"></script>
     <script src="{{ .base_path }}assets/clipboard/clipboard.min.js?{{ .cur_ver }}"></script>
     <script src="{{ .base_path }}assets/uri/URI.min.js?{{ .cur_ver }}"></script>
     <script src="{{ .base_path }}assets/js/model/inbound.js?{{ .cur_ver }}"></script>
     <script src="{{ .base_path }}assets/js/model/dbinbound.js?{{ .cur_ver }}"></script>
-    {{template "component/themeSwitcher" .}}
-    {{template "component/persianDatepicker" .}}
+    {{ template "component/themeSwitcher" . }}
+    {{ template "component/persianDatepicker" . }}
 
     <script>
         if (typeof HttpUtil !== 'undefined' && typeof HttpUtil.postJson !== 'function') {
