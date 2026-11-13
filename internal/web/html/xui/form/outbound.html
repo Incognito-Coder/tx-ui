@@ -1075,7 +1075,8 @@
             </template>
         </a-form>
     </a-tab-pane>
-    <a-tab-pane force-render="true" key="2" tab="JSON">
+    <a-tab-pane :class="{ 'outbound-json-invalid': !outModal.isValid }"
+                class="modal-json-pane outbound-json-pane" force-render="true" key="2" tab="JSON">
         <a-form-item style="margin: 10px 0"> Link / Config:
             <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                 <a-input placeholder="vmess:// vless:// trojan:// ss:// hysteria2:// wireguard:// or .conf" style="flex: 1; min-width: 280px;"

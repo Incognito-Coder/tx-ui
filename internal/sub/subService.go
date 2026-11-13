@@ -188,7 +188,7 @@ func (s *SubService) getInboundsBySubId(subId string) ([]*model.Inbound, error) 
 	err := db.Model(model.Inbound{}).Preload("ClientStats").Where(`id in (
 		SELECT DISTINCT inbounds.id
 		FROM inbounds,
-			JSON_EACH(COALESCE(JSON_EXTRACT(inbounds.settings, '$.clients'), JSON_EXTRACT(inbounds.settings, '$.users'))) AS client
+			JSON_EACH(COALESCE(JSON_EXTRACT(inbounds.settings, '$.clients'), JSON_EXTRACT(inbounds.settings, '$.users'), JSON_EXTRACT(inbounds.settings, '$.peers'))) AS client
 		WHERE
 			protocol in ('vmess','vless','trojan','shadowsocks','hysteria','wireguard','masque','mtproto','amneziawg')
 			AND JSON_EXTRACT(client.value, '$.subId') = ? AND enable = ?
@@ -213,7 +213,7 @@ func (s *SubService) getInboundsByEmail(email string) ([]*model.Inbound, error) 
 	err := db.Model(model.Inbound{}).Preload("ClientStats").Where(`id in (
 		SELECT DISTINCT inbounds.id
 		FROM inbounds,
-			JSON_EACH(COALESCE(JSON_EXTRACT(inbounds.settings, '$.clients'), JSON_EXTRACT(inbounds.settings, '$.users'))) AS client
+			JSON_EACH(COALESCE(JSON_EXTRACT(inbounds.settings, '$.clients'), JSON_EXTRACT(inbounds.settings, '$.users'), JSON_EXTRACT(inbounds.settings, '$.peers'))) AS client
 		WHERE
 			protocol in ('vmess','vless','trojan','shadowsocks','hysteria','wireguard','masque','mtproto','amneziawg')
 			AND LOWER(JSON_EXTRACT(client.value, '$.email')) = LOWER(?) AND enable = ?
@@ -233,7 +233,7 @@ func (s *SubService) getInboundsByEmail(email string) ([]*model.Inbound, error) 
 		_ = db.Model(model.Inbound{}).Preload("ClientStats").Where(`id in (
 			SELECT DISTINCT inbounds.id
 			FROM inbounds,
-				JSON_EACH(COALESCE(JSON_EXTRACT(inbounds.settings, '$.clients'), JSON_EXTRACT(inbounds.settings, '$.users'))) AS client
+				JSON_EACH(COALESCE(JSON_EXTRACT(inbounds.settings, '$.clients'), JSON_EXTRACT(inbounds.settings, '$.users'), JSON_EXTRACT(inbounds.settings, '$.peers'))) AS client
 			WHERE
 				protocol in ('vmess','vless','trojan','shadowsocks','hysteria','wireguard','masque','mtproto','amneziawg')
 				AND LOWER(JSON_EXTRACT(client.value, '$.email')) = LOWER(?)
@@ -652,19 +652,33 @@ func (s *SubService) genWireguardLink(inbound *model.Inbound, email string) stri
 
 	serverPubKey, _ := settings["pubKey"].(string)
 	if serverPubKey == "" {
+		serverPubKey, _ = settings["publicKey"].(string)
+	}
+	if serverPubKey == "" {
 		if secKey, ok := settings["secretKey"].(string); ok && secKey != "" {
-			serverPubKey = getWireguardPubKey(secKey)
+			if pub, err := wireguard.PublicKeyFromPrivate(secKey); err == nil && pub != "" {
+				serverPubKey = pub
+			} else {
+				serverPubKey = getWireguardPubKey(secKey)
+			}
+		} else if secKey, ok := settings["privateKey"].(string); ok && secKey != "" {
+			if pub, err := wireguard.PublicKeyFromPrivate(secKey); err == nil && pub != "" {
+				serverPubKey = pub
+			} else {
+				serverPubKey = getWireguardPubKey(secKey)
+			}
 		}
 	}
+	serverPubKey = strings.TrimSpace(serverPubKey)
 	mtu := 1420
 	if m, ok := settings["mtu"].(float64); ok && m > 0 {
 		mtu = int(m)
 	}
 
-	privKey := targetClient.PrivateKey
+	privKey := strings.TrimSpace(targetClient.PrivateKey)
 	if !wireguard.IsValidWireguardKey(privKey) {
 		if wireguard.IsValidWireguardKey(targetClient.Password) {
-			privKey = targetClient.Password
+			privKey = strings.TrimSpace(targetClient.Password)
 		} else {
 			kpPriv, _, err := wireguard.EnsureWireguardKeypair(privKey, targetClient.PublicKey)
 			if err == nil {
@@ -684,29 +698,39 @@ func (s *SubService) genWireguardLink(inbound *model.Inbound, email string) stri
 
 	params := url.Values{}
 	if serverPubKey != "" {
+		params.Set("publickey", serverPubKey)
+		params.Set("pubkey", serverPubKey)
 		params.Set("peer_public_key", serverPubKey)
+		params.Set("peer_pubkey", serverPubKey)
 		params.Set("public_key", serverPubKey)
 	}
 	if privKey != "" {
+		params.Set("privatekey", privKey)
 		params.Set("private_key", privKey)
 	}
 	params.Set("address", allowedIp)
+	params.Set("ip", allowedIp)
 	params.Set("dns", "1.1.1.1,1.0.0.1")
 	if mtu > 0 {
 		params.Set("mtu", strconv.Itoa(mtu))
 	}
 	params.Set("allowed_ips", "0.0.0.0/0,::/0")
-	psk := targetClient.Psk
+	params.Set("allowedips", "0.0.0.0/0,::/0")
+	psk := strings.TrimSpace(targetClient.Psk)
 	if psk == "" {
-		psk = targetClient.PreSharedKey
+		psk = strings.TrimSpace(targetClient.PreSharedKey)
 	}
 	if psk != "" && wireguard.IsValidWireguardKey(psk) {
-		params.Set("pre_shared_key", psk)
-		params.Set("preshared_key", psk)
+		params.Set("presharedkey", psk)
 		params.Set("psk", psk)
+		params.Set("preshared_key", psk)
+		params.Set("pre_shared_key", psk)
 	}
 	if targetClient.KeepAlive > 0 {
-		params.Set("keepalive", strconv.Itoa(targetClient.KeepAlive))
+		keepAliveStr := strconv.Itoa(targetClient.KeepAlive)
+		params.Set("keepalive", keepAliveStr)
+		params.Set("persistentkeepalive", keepAliveStr)
+		params.Set("persistent_keepalive", keepAliveStr)
 	}
 	var resList []string
 	if reserved, ok := settings["reserved"].([]interface{}); ok && len(reserved) > 0 {

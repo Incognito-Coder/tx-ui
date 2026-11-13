@@ -10,6 +10,7 @@ import (
 	"x-ui/internal/logger"
 	"x-ui/internal/util/json_util"
 	"x-ui/internal/util/random"
+	"x-ui/internal/util/wireguard"
 	"x-ui/internal/web/service"
 	"x-ui/xray"
 )
@@ -678,13 +679,28 @@ func (s *SubJsonService) genWireguard(inbound *model.Inbound, client model.Clien
 
 	serverPubKey, _ := settings["pubKey"].(string)
 	if serverPubKey == "" {
+		serverPubKey, _ = settings["publicKey"].(string)
+	}
+	if serverPubKey == "" {
 		if secKey, ok := settings["secretKey"].(string); ok && secKey != "" {
-			serverPubKey = getWireguardPubKey(secKey)
+			if pub, err := wireguard.PublicKeyFromPrivate(secKey); err == nil && pub != "" {
+				serverPubKey = pub
+			} else {
+				serverPubKey = getWireguardPubKey(secKey)
+			}
+		} else if secKey, ok := settings["privateKey"].(string); ok && secKey != "" {
+			if pub, err := wireguard.PublicKeyFromPrivate(secKey); err == nil && pub != "" {
+				serverPubKey = pub
+			} else {
+				serverPubKey = getWireguardPubKey(secKey)
+			}
 		}
 	}
-	privKey := client.PrivateKey
+	serverPubKey = strings.TrimSpace(serverPubKey)
+
+	privKey := strings.TrimSpace(client.PrivateKey)
 	if privKey == "" {
-		privKey = client.Password
+		privKey = strings.TrimSpace(client.Password)
 	}
 	allowedIps := []string{"10.0.0.2/32"}
 	if len(client.AllowedIPs) > 0 {
@@ -697,28 +713,33 @@ func (s *SubJsonService) genWireguard(inbound *model.Inbound, client model.Clien
 	}
 
 	peer := map[string]interface{}{
-		"publicKey": serverPubKey,
-		"endpoint":  fmt.Sprintf("%s:%d", address, inbound.Port),
+		"publicKey":  serverPubKey,
+		"public_key": serverPubKey,
+		"endpoint":   fmt.Sprintf("%s:%d", address, inbound.Port),
 	}
-	psk := client.Psk
+	psk := strings.TrimSpace(client.Psk)
 	if psk == "" {
-		psk = client.PreSharedKey
+		psk = strings.TrimSpace(client.PreSharedKey)
 	}
 	if psk != "" {
 		peer["preSharedKey"] = psk
+		peer["presharedKey"] = psk
+		peer["pre_shared_key"] = psk
 		peer["psk"] = psk
 	}
 	if client.KeepAlive > 0 {
 		peer["keepAlive"] = client.KeepAlive
+		peer["keep_alive"] = client.KeepAlive
 	}
 	if reserved, ok := settings["reserved"].([]interface{}); ok && len(reserved) > 0 {
 		peer["reserved"] = reserved
 	}
 
 	wgSettings := map[string]interface{}{
-		"secretKey": privKey,
-		"address":   allowedIps,
-		"peers":     []interface{}{peer},
+		"secretKey":  privKey,
+		"secret_key": privKey,
+		"address":    allowedIps,
+		"peers":      []interface{}{peer},
 	}
 	if mtu, ok := settings["mtu"].(float64); ok && mtu > 0 {
 		wgSettings["mtu"] = int(mtu)

@@ -2714,10 +2714,10 @@ class Inbound extends XrayCommonClass {
             privKey = Wireguard.generateKeypair().privateKey;
         }
         let allowedIp = (client.allowedIPs && client.allowedIPs.length > 0) ? client.allowedIPs.join(', ') : '10.0.0.2/32';
-        let pubKey = this.settings ? (this.settings.pubKey || '') : '';
-        if (!isValid(pubKey) && this.settings && this.settings.secretKey) {
+        let pubKey = this.settings ? (this.settings.pubKey || this.settings.publicKey || '') : '';
+        if (!isValid(pubKey) && this.settings && (this.settings.secretKey || this.settings.privateKey)) {
             try {
-                pubKey = Wireguard.generateKeypair(this.settings.secretKey).publicKey;
+                pubKey = Wireguard.generateKeypair(this.settings.secretKey || this.settings.privateKey).publicKey;
             } catch (e) {}
         }
         let txt = `[Interface]\n`;
@@ -2732,7 +2732,7 @@ class Inbound extends XrayCommonClass {
         txt += `PublicKey = ${pubKey}\n`;
         txt += `AllowedIPs = 0.0.0.0/0, ::/0\n`;
         txt += `Endpoint = ${address}:${port}\n`;
-        let psk = client.preSharedKey || client.psk || '';
+        let psk = (client.preSharedKey || client.psk || '').trim();
         if (psk && isValid(psk)) {
             txt += `PresharedKey = ${psk}\n`;
         }
@@ -2753,34 +2753,43 @@ class Inbound extends XrayCommonClass {
             privKey = Wireguard.generateKeypair().privateKey;
         }
         let allowedIp = (client.allowedIPs && client.allowedIPs.length > 0) ? client.allowedIPs.join(',') : '10.0.0.2/32';
-        let pubKey = this.settings ? (this.settings.pubKey || '') : '';
-        if (!isValid(pubKey) && this.settings && this.settings.secretKey) {
+        let pubKey = this.settings ? (this.settings.pubKey || this.settings.publicKey || '') : '';
+        if (!isValid(pubKey) && this.settings && (this.settings.secretKey || this.settings.privateKey)) {
             try {
-                pubKey = Wireguard.generateKeypair(this.settings.secretKey).publicKey;
+                pubKey = Wireguard.generateKeypair(this.settings.secretKey || this.settings.privateKey).publicKey;
             } catch (e) {}
         }
         let mtu = (this.settings && this.settings.mtu) ? this.settings.mtu : 1420;
 
         const params = new URLSearchParams();
         if (pubKey) {
+            params.set('publickey', pubKey);
+            params.set('pubkey', pubKey);
             params.set('peer_public_key', pubKey);
+            params.set('peer_pubkey', pubKey);
             params.set('public_key', pubKey);
         }
         if (privKey) {
+            params.set('privatekey', privKey);
             params.set('private_key', privKey);
         }
         params.set('address', allowedIp);
+        params.set('ip', allowedIp);
         params.set('dns', '1.1.1.1,1.0.0.1');
         params.set('mtu', mtu.toString());
         params.set('allowed_ips', '0.0.0.0/0,::/0');
-        let psk = client.preSharedKey || client.psk || '';
+        params.set('allowedips', '0.0.0.0/0,::/0');
+        let psk = (client.preSharedKey || client.psk || '').trim();
         if (psk && isValid(psk)) {
-            params.set('pre_shared_key', psk);
-            params.set('preshared_key', psk);
+            params.set('presharedkey', psk);
             params.set('psk', psk);
+            params.set('preshared_key', psk);
+            params.set('pre_shared_key', psk);
         }
         if (client.keepAlive) {
             params.set('keepalive', client.keepAlive.toString());
+            params.set('persistentkeepalive', client.keepAlive.toString());
+            params.set('persistent_keepalive', client.keepAlive.toString());
         }
         let reservedStr = '0,0,0';
         if (this.settings && Array.isArray(this.settings.reserved) && this.settings.reserved.length > 0) {

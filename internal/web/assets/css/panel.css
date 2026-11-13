@@ -1359,8 +1359,16 @@ a:focus-visible {
 #content-layout .xray-advanced-pane .CodeMirror {
     width: 100%;
     margin: 0;
-    overflow: hidden;
-    border-radius: var(--ui-radius);
+    overflow: hidden !important;
+    border: 1px solid var(--ui-border-strong) !important;
+    border-radius: var(--ui-radius) !important;
+    box-shadow: 0 0 0 1px var(--ui-border-strong) !important;
+    isolation: isolate;
+}
+
+#content-layout .xray-advanced-pane .CodeMirror-gutters {
+    border-top-left-radius: calc(var(--ui-radius) - 1px) !important;
+    border-bottom-left-radius: calc(var(--ui-radius) - 1px) !important;
 }
 
 .inbound-editor-tabs {
@@ -1369,21 +1377,37 @@ a:focus-visible {
     background: transparent !important;
 }
 
-.inbound-json-pane {
+.modal-json-pane,
+.inbound-json-pane,
+.outbound-json-pane {
     padding-top: 12px;
+    padding-bottom: 12px;
 }
 
-.inbound-json-pane .CodeMirror {
-    width: 100%;
-    height: min(58vh, 620px);
+.modal-json-pane .CodeMirror,
+.inbound-json-pane .CodeMirror,
+.outbound-json-pane .CodeMirror {
+    width: 100% !important;
+    height: min(58vh, 620px) !important;
     margin: 0;
-    overflow: hidden;
-    border-color: var(--ui-border-strong);
-    border-radius: var(--ui-radius);
+    overflow: hidden !important;
+    border: 1px solid var(--ui-border-strong) !important;
+    border-radius: var(--ui-radius) !important;
+    box-shadow: 0 0 0 1px var(--ui-border-strong) !important;
+    isolation: isolate;
 }
 
-.inbound-json-invalid .CodeMirror {
-    border-color: var(--ui-danger);
+.modal-json-pane .CodeMirror-gutters,
+.inbound-json-pane .CodeMirror-gutters,
+.outbound-json-pane .CodeMirror-gutters {
+    border-top-left-radius: calc(var(--ui-radius) - 1px) !important;
+    border-bottom-left-radius: calc(var(--ui-radius) - 1px) !important;
+}
+
+.inbound-json-invalid .CodeMirror,
+.outbound-json-invalid .CodeMirror {
+    border-color: var(--ui-danger) !important;
+    box-shadow: 0 0 0 1px var(--ui-danger) !important;
 }
 
 .sub-template-cm {
@@ -1395,14 +1419,16 @@ a:focus-visible {
     width: 100%;
     height: 540px;
     margin: 0;
-    overflow: hidden;
+    overflow: hidden !important;
     border: 1px solid var(--ui-border) !important;
     border-radius: var(--ui-radius) !important;
+    box-shadow: 0 0 0 1px var(--ui-border) !important;
+    isolation: isolate;
 }
 
 .sub-template-cm .CodeMirror-gutters {
-    border-top-left-radius: var(--ui-radius) !important;
-    border-bottom-left-radius: var(--ui-radius) !important;
+    border-top-left-radius: calc(var(--ui-radius) - 1px) !important;
+    border-bottom-left-radius: calc(var(--ui-radius) - 1px) !important;
 }
 
 .xray-table-actions {
