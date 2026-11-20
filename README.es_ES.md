@@ -627,6 +627,6 @@ panel [TX-UI Theming Hub](https://github.com/Incognito-Coder/TX-ThemeHub)
   contiene reglas de enrutamiento de V2Ray actualizadas automáticamente basadas en datos de dominios y direcciones
   bloqueados en Rusia._
 
-## Estrellas a lo largo del tiempo
+## Star History
 
-[![Stargazers over time](https://starchart.cc/Incognito-Coder/tx-ui.svg?variant=adaptive)](https://starchart.cc/Incognito-Coder/tx-ui)
+[![Star History Chart](https://api.star-history.com/chart?repos=incognito-coder/tx-ui&type=date&legend=bottom-right)](https://www.star-history.com/?repos=incognito-coder%2Ftx-ui&type=date&legend=bottom-right)

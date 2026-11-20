@@ -634,6 +634,6 @@ XUI_BIN_FOLDER="bin" XUI_DB_FOLDER="/etc/x-ui" go build main.go
 - [Russia v2ray rules](https://github.com/runetfreedom/russia-v2ray-rules-dat) (License: **GPL-3.0**): _This repository
   contains automatically updated V2Ray routing rules based on data on blocked domains and addresses in Russia._
 
-## Star趋势
+## Star History
 
-[![Stargazers over time](https://starchart.cc/Incognito-Coder/tx-ui.svg?variant=adaptive)](https://starchart.cc/Incognito-Coder/tx-ui)
+[![Star History Chart](https://api.star-history.com/chart?repos=incognito-coder/tx-ui&type=date&legend=bottom-right)](https://www.star-history.com/?repos=incognito-coder%2Ftx-ui&type=date&legend=bottom-right)

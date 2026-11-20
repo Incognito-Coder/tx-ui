@@ -652,6 +652,6 @@ XUI_BIN_FOLDER="bin" XUI_DB_FOLDER="/etc/x-ui" go build main.go
   содержит автоматически обновляемые правила маршрутизации V2Ray на основе данных о заблокированных доменах и адресах в
   России._
 
-## Число звёзд со временем
+## Star History
 
-[![Stargazers over time](https://starchart.cc/Incognito-Coder/tx-ui.svg?variant=adaptive)](https://starchart.cc/Incognito-Coder/tx-ui)
+[![Star History Chart](https://api.star-history.com/chart?repos=incognito-coder/tx-ui&type=date&legend=bottom-right)](https://www.star-history.com/?repos=incognito-coder%2Ftx-ui&type=date&legend=bottom-right)
