@@ -3,7 +3,7 @@ module x-ui
 go 1.27.3
 
 require (
-	github.com/amnezia-vpn/amneziawg-go/v3 v3.1.20260828
+	github.com/amnezia-vpn/amneziawg-go/v3 v3.1.20261116
 	github.com/gin-contrib/gzip v1.2.10
 	github.com/gin-contrib/sessions v1.1.4
 	github.com/gin-gonic/gin v1.12.0

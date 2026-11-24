@@ -1,7 +1,7 @@
 github.com/BurntSushi/toml v1.6.0 h1:dRaEfpa2VI55EwlIW72hMRHdWouJeRF7TPYhI+AUQjk=
 github.com/BurntSushi/toml v1.6.0/go.mod h1:ukJfTF/6rtPPRCnwkur4qwRxa8vTRFBF0uk2lLoLwho=
-github.com/amnezia-vpn/amneziawg-go/v3 v3.1.20260828 h1:D8d8gGvwXcTxUIsE4z6F6vjy4/VZddu95vMNtOygh1c=
-github.com/amnezia-vpn/amneziawg-go/v3 v3.1.20260828/go.mod h1:YoPc6qcOZqD7TXZ1xpedD8Sx3aSKsxN05ZqEFmXDNHk=
+github.com/amnezia-vpn/amneziawg-go/v3 v3.1.20261116 h1:/LZYudfChLgd1qmfKR9gaNg1z4xBW9hyS+Ij0MJNVzo=
+github.com/amnezia-vpn/amneziawg-go/v3 v3.1.20261116/go.mod h1:YoPc6qcOZqD7TXZ1xpedD8Sx3aSKsxN05ZqEFmXDNHk=
 github.com/apernet/quic-go v0.61.1-0.20260806010916-184d081eef3e h1:5mgtR5gwIgBKMiGI1QdXldZZ+SNor06Nbu1wCBulQBg=
 github.com/apernet/quic-go v0.61.1-0.20260806010916-184d081eef3e/go.mod h1:x7qxEvX6MCVtDuBKHj3E+88+BtrbEMuAL5qGUKItjW8=
 github.com/bytedance/gopkg v0.1.4 h1:oZnQwnX82KAIWb7033bEwtxvTqXcYMxDBaQxo5JJHWM=
