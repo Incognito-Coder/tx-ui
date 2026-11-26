@@ -572,6 +572,7 @@ func (a *ServerController) saveSubTemplateContent(c *gin.Context) {
 		jsonMsg(c, err.Error(), err)
 		return
 	}
+	_ = a.settingService.SetSubCustomUI(true)
 	jsonMsg(c, "Template saved and applied successfully", nil)
 }
 

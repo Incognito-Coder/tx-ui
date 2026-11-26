@@ -14,6 +14,8 @@
         border: 1px solid var(--ui-border);
         border-radius: var(--ui-radius);
         overflow: hidden;
+        position: relative;
+        background: var(--ui-surface);
     }
     .sub-template-cm .CodeMirror,
     .sub-template-cm .cm-s-xq.CodeMirror,
@@ -28,6 +30,24 @@
         border: none !important;
         border-radius: 0 !important;
         box-shadow: none !important;
+    }
+    .sub-template-cm .CodeMirror-scroll {
+        overflow-y: auto !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        overscroll-behavior: contain;
+    }
+    @media (max-width: 768px) {
+        .sub-template-cm .CodeMirror,
+        .sub-template-cm .cm-s-xq.CodeMirror,
+        .dark .sub-template-cm .cm-s-xq.CodeMirror,
+        .dark .sub-template-cm .CodeMirror {
+            height: 380px !important;
+            font-size: 12px !important;
+        }
+        .sub-preview-container {
+            height: 380px !important;
+        }
     }
     .sub-template-cm .CodeMirror:hover,
     .sub-template-cm .cm-s-xq.CodeMirror:hover,
@@ -887,16 +907,16 @@
                  :dialog-style="{ maxWidth: '96vw', top: '20px' }"
                  wrap-class-name="panel-modal panel-modal-lg" v-model="subTemplateModal.visible">
             <template slot="title">
-                <div style="display: flex; align-items: center; justify-content: space-between; padding-right: 24px;">
-                    <span style="font-weight: 700; font-size: 16px;">
+                <div class="sub-modal-title">
+                    <span>
                         <a-icon type="github" style="color: var(--ui-primary); margin-right: 8px; font-size: 18px;"></a-icon>
-                        {{ i18n "pages.settings.subTemplateModalTitle" }}
+                        <span class="sub-modal-title-text">{{ i18n "pages.settings.subTemplateModalTitle" }}</span>
                     </span>
                     <a-button size="small" icon="sync" :spin="subTemplateModal.loading" @click="fetchSubTemplates">{{ i18n "pages.settings.subTemplateModalRefresh" }}</a-button>
                 </div>
             </template>
             <a-spin :spinning="subTemplateModal.loading">
-                <div style="background: var(--ui-surface-muted); border: 1px solid var(--ui-border); border-radius: var(--ui-radius); padding: 10px 14px; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between;">
+                <div style="background: var(--ui-surface-muted); border: 1px solid var(--ui-border); border-radius: var(--ui-radius); padding: 10px 14px; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
                     <span style="font-size: 12px; color: var(--ui-text-muted);">
                         {{ i18n "pages.settings.subTemplateModalSyncDesc" }} <a href="https://github.com/Incognito-Coder/TX-ThemeHub/tree/main/themes" target="_blank" style="font-weight: 600;"><a-icon type="github"></a-icon> Incognito-Coder/TX-ThemeHub/tree/main/themes</a>
                     </span>
@@ -906,24 +926,24 @@
                     <a-alert :message="subTemplateModal.msg" :type="subTemplateModal.msgType || 'info'" show-icon style="margin-bottom: 14px;"></a-alert>
                 </template>
 
-                <a-tabs default-active-key="catalog" size="small" @change="onSubTemplateTabChange">
+                <a-tabs :active-key="subTemplateModal.activeTab" size="small" @change="onSubTemplateTabChange">
                     <!-- Tab 1: Curated Theme Catalog -->
                     <a-tab-pane key="catalog" tab='{{ i18n "pages.settings.subTemplateModalTabCatalog" }}' style="padding-top: 12px;">
                         <a-row :gutter="[0, 12]">
                             <a-col :span="24" v-for="theme in subTemplateModal.themes" :key="theme.id">
-                                <div style="background: var(--ui-surface-muted); border: 1px solid var(--ui-border); border-radius: var(--ui-radius); padding: 16px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px;">
-                                    <div style="flex: 1; min-width: 260px;">
-                                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap;">
-                                            <span style="font-weight: 700; font-size: 15px;">[[ theme.name ]]</span>
+                                <div class="sub-theme-card">
+                                    <div class="sub-theme-card-info">
+                                        <div class="sub-theme-card-header">
+                                            <span class="sub-theme-card-title">[[ theme.name ]]</span>
                                             <a-tag color="purple" style="border-radius: 4px;">[[ theme.previewTag ]]</a-tag>
                                         </div>
-                                        <p style="font-size: 12px; color: var(--ui-text-muted); margin-bottom: 6px; line-height: 1.5;">[[ theme.description ]]</p>
-                                        <span style="font-size: 11px; color: var(--ui-text-muted);">{{ i18n "pages.settings.subTemplateModalAuthor" }} <strong>[[ theme.author ]]</strong></span>
+                                        <p class="sub-theme-card-desc">[[ theme.description ]]</p>
+                                        <span class="sub-theme-card-author">{{ i18n "pages.settings.subTemplateModalAuthor" }} <strong>[[ theme.author ]]</strong></span>
                                     </div>
-                                    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-                                        <a :href="theme.repoUrl" target="_blank" v-if="theme.repoUrl" class="ant-btn ant-btn-default ant-btn-sm" style="border-radius: var(--ui-radius); display: inline-flex; align-items: center; gap: 4px;">
-                                            <a-icon type="github"></a-icon> {{ i18n "pages.settings.subTemplateModalViewRepo" }}
-                                        </a>
+                                    <div class="sub-theme-card-actions">
+                                        <a-button size="small" icon="github" :href="theme.repoUrl" target="_blank" v-if="theme.repoUrl" style="border-radius: var(--ui-radius);">
+                                            {{ i18n "pages.settings.subTemplateModalViewRepo" }}
+                                        </a-button>
                                         <a-button size="small" type="primary" style="border-radius: var(--ui-radius);" :disabled="theme.isDefault && !subTemplateModal.isCustom" @click="applySubTemplateTheme(theme.rawUrl || '')">
                                             [[ theme.isDefault ? '{{ i18n "pages.settings.subTemplateModalUseDefault" }}' : '{{ i18n "pages.settings.subTemplateModalApplyTheme" }}' ]]
                                         </a-button>
@@ -961,11 +981,62 @@
                         </div>
                     </a-tab-pane>
 
-                    <!-- Tab 3: Live In-Panel Editor -->
-                    <a-tab-pane key="editor" tab="Live Editor" style="padding-top: 12px;">
+                    <!-- Tab 3: Upload sub.html from File -->
+                    <a-tab-pane key="upload" tab='{{ i18n "pages.settings.subTemplateModalTabUpload" }}' style="padding-top: 12px;">
+                        <div style="background: var(--ui-surface-muted); border: 1px solid var(--ui-border); border-radius: var(--ui-radius); padding: 18px;">
+                            <div style="font-weight: 600; font-size: 14px; margin-bottom: 6px;">{{ i18n "pages.settings.subTemplateModalUploadTitle" }}</div>
+                            <p style="font-size: 12px; color: var(--ui-text-muted); margin-bottom: 14px; line-height: 1.5;">
+                                {{ i18n "pages.settings.subTemplateModalUploadDesc" }}
+                            </p>
+
+                            <div style="margin-bottom: 16px;">
+                                <a-upload-dragger
+                                    name="file"
+                                    :show-upload-list="false"
+                                    :before-upload="handleSubFileUpload"
+                                    accept=".html,.htm,.tpl,.txt"
+                                    style="display: block; width: 100%; border-radius: var(--ui-radius);"
+                                >
+                                    <p class="ant-upload-drag-icon" style="margin-bottom: 8px;">
+                                        <a-icon type="cloud-upload" style="font-size: 36px; color: var(--ui-primary);" />
+                                    </p>
+                                    <p class="ant-upload-text" style="font-weight: 600; font-size: 14px; margin-bottom: 4px;">
+                                        {{ i18n "pages.settings.subTemplateModalUploadDraggerText" }}
+                                    </p>
+                                    <p class="ant-upload-hint" style="font-size: 12px; color: var(--ui-text-muted);">
+                                        {{ i18n "pages.settings.subTemplateModalUploadDraggerHint" }}
+                                    </p>
+                                </a-upload-dragger>
+                            </div>
+
+                            <div v-if="subTemplateModal.uploadedFileName" style="background: var(--ui-surface); border: 1px solid var(--ui-border); border-radius: var(--ui-radius); padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <a-icon type="file-text" style="color: var(--ui-primary); font-size: 20px;"></a-icon>
+                                    <div>
+                                        <div style="font-weight: 600; font-size: 13.5px;">[[ subTemplateModal.uploadedFileName ]]</div>
+                                        <div style="font-size: 11px; color: var(--ui-text-muted);">[[ (subTemplateModal.uploadedFileSize / 1024).toFixed(1) ]] KB</div>
+                                    </div>
+                                </div>
+                                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                    <a-button size="small" icon="edit" @click="openUploadedInEditor">
+                                        {{ i18n "pages.settings.subTemplateModalUploadToEditor" }}
+                                    </a-button>
+                                    <a-button size="small" type="primary" icon="check" :loading="subTemplateModal.saving" @click="saveUploadedSubTemplate">
+                                        {{ i18n "pages.settings.subTemplateModalUploadApply" }}
+                                    </a-button>
+                                </div>
+                            </div>
+                        </div>
+                    </a-tab-pane>
+
+                    <!-- Tab 4: Live In-Panel Editor -->
+                    <a-tab-pane key="editor" tab='{{ i18n "pages.settings.subTemplateModalTabEditor" }}' style="padding-top: 12px;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
-                            <div style="display: flex; gap: 8px;">
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
                                 <a-button size="small" icon="reload" @click="loadSubTemplateContent">Reload Active</a-button>
+                                <a-upload :before-upload="handleSubFileUploadForEditor" :show-upload-list="false" accept=".html,.htm,.tpl,.txt">
+                                    <a-button size="small" icon="upload">Upload File</a-button>
+                                </a-upload>
                                 <a-button size="small" icon="eye" type="primary" @click="renderSubTemplatePreview">Refresh Live Preview</a-button>
                             </div>
                             <div style="display: flex; gap: 8px;">
@@ -974,8 +1045,8 @@
                                 </a-button>
                             </div>
                         </div>
-                        <div style="display: flex; gap: 16px; flex-wrap: wrap;">
-                            <div style="flex: 1.1; min-width: 420px;">
+                        <div class="sub-editor-layout">
+                            <div class="sub-editor-pane">
                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
                                     <span style="font-weight: 600; font-size: 13px;">HTML Template Code</span>
                                     <span style="font-size: 11px; color: var(--ui-text-muted);">Syntax Highlighted • Go Template Tags Supported</span>
@@ -984,12 +1055,12 @@
                                     <textarea id="subTemplateEditor" v-model="subTemplateModal.editorContent"></textarea>
                                 </div>
                             </div>
-                            <div style="flex: 1; min-width: 400px;">
+                            <div class="sub-preview-pane">
                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
                                     <span style="font-weight: 600; font-size: 13px;">Interactive Live Preview</span>
                                     <span style="font-size: 11px; color: var(--ui-text-muted);">Sandboxed Realistic Output</span>
                                 </div>
-                                <div style="border: 1px solid var(--ui-border); border-radius: var(--ui-radius); height: 540px; background: #fff; overflow: hidden;">
+                                <div class="sub-preview-container">
                                     <iframe :srcdoc="subTemplateModal.previewHtml" style="width: 100%; height: 100%; border: none;"></iframe>
                                 </div>
                             </div>
@@ -1170,7 +1241,11 @@
                 visible: false,
                 loading: false,
                 saving: false,
+                activeTab: 'catalog',
                 customUrl: '',
+                uploadedFileName: '',
+                uploadedFileSize: 0,
+                uploadedContent: '',
                 editorContent: '',
                 previewHtml: '',
                 msg: '',
@@ -1450,13 +1525,24 @@
             },
             async openSubTemplateModal() {
                 this.subTemplateModal.visible = true;
+                this.subTemplateModal.activeTab = 'catalog';
+                this.subTemplateModal.uploadedFileName = '';
+                this.subTemplateModal.uploadedFileSize = 0;
+                this.subTemplateModal.uploadedContent = '';
                 await this.fetchSubTemplates();
                 await this.loadSubTemplateContent();
             },
             onSubTemplateTabChange(key) {
+                this.subTemplateModal.activeTab = key;
                 if (key === 'editor') {
                     this.$nextTick(() => {
                         this.initSubTemplateCodeMirror();
+                        setTimeout(() => {
+                            if (this.cmSubEditor) this.cmSubEditor.refresh();
+                        }, 100);
+                        setTimeout(() => {
+                            if (this.cmSubEditor) this.cmSubEditor.refresh();
+                        }, 300);
                     });
                 }
             },
@@ -1484,7 +1570,98 @@
                 }
                 setTimeout(() => {
                     if (this.cmSubEditor) this.cmSubEditor.refresh();
-                }, 120);
+                }, 100);
+                setTimeout(() => {
+                    if (this.cmSubEditor) this.cmSubEditor.refresh();
+                }, 300);
+            },
+            handleSubFileUpload(file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const text = e.target.result;
+                    if (!text || text.trim().length === 0) {
+                        this.$message.error('The selected file is empty!');
+                        return;
+                    }
+                    this.subTemplateModal.uploadedFileName = file.name;
+                    this.subTemplateModal.uploadedFileSize = file.size;
+                    this.subTemplateModal.uploadedContent = text;
+                    this.$message.success('{{ i18n "pages.settings.subTemplateModalUploadSuccess" }}');
+                };
+                reader.onerror = () => {
+                    this.$message.error('Failed to read template file');
+                };
+                reader.readAsText(file);
+                return false;
+            },
+            handleSubFileUploadForEditor(file) {
+                const reader = new FileReader();
+                reader.onload = async (e) => {
+                    const text = e.target.result;
+                    if (!text || text.trim().length === 0) {
+                        this.$message.error('The selected file is empty!');
+                        return;
+                    }
+                    this.subTemplateModal.editorContent = text;
+                    if (this.cmSubEditor) {
+                        this.cmSubEditor.setValue(text);
+                        setTimeout(() => { this.cmSubEditor.refresh(); }, 50);
+                    }
+                    await this.renderSubTemplatePreview();
+                    this.$message.success('{{ i18n "pages.settings.subTemplateModalUploadSuccess" }}');
+                };
+                reader.onerror = () => {
+                    this.$message.error('Failed to read template file');
+                };
+                reader.readAsText(file);
+                return false;
+            },
+            openUploadedInEditor() {
+                if (!this.subTemplateModal.uploadedContent) return;
+                this.subTemplateModal.editorContent = this.subTemplateModal.uploadedContent;
+                if (this.cmSubEditor) {
+                    this.cmSubEditor.setValue(this.subTemplateModal.editorContent);
+                }
+                this.subTemplateModal.activeTab = 'editor';
+                this.renderSubTemplatePreview();
+                this.$nextTick(() => {
+                    setTimeout(() => {
+                        if (this.cmSubEditor) this.cmSubEditor.refresh();
+                    }, 100);
+                    setTimeout(() => {
+                        if (this.cmSubEditor) this.cmSubEditor.refresh();
+                    }, 300);
+                });
+            },
+            async saveUploadedSubTemplate() {
+                if (!this.subTemplateModal.uploadedContent) return;
+                this.subTemplateModal.saving = true;
+                this.subTemplateModal.msg = '';
+                try {
+                    const res = await HttpUtil.post('/panel/api/server/saveSubTemplateContent', { content: this.subTemplateModal.uploadedContent });
+                    if (res.success) {
+                        this.subTemplateModal.msg = res.msg || '{{ i18n "pages.settings.subTemplateModalApplySuccess" }}';
+                        this.subTemplateModal.msgType = 'success';
+                        this.subTemplateModal.isCustom = true;
+                        this.allSetting.subCustomUI = true;
+                        this.subTemplateModal.editorContent = this.subTemplateModal.uploadedContent;
+                        if (this.cmSubEditor) {
+                            this.cmSubEditor.setValue(this.subTemplateModal.editorContent);
+                        }
+                        await this.renderSubTemplatePreview();
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 2500);
+                    } else {
+                        this.subTemplateModal.msg = res.msg || '{{ i18n "pages.settings.subTemplateModalApplyFail" }}';
+                        this.subTemplateModal.msgType = 'error';
+                    }
+                } catch (e) {
+                    this.subTemplateModal.msg = 'Save error: ' + e.message;
+                    this.subTemplateModal.msgType = 'error';
+                } finally {
+                    this.subTemplateModal.saving = false;
+                }
             },
             async loadSubTemplateContent() {
                 try {
