@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [v0.9.8] - 2026-11-13
 
 ### 🚀 Features & Enhancements
+- **Full OpenWrt & `musl` libc Router Support**:
+  - **Static `musl` Release Binaries**: Updated `.github/workflows/release.yml`, `build.sh`, and `build.ps1` to cross-compile Linux release binaries statically against `musl` (`cross-tools/musl-cross` with `-D_LARGEFILE64_SOURCE`, `-linkmode external -extldflags '-static'`, `GOMIPS=softfloat` for 32-bit MIPS, or pure-Go `CGO_ENABLED=0` static fallback) and bundle the new OpenWrt service script.
+  - **OpenWrt `procd` Init Script (`x-ui.init`)**: Added native `/etc/init.d/x-ui` `procd` service support loading `/etc/x-ui/x-ui.env`, setting file descriptor limits, and managing foreground execution & shutdown.
+  - **Pure POSIX `/bin/sh` Installer & Management Script**: Rewrote `install.sh` and `x-ui.sh` with zero `bash` dependencies to run natively on OpenWrt BusyBox `ash`, `opkg`/`apk`, `procd`, UCI firewall rules, `logread` logs, `musl` detection, MIPS/MIPSLE endianness detection, and `wget`/`uclient-fetch`/`curl`.
+  - **Runtime OpenWrt Portability & Manual Install Docs**: Updated Go binary path resolution (`config.go`, `main.go`, `xray/process.go`, `internal/mtproto/process.go`), in-panel self-update & restart/log fallbacks (`internal/web/controller/server.go`, `internal/web/service/server.go`), and manual installation guides across all localized READMEs.
 - **WireGuard Outbound Protocol Parser (`wireguard://` & `.conf`)**:
   - **Dual Format Parser**: Enhanced the Outbound creation modal with native parsing for both standard WireGuard INI configuration files (`.conf` format containing `[Interface]` and `[Peer]` sections) and `wireguard://` link URIs in `outbound.js`.
   - **Direct `.conf` File Upload**: Added an upload button (`Upload .conf`) in the Outbound modal (`outbound.html`, `xray_outbound_modal.html`) that reads and automatically parses `.conf` and `.txt` files directly into outbound form fields and JSON representations.

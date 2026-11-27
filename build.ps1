@@ -96,55 +96,62 @@ if ($Help) {
 # Supported platforms definition
 $PlatformMap = [ordered]@{
     "linux-amd64" = @{
-        GOOS = "linux"; GOARCH = "amd64"; GOARM = "";
+        GOOS = "linux"; GOARCH = "amd64"; GOARM = ""; GOMIPS = "";
+        MuslTriple = "x86_64-unknown-linux-musl";
         XrayZip = "Xray-linux-64.zip"; XrayBin = "xray-linux-amd64";
         MtgTar = "mtg-multi-$MtgVersion-linux-amd64.tar.gz"; MtgBin = "mtg-linux-amd64";
         ZigTarget = "x86_64-linux-musl"; GccPrefix = "x86_64-linux-gnu-";
         OutBin = "x-ui"; Archive = "x-ui-linux-amd64.tar.gz"; Format = "tar.gz";
-        Aliases = @("linux/amd64", "linux_amd64", "linux64")
+        Aliases = @("linux/amd64", "linux_amd64", "linux64", "openwrt-amd64", "openwrt-x86_64")
     }
     "linux-arm64" = @{
-        GOOS = "linux"; GOARCH = "arm64"; GOARM = "";
+        GOOS = "linux"; GOARCH = "arm64"; GOARM = ""; GOMIPS = "";
+        MuslTriple = "aarch64-unknown-linux-musl";
         XrayZip = "Xray-linux-arm64-v8a.zip"; XrayBin = "xray-linux-arm64";
         MtgTar = "mtg-multi-$MtgVersion-linux-arm64.tar.gz"; MtgBin = "mtg-linux-arm64";
         ZigTarget = "aarch64-linux-musl"; GccPrefix = "aarch64-linux-gnu-";
         OutBin = "x-ui"; Archive = "x-ui-linux-arm64.tar.gz"; Format = "tar.gz";
-        Aliases = @("linux/arm64", "linux_arm64", "aarch64", "arm64")
+        Aliases = @("linux/arm64", "linux_arm64", "aarch64", "arm64", "openwrt-arm64", "openwrt-aarch64")
     }
     "linux-armv7" = @{
-        GOOS = "linux"; GOARCH = "arm"; GOARM = "7";
+        GOOS = "linux"; GOARCH = "arm"; GOARM = "7"; GOMIPS = "";
+        MuslTriple = "armv7-unknown-linux-musleabihf";
         XrayZip = "Xray-linux-arm32-v7a.zip"; XrayBin = "xray-linux-arm";
         MtgTar = "mtg-multi-$MtgVersion-linux-armv7.tar.gz"; MtgBin = "mtg-linux-arm";
         ZigTarget = "arm-linux-musleabihf"; GccPrefix = "arm-linux-gnueabihf-";
         OutBin = "x-ui"; Archive = "x-ui-linux-armv7.tar.gz"; Format = "tar.gz";
-        Aliases = @("linux/armv7", "armv7", "arm32-v7a", "linux-arm")
+        Aliases = @("linux/armv7", "armv7", "arm32-v7a", "linux-arm", "openwrt-armv7", "openwrt-arm")
     }
     "linux-armv6" = @{
-        GOOS = "linux"; GOARCH = "arm"; GOARM = "6";
+        GOOS = "linux"; GOARCH = "arm"; GOARM = "6"; GOMIPS = "";
+        MuslTriple = "arm-unknown-linux-musleabihf";
         XrayZip = "Xray-linux-arm32-v6.zip"; XrayBin = "xray-linux-arm";
         MtgTar = "mtg-multi-$MtgVersion-linux-armv6.tar.gz"; MtgBin = "mtg-linux-arm";
         ZigTarget = "arm-linux-musleabihf"; GccPrefix = "arm-linux-gnueabihf-";
         OutBin = "x-ui"; Archive = "x-ui-linux-armv6.tar.gz"; Format = "tar.gz";
-        Aliases = @("linux/armv6", "armv6", "arm32-v6")
+        Aliases = @("linux/armv6", "armv6", "arm32-v6", "openwrt-armv6")
     }
     "linux-armv5" = @{
-        GOOS = "linux"; GOARCH = "arm"; GOARM = "5";
+        GOOS = "linux"; GOARCH = "arm"; GOARM = "5"; GOMIPS = "";
+        MuslTriple = "arm-unknown-linux-musleabi";
         XrayZip = "Xray-linux-arm32-v5.zip"; XrayBin = "xray-linux-arm";
         MtgTar = "mtg-multi-$MtgVersion-linux-armv5.tar.gz"; MtgBin = "mtg-linux-arm";
         ZigTarget = "arm-linux-musleabi"; GccPrefix = "arm-linux-gnueabi-";
         OutBin = "x-ui"; Archive = "x-ui-linux-armv5.tar.gz"; Format = "tar.gz";
-        Aliases = @("linux/armv5", "armv5", "arm32-v5")
+        Aliases = @("linux/armv5", "armv5", "arm32-v5", "openwrt-armv5")
     }
     "linux-386" = @{
-        GOOS = "linux"; GOARCH = "386"; GOARM = "";
+        GOOS = "linux"; GOARCH = "386"; GOARM = ""; GOMIPS = "";
+        MuslTriple = "i686-unknown-linux-musl";
         XrayZip = "Xray-linux-32.zip"; XrayBin = "xray-linux-386";
         MtgTar = "mtg-multi-$MtgVersion-linux-386.tar.gz"; MtgBin = "mtg-linux-386";
         ZigTarget = "i386-linux-musl"; GccPrefix = "i686-linux-gnu-";
         OutBin = "x-ui"; Archive = "x-ui-linux-386.tar.gz"; Format = "tar.gz";
-        Aliases = @("linux/386", "linux-i386", "linux-32")
+        Aliases = @("linux/386", "linux-i386", "linux-32", "openwrt-386", "openwrt-x86")
     }
     "linux-s390x" = @{
-        GOOS = "linux"; GOARCH = "s390x"; GOARM = "";
+        GOOS = "linux"; GOARCH = "s390x"; GOARM = ""; GOMIPS = "";
+        MuslTriple = "s390x-ibm-linux-musl";
         XrayZip = "Xray-linux-s390x.zip"; XrayBin = "xray-linux-s390x";
         MtgTar = "mtg-multi-$MtgVersion-linux-s390x.tar.gz"; MtgBin = "mtg-linux-s390x";
         ZigTarget = "s390x-linux-musl"; GccPrefix = "s390x-linux-gnu-";
@@ -152,7 +159,7 @@ $PlatformMap = [ordered]@{
         Aliases = @("linux/s390x", "s390x")
     }
     "windows-amd64" = @{
-        GOOS = "windows"; GOARCH = "amd64"; GOARM = "";
+        GOOS = "windows"; GOARCH = "amd64"; GOARM = ""; GOMIPS = "";
         XrayZip = "Xray-windows-64.zip"; XrayBin = "xray-windows-amd64.exe";
         MtgZip = "mtg-multi-$MtgVersion-windows-amd64.zip"; MtgBin = "mtg-windows-amd64.exe";
         ZigTarget = "x86_64-windows-gnu"; GccPrefix = "x86_64-w64-mingw32-";
@@ -160,7 +167,7 @@ $PlatformMap = [ordered]@{
         Aliases = @("windows/amd64", "windows-64", "win64", "windows")
     }
     "windows-arm64" = @{
-        GOOS = "windows"; GOARCH = "arm64"; GOARM = "";
+        GOOS = "windows"; GOARCH = "arm64"; GOARM = ""; GOMIPS = "";
         XrayZip = "Xray-windows-arm64-v8a.zip"; XrayBin = "xray-windows-arm64.exe";
         MtgZip = "mtg-multi-$MtgVersion-windows-arm64.zip"; MtgBin = "mtg-windows-arm64.exe";
         ZigTarget = "aarch64-windows-gnu"; GccPrefix = "aarch64-w64-mingw32-";
@@ -168,7 +175,7 @@ $PlatformMap = [ordered]@{
         Aliases = @("windows/arm64", "win-arm64")
     }
     "windows-386" = @{
-        GOOS = "windows"; GOARCH = "386"; GOARM = "";
+        GOOS = "windows"; GOARCH = "386"; GOARM = ""; GOMIPS = "";
         XrayZip = "Xray-windows-32.zip"; XrayBin = "xray-windows-386.exe";
         MtgZip = "mtg-multi-$MtgVersion-windows-386.zip"; MtgBin = "mtg-windows-386.exe";
         ZigTarget = "i386-windows-gnu"; GccPrefix = "i686-w64-mingw32-";
@@ -176,7 +183,7 @@ $PlatformMap = [ordered]@{
         Aliases = @("windows/386", "windows-32", "win32")
     }
     "darwin-amd64" = @{
-        GOOS = "darwin"; GOARCH = "amd64"; GOARM = "";
+        GOOS = "darwin"; GOARCH = "amd64"; GOARM = ""; GOMIPS = "";
         XrayZip = "Xray-macos-64.zip"; XrayBin = "xray-darwin-amd64";
         MtgTar = ""; MtgBin = "";
         ZigTarget = "x86_64-macos-none"; GccPrefix = "o64-clang";
@@ -193,46 +200,52 @@ $PlatformMap = [ordered]@{
     }
     "linux-riscv64" = @{
         GOOS = "linux"; GOARCH = "riscv64"; GOARM = ""; GOMIPS = "";
+        MuslTriple = "riscv64-unknown-linux-musl";
         XrayZip = "Xray-linux-riscv64.zip"; XrayBin = "xray-linux-riscv64";
         MtgTar = ""; MtgBin = "";
         ZigTarget = "riscv64-linux-musl"; GccPrefix = "riscv64-linux-gnu-";
         OutBin = "x-ui"; Archive = "x-ui-linux-riscv64.tar.gz"; Format = "tar.gz";
-        Aliases = @("linux/riscv64", "riscv64")
+        Aliases = @("linux/riscv64", "riscv64", "openwrt-riscv64")
     }
     "linux-mips" = @{
-        GOOS = "linux"; GOARCH = "mips"; GOARM = ""; GOMIPS = "";
+        GOOS = "linux"; GOARCH = "mips"; GOARM = ""; GOMIPS = "softfloat";
+        MuslTriple = "mips-unknown-linux-muslsf";
         XrayZip = "Xray-linux-mips32.zip"; XrayBin = "xray-linux-mips";
         MtgTar = ""; MtgBin = "";
         ZigTarget = "mips-linux-musl"; GccPrefix = "mips-linux-gnu-";
         OutBin = "x-ui"; Archive = "x-ui-linux-mips.tar.gz"; Format = "tar.gz";
-        Aliases = @("linux/mips", "mips", "mips32")
+        Aliases = @("linux/mips", "mips", "mips32", "openwrt-mips")
     }
     "linux-mipsle" = @{
-        GOOS = "linux"; GOARCH = "mipsle"; GOARM = ""; GOMIPS = "";
+        GOOS = "linux"; GOARCH = "mipsle"; GOARM = ""; GOMIPS = "softfloat";
+        MuslTriple = "mipsel-unknown-linux-muslsf";
         XrayZip = "Xray-linux-mips32le.zip"; XrayBin = "xray-linux-mipsle";
         MtgTar = ""; MtgBin = "";
         ZigTarget = "mipsel-linux-musl"; GccPrefix = "mipsel-linux-gnu-";
         OutBin = "x-ui"; Archive = "x-ui-linux-mipsle.tar.gz"; Format = "tar.gz";
-        Aliases = @("linux/mipsle", "mipsle", "mips32le")
+        Aliases = @("linux/mipsle", "mipsle", "mips32le", "openwrt-mipsle", "openwrt-mipsel")
     }
     "linux-mips64" = @{
         GOOS = "linux"; GOARCH = "mips64"; GOARM = ""; GOMIPS = "";
+        MuslTriple = "mips64-unknown-linux-musl";
         XrayZip = "Xray-linux-mips64.zip"; XrayBin = "xray-linux-mips64";
         MtgTar = ""; MtgBin = "";
         ZigTarget = "mips64-linux-musl"; GccPrefix = "mips64-linux-gnuabi64-";
         OutBin = "x-ui"; Archive = "x-ui-linux-mips64.tar.gz"; Format = "tar.gz";
-        Aliases = @("linux/mips64", "mips64")
+        Aliases = @("linux/mips64", "mips64", "openwrt-mips64")
     }
     "linux-mips64le" = @{
         GOOS = "linux"; GOARCH = "mips64le"; GOARM = ""; GOMIPS = "";
+        MuslTriple = "mips64el-unknown-linux-musl";
         XrayZip = "Xray-linux-mips64le.zip"; XrayBin = "xray-linux-mips64le";
         MtgTar = ""; MtgBin = "";
         ZigTarget = "mips64el-linux-musl"; GccPrefix = "mips64el-linux-gnuabi64-";
         OutBin = "x-ui"; Archive = "x-ui-linux-mips64le.tar.gz"; Format = "tar.gz";
-        Aliases = @("linux/mips64le", "mips64le")
+        Aliases = @("linux/mips64le", "mips64le", "openwrt-mips64le")
     }
     "linux-ppc64le" = @{
         GOOS = "linux"; GOARCH = "ppc64le"; GOARM = ""; GOMIPS = "";
+        MuslTriple = "powerpc64le-unknown-linux-musl";
         XrayZip = "Xray-linux-ppc64le.zip"; XrayBin = "xray-linux-ppc64le";
         MtgTar = ""; MtgBin = "";
         ZigTarget = "powerpc64le-linux-musl"; GccPrefix = "powerpc64le-linux-gnu-";
@@ -265,11 +278,12 @@ $PlatformMap = [ordered]@{
     }
     "linux-loong64" = @{
         GOOS = "linux"; GOARCH = "loong64"; GOARM = ""; GOMIPS = "";
+        MuslTriple = "loongarch64-unknown-linux-musl";
         XrayZip = "Xray-linux-loong64.zip"; XrayBin = "xray-linux-loong64";
         MtgTar = ""; MtgBin = "";
         ZigTarget = "loongarch64-linux-musl"; GccPrefix = "loongarch64-linux-gnu-";
         OutBin = "x-ui"; Archive = "x-ui-linux-loong64.tar.gz"; Format = "tar.gz";
-        Aliases = @("linux/loong64", "loong64")
+        Aliases = @("linux/loong64", "loong64", "openwrt-loong64")
     }
 }
 
@@ -306,6 +320,7 @@ $HostPlatform = Get-HostPlatform
 
 # Normalize target list
 $ResolvedTargets = [System.Collections.Generic.List[string]]::new()
+$OpenWrtTargets = [System.Collections.Generic.HashSet[string]]::new()
 foreach ($entry in $Target) {
     $tokens = $entry -split "[,;\s]+"
     foreach ($token in $tokens) {
@@ -335,6 +350,9 @@ foreach ($entry in $Target) {
             if (-not $ResolvedTargets.Contains($matched)) {
                 $ResolvedTargets.Add($matched)
             }
+            if ($t.StartsWith("openwrt-")) {
+                $null = $OpenWrtTargets.Add($matched)
+            }
         } else {
             Write-Warning "Unknown target platform: '$token'. Skipping."
         }
@@ -354,45 +372,78 @@ function Resolve-Compiler {
     )
 
     if ($Cgo -eq "0") {
-        return @{ CgoEnabled = "0"; CC = $null; Note = "Pure Go (CGO disabled)" }
+        return @{ CgoEnabled = "0"; CC = $null; IsMusl = $false; Note = "Pure Go (CGO disabled)" }
     }
 
+    $forceStaticLinux = ($Info.GOOS -eq "linux") -and $OpenWrtTargets.Contains($TargetKey)
+
     if ($env:CC) {
-        return @{ CgoEnabled = "1"; CC = $env:CC; Note = "Using CC from environment: $env:CC" }
+        $isMusl = ($env:CC -match "musl")
+        return @{ CgoEnabled = "1"; CC = $env:CC; IsMusl = $isMusl; Note = "Using CC from environment: $env:CC" }
+    }
+
+    # Prefer musl cross-compiler or zig for Linux targets so binaries run statically on OpenWrt & Linux
+    if ($Info.GOOS -eq "linux") {
+        $muslCandidates = [System.Collections.Generic.List[string]]::new()
+        if ($Info.MuslTriple) {
+            $muslCandidates.Add("$($Info.MuslTriple)-gcc")
+            $muslCandidates.Add("/opt/x-tools/$($Info.MuslTriple)/bin/$($Info.MuslTriple)-gcc")
+        }
+        if ($Info.ZigTarget) {
+            $muslCandidates.Add("$($Info.ZigTarget)-gcc")
+            $muslCandidates.Add("/opt/x-tools/$($Info.ZigTarget)/bin/$($Info.ZigTarget)-gcc")
+        }
+        foreach ($cand in $muslCandidates) {
+            if ((Test-Path $cand) -or (Get-Command $cand -ErrorAction SilentlyContinue)) {
+                return @{ CgoEnabled = "1"; CC = $cand; IsMusl = $true; Note = "Musl GCC (static OpenWrt + Linux): $cand" }
+            }
+        }
+
+        if (Get-Command zig -ErrorAction SilentlyContinue) {
+            if ($Info.ZigTarget) {
+                return @{ CgoEnabled = "1"; CC = "zig cc -target $($Info.ZigTarget)"; IsMusl = $true; Note = "Zig CC ($($Info.ZigTarget), static)" }
+            }
+        }
     }
 
     # Host build
     if ($TargetKey -eq $HostPlatform) {
-        if (Get-Command gcc -ErrorAction SilentlyContinue) {
-            return @{ CgoEnabled = "1"; CC = "gcc"; Note = "Host GCC" }
+        if ($Info.GOOS -eq "linux" -and (Get-Command musl-gcc -ErrorAction SilentlyContinue)) {
+            return @{ CgoEnabled = "1"; CC = "musl-gcc"; IsMusl = $true; Note = "Host musl-gcc (static)" }
         }
-        if (Get-Command clang -ErrorAction SilentlyContinue) {
-            return @{ CgoEnabled = "1"; CC = "clang"; Note = "Host Clang" }
+        if (-not $forceStaticLinux) {
+            if (Get-Command gcc -ErrorAction SilentlyContinue) {
+                return @{ CgoEnabled = "1"; CC = "gcc"; IsMusl = $false; Note = "Host GCC" }
+            }
+            if (Get-Command clang -ErrorAction SilentlyContinue) {
+                return @{ CgoEnabled = "1"; CC = "clang"; IsMusl = $false; Note = "Host Clang" }
+            }
         }
     }
 
-    # Target-specific cross-compiler
-    if ($Info.GccPrefix) {
+    # Target-specific cross-compiler (skip glibc compiler when openwrt-* requested so pure Go static fallback is used)
+    if (-not $forceStaticLinux -and $Info.GccPrefix) {
         $crossGcc = "$($Info.GccPrefix)gcc"
         if (Get-Command $crossGcc -ErrorAction SilentlyContinue) {
-            return @{ CgoEnabled = "1"; CC = $crossGcc; Note = "Target GCC: $crossGcc" }
+            return @{ CgoEnabled = "1"; CC = $crossGcc; IsMusl = $false; Note = "Target GCC: $crossGcc" }
         }
     }
 
-    # Zig cross-compiler
+    # Zig cross-compiler (non-Linux or fallback)
     if (Get-Command zig -ErrorAction SilentlyContinue) {
         if ($Info.ZigTarget) {
-            return @{ CgoEnabled = "1"; CC = "zig cc -target $($Info.ZigTarget)"; Note = "Zig CC ($($Info.ZigTarget))" }
+            $isMusl = ($Info.ZigTarget -match "musl")
+            return @{ CgoEnabled = "1"; CC = "zig cc -target $($Info.ZigTarget)"; IsMusl = $isMusl; Note = "Zig CC ($($Info.ZigTarget))" }
         }
     }
 
     # If CGO was explicitly required
     if ($Cgo -eq "1") {
-        throw "CGO is required (-Cgo 1) for $TargetKey but no cross-compiler was found. Install $($Info.GccPrefix)gcc or install zig."
+        throw "CGO is required (-Cgo 1) for $TargetKey but no cross-compiler was found. Install musl-cross / $($Info.GccPrefix)gcc or zig."
     }
 
     # Fallback to pure Go
-    return @{ CgoEnabled = "0"; CC = $null; Note = "Pure Go fallback (CGO_ENABLED=0 with pure-Go SQLite)" }
+    return @{ CgoEnabled = "0"; CC = $null; IsMusl = $false; Note = "Pure Go fallback (CGO_ENABLED=0 with pure-Go SQLite)" }
 }
 
 # Asset Downloader with Local Cache
@@ -501,6 +552,10 @@ foreach ($targetKey in $ResolvedTargets) {
     } else {
         Remove-Item Env:\CC -ErrorAction SilentlyContinue
     }
+    $savedCgoCflags = $env:CGO_CFLAGS
+    if ($compiler.CgoEnabled -eq "1" -and $info.GOOS -eq "linux") {
+        $env:CGO_CFLAGS = if ($savedCgoCflags) { "$savedCgoCflags -D_LARGEFILE64_SOURCE" } else { "-D_LARGEFILE64_SOURCE" }
+    }
 
     # Staging paths
     $targetDir = Join-Path $OutputDir $targetKey
@@ -512,8 +567,26 @@ foreach ($targetKey in $ResolvedTargets) {
     $ext = if ($info.GOOS -eq "windows") { ".exe" } else { "" }
     $directBinPath = Join-Path $OutputDir "x-ui-$targetKey$ext"
 
+    if ($null -eq $script:VendorNeedsReadonly) {
+        $script:VendorNeedsReadonly = $false
+        if (Test-Path "vendor") {
+            & go list -mod=vendor . 2>$null | Out-Null
+            if ($LASTEXITCODE -ne 0) {
+                $script:VendorNeedsReadonly = $true
+            }
+        }
+    }
+
     # Build Go binary
-    $buildArgs = @("build", "-ldflags", $Ldflags)
+    $effectiveLdflags = $Ldflags
+    if ($compiler.IsMusl -and $effectiveLdflags -notmatch "-extldflags") {
+        $effectiveLdflags = "$effectiveLdflags -linkmode external -extldflags '-static'"
+    }
+    $buildArgs = @("build")
+    if ($script:VendorNeedsReadonly) {
+        $buildArgs += "-mod=readonly"
+    }
+    $buildArgs += @("-ldflags", $effectiveLdflags)
     if ($Tags) {
         $buildArgs += @("-tags", $Tags)
     }
@@ -536,6 +609,12 @@ foreach ($targetKey in $ResolvedTargets) {
         Write-Host "  [FAIL] Compilation failed: $_" -ForegroundColor Red
         $FailCount++
         continue
+    } finally {
+        if ($null -ne $savedCgoCflags) {
+            $env:CGO_CFLAGS = $savedCgoCflags
+        } else {
+            Remove-Item Env:\CGO_CFLAGS -ErrorAction SilentlyContinue
+        }
     }
 
     # Download Assets & Package if requested
@@ -623,6 +702,7 @@ foreach ($targetKey in $ResolvedTargets) {
         # 4. Copy scripts and service units
         if (Test-Path "x-ui.sh") { Copy-Item "x-ui.sh" $stagingDir -Force }
         if (Test-Path "x-ui.service") { Copy-Item "x-ui.service" $stagingDir -Force }
+        if (Test-Path "x-ui.init") { Copy-Item "x-ui.init" $stagingDir -Force }
         if ($info.GOOS -eq "windows") {
             if (Test-Path "bin/wintun.dll") { Copy-Item "bin/wintun.dll" $binDir -Force }
             if (Test-Path "bin/xray_no_window.ps1") { Copy-Item "bin/xray_no_window.ps1" $binDir -Force }

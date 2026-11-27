@@ -72,37 +72,51 @@ jobs:
       - name: Install dependencies (Linux)
         if: runner.os == 'Linux'
         run: |
-          sudo apt-get update
-          if [ "${{ matrix.platform }}" == "linux-arm64" ]; then
-            sudo apt install -y gcc-aarch64-linux-gnu
-          elif [ "${{ matrix.platform }}" == "linux-armv7" ]; then
-            sudo apt install -y gcc-arm-linux-gnueabihf
-          elif [ "${{ matrix.platform }}" == "linux-armv6" ]; then
-            sudo apt install -y gcc-arm-linux-gnueabihf
-          elif [ "${{ matrix.platform }}" == "linux-386" ]; then
-            sudo apt install -y gcc-i686-linux-gnu
-          elif [ "${{ matrix.platform }}" == "linux-armv5" ]; then
-            sudo apt install -y gcc-arm-linux-gnueabi
-          elif [ "${{ matrix.platform }}" == "linux-s390x" ]; then
-            sudo apt install -y gcc-s390x-linux-gnu
-          elif [ "${{ matrix.platform }}" == "linux-riscv64" ]; then
-            sudo apt install -y gcc-riscv64-linux-gnu || true
-          elif [ "${{ matrix.platform }}" == "linux-mips" ]; then
-            sudo apt install -y gcc-mips-linux-gnu || true
-          elif [ "${{ matrix.platform }}" == "linux-mipsle" ]; then
-            sudo apt install -y gcc-mipsel-linux-gnu || true
-          elif [ "${{ matrix.platform }}" == "linux-mips64" ]; then
-            sudo apt install -y gcc-mips64-linux-gnuabi64 || true
-          elif [ "${{ matrix.platform }}" == "linux-mips64le" ]; then
-            sudo apt install -y gcc-mips64el-linux-gnuabi64 || true
-          elif [ "${{ matrix.platform }}" == "linux-ppc64le" ]; then
-            sudo apt install -y gcc-powerpc64le-linux-gnu || true
+          PLATFORM="${{ matrix.platform }}"
+          MUSL_TRIPLE=""
+          MUSL_CC_ARCHIVE=""
+          case "$PLATFORM" in
+            linux-amd64)    MUSL_TRIPLE="x86_64-unknown-linux-musl" ;;
+            linux-arm64)    MUSL_TRIPLE="aarch64-unknown-linux-musl" ;;
+            linux-armv7)    MUSL_TRIPLE="armv7-unknown-linux-musleabihf" ;;
+            linux-armv6)    MUSL_TRIPLE="arm-unknown-linux-musleabihf" ;;
+            linux-armv5)    MUSL_TRIPLE="arm-unknown-linux-musleabi" ;;
+            linux-386)      MUSL_TRIPLE="i686-unknown-linux-musl" ;;
+            linux-s390x)    MUSL_TRIPLE="s390x-ibm-linux-musl" ;;
+            linux-riscv64)  MUSL_TRIPLE="riscv64-unknown-linux-musl" ;;
+            linux-mips)     MUSL_TRIPLE="mips-unknown-linux-muslsf"; MUSL_CC_ARCHIVE="mips-linux-muslsf-cross.tgz" ;;
+            linux-mipsle)   MUSL_TRIPLE="mipsel-unknown-linux-muslsf"; MUSL_CC_ARCHIVE="mipsel-linux-muslsf-cross.tgz" ;;
+            linux-mips64)   MUSL_TRIPLE="mips64-unknown-linux-musl"; MUSL_CC_ARCHIVE="mips64-linux-musl-cross.tgz" ;;
+            linux-mips64le) MUSL_TRIPLE="mips64el-unknown-linux-musl"; MUSL_CC_ARCHIVE="mips64el-linux-musl-cross.tgz" ;;
+            linux-ppc64le)  MUSL_TRIPLE="powerpc64le-unknown-linux-musl" ;;
+            linux-loong64)  MUSL_TRIPLE="loongarch64-unknown-linux-musl" ;;
+          esac
+
+          if [ -n "$MUSL_TRIPLE" ]; then
+            if ! command -v xz >/dev/null 2>&1; then
+              sudo apt-get update && sudo apt-get install -y xz-utils
+            fi
+            sudo mkdir -p /opt/x-tools
+            if curl -fsSL --retry 3 --retry-delay 3 \
+                "https://github.com/cross-tools/musl-cross/releases/latest/download/${MUSL_TRIPLE}.tar.xz" \
+                -o /tmp/musl-cross.tar.xz; then
+              sudo tar -xf /tmp/musl-cross.tar.xz -C /opt/x-tools
+              rm -f /tmp/musl-cross.tar.xz
+            elif [ -n "$MUSL_CC_ARCHIVE" ] && curl -fsSL --retry 3 --retry-delay 3 \
+                "https://musl.cc/${MUSL_CC_ARCHIVE}" \
+                -o /tmp/musl-cc.tgz; then
+              sudo tar -xzf /tmp/musl-cc.tgz -C /opt/x-tools
+              rm -f /tmp/musl-cc.tgz
+            else
+              echo "::warning::Failed to download musl toolchain for ${PLATFORM}; non-MIPS targets will fall back to CGO_ENABLED=0."
+            fi
           fi
 
       - name: Build x-ui (Linux / macOS)
         if: runner.os != 'Windows'
         run: |
           export CGO_ENABLED=1
+          LDFLAGS="-w -s"
           if [ "${{ runner.os }}" == "macOS" ]; then
             if [ "${{ matrix.platform }}" == "darwin-amd64" ]; then
               export GOOS=darwin
@@ -123,83 +137,104 @@ jobs:
             fi
           else
             export GOOS=linux
-            if [ "${{ matrix.platform }}" == "linux-amd64" ]; then
-              export GOARCH=amd64
-            elif [ "${{ matrix.platform }}" == "linux-arm64" ]; then
-              export GOARCH=arm64
-              export CC=aarch64-linux-gnu-gcc
-            elif [ "${{ matrix.platform }}" == "linux-armv7" ]; then
-              export GOARCH=arm
-              export GOARM=7
-              export CC=arm-linux-gnueabihf-gcc
-            elif [ "${{ matrix.platform }}" == "linux-armv6" ]; then
-              export GOARCH=arm
-              export GOARM=6
-              export CC=arm-linux-gnueabihf-gcc
-            elif [ "${{ matrix.platform }}" == "linux-386" ]; then
-              export GOARCH=386
-              export CC=i686-linux-gnu-gcc
-            elif [ "${{ matrix.platform }}" == "linux-armv5" ]; then
-              export GOARCH=arm
-              export GOARM=5
-              export CC=arm-linux-gnueabi-gcc
-            elif [ "${{ matrix.platform }}" == "linux-s390x" ]; then
-              export GOARCH=s390x
-              export CC=s390x-linux-gnu-gcc
-            elif [ "${{ matrix.platform }}" == "linux-riscv64" ]; then
-              export GOARCH=riscv64
-              if command -v riscv64-linux-gnu-gcc >/dev/null 2>&1; then
-                export CC=riscv64-linux-gnu-gcc
-              else
-                export CGO_ENABLED=0
-              fi
-            elif [ "${{ matrix.platform }}" == "linux-mips" ]; then
-              export GOARCH=mips
-              if command -v mips-linux-gnu-gcc >/dev/null 2>&1; then
-                export CC=mips-linux-gnu-gcc
-              else
-                export CGO_ENABLED=0
-              fi
-            elif [ "${{ matrix.platform }}" == "linux-mipsle" ]; then
-              export GOARCH=mipsle
-              if command -v mipsel-linux-gnu-gcc >/dev/null 2>&1; then
-                export CC=mipsel-linux-gnu-gcc
-              else
-                export CGO_ENABLED=0
-              fi
-            elif [ "${{ matrix.platform }}" == "linux-mips64" ]; then
-              export GOARCH=mips64
-              if command -v mips64-linux-gnuabi64-gcc >/dev/null 2>&1; then
-                export CC=mips64-linux-gnuabi64-gcc
-              else
-                export CGO_ENABLED=0
-              fi
-            elif [ "${{ matrix.platform }}" == "linux-mips64le" ]; then
-              export GOARCH=mips64le
-              if command -v mips64el-linux-gnuabi64-gcc >/dev/null 2>&1; then
-                export CC=mips64el-linux-gnuabi64-gcc
-              else
-                export CGO_ENABLED=0
-              fi
-            elif [ "${{ matrix.platform }}" == "linux-ppc64le" ]; then
-              export GOARCH=ppc64le
-              if command -v powerpc64le-linux-gnu-gcc >/dev/null 2>&1; then
-                export CC=powerpc64le-linux-gnu-gcc
-              else
-                export CGO_ENABLED=0
-              fi
-            elif [ "${{ matrix.platform }}" == "linux-loong64" ]; then
-              export GOARCH=loong64
+            MUSL_TRIPLE=""
+            MUSL_CC_ALT=""
+            case "${{ matrix.platform }}" in
+              linux-amd64)
+                export GOARCH=amd64
+                MUSL_TRIPLE="x86_64-unknown-linux-musl"
+                ;;
+              linux-arm64)
+                export GOARCH=arm64
+                MUSL_TRIPLE="aarch64-unknown-linux-musl"
+                ;;
+              linux-armv7)
+                export GOARCH=arm
+                export GOARM=7
+                MUSL_TRIPLE="armv7-unknown-linux-musleabihf"
+                ;;
+              linux-armv6)
+                export GOARCH=arm
+                export GOARM=6
+                MUSL_TRIPLE="arm-unknown-linux-musleabihf"
+                ;;
+              linux-armv5)
+                export GOARCH=arm
+                export GOARM=5
+                MUSL_TRIPLE="arm-unknown-linux-musleabi"
+                ;;
+              linux-386)
+                export GOARCH=386
+                MUSL_TRIPLE="i686-unknown-linux-musl"
+                ;;
+              linux-s390x)
+                export GOARCH=s390x
+                MUSL_TRIPLE="s390x-ibm-linux-musl"
+                ;;
+              linux-riscv64)
+                export GOARCH=riscv64
+                MUSL_TRIPLE="riscv64-unknown-linux-musl"
+                ;;
+              linux-mips)
+                export GOARCH=mips
+                export GOMIPS=softfloat
+                MUSL_TRIPLE="mips-unknown-linux-muslsf"
+                MUSL_CC_ALT="mips-linux-muslsf"
+                ;;
+              linux-mipsle)
+                export GOARCH=mipsle
+                export GOMIPS=softfloat
+                MUSL_TRIPLE="mipsel-unknown-linux-muslsf"
+                MUSL_CC_ALT="mipsel-linux-muslsf"
+                ;;
+              linux-mips64)
+                export GOARCH=mips64
+                MUSL_TRIPLE="mips64-unknown-linux-musl"
+                MUSL_CC_ALT="mips64-linux-musl"
+                ;;
+              linux-mips64le)
+                export GOARCH=mips64le
+                MUSL_TRIPLE="mips64el-unknown-linux-musl"
+                MUSL_CC_ALT="mips64el-linux-musl"
+                ;;
+              linux-ppc64le)
+                export GOARCH=ppc64le
+                MUSL_TRIPLE="powerpc64le-unknown-linux-musl"
+                ;;
+              linux-loong64)
+                export GOARCH=loong64
+                MUSL_TRIPLE="loongarch64-unknown-linux-musl"
+                ;;
+            esac
+
+            MUSL_GCC=""
+            if [ -n "$MUSL_TRIPLE" ] && [ -x "/opt/x-tools/${MUSL_TRIPLE}/bin/${MUSL_TRIPLE}-gcc" ]; then
+              MUSL_GCC="/opt/x-tools/${MUSL_TRIPLE}/bin/${MUSL_TRIPLE}-gcc"
+            elif [ -n "$MUSL_CC_ALT" ] && [ -x "/opt/x-tools/${MUSL_CC_ALT}-cross/bin/${MUSL_CC_ALT}-gcc" ]; then
+              MUSL_GCC="/opt/x-tools/${MUSL_CC_ALT}-cross/bin/${MUSL_CC_ALT}-gcc"
+            fi
+
+            if [ -n "$MUSL_GCC" ]; then
+              export CC="$MUSL_GCC"
+              export CGO_ENABLED=1
+              export CGO_CFLAGS="-D_LARGEFILE64_SOURCE"
+              LDFLAGS="-w -s -linkmode external -extldflags '-static'"
+            else
+              # Pure-Go SQLite static build works cleanly on musl/OpenWrt & Linux (except 32/64-bit MIPS)
               export CGO_ENABLED=0
             fi
           fi
-          go build -ldflags "-w -s" -o xui-release -v main.go
+
+          go build -mod=readonly -ldflags "${LDFLAGS}" -o xui-release -v main.go
+          file xui-release || true
 
           mkdir x-ui
           cp xui-release x-ui/
           cp x-ui.service x-ui/ 2>/dev/null || true
+          cp x-ui.init x-ui/ 2>/dev/null || true
           cp x-ui.sh x-ui/ 2>/dev/null || true
           mv x-ui/xui-release x-ui/x-ui
+          chmod +x x-ui/x-ui x-ui/x-ui.sh x-ui/x-ui.init 2>/dev/null || true
           mkdir -p x-ui/bin
           cd x-ui/bin
 
@@ -300,7 +335,7 @@ jobs:
             $archName="amd64"
             $xrayZip="Xray-windows-64.zip"
           }
-          go build -ldflags "-w -s" -o xui-release.exe -v main.go
+          go build -mod=readonly -ldflags "-w -s" -o xui-release.exe -v main.go
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
           mkdir x-ui
@@ -362,7 +397,7 @@ jobs:
             x-ui-${{ matrix.platform }}.tar.gz
 
       - name: Upload files to GH release (Windows)
-        if: runner.os == 'Windows'
+        if: runner.os == 'Windows' && startsWith(github.ref, 'refs/tags/')
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
@@ -372,7 +407,7 @@ jobs:
           prerelease: true
 
       - name: Upload files to GH release (Linux / macOS)
-        if: runner.os != 'Windows'
+        if: runner.os != 'Windows' && startsWith(github.ref, 'refs/tags/')
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}

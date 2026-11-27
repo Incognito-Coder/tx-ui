@@ -31,7 +31,8 @@ func GetBinaryName() string {
 }
 
 func GetBinaryPath() string {
-	basePath := config.GetBinFolderPath() + "/" + fmt.Sprintf("xray-%s-%s", runtime.GOOS, runtime.GOARCH)
+	binDir := config.GetBinFolderPath()
+	basePath := binDir + "/" + fmt.Sprintf("xray-%s-%s", runtime.GOOS, runtime.GOARCH)
 	if runtime.GOOS == "windows" {
 		if _, err := os.Stat(basePath + ".exe"); err == nil {
 			return basePath + ".exe"
@@ -40,6 +41,21 @@ func GetBinaryPath() string {
 			return basePath
 		}
 		return basePath + ".exe"
+	}
+	if fi, err := os.Stat(basePath); err == nil && !fi.IsDir() {
+		return basePath
+	}
+	// Fallback for manual installs or unrenamed armv7/armv6/armv5 archives.
+	if runtime.GOOS == "linux" && runtime.GOARCH == "arm" {
+		for _, variant := range []string{"xray-linux-armv7", "xray-linux-armv6", "xray-linux-armv5"} {
+			candidate := binDir + "/" + variant
+			if fi, err := os.Stat(candidate); err == nil && !fi.IsDir() {
+				return candidate
+			}
+		}
+	}
+	if fi, err := os.Stat(binDir + "/xray"); err == nil && !fi.IsDir() {
+		return binDir + "/xray"
 	}
 	return basePath
 }

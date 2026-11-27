@@ -8,9 +8,13 @@ import (
 	_ "unsafe"
 	"x-ui/cmd"
 	"x-ui/config"
+
+	"github.com/joho/godotenv"
 )
 
 func main() {
+	_ = godotenv.Load("/etc/x-ui/x-ui.env", "/usr/local/x-ui/.env", ".env")
+
 	if len(os.Args) < 2 {
 		cmd.RunWebServer()
 		return

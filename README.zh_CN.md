@@ -23,8 +23,16 @@
 
 ## 安装 & 升级
 
-```
+```sh
 bash <(curl -Ls https://raw.githubusercontent.com/Incognito-Coder/tx-ui/master/install.sh)
+```
+
+OpenWrt 路由器 / POSIX `sh`（基于 musl libc，无需 `bash`）：
+
+```sh
+wget -qO- https://raw.githubusercontent.com/Incognito-Coder/tx-ui/master/install.sh | sh
+# 或使用 curl：
+curl -Ls https://raw.githubusercontent.com/Incognito-Coder/tx-ui/master/install.sh | sh
 ```
 
 ### SSL证书
@@ -85,48 +93,66 @@ certbot renew --dry-run
 
 #### 使用
 
-1. 若要将最新版本的压缩包直接下载到服务器，请运行以下命令：
+1. 若要将最新版本的压缩包直接下载到服务器或 OpenWrt 路由器，请运行以下命令：
 
 ```sh
 ARCH=$(uname -m)
 case "${ARCH}" in
-  x86_64 | x64 | amd64) XUI_ARCH="amd64" ;; 
-  i*86 | x86) XUI_ARCH="386" ;; 
-  armv8* | armv8 | arm64 | aarch64) XUI_ARCH="arm64" ;; 
-  armv7* | armv7) XUI_ARCH="armv7" ;; 
-  armv6* | armv6) XUI_ARCH="armv6" ;; 
-  armv5* | armv5) XUI_ARCH="armv5" ;; 
-  *) XUI_ARCH="amd64" ;; 
+  x86_64 | x64 | amd64) XUI_ARCH="amd64" ;;
+  i*86 | x86) XUI_ARCH="386" ;;
+  armv8* | armv8 | arm64 | aarch64) XUI_ARCH="arm64" ;;
+  armv7* | armv7) XUI_ARCH="armv7" ;;
+  armv6* | armv6) XUI_ARCH="armv6" ;;
+  armv5* | armv5) XUI_ARCH="armv5" ;;
+  riscv64) XUI_ARCH="riscv64" ;;
+  ppc64le | powerpc64le) XUI_ARCH="ppc64le" ;;
+  loongarch64 | loong64) XUI_ARCH="loong64" ;;
+  s390x) XUI_ARCH="s390x" ;;
+  mips64el) XUI_ARCH="mips64le" ;;
+  mips64)
+    if printf '\1' | od -to1 2>/dev/null | head -n1 | grep -q '001$'; then XUI_ARCH="mips64le"; else XUI_ARCH="mips64"; fi
+    ;;
+  mipsel) XUI_ARCH="mipsle" ;;
+  mips)
+    if [ -f /etc/openwrt_release ] && grep -qiE "mipsel|ramips|mt7621|mt7620|mt76x8" /etc/openwrt_release 2>/dev/null; then
+      XUI_ARCH="mipsle"
+    elif printf '\1' | od -to1 2>/dev/null | head -n1 | grep -q '001$'; then
+      XUI_ARCH="mipsle"
+    else
+      XUI_ARCH="mips"
+    fi
+    ;;
+  *) XUI_ARCH="amd64" ;;
 esac
 
-
+# 提示：闪存空间较小的 OpenWrt 路由器建议先执行 cd /tmp 再下载
 wget https://github.com/Incognito-Coder/tx-ui/releases/latest/download/x-ui-linux-${XUI_ARCH}.tar.gz
 ```
 
-2. 下载压缩包后，执行以下命令安装或升级 x-ui：
+2. 下载压缩包后，执行以下命令安装或升级 x-ui（同时兼容 `systemd` Linux 与 OpenWrt `procd`）：
 
 ```sh
-ARCH=$(uname -m)
-case "${ARCH}" in
-  x86_64 | x64 | amd64) XUI_ARCH="amd64" ;; 
-  i*86 | x86) XUI_ARCH="386" ;; 
-  armv8* | armv8 | arm64 | aarch64) XUI_ARCH="arm64" ;; 
-  armv7* | armv7) XUI_ARCH="armv7" ;; 
-  armv6* | armv6) XUI_ARCH="armv6" ;; 
-  armv5* | armv5) XUI_ARCH="armv5" ;; 
-  *) XUI_ARCH="amd64" ;; 
-esac
-
-cd /root/ 
+# 请确认已按步骤 1 设置 XUI_ARCH，并在压缩包所在目录执行：
 rm -rf x-ui/ /usr/local/x-ui/ /usr/bin/x-ui
 tar zxvf x-ui-linux-${XUI_ARCH}.tar.gz
-chmod +x x-ui/x-ui x-ui/bin/xray-linux-* x-ui/x-ui.sh
-cp x-ui/x-ui.sh /usr/bin/x-ui
-cp -f x-ui/x-ui.service /etc/systemd/system/
-mv x-ui/ /usr/local/
-systemctl daemon-reload
-systemctl enable x-ui
-systemctl restart x-ui
+chmod +x x-ui/x-ui x-ui/bin/* x-ui/x-ui.sh x-ui/x-ui.init 2>/dev/null || true
+cp -f x-ui/x-ui.sh /usr/bin/x-ui
+mkdir -p /usr/local /etc/x-ui
+
+if [ -f /etc/openwrt_release ] || { [ -x /sbin/procd ] && ! command -v systemctl >/dev/null 2>&1; }; then
+  # OpenWrt 依赖（如缺失）：opkg update && opkg install ca-bundle
+  cp -f x-ui/x-ui.init /etc/init.d/x-ui
+  chmod +x /etc/init.d/x-ui
+  mv x-ui/ /usr/local/
+  /etc/init.d/x-ui enable
+  /etc/init.d/x-ui restart
+else
+  cp -f x-ui/x-ui.service /etc/systemd/system/
+  mv x-ui/ /usr/local/
+  systemctl daemon-reload
+  systemctl enable x-ui
+  systemctl restart x-ui
+fi
 ```
 
 </details>

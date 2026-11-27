@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -49,6 +50,18 @@ func IsDebug() bool {
 func GetBinFolderPath() string {
 	binFolderPath := os.Getenv("XUI_BIN_FOLDER")
 	if binFolderPath == "" {
+		if info, err := os.Stat("bin"); err == nil && info.IsDir() {
+			return "bin"
+		}
+		if exePath, err := os.Executable(); err == nil {
+			exeBin := filepath.Join(filepath.Dir(exePath), "bin")
+			if info, err := os.Stat(exeBin); err == nil && info.IsDir() {
+				return exeBin
+			}
+		}
+		if info, err := os.Stat("/usr/local/x-ui/bin"); err == nil && info.IsDir() {
+			return "/usr/local/x-ui/bin"
+		}
 		binFolderPath = "bin"
 	}
 	return binFolderPath

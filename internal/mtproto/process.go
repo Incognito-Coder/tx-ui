@@ -42,9 +42,18 @@ func GetBinaryPath() string {
 	binDir := config.GetBinFolderPath()
 	candidates := []string{
 		binDir + "/" + GetBinaryName(),
-		binDir + "/mtg-multi",
-		binDir + "/mtg",
 	}
+	if runtime.GOOS == "linux" && runtime.GOARCH == "arm" {
+		candidates = append(candidates,
+			binDir+"/mtg-linux-armv7",
+			binDir+"/mtg-linux-armv6",
+			binDir+"/mtg-linux-armv5",
+		)
+	}
+	candidates = append(candidates,
+		binDir+"/mtg-multi",
+		binDir+"/mtg",
+	)
 	if runtime.GOOS == "windows" {
 		candidates = append(candidates,
 			binDir+"/mtg-multi.exe",

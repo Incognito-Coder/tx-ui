@@ -40,7 +40,7 @@ Options:
   --xray-version <version>   Xray-core release version to bundle (default: v26.11.9).
   --mtg-version <version>    mtg-multi release version to bundle (default: 1.16.0).
   --cgo <auto|1|0>           CGO compilation mode (default: auto).
-                             - auto: Use host compiler for host build; cross-compiler/zig if available; else pure Go.
+                             - auto: Prefer static musl / zig cross-compiler for Linux (OpenWrt compatible), else host compiler / pure Go.
                              - 1: Force CGO (requires cross-compiler or Zig).
                              - 0: Force pure Go (CGO_ENABLED=0).
   -o, --output-dir <dir>     Output directory for built artifacts (default: build).
@@ -53,44 +53,45 @@ Options:
 Examples:
   $0                         Build for current host platform
   $0 linux-amd64 -p          Build and package release archive for linux-amd64
+  $0 openwrt-mipsle -p       Build static binary & OpenWrt assets for MIPSLE router
   $0 linux-amd64 windows-amd64 --cgo auto
   $0 all --package           Build and package all supported platforms
 EOF
 }
 
 # Target platforms table
-# Format: key | goos | goarch | goarm | xray_zip | xray_bin | mtg_file | mtg_bin | zig_target | gcc_prefix | out_bin | archive | format
+# Format: key | goos | goarch | goarm | xray_zip | xray_bin | mtg_file | mtg_bin | zig_target | gcc_prefix | out_bin | archive | format | gomips
 get_target_info() {
     case "$1" in
-        linux-amd64|linux/amd64|linux_amd64|linux64)
-            echo "linux-amd64|linux|amd64||Xray-linux-64.zip|xray-linux-amd64|mtg-multi-${MTG_VERSION}-linux-amd64.tar.gz|mtg-linux-amd64|x86_64-linux-musl|x86_64-linux-gnu-|x-ui|x-ui-linux-amd64.tar.gz|tar.gz"
+        linux-amd64|linux/amd64|linux_amd64|linux64|openwrt-amd64|openwrt-x86_64)
+            echo "linux-amd64|linux|amd64||Xray-linux-64.zip|xray-linux-amd64|mtg-multi-${MTG_VERSION}-linux-amd64.tar.gz|mtg-linux-amd64|x86_64-linux-musl|x86_64-linux-gnu-|x-ui|x-ui-linux-amd64.tar.gz|tar.gz|"
             ;;
-        linux-arm64|linux/arm64|linux_arm64|aarch64|arm64)
-            echo "linux-arm64|linux|arm64||Xray-linux-arm64-v8a.zip|xray-linux-arm64|mtg-multi-${MTG_VERSION}-linux-arm64.tar.gz|mtg-linux-arm64|aarch64-linux-musl|aarch64-linux-gnu-|x-ui|x-ui-linux-arm64.tar.gz|tar.gz"
+        linux-arm64|linux/arm64|linux_arm64|aarch64|arm64|openwrt-arm64|openwrt-aarch64)
+            echo "linux-arm64|linux|arm64||Xray-linux-arm64-v8a.zip|xray-linux-arm64|mtg-multi-${MTG_VERSION}-linux-arm64.tar.gz|mtg-linux-arm64|aarch64-linux-musl|aarch64-linux-gnu-|x-ui|x-ui-linux-arm64.tar.gz|tar.gz|"
             ;;
-        linux-armv7|linux/armv7|armv7|arm32-v7a|linux-arm)
-            echo "linux-armv7|linux|arm|7|Xray-linux-arm32-v7a.zip|xray-linux-arm|mtg-multi-${MTG_VERSION}-linux-armv7.tar.gz|mtg-linux-arm|arm-linux-musleabihf|arm-linux-gnueabihf-|x-ui|x-ui-linux-armv7.tar.gz|tar.gz"
+        linux-armv7|linux/armv7|armv7|arm32-v7a|linux-arm|openwrt-armv7|openwrt-arm)
+            echo "linux-armv7|linux|arm|7|Xray-linux-arm32-v7a.zip|xray-linux-arm|mtg-multi-${MTG_VERSION}-linux-armv7.tar.gz|mtg-linux-arm|arm-linux-musleabihf|arm-linux-gnueabihf-|x-ui|x-ui-linux-armv7.tar.gz|tar.gz|"
             ;;
-        linux-armv6|linux/armv6|armv6|arm32-v6)
-            echo "linux-armv6|linux|arm|6|Xray-linux-arm32-v6.zip|xray-linux-arm|mtg-multi-${MTG_VERSION}-linux-armv6.tar.gz|mtg-linux-arm|arm-linux-musleabihf|arm-linux-gnueabihf-|x-ui|x-ui-linux-armv6.tar.gz|tar.gz"
+        linux-armv6|linux/armv6|armv6|arm32-v6|openwrt-armv6)
+            echo "linux-armv6|linux|arm|6|Xray-linux-arm32-v6.zip|xray-linux-arm|mtg-multi-${MTG_VERSION}-linux-armv6.tar.gz|mtg-linux-arm|arm-linux-musleabihf|arm-linux-gnueabihf-|x-ui|x-ui-linux-armv6.tar.gz|tar.gz|"
             ;;
-        linux-armv5|linux/armv5|armv5|arm32-v5)
-            echo "linux-armv5|linux|arm|5|Xray-linux-arm32-v5.zip|xray-linux-arm|mtg-multi-${MTG_VERSION}-linux-armv5.tar.gz|mtg-linux-arm|arm-linux-musleabi|arm-linux-gnueabi-|x-ui|x-ui-linux-armv5.tar.gz|tar.gz"
+        linux-armv5|linux/armv5|armv5|arm32-v5|openwrt-armv5)
+            echo "linux-armv5|linux|arm|5|Xray-linux-arm32-v5.zip|xray-linux-arm|mtg-multi-${MTG_VERSION}-linux-armv5.tar.gz|mtg-linux-arm|arm-linux-musleabi|arm-linux-gnueabi-|x-ui|x-ui-linux-armv5.tar.gz|tar.gz|"
             ;;
-        linux-386|linux/386|linux-i386|linux-32)
-            echo "linux-386|linux|386||Xray-linux-32.zip|xray-linux-386|mtg-multi-${MTG_VERSION}-linux-386.tar.gz|mtg-linux-386|i386-linux-musl|i686-linux-gnu-|x-ui|x-ui-linux-386.tar.gz|tar.gz"
+        linux-386|linux/386|linux-i386|linux-32|openwrt-386|openwrt-x86)
+            echo "linux-386|linux|386||Xray-linux-32.zip|xray-linux-386|mtg-multi-${MTG_VERSION}-linux-386.tar.gz|mtg-linux-386|i386-linux-musl|i686-linux-gnu-|x-ui|x-ui-linux-386.tar.gz|tar.gz|"
             ;;
         linux-s390x|linux/s390x|s390x)
-            echo "linux-s390x|linux|s390x||Xray-linux-s390x.zip|xray-linux-s390x|mtg-multi-${MTG_VERSION}-linux-s390x.tar.gz|mtg-linux-s390x|s390x-linux-musl|s390x-linux-gnu-|x-ui|x-ui-linux-s390x.tar.gz|tar.gz"
+            echo "linux-s390x|linux|s390x||Xray-linux-s390x.zip|xray-linux-s390x|mtg-multi-${MTG_VERSION}-linux-s390x.tar.gz|mtg-linux-s390x|s390x-linux-musl|s390x-linux-gnu-|x-ui|x-ui-linux-s390x.tar.gz|tar.gz|"
             ;;
         windows-amd64|windows/amd64|windows-64|win64|windows)
-            echo "windows-amd64|windows|amd64||Xray-windows-64.zip|xray-windows-amd64.exe|mtg-multi-${MTG_VERSION}-windows-amd64.zip|mtg-windows-amd64.exe|x86_64-windows-gnu|x86_64-w64-mingw32-|x-ui.exe|x-ui-windows-amd64.zip|zip"
+            echo "windows-amd64|windows|amd64||Xray-windows-64.zip|xray-windows-amd64.exe|mtg-multi-${MTG_VERSION}-windows-amd64.zip|mtg-windows-amd64.exe|x86_64-windows-gnu|x86_64-w64-mingw32-|x-ui.exe|x-ui-windows-amd64.zip|zip|"
             ;;
         windows-arm64|windows/arm64|win-arm64)
-            echo "windows-arm64|windows|arm64||Xray-windows-arm64-v8a.zip|xray-windows-arm64.exe|mtg-multi-${MTG_VERSION}-windows-arm64.zip|mtg-windows-arm64.exe|aarch64-windows-gnu|aarch64-w64-mingw32-|x-ui.exe|x-ui-windows-arm64.zip|zip"
+            echo "windows-arm64|windows|arm64||Xray-windows-arm64-v8a.zip|xray-windows-arm64.exe|mtg-multi-${MTG_VERSION}-windows-arm64.zip|mtg-windows-arm64.exe|aarch64-windows-gnu|aarch64-w64-mingw32-|x-ui.exe|x-ui-windows-arm64.zip|zip|"
             ;;
         windows-386|windows/386|windows-32|win32)
-            echo "windows-386|windows|386||Xray-windows-32.zip|xray-windows-386.exe|mtg-multi-${MTG_VERSION}-windows-386.zip|mtg-windows-386.exe|i386-windows-gnu|i686-w64-mingw32-|x-ui.exe|x-ui-windows-386.zip|zip"
+            echo "windows-386|windows|386||Xray-windows-32.zip|xray-windows-386.exe|mtg-multi-${MTG_VERSION}-windows-386.zip|mtg-windows-386.exe|i386-windows-gnu|i686-w64-mingw32-|x-ui.exe|x-ui-windows-386.zip|zip|"
             ;;
         darwin-amd64|darwin/amd64|macos-amd64|mac-amd64)
             echo "darwin-amd64|darwin|amd64||Xray-macos-64.zip|xray-darwin-amd64|||x86_64-macos-none|o64-clang|x-ui|x-ui-darwin-amd64.tar.gz|tar.gz|"
@@ -98,19 +99,19 @@ get_target_info() {
         darwin-arm64|darwin/arm64|macos-arm64|mac-arm64)
             echo "darwin-arm64|darwin|arm64||Xray-macos-arm64-v8a.zip|xray-darwin-arm64|||aarch64-macos-none|oa64-clang|x-ui|x-ui-darwin-arm64.tar.gz|tar.gz|"
             ;;
-        linux-riscv64|linux/riscv64|riscv64)
+        linux-riscv64|linux/riscv64|riscv64|openwrt-riscv64)
             echo "linux-riscv64|linux|riscv64||Xray-linux-riscv64.zip|xray-linux-riscv64|||riscv64-linux-musl|riscv64-linux-gnu-|x-ui|x-ui-linux-riscv64.tar.gz|tar.gz|"
             ;;
-        linux-mips|linux/mips|mips|mips32)
-            echo "linux-mips|linux|mips||Xray-linux-mips32.zip|xray-linux-mips|||mips-linux-musl|mips-linux-gnu-|x-ui|x-ui-linux-mips.tar.gz|tar.gz|"
+        linux-mips|linux/mips|mips|mips32|openwrt-mips)
+            echo "linux-mips|linux|mips||Xray-linux-mips32.zip|xray-linux-mips|||mips-linux-musl|mips-linux-gnu-|x-ui|x-ui-linux-mips.tar.gz|tar.gz|softfloat"
             ;;
-        linux-mipsle|linux/mipsle|mipsle|mips32le)
-            echo "linux-mipsle|linux|mipsle||Xray-linux-mips32le.zip|xray-linux-mipsle|||mipsel-linux-musl|mipsel-linux-gnu-|x-ui|x-ui-linux-mipsle.tar.gz|tar.gz|"
+        linux-mipsle|linux/mipsle|mipsle|mips32le|openwrt-mipsle|openwrt-mipsel)
+            echo "linux-mipsle|linux|mipsle||Xray-linux-mips32le.zip|xray-linux-mipsle|||mipsel-linux-musl|mipsel-linux-gnu-|x-ui|x-ui-linux-mipsle.tar.gz|tar.gz|softfloat"
             ;;
-        linux-mips64|linux/mips64|mips64)
+        linux-mips64|linux/mips64|mips64|openwrt-mips64)
             echo "linux-mips64|linux|mips64||Xray-linux-mips64.zip|xray-linux-mips64|||mips64-linux-musl|mips64-linux-gnuabi64-|x-ui|x-ui-linux-mips64.tar.gz|tar.gz|"
             ;;
-        linux-mips64le|linux/mips64le|mips64le)
+        linux-mips64le|linux/mips64le|mips64le|openwrt-mips64le)
             echo "linux-mips64le|linux|mips64le||Xray-linux-mips64le.zip|xray-linux-mips64le|||mips64el-linux-musl|mips64el-linux-gnuabi64-|x-ui|x-ui-linux-mips64le.tar.gz|tar.gz|"
             ;;
         linux-ppc64le|linux/ppc64le|ppc64le|powerpc64le)
@@ -125,12 +126,33 @@ get_target_info() {
         freebsd-386|freebsd/386|freebsd-32)
             echo "freebsd-386|freebsd|386||Xray-freebsd-32.zip|xray-freebsd-386|||i386-freebsd|i686-unknown-freebsd-|x-ui|x-ui-freebsd-386.tar.gz|tar.gz|"
             ;;
-        linux-loong64|linux/loong64|loong64)
+        linux-loong64|linux/loong64|loong64|openwrt-loong64)
             echo "linux-loong64|linux|loong64||Xray-linux-loong64.zip|xray-linux-loong64|||loongarch64-linux-musl|loongarch64-linux-gnu-|x-ui|x-ui-linux-loong64.tar.gz|tar.gz|"
             ;;
         *)
             echo ""
             ;;
+    esac
+}
+
+# Preferred musl cross-compiler triples (cross-tools/musl-cross & musl.cc conventions)
+get_musl_triple() {
+    case "$1" in
+        linux-amd64)    echo "x86_64-unknown-linux-musl" ;;
+        linux-arm64)    echo "aarch64-unknown-linux-musl" ;;
+        linux-armv7)    echo "armv7-unknown-linux-musleabihf" ;;
+        linux-armv6)    echo "arm-unknown-linux-musleabihf" ;;
+        linux-armv5)    echo "arm-unknown-linux-musleabi" ;;
+        linux-386)      echo "i686-unknown-linux-musl" ;;
+        linux-s390x)    echo "s390x-ibm-linux-musl" ;;
+        linux-riscv64)  echo "riscv64-unknown-linux-musl" ;;
+        linux-mips)     echo "mips-unknown-linux-muslsf" ;;
+        linux-mipsle)   echo "mipsel-unknown-linux-muslsf" ;;
+        linux-mips64)   echo "mips64-unknown-linux-musl" ;;
+        linux-mips64le) echo "mips64el-unknown-linux-musl" ;;
+        linux-ppc64le)  echo "powerpc64le-unknown-linux-musl" ;;
+        linux-loong64)  echo "loongarch64-unknown-linux-musl" ;;
+        *)              echo "" ;;
     esac
 }
 
@@ -149,6 +171,7 @@ detect_host_platform() {
     case "$(uname -s)" in
         Linux*)   os="linux" ;;
         Darwin*)  os="darwin" ;;
+        FreeBSD*) os="freebsd" ;;
         CYGWIN*|MINGW*|MSYS*) os="windows" ;;
         *)        os="linux" ;;
     esac
@@ -158,8 +181,28 @@ detect_host_platform() {
         aarch64|arm64) arch="arm64" ;;
         armv7*) arch="armv7" ;;
         armv6*) arch="armv6" ;;
+        armv5*) arch="armv5" ;;
         i386|i686) arch="386" ;;
         s390x) arch="s390x" ;;
+        riscv64) arch="riscv64" ;;
+        ppc64le|powerpc64le) arch="ppc64le" ;;
+        loongarch64|loong64) arch="loong64" ;;
+        mips64el) arch="mips64le" ;;
+        mips64)
+            if printf '\1' | od -to1 2>/dev/null | head -n1 | grep -q '001$'; then
+                arch="mips64le"
+            else
+                arch="mips64"
+            fi
+            ;;
+        mipsel) arch="mipsle" ;;
+        mips)
+            if printf '\1' | od -to1 2>/dev/null | head -n1 | grep -q '001$'; then
+                arch="mipsle"
+            else
+                arch="mips"
+            fi
+            ;;
         *) arch="amd64" ;;
     esac
 
@@ -238,6 +281,7 @@ fi
 
 # Resolve target list
 RESOLVED_TARGETS=()
+OPENWRT_TARGETS=" "
 for t in "${TARGETS[@]}"; do
     IFS=',' read -ra ADDR <<< "$t"
     for item in "${ADDR[@]}"; do
@@ -257,6 +301,9 @@ for t in "${TARGETS[@]}"; do
         if [[ -n "$info" ]]; then
             canonical=$(echo "$info" | cut -d'|' -f1)
             RESOLVED_TARGETS+=("$canonical")
+            if [[ "$item" == openwrt-* ]]; then
+                OPENWRT_TARGETS="${OPENWRT_TARGETS}${canonical} "
+            fi
         else
             echo -e "${YELLOW}Warning: Unknown target '$item'. Skipping.${NC}" >&2
         fi
@@ -345,6 +392,11 @@ echo -e "${GRAY} Package Mode  : $(if [[ $PACKAGE -eq 1 ]]; then echo "Yes (Full
 echo -e "${GRAY} Output Dir    : ${OUTPUT_DIR}${NC}"
 echo -e "${CYAN}==========================================================${NC}"
 
+GO_MOD_FLAGS=()
+if [[ -d "vendor" ]] && ! go list -mod=vendor . >/dev/null 2>&1; then
+    GO_MOD_FLAGS+=("-mod=readonly")
+fi
+
 SUCCESS_COUNT=0
 FAIL_COUNT=0
 
@@ -367,27 +419,74 @@ for target in "${UNIQUE_TARGETS[@]}"; do
 
     echo -e "\n${GREEN}>>> Building target: ${canonical} (${t_goos}/${t_goarch})${NC}"
 
-    # Determine C compiler and CGO setting
+    # Determine C compiler, static musl mode, and CGO setting
     CGO_ENABLED="0"
     CC_BIN=""
+    IS_MUSL="0"
+    FORCE_STATIC_LINUX="0"
+    if [[ "$t_goos" == "linux" && "$OPENWRT_TARGETS" == *" ${canonical} "* ]]; then
+        FORCE_STATIC_LINUX="1"
+    fi
     COMPILER_NOTE="Pure Go (CGO_ENABLED=0 with pure-Go SQLite)"
+
+    t_musl_triple=$(get_musl_triple "$canonical")
+    found_musl_gcc=""
+    if [[ "$t_goos" == "linux" ]]; then
+        for cand in \
+            "${t_musl_triple:+/opt/x-tools/${t_musl_triple}/bin/${t_musl_triple}-gcc}" \
+            "${t_musl_triple:+${t_musl_triple}-gcc}" \
+            "${t_zig_target:+/opt/x-tools/${t_zig_target}/bin/${t_zig_target}-gcc}" \
+            "${t_zig_target:+${t_zig_target}-gcc}"; do
+            [[ -z "$cand" ]] && continue
+            if [[ -x "$cand" ]] || command -v "$cand" >/dev/null 2>&1; then
+                found_musl_gcc="$cand"
+                break
+            fi
+        done
+        if [[ -z "$found_musl_gcc" && "$canonical" == "linux-mipsle" ]]; then
+            for cand in "/opt/x-tools/mipsel-linux-muslsf/bin/mipsel-linux-muslsf-gcc" "mipsel-linux-muslsf-gcc"; do
+                if [[ -x "$cand" ]] || command -v "$cand" >/dev/null 2>&1; then found_musl_gcc="$cand"; break; fi
+            done
+        elif [[ -z "$found_musl_gcc" && "$canonical" == "linux-mips" ]]; then
+            for cand in "/opt/x-tools/mips-linux-muslsf/bin/mips-linux-muslsf-gcc" "mips-linux-muslsf-gcc"; do
+                if [[ -x "$cand" ]] || command -v "$cand" >/dev/null 2>&1; then found_musl_gcc="$cand"; break; fi
+            done
+        fi
+    fi
 
     if [[ "$CGO_MODE" != "0" ]]; then
         if [[ -n "${CC:-}" ]]; then
             CGO_ENABLED="1"
             CC_BIN="$CC"
+            [[ "$CC" == *musl* ]] && IS_MUSL="1"
             COMPILER_NOTE="Using CC from environment: $CC"
+        elif [[ -n "$found_musl_gcc" ]]; then
+            CGO_ENABLED="1"
+            CC_BIN="$found_musl_gcc"
+            IS_MUSL="1"
+            COMPILER_NOTE="Musl GCC (static OpenWrt + Linux): $found_musl_gcc"
+        elif [[ "$t_goos" == "linux" ]] && command -v zig >/dev/null 2>&1 && [[ -n "$t_zig_target" ]]; then
+            CGO_ENABLED="1"
+            CC_BIN="zig cc -target ${t_zig_target}"
+            IS_MUSL="1"
+            COMPILER_NOTE="Zig CC (${t_zig_target}, static)"
         elif [[ "$canonical" == "$HOST_PLATFORM" ]]; then
-            if command -v gcc >/dev/null 2>&1; then
-                CGO_ENABLED="1"
-                CC_BIN="gcc"
-                COMPILER_NOTE="Host GCC"
-            elif command -v clang >/dev/null 2>&1; then
-                CGO_ENABLED="1"
-                CC_BIN="clang"
-                COMPILER_NOTE="Host Clang"
+            if [[ "$t_goos" == "linux" ]] && command -v ldd >/dev/null 2>&1 && ldd --version 2>&1 | grep -qi musl; then
+                if command -v gcc >/dev/null 2>&1; then
+                    CGO_ENABLED="1"; CC_BIN="gcc"; IS_MUSL="1"; COMPILER_NOTE="Host Musl GCC (static)"
+                elif command -v clang >/dev/null 2>&1; then
+                    CGO_ENABLED="1"; CC_BIN="clang"; IS_MUSL="1"; COMPILER_NOTE="Host Musl Clang (static)"
+                fi
+            elif [[ "$t_goos" == "linux" ]] && command -v musl-gcc >/dev/null 2>&1; then
+                CGO_ENABLED="1"; CC_BIN="musl-gcc"; IS_MUSL="1"; COMPILER_NOTE="Host musl-gcc (static)"
+            elif [[ "$FORCE_STATIC_LINUX" -eq 0 ]]; then
+                if command -v gcc >/dev/null 2>&1; then
+                    CGO_ENABLED="1"; CC_BIN="gcc"; COMPILER_NOTE="Host GCC"
+                elif command -v clang >/dev/null 2>&1; then
+                    CGO_ENABLED="1"; CC_BIN="clang"; COMPILER_NOTE="Host Clang"
+                fi
             fi
-        elif [[ -n "$t_gcc_prefix" ]] && command -v "${t_gcc_prefix}gcc" >/dev/null 2>&1; then
+        elif [[ "$FORCE_STATIC_LINUX" -eq 0 && -n "$t_gcc_prefix" ]] && command -v "${t_gcc_prefix}gcc" >/dev/null 2>&1; then
             CGO_ENABLED="1"
             CC_BIN="${t_gcc_prefix}gcc"
             COMPILER_NOTE="Target GCC: ${t_gcc_prefix}gcc"
@@ -414,7 +513,15 @@ for target in "${UNIQUE_TARGETS[@]}"; do
     direct_file="${OUTPUT_DIR}/x-ui-${canonical}$(if [[ "$t_goos" == "windows" ]]; then echo ".exe"; fi)"
 
     # Build Go binary
-    build_cmd=("go" "build" "-ldflags" "$LDFLAGS")
+    effective_ldflags="$LDFLAGS"
+    if [[ "$IS_MUSL" == "1" && "$effective_ldflags" != *"-extldflags"* ]]; then
+        effective_ldflags="${effective_ldflags} -linkmode external -extldflags '-static'"
+    fi
+    build_cmd=("go" "build")
+    if [[ ${#GO_MOD_FLAGS[@]} -gt 0 ]]; then
+        build_cmd+=("${GO_MOD_FLAGS[@]}")
+    fi
+    build_cmd+=("-ldflags" "$effective_ldflags")
     if [[ -n "$TAGS" ]]; then
         build_cmd+=("-tags" "$TAGS")
     fi
@@ -427,8 +534,22 @@ for target in "${UNIQUE_TARGETS[@]}"; do
     if [[ -n "$t_gomips" ]]; then export GOMIPS="$t_gomips"; else unset GOMIPS || true; fi
     export CGO_ENABLED="$CGO_ENABLED"
     if [[ -n "$CC_BIN" ]]; then export CC="$CC_BIN"; else unset CC || true; fi
+    SAVED_CGO_CFLAGS="${CGO_CFLAGS-__UNSET__}"
+    if [[ "$CGO_ENABLED" == "1" && "$t_goos" == "linux" ]]; then
+        export CGO_CFLAGS="${CGO_CFLAGS:+${CGO_CFLAGS} }-D_LARGEFILE64_SOURCE"
+    fi
 
+    build_ok=0
     if "${build_cmd[@]}"; then
+        build_ok=1
+    fi
+    if [[ "$SAVED_CGO_CFLAGS" == "__UNSET__" ]]; then
+        unset CGO_CFLAGS || true
+    else
+        export CGO_CFLAGS="$SAVED_CGO_CFLAGS"
+    fi
+
+    if [[ $build_ok -eq 1 ]]; then
         echo -e "${GREEN}  [OK] Binary built: ${out_file}${NC}"
         cp -f "$out_file" "$direct_file"
     else
@@ -501,8 +622,9 @@ for target in "${UNIQUE_TARGETS[@]}"; do
         echo -e "${GREEN}  [OK] Geodata rules staged${NC}"
 
         # 4. Service units and scripts
-        [[ -f "x-ui.sh" ]] && cp -f "x-ui.sh" "$staging_dir/"
+        [[ -f "x-ui.sh" ]] && cp -f "x-ui.sh" "$staging_dir/" && chmod +x "${staging_dir}/x-ui.sh" 2>/dev/null || true
         [[ -f "x-ui.service" ]] && cp -f "x-ui.service" "$staging_dir/"
+        [[ -f "x-ui.init" ]] && cp -f "x-ui.init" "$staging_dir/" && chmod +x "${staging_dir}/x-ui.init" 2>/dev/null || true
         if [[ "$t_goos" == "windows" ]]; then
             [[ -f "bin/wintun.dll" ]] && cp -f "bin/wintun.dll" "$bin_dir/"
             [[ -f "bin/xray_no_window.ps1" ]] && cp -f "bin/xray_no_window.ps1" "$bin_dir/"

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
 	"os/exec"
 	"regexp"
 	"runtime"
@@ -282,13 +283,27 @@ func (a *ServerController) installPanel(c *gin.Context) {
 	go func() {
 		time.Sleep(1500 * time.Millisecond)
 		if runtime.GOOS == "linux" {
-			if err := exec.Command("systemctl", "restart", "x-ui").Run(); err != nil {
-				logger.Warning("systemctl restart failed, triggering internal restart:", err)
-				global.TriggerRestart()
+			if _, err := exec.LookPath("systemctl"); err == nil {
+				if err := exec.Command("systemctl", "restart", "x-ui").Run(); err == nil {
+					return
+				} else {
+					logger.Warning("systemctl restart failed, trying fallback:", err)
+				}
 			}
-		} else {
-			global.TriggerRestart()
+			if _, err := os.Stat("/etc/init.d/x-ui"); err == nil {
+				if err := exec.Command("/etc/init.d/x-ui", "restart").Run(); err == nil {
+					return
+				} else {
+					logger.Warning("/etc/init.d/x-ui restart failed, triggering internal restart:", err)
+				}
+			}
+			if _, err := exec.LookPath("rc-service"); err == nil {
+				if err := exec.Command("rc-service", "x-ui", "restart").Run(); err == nil {
+					return
+				}
+			}
 		}
+		global.TriggerRestart()
 	}()
 }
 

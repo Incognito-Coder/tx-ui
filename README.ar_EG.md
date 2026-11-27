@@ -24,8 +24,16 @@
 
 ## التثبيت والترقية
 
-```bash
-< <(curl -Ls https://raw.githubusercontent.com/Incognito-Coder/tx-ui/master/install.sh)
+```sh
+bash <(curl -Ls https://raw.githubusercontent.com/Incognito-Coder/tx-ui/master/install.sh)
+```
+
+لأجهزة توجيه OpenWrt / صدفة POSIX `sh` (مبنية على musl libc، بدون الحاجة إلى `bash`):
+
+```sh
+wget -qO- https://raw.githubusercontent.com/Incognito-Coder/tx-ui/master/install.sh | sh
+# أو باستخدام curl:
+curl -Ls https://raw.githubusercontent.com/Incognito-Coder/tx-ui/master/install.sh | sh
 ```
 
 ## شهادة SSL
@@ -87,49 +95,66 @@ certbot renew --dry-run
 
 #### الاستخدام
 
-1. لتنزيل أحدث إصدار من الحزمة المضغوطة مباشرة إلى الخادم الخاص بك، قم بتشغيل الأمر التالي:
+1. لتنزيل أحدث إصدار من الحزمة المضغوطة مباشرة إلى الخادم أو موجه OpenWrt الخاص بك، قم بتشغيل الأمر التالي:
 
-```bash
+```sh
 ARCH=$(uname -m)
 case "${ARCH}" in
-  x86_64 | x64 | amd64) XUI_ARCH="amd64" ;; 
-  i*86 | x86) XUI_ARCH="386" ;; 
-  armv8* | armv8 | arm64 | aarch64) XUI_ARCH="arm64" ;; 
-  armv7* | armv7) XUI_ARCH="armv7" ;; 
-  armv6* | armv6) XUI_ARCH="armv6" ;; 
-  armv5* | armv5) XUI_ARCH="armv5" ;; 
-  s390x) echo 's390x' ;; 
-  *) XUI_ARCH="amd64" ;; 
+  x86_64 | x64 | amd64) XUI_ARCH="amd64" ;;
+  i*86 | x86) XUI_ARCH="386" ;;
+  armv8* | armv8 | arm64 | aarch64) XUI_ARCH="arm64" ;;
+  armv7* | armv7) XUI_ARCH="armv7" ;;
+  armv6* | armv6) XUI_ARCH="armv6" ;;
+  armv5* | armv5) XUI_ARCH="armv5" ;;
+  riscv64) XUI_ARCH="riscv64" ;;
+  ppc64le | powerpc64le) XUI_ARCH="ppc64le" ;;
+  loongarch64 | loong64) XUI_ARCH="loong64" ;;
+  s390x) XUI_ARCH="s390x" ;;
+  mips64el) XUI_ARCH="mips64le" ;;
+  mips64)
+    if printf '\1' | od -to1 2>/dev/null | head -n1 | grep -q '001$'; then XUI_ARCH="mips64le"; else XUI_ARCH="mips64"; fi
+    ;;
+  mipsel) XUI_ARCH="mipsle" ;;
+  mips)
+    if [ -f /etc/openwrt_release ] && grep -qiE "mipsel|ramips|mt7621|mt7620|mt76x8" /etc/openwrt_release 2>/dev/null; then
+      XUI_ARCH="mipsle"
+    elif printf '\1' | od -to1 2>/dev/null | head -n1 | grep -q '001$'; then
+      XUI_ARCH="mipsle"
+    else
+      XUI_ARCH="mips"
+    fi
+    ;;
+  *) XUI_ARCH="amd64" ;;
 esac
 
+# نصيحة: على موجهات OpenWrt ذات مساحة الفلاش المحدودة، انتقل إلى /tmp قبل التنزيل
 wget https://github.com/Incognito-Coder/tx-ui/releases/latest/download/x-ui-linux-${XUI_ARCH}.tar.gz
 ```
 
-2. بمجرد تنزيل الحزمة المضغوطة، قم بتنفيذ الأوامر التالية لتثبيت أو ترقية x-ui:
+2. بمجرد تنزيل الحزمة المضغوطة، قم بتنفيذ الأوامر التالية لتثبيت أو ترقية x-ui (يدعم كل من Linux `systemd` وOpenWrt `procd`):
 
-```bash
-ARCH=$(uname -m)
-case "${ARCH}" in
-  x86_64 | x64 | amd64) XUI_ARCH="amd64" ;; 
-  i*86 | x86) XUI_ARCH="386" ;; 
-  armv8* | armv8 | arm64 | aarch64) XUI_ARCH="arm64" ;; 
-  armv7* | armv7) XUI_ARCH="armv7" ;; 
-  armv6* | armv6) XUI_ARCH="armv6" ;; 
-  armv5* | armv5) XUI_ARCH="armv5" ;; 
-  s390x) echo 's390x' ;; 
-  *) XUI_ARCH="amd64" ;; 
-esac
-
-cd /root/ 
+```sh
+# تأكد من تعيين XUI_ARCH كما في الخطوة 1، ثم نفذ داخل مجلد التنزيل:
 rm -rf x-ui/ /usr/local/x-ui/ /usr/bin/x-ui
 tar zxvf x-ui-linux-${XUI_ARCH}.tar.gz
-chmod +x x-ui/x-ui x-ui/bin/xray-linux-* x-ui/x-ui.sh
-cp x-ui/x-ui.sh /usr/bin/x-ui
-cp -f x-ui/x-ui.service /etc/systemd/system/
-mv x-ui/ /usr/local/
-systemctl daemon-reload
-systemctl enable x-ui
-systemctl restart x-ui
+chmod +x x-ui/x-ui x-ui/bin/* x-ui/x-ui.sh x-ui/x-ui.init 2>/dev/null || true
+cp -f x-ui/x-ui.sh /usr/bin/x-ui
+mkdir -p /usr/local /etc/x-ui
+
+if [ -f /etc/openwrt_release ] || { [ -x /sbin/procd ] && ! command -v systemctl >/dev/null 2>&1; }; then
+  # متطلبات OpenWrt (إن لم تكن مثبتة): opkg update && opkg install ca-bundle
+  cp -f x-ui/x-ui.init /etc/init.d/x-ui
+  chmod +x /etc/init.d/x-ui
+  mv x-ui/ /usr/local/
+  /etc/init.d/x-ui enable
+  /etc/init.d/x-ui restart
+else
+  cp -f x-ui/x-ui.service /etc/systemd/system/
+  mv x-ui/ /usr/local/
+  systemctl daemon-reload
+  systemctl enable x-ui
+  systemctl restart x-ui
+fi
 ```
 
 </details>

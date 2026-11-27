@@ -980,6 +980,20 @@ func getPanelArch() (string, error) {
 		return "386", nil
 	case "s390x":
 		return "s390x", nil
+	case "riscv64":
+		return "riscv64", nil
+	case "mips":
+		return "mips", nil
+	case "mipsle":
+		return "mipsle", nil
+	case "mips64":
+		return "mips64", nil
+	case "mips64le":
+		return "mips64le", nil
+	case "ppc64le":
+		return "ppc64le", nil
+	case "loong64":
+		return "loong64", nil
 	case "arm":
 		out, err := exec.Command("uname", "-m").Output()
 		if err == nil {
@@ -1003,6 +1017,10 @@ func getPanelArch() (string, error) {
 				"armv7l": "armv7", "armv7": "armv7", "arm": "armv7",
 				"armv6l": "armv6", "armv6": "armv6", "armv5": "armv5",
 				"s390x": "s390x",
+				"riscv64": "riscv64",
+				"mips": "mips", "mipsel": "mipsle", "mipsle": "mipsle",
+				"mips64": "mips64", "mips64el": "mips64le", "mips64le": "mips64le",
+				"ppc64le": "ppc64le", "loong64": "loong64", "loongarch64": "loong64",
 			}
 			if val, exists := archMap[strings.TrimSpace(string(out))]; exists {
 				return val, nil
@@ -1083,17 +1101,26 @@ func (s *ServerService) UpdatePanel(version string) error {
 	}
 
 	// Download x-ui
+	_ = os.MkdirAll("/usr/local", 0o755)
 	url := fmt.Sprintf("https://github.com/Incognito-Coder/tx-ui/releases/download/%s/x-ui-linux-%s.tar.gz", version, arch)
 	filePath := fmt.Sprintf("/usr/local/x-ui-linux-%s.tar.gz", arch)
 	logger.Infof("Downloading %s to %s", url, filePath)
 
 	err = downloadFile(url, filePath)
 	if err != nil {
-		logger.Warningf("Go HTTP download failed (%v), falling back to wget...", err)
-		wgetErr := exec.Command("wget", "-N", "--no-check-certificate", "-O", filePath, url).Run()
-		if wgetErr != nil {
-			logger.Errorf("Download failed: %v", wgetErr)
-			return fmt.Errorf("download failed: %w", wgetErr)
+		logger.Warningf("Go HTTP download failed (%v), falling back to curl/wget...", err)
+		var dlErr error
+		if _, curlErr := exec.LookPath("curl"); curlErr == nil {
+			dlErr = exec.Command("curl", "-fsSL", "-o", filePath, url).Run()
+		} else {
+			dlErr = exec.Command("wget", "-q", "-O", filePath, url).Run()
+			if dlErr != nil {
+				dlErr = exec.Command("wget", "-N", "--no-check-certificate", "-O", filePath, url).Run()
+			}
+		}
+		if dlErr != nil {
+			logger.Errorf("Download failed: %v", dlErr)
+			return fmt.Errorf("download failed: %w", dlErr)
 		}
 	}
 
@@ -1113,7 +1140,7 @@ func (s *ServerService) UpdatePanel(version string) error {
 
 	// Extract, configure, and install
 	logger.Debug("Extracting...")
-	extractErr := exec.Command("tar", "-zxvf", filePath, "-C", "/usr/local/").Run()
+	extractErr := exec.Command("tar", "-zxf", filePath, "-C", "/usr/local/").Run()
 	_ = os.Remove(filePath)
 	if extractErr != nil {
 		logger.Errorf("Tar extract failed: %v", extractErr)
@@ -1136,15 +1163,44 @@ func (s *ServerService) UpdatePanel(version string) error {
 	restoreGeoVersion(xray.GetGeositePath(), "geositeVersion")
 
 	_ = exec.Command("chmod", "+x", "/usr/local/x-ui/x-ui").Run()
+	if arch == "armv5" || arch == "armv6" || arch == "armv7" {
+		_ = os.Rename(fmt.Sprintf("/usr/local/x-ui/bin/xray-linux-%s", arch), "/usr/local/x-ui/bin/xray-linux-arm")
+		_ = exec.Command("chmod", "+x", "/usr/local/x-ui/bin/xray-linux-arm").Run()
+		_ = os.Rename(fmt.Sprintf("/usr/local/x-ui/bin/mtg-linux-%s", arch), "/usr/local/x-ui/bin/mtg-linux-arm")
+		_ = exec.Command("chmod", "+x", "/usr/local/x-ui/bin/mtg-linux-arm").Run()
+	}
 	xrayLinux := fmt.Sprintf("/usr/local/x-ui/bin/xray-linux-%s", arch)
 	_ = exec.Command("chmod", "+x", xrayLinux).Run()
-	if _, err := os.Stat("/usr/local/x-ui/x-ui.service"); err == nil {
-		_ = exec.Command("cp", "-f", "/usr/local/x-ui/x-ui.service", "/etc/systemd/system/").Run()
+	_ = exec.Command("chmod", "+x", "/usr/local/x-ui/bin/xray-linux-arm").Run()
+	_ = exec.Command("chmod", "+x", fmt.Sprintf("/usr/local/x-ui/bin/mtg-linux-%s", arch)).Run()
+
+	// Update management script via Go HTTP client (compatible with OpenWrt without GNU wget flags).
+	scriptURL := "https://raw.githubusercontent.com/Incognito-Coder/tx-ui/main/x-ui.sh"
+	if err := downloadFile(scriptURL, "/usr/bin/x-ui"); err != nil {
+		if data, readErr := os.ReadFile("/usr/local/x-ui/x-ui.sh"); readErr == nil && len(data) > 0 {
+			_ = os.WriteFile("/usr/bin/x-ui", data, 0o755)
+		}
 	}
-	_ = exec.Command("wget", "--no-check-certificate", "-O", "/usr/bin/x-ui", "https://raw.githubusercontent.com/Incognito-Coder/tx-ui/main/x-ui.sh").Run()
 	_ = exec.Command("chmod", "+x", "/usr/bin/x-ui").Run()
-	_ = exec.Command("systemctl", "daemon-reload").Run()
-	_ = exec.Command("systemctl", "enable", "x-ui").Run()
+	_ = exec.Command("chmod", "+x", "/usr/local/x-ui/x-ui.sh").Run()
+	_ = exec.Command("ln", "-sf", "/usr/bin/x-ui", "/usr/bin/tx-ui").Run()
+
+	if _, err := exec.LookPath("systemctl"); err == nil {
+		if _, err := os.Stat("/usr/local/x-ui/x-ui.service"); err == nil {
+			_ = os.MkdirAll("/etc/systemd/system", 0o755)
+			_ = exec.Command("cp", "-f", "/usr/local/x-ui/x-ui.service", "/etc/systemd/system/").Run()
+		}
+		_ = exec.Command("systemctl", "daemon-reload").Run()
+		_ = exec.Command("systemctl", "enable", "x-ui").Run()
+	} else if _, err := os.Stat("/etc/rc.common"); err == nil || func() bool { _, e := os.Stat("/etc/openwrt_release"); return e == nil }() {
+		if _, err := os.Stat("/usr/local/x-ui/x-ui.init"); err == nil {
+			_ = exec.Command("cp", "-f", "/usr/local/x-ui/x-ui.init", "/etc/init.d/x-ui").Run()
+		} else {
+			_ = downloadFile("https://raw.githubusercontent.com/Incognito-Coder/tx-ui/main/x-ui.init", "/etc/init.d/x-ui")
+		}
+		_ = exec.Command("chmod", "+x", "/etc/init.d/x-ui").Run()
+		_ = exec.Command("/etc/init.d/x-ui", "enable").Run()
+	}
 
 	logger.Infof("x-ui %s installation finished successfully!", version)
 	return nil
@@ -1180,16 +1236,40 @@ func (s *ServerService) GetLogs(count string, level string, syslog string) []str
 	var lines []string
 
 	if syslog == "true" {
-		cmdArgs := []string{"journalctl", "-u", "x-ui", "--no-pager", "-n", count, "-p", level}
-		// Run the command
-		cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...)
-		var out bytes.Buffer
-		cmd.Stdout = &out
-		err := cmd.Run()
-		if err != nil {
-			return []string{"Failed to run journalctl command!"}
+		if _, err := exec.LookPath("journalctl"); err == nil {
+			cmdArgs := []string{"journalctl", "-u", "x-ui", "--no-pager", "-n", count, "-p", level}
+			cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...)
+			var out bytes.Buffer
+			cmd.Stdout = &out
+			if err := cmd.Run(); err != nil {
+				return []string{"Failed to run journalctl command!"}
+			}
+			lines = strings.Split(out.String(), "\n")
+		} else if _, err := exec.LookPath("logread"); err == nil {
+			// OpenWrt syslog uses logread rather than journalctl.
+			cmd := exec.Command("logread")
+			var out bytes.Buffer
+			cmd.Stdout = &out
+			if err := cmd.Run(); err != nil {
+				return []string{"Failed to run logread command!"}
+			}
+			allLines := strings.Split(strings.TrimSpace(out.String()), "\n")
+			var filtered []string
+			for _, l := range allLines {
+				if strings.Contains(l, "x-ui") || strings.Contains(l, "xray") {
+					filtered = append(filtered, l)
+				}
+			}
+			if len(filtered) == 0 {
+				filtered = allLines
+			}
+			if c > 0 && len(filtered) > c {
+				filtered = filtered[len(filtered)-c:]
+			}
+			lines = filtered
+		} else {
+			lines = logger.GetLogs(c, level)
 		}
-		lines = strings.Split(out.String(), "\n")
 	} else {
 		lines = logger.GetLogs(c, level)
 	}

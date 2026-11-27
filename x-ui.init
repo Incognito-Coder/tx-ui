@@ -1,0 +1,67 @@
+#!/bin/sh /etc/rc.common
+
+START=99
+STOP=10
+USE_PROCD=1
+
+PROG="/usr/local/x-ui/x-ui"
+ENV_FILE="/etc/x-ui/x-ui.env"
+
+start_service() {
+	[ -x "$PROG" ] || return 1
+
+	procd_open_instance
+	procd_set_param command "$PROG" run
+	procd_set_param env \
+		XRAY_VMESS_AEAD_FORCED=false \
+		XUI_BIN_FOLDER=/usr/local/x-ui/bin \
+		XUI_DB_FOLDER=/etc/x-ui \
+		XUI_LOG_FOLDER=/var/log
+
+	if [ -f "$ENV_FILE" ]; then
+		while IFS= read -r line || [ -n "$line" ]; do
+			line=$(printf '%s' "$line" | tr -d '\r')
+			case "$line" in
+				""|\#*) continue ;;
+				export\ *) line=${line#export } ;;
+			esac
+			case "$line" in
+				*=*)
+					key=${line%%=*}
+					val=${line#*=}
+					case "$val" in
+						\"*\") val=${val#\"}; val=${val%\"} ;;
+						\'*\') val=${val#\'}; val=${val%\'} ;;
+					esac
+					procd_append_param env "${key}=${val}"
+					;;
+			esac
+		done < "$ENV_FILE"
+	fi
+
+	procd_set_param respawn 3600 5 0
+	procd_set_param stdout 1
+	procd_set_param stderr 1
+	procd_set_param limits nofile="65536 65536"
+	procd_close_instance
+}
+
+stop_service() {
+	for bin_name in \
+		xray-linux-amd64 xray-linux-arm64 xray-linux-arm \
+		xray-linux-armv7 xray-linux-armv6 xray-linux-armv5 \
+		xray-linux-386 xray-linux-mips xray-linux-mipsle \
+		xray-linux-mips64 xray-linux-mips64le xray-linux-riscv64 \
+		xray-linux-s390x xray-linux-ppc64le xray-linux-loong64 \
+		mtg-linux-amd64 mtg-linux-arm64 mtg-linux-arm \
+		mtg-linux-armv7 mtg-linux-armv6 mtg-linux-armv5 \
+		mtg-linux-386 mtg-linux-s390x mtg-multi
+	do
+		killall "$bin_name" >/dev/null 2>&1 || true
+	done
+}
+
+reload_service() {
+	stop
+	start
+}
