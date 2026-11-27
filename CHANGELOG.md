@@ -5,14 +5,43 @@ All notable changes to **TX-UI** will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [v0.9.8] - 2026-11-13
+## [Unreleased]
 
 ### 🚀 Features & Enhancements
 - **Full OpenWrt & `musl` libc Router Support**:
-  - **Static `musl` Release Binaries**: Updated `.github/workflows/release.yml`, `build.sh`, and `build.ps1` to cross-compile Linux release binaries statically against `musl` (`cross-tools/musl-cross` with `-D_LARGEFILE64_SOURCE`, `-linkmode external -extldflags '-static'`, `GOMIPS=softfloat` for 32-bit MIPS, or pure-Go `CGO_ENABLED=0` static fallback) and bundle the new OpenWrt service script.
-  - **OpenWrt `procd` Init Script (`x-ui.init`)**: Added native `/etc/init.d/x-ui` `procd` service support loading `/etc/x-ui/x-ui.env`, setting file descriptor limits, and managing foreground execution & shutdown.
-  - **Pure POSIX `/bin/sh` Installer & Management Script**: Rewrote `install.sh` and `x-ui.sh` with zero `bash` dependencies to run natively on OpenWrt BusyBox `ash`, `opkg`/`apk`, `procd`, UCI firewall rules, `logread` logs, `musl` detection, MIPS/MIPSLE endianness detection, and `wget`/`uclient-fetch`/`curl`.
-  - **Runtime OpenWrt Portability & Manual Install Docs**: Updated Go binary path resolution (`config.go`, `main.go`, `xray/process.go`, `internal/mtproto/process.go`), in-panel self-update & restart/log fallbacks (`internal/web/controller/server.go`, `internal/web/service/server.go`), and manual installation guides across all localized READMEs.
+  - **Static `musl` Release Binaries & Build Tooling**: Updated `.github/workflows/release.yml`, `build.sh`, and `build.ps1` to cross-compile Linux release binaries statically against `musl` (`cross-tools/musl-cross` toolchains with `CGO_CFLAGS="-D_LARGEFILE64_SOURCE"`, `-linkmode external -extldflags '-static'`, `GOMIPS=softfloat` for 32-bit MIPS, or pure-Go `CGO_ENABLED=0` static fallback on non-MIPS targets), bundle `x-ui.init`, add `openwrt-*` target aliases, pass `-mod=readonly` when `vendor/` is out of sync (`build.sh`, `build.ps1`, `Dockerfile`, `release.yml`), and guard GitHub Release uploads with `startsWith(github.ref, 'refs/tags/')` for branch workflow runs.
+  - **OpenWrt `procd` Init Script (`x-ui.init`)**: Added native `/etc/init.d/x-ui` `procd` service support loading `/etc/x-ui/x-ui.env`, exporting `XUI_BIN_FOLDER`, `XUI_DB_FOLDER`, and `XUI_LOG_FOLDER`, setting `nofile` limits, and cleaning up child processes on stop.
+  - **Pure POSIX `/bin/sh` Installer & Management Script**: Rewrote `install.sh` and `x-ui.sh` with LF line endings and zero `bash` dependencies to run natively on OpenWrt BusyBox `ash`, `opkg`/`apk`, `procd`, UCI firewall rules, `logread` logs, `kmod-tcp-bbr`, `musl` detection, MIPS/MIPSLE endianness detection, and `wget`/`uclient-fetch`/`curl`.
+  - **Runtime OpenWrt Portability & Manual Install Docs**: Updated Go binary path resolution (`config/config.go`, `main.go`, `xray/process.go`, `internal/mtproto/process.go`), in-panel self-update & restart/log fallbacks (`internal/web/controller/server.go`, `internal/web/service/server.go`), and added POSIX `sh` + `procd` manual installation guides across all localized READMEs (`README.md`, `README.fa_IR.md`, `README.ar_EG.md`, `README.es_ES.md`, `README.ru_RU.md`, `README.zh_CN.md`).
+
+- **Subscription Template File Upload & Live Editor Controls**:
+  - **Local `sub.html` Template Upload Section**: Added a dedicated "Upload File" tab with an interactive drag-and-drop zone (`a-upload-dragger`) in the Sub Template Manager modal (`settings.html`) to upload local `sub.html`, `index.html`, or `.tpl` files with direct file apply and editor-load options.
+  - **Editor Upload Toolbar Action**: Added an "Upload File" button directly inside the Live Editor toolbar (`settings.html`), allowing administrators to import local HTML files directly into CodeMirror and inspect live rendered output immediately.
+  - **`subCustomUI` Persistence on Save**: Updated `ServerController.saveSubTemplateContent` (`internal/web/controller/server.go`) to persist `SetSubCustomUI(true)` when saving template content.
+  - **13-Language i18n**: Added translation keys for all new upload actions and tabs across all 13 supported languages.
+
+### 🐛 Bug Fixes & Improvements
+- **Sub Template Modal Mobile Layout & CodeMirror Scrolling**:
+  - **Mobile Card Button Overlap Resolution**: Eliminated action button overlap on theme catalog cards across mobile screens by switching to standardized `<a-button>` components and responsive flex wrappers (`.sub-theme-card-actions`).
+  - **Smooth CodeMirror Scrolling & Mobile Sizing**: Fixed code editor scrolling and touch trapping on iOS and mobile devices by removing `overflow: hidden !important;` on `.CodeMirror`, enabling `-webkit-overflow-scrolling: touch` and `overscroll-behavior: contain` on `.CodeMirror-scroll`, making editor and preview panes responsive (`100%` width on mobile), and auto-refreshing CodeMirror layout on tab switches.
+- **Documentation & Stargazers Links**:
+  - Updated the "Star History" section and replaced stargazers chart links across all localized READMEs (`README.md`, `README.ar_EG.md`, `README.es_ES.md`, `README.fa_IR.md`, `README.ru_RU.md`, `README.zh_CN.md`).
+
+### 🔧 Dependencies
+- Updated Go modules in `go.mod` / `go.sum`:
+  - `github.com/valyala/fasthttp`: `v1.78.0` → `v1.80.0`
+  - `github.com/amnezia-vpn/amneziawg-go/v3`: `v3.1.20260828` → `v3.1.20261116`
+  - `modernc.org/sqlite`: `v1.55.0` → `v1.62.0`
+  - `modernc.org/libc`: `v1.74.1` → `v1.81.2`
+  - `golang.org/x/net`: `v0.62.0` → `v0.63.0`
+  - `golang.org/x/crypto`: `v0.58.0` → `v0.59.0`
+  - `github.com/quic-go/quic-go`: `v0.64.1` → `v0.65.0`
+  - `github.com/klauspost/compress`: `v1.20.3` → `v1.20.4`
+  - Indirect dependency updates: `golang.org/x/text` (`v0.43.0` → `v0.44.0`), `golang.org/x/sync` (`v0.24.0` → `v0.25.0`), `github.com/dustin/go-humanize` (`v1.0.1` → `v1.1.0`), `github.com/ncruces/go-strftime` (`v1.0.0` → `v1.1.0`), and `modernc.org/memory` (`v1.11.0` → `v1.12.1`).
+
+## [v0.9.8] - 2026-11-13
+
+### 🚀 Features & Enhancements
 - **WireGuard Outbound Protocol Parser (`wireguard://` & `.conf`)**:
   - **Dual Format Parser**: Enhanced the Outbound creation modal with native parsing for both standard WireGuard INI configuration files (`.conf` format containing `[Interface]` and `[Peer]` sections) and `wireguard://` link URIs in `outbound.js`.
   - **Direct `.conf` File Upload**: Added an upload button (`Upload .conf`) in the Outbound modal (`outbound.html`, `xray_outbound_modal.html`) that reads and automatically parses `.conf` and `.txt` files directly into outbound form fields and JSON representations.
@@ -20,11 +49,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Interactive Import UI**: Updated outbound modal input placeholders and toasts (`outbound.html`, `xray_outbound_modal.html`) to guide administrators in importing WireGuard configs as easily as VMess, VLESS, Trojan, SS, and Hysteria2.
 
 - **In-Panel Live Subscription Template Editor & Dynamic Preview**:
-  - **Local `sub.html` Template Upload Section**: Added a dedicated "Upload File" tab with an interactive drag-and-drop zone (`a-upload-dragger`) in the Sub Template Manager modal (`settings.html`) to upload local `sub.html`, `index.html`, or `.tpl` files with direct file apply and editor-load options.
-  - **Editor Upload Toolbar Action**: Added an "Upload File" button directly inside the Live Editor toolbar, allowing administrators to import local HTML files directly into CodeMirror and inspect live rendered output immediately.
-  - **Mobile Layout & Card Button Overlap Resolution**: Completely eliminated action button overlap on theme catalog cards across mobile screens by switching to standardized `<a-button>` components and responsive flex wrappers (`.sub-theme-card-actions`).
-  - **Smooth CodeMirror Scrolling & Mobile Sizing**: Fixed code editor scrolling and touch trapping on iOS and mobile devices by removing `overflow: hidden !important;` on `.CodeMirror`, enabling `-webkit-overflow-scrolling: touch` and `overscroll-behavior: contain` on `.CodeMirror-scroll`, making editor and preview panes responsive (100% width on mobile), and auto-refreshing CodeMirror layout on tab switches.
-  - **13-Language i18n**: Added translation keys for all new upload actions and tabs across all 13 supported languages.
   - **Interactive Live Editor**: Added a full-featured subscription template editor directly inside the Settings Sub Template modal (`settings.html`). Features a side-by-side layout with code editor on the left and a live sandbox preview iframe on the right.
   - **Syntax Highlighting & Responsive Width**: Integrated CodeMirror 5 XML & HTML-Mixed modes with syntax highlighting for HTML tags, attributes, strings, comments, and Go template tags `{{ ... }}`. Extended modal dialog width to 1420px (96vw) for an expansive coding environment.
   - **Real-Time Dynamic Preview API**: Added `POST /previewSubTemplate` endpoint rendering realistic mock subscription profiles across multiple protocol links (VLESS Reality, VMess WS, Trojan TLS, WireGuard, Hysteria2), formatted traffic usage stats, expire date counters, and QR code details.
