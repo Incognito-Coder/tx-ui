@@ -915,6 +915,17 @@ update_shell() {
     fi
 }
 
+list_processes() {
+    # Prefer ps -ef (procps-ng lists all daemons; ps w on procps-ng omits background services),
+    # falling back to BusyBox ps w / ps on OpenWrt and Alpine.
+    ps -ef 2>/dev/null || ps w 2>/dev/null || ps 2>/dev/null
+}
+
+is_process_running() {
+    _cnt=$(list_processes | grep -E "$1" | grep -v "grep" | wc -l)
+    [ "$_cnt" -gt 0 ] 2>/dev/null
+}
+
 # 0: running, 1: not running, 2: not installed
 check_status() {
     _init=$(detect_init_system)
@@ -938,8 +949,7 @@ check_status() {
                     return 0
                 fi
             fi
-            _cnt=$( (ps w 2>/dev/null || ps -ef 2>/dev/null || ps 2>/dev/null) | grep -E '/usr/local/x-ui/x-ui([[:space:]]|$)' | grep -v grep | wc -l)
-            if [ "$_cnt" -gt 0 ] 2>/dev/null; then
+            if is_process_running '/usr/local/x-ui/x-ui([[:space:]]|$)'; then
                 return 0
             else
                 return 1
@@ -949,8 +959,7 @@ check_status() {
             if [ ! -x /usr/local/x-ui/x-ui ]; then
                 return 2
             fi
-            _cnt=$( (ps w 2>/dev/null || ps -ef 2>/dev/null || ps 2>/dev/null) | grep -E '/usr/local/x-ui/x-ui([[:space:]]|$)' | grep -v grep | wc -l)
-            if [ "$_cnt" -gt 0 ] 2>/dev/null; then
+            if is_process_running '/usr/local/x-ui/x-ui([[:space:]]|$)'; then
                 return 0
             else
                 return 1
@@ -1037,8 +1046,7 @@ show_enable_status() {
 }
 
 check_xray_status() {
-    count=$( (ps w 2>/dev/null || ps -ef 2>/dev/null || ps 2>/dev/null) | grep "xray-linux" | grep -v "grep" | wc -l)
-    if [ "$count" -ne 0 ] 2>/dev/null; then
+    if is_process_running 'xray-linux|(^|[[:space:]]|/)bin/xray([[:space:]]|$)'; then
         return 0
     else
         return 1
